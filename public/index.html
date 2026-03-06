@@ -111,6 +111,12 @@
   .calc-copy { font-size:11px; color:#64748b; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:4px; padding:3px 8px; cursor:pointer; font-family:'Space Mono',monospace; }
   .calc-copy:hover { color:#e2e8f0; }
   .hidden { display: none !important; }
+  .saved-leagues { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .league-chip { display: flex; align-items: center; gap: 6px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 6px; padding: 6px 10px 6px 12px; font-size: 12px; color: #f59e0b; font-family: 'Space Mono', monospace; transition: all 0.15s; }
+  .league-chip-name { cursor: pointer; font-weight: 700; letter-spacing: 0.5px; }
+  .league-chip-name:hover { color: #fcd34d; }
+  .league-chip-remove { background: none; border: none; color: #475569; font-size: 16px; line-height: 1; cursor: pointer; padding: 0 0 0 4px; font-family: monospace; }
+  .league-chip-remove:hover { color: #fca5a5; }
 </style>
 
 <!-- Firebase Auth SDK (module, deferred automatically) -->
@@ -199,6 +205,7 @@
   <!-- SETUP -->
   <div id="step-setup" class="card">
     <div class="card-title">LEAGUE SETUP</div>
+    <div id="saved-leagues"></div>
     <div class="label">SLEEPER LEAGUE ID</div>
     <input type="text" id="league-id" placeholder="e.g. 1234567890123456789" />
     <div class="sublabel">Sleeper app → League → Settings → scroll to League ID</div>
@@ -338,8 +345,7 @@ function initAuth() {
       currentUser = user;
       updateStatusBar(user);
       showScreen('app');
-      const savedLid = localStorage.getItem('sendit_league_id');
-      if (savedLid) document.getElementById('league-id').value = savedLid;
+      renderSavedLeagues();
     } catch {
       await signOut(auth);
       showScreen('auth');
@@ -408,12 +414,52 @@ function resetToPlayer() {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// SAVED LEAGUES
+// ────────────────────────────────────────────────────────────────────────────
+function getSavedLeagues() {
+  try { return JSON.parse(localStorage.getItem('sendit_leagues') || '[]'); } catch { return []; }
+}
+function saveLeague(id, name) {
+  const leagues = getSavedLeagues().filter(l => l.id !== id);
+  leagues.unshift({ id, name });
+  localStorage.setItem('sendit_leagues', JSON.stringify(leagues));
+  renderSavedLeagues();
+}
+function removeLeague(id) {
+  const leagues = getSavedLeagues().filter(l => l.id !== id);
+  localStorage.setItem('sendit_leagues', JSON.stringify(leagues));
+  renderSavedLeagues();
+}
+function renderSavedLeagues() {
+  const leagues = getSavedLeagues();
+  const container = document.getElementById('saved-leagues');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!leagues.length) return;
+  leagues.forEach(league => {
+    const chip = document.createElement('div');
+    chip.className = 'league-chip';
+    chip.innerHTML = `
+      <span class="league-chip-name" title="Load ${league.name}">${league.name}</span>
+      <button class="league-chip-remove" title="Remove">×</button>`;
+    chip.querySelector('.league-chip-name').onclick = () => {
+      document.getElementById('league-id').value = league.id;
+      loadLeague();
+    };
+    chip.querySelector('.league-chip-remove').onclick = e => {
+      e.stopPropagation();
+      removeLeague(league.id);
+    };
+    container.appendChild(chip);
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // LOAD LEAGUE
 // ────────────────────────────────────────────────────────────────────────────
 async function loadLeague() {
   const lid = document.getElementById('league-id').value.trim();
   if (!lid) { showError('Please enter your Sleeper League ID.'); return; }
-  localStorage.setItem('sendit_league_id', lid);
   showError(''); showWarn('');
   showStep('loading');
 
@@ -469,6 +515,7 @@ async function loadLeague() {
     } catch(e) { showWarn('⚠️ FantasyCalc unavailable ('+e.message+') — AI will analyze without trade values.'); }
 
     setStatus('Step 4/4 — Building team grid...');
+    saveLeague(lid, leagueData.name || lid);
     document.getElementById('league-name').textContent = leagueData.name || 'Your League';
     document.getElementById('league-meta').textContent =
       `${rostersData.length} teams · ${settings.dynasty?'Dynasty':'Redraft'} · ${settings.sf?'Superflex':'1QB'} · ${settings.ppr?'PPR':'Non-PPR'}`;
@@ -480,8 +527,7 @@ async function loadLeague() {
       const picks = picksReadable(r.roster_id);
       const btn = document.createElement('button');
       btn.className = 'team-btn';
-      const rec = `${r.settings?.wins||0}-${r.settings?.losses||0}`;
-      btn.innerHTML = `${user?.display_name||'Team '+r.roster_id}<div class="sub">${(r.players||[]).length} players · ${picks.length} picks · ${rec}</div>`;
+      btn.innerHTML = `${user?.display_name||'Team '+r.roster_id}<div class="sub">${(r.players||[]).length} players · ${picks.length} picks</div>`;
       btn.onclick = () => {
         document.querySelectorAll('.team-btn').forEach(b=>b.classList.remove('selected'));
         btn.classList.add('selected');
