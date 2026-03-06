@@ -112,11 +112,10 @@
   .calc-copy:hover { color:#e2e8f0; }
   .hidden { display: none !important; }
   .saved-leagues { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-  .league-chip { display: flex; align-items: center; gap: 6px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 6px; padding: 6px 10px 6px 12px; font-size: 12px; color: #f59e0b; font-family: 'Space Mono', monospace; transition: all 0.15s; }
-  .league-chip-name { cursor: pointer; font-weight: 700; letter-spacing: 0.5px; }
-  .league-chip-name:hover { color: #fcd34d; }
-  .league-chip-remove { background: none; border: none; color: #475569; font-size: 16px; line-height: 1; cursor: pointer; padding: 0 0 0 4px; font-family: monospace; }
-  .league-chip-remove:hover { color: #fca5a5; }
+  .league-card { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; margin-bottom: 8px; }
+  .league-card-name { flex: 1; font-weight: 700; font-size: 13px; color: #e2e8f0; letter-spacing: 0.3px; }
+  .leagues-empty { color: #475569; font-size: 12px; padding: 20px; text-align: center; border: 1px dashed rgba(255,255,255,0.08); border-radius: 8px; margin-bottom: 4px; }
+  .leagues-divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 20px 0; }
 </style>
 
 <!-- Firebase Auth SDK (module, deferred automatically) -->
@@ -124,7 +123,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
   import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc }
+  import { getFirestore, doc, getDoc, updateDoc }
     from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
   // Replace these with your Firebase project config (Firebase Console → Project Settings → General)
@@ -138,7 +137,7 @@
   window._fb = {
     auth: getAuth(app),
     db:   getFirestore(app),
-    signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, doc, getDoc,
+    signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, doc, getDoc, updateDoc,
   };
   window.dispatchEvent(new Event('firebaseReady'));
 </script>
@@ -202,10 +201,12 @@
   <div id="error-box" class="error-box"></div>
   <div id="warn-box" class="warn-box"></div>
 
-  <!-- SETUP -->
-  <div id="step-setup" class="card">
-    <div class="card-title">LEAGUE SETUP</div>
-    <div id="saved-leagues"></div>
+  <!-- LEAGUES -->
+  <div id="step-leagues" class="card">
+    <div class="card-title">YOUR LEAGUES</div>
+    <div id="saved-leagues-list"></div>
+    <hr class="leagues-divider">
+    <div class="card-title" style="font-size:11px;margin-bottom:12px">ADD LEAGUE</div>
     <div class="label">SLEEPER LEAGUE ID</div>
     <input type="text" id="league-id" placeholder="e.g. 1234567890123456789" />
     <div class="sublabel">Sleeper app → League → Settings → scroll to League ID</div>
@@ -233,6 +234,7 @@
         <div class="card-title" id="league-name" style="margin-bottom:2px;font-size:15px"></div>
         <div style="font-size:11px;color:#475569" id="league-meta"></div>
       </div>
+      <button class="btn secondary small" onclick="showStep('leagues')">← LEAGUES</button>
     </div>
     <div style="font-size:12px;color:#94a3b8;margin:14px 0 10px">Which team is yours?</div>
     <div class="team-grid" id="team-grid"></div>
@@ -299,6 +301,7 @@ const POS_PRIME = { QB:[25,35], RB:[22,26], WR:[24,30], TE:[25,30] };
 const settings = { dynasty:true, sf:false, ppr:true };
 let leagueData={}, usersData=[], rostersData=[], sleeperPlayers={}, fcalcValues={}, picksMap={};
 let myRosterId=null, selectedPlayer=null, myPlayers=[];
+let savedLeagues = [];
 
 // ── Auth state ────────────────────────────────────────────────────────────
 let currentUser  = null;
@@ -342,9 +345,11 @@ function initAuth() {
         return;
       }
       allowedModel = userData.allowedModel || 'haiku';
+      savedLeagues = userData.savedLeagues || [];
       currentUser = user;
       updateStatusBar(user);
       showScreen('app');
+      showStep('leagues');
       renderSavedLeagues();
     } catch {
       await signOut(auth);
@@ -401,7 +406,7 @@ function showError(msg) { const e=document.getElementById('error-box'); e.textCo
 function showWarn(msg)  { const e=document.getElementById('warn-box');  e.textContent=msg; e.style.display=msg?'block':'none'; }
 function setStatus(msg) { document.getElementById('load-status').textContent=msg; }
 
-const ALL_STEPS = ['setup','loading','pick-team','pick-player','generating','results'];
+const ALL_STEPS = ['leagues','loading','pick-team','pick-player','generating','results'];
 function showStep(name) {
   ALL_STEPS.forEach(s => {
     const el = document.getElementById('step-'+s);
@@ -414,51 +419,51 @@ function resetToPlayer() {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// SAVED LEAGUES
+// SAVED LEAGUES (Firestore-backed)
 // ────────────────────────────────────────────────────────────────────────────
-function getSavedLeagues() {
-  try { return JSON.parse(localStorage.getItem('sendit_leagues') || '[]'); } catch { return []; }
-}
-function saveLeague(id, name) {
-  const leagues = getSavedLeagues().filter(l => l.id !== id);
-  leagues.unshift({ id, name });
-  localStorage.setItem('sendit_leagues', JSON.stringify(leagues));
+async function saveLeague(id, name) {
+  savedLeagues = savedLeagues.filter(l => l.id !== id);
+  savedLeagues.unshift({ id, name });
   renderSavedLeagues();
+  try {
+    const { db, doc, updateDoc } = window._fb;
+    await updateDoc(doc(db, 'users', currentUser.email), { savedLeagues });
+  } catch(e) { console.error('Failed to save league:', e); }
 }
-function removeLeague(id) {
-  const leagues = getSavedLeagues().filter(l => l.id !== id);
-  localStorage.setItem('sendit_leagues', JSON.stringify(leagues));
+async function removeLeague(id) {
+  savedLeagues = savedLeagues.filter(l => l.id !== id);
   renderSavedLeagues();
+  try {
+    const { db, doc, updateDoc } = window._fb;
+    await updateDoc(doc(db, 'users', currentUser.email), { savedLeagues });
+  } catch(e) { console.error('Failed to remove league:', e); }
 }
 function renderSavedLeagues() {
-  const leagues = getSavedLeagues();
-  const container = document.getElementById('saved-leagues');
+  const container = document.getElementById('saved-leagues-list');
   if (!container) return;
   container.innerHTML = '';
-  if (!leagues.length) return;
-  leagues.forEach(league => {
-    const chip = document.createElement('div');
-    chip.className = 'league-chip';
-    chip.innerHTML = `
-      <span class="league-chip-name" title="Load ${league.name}">${league.name}</span>
-      <button class="league-chip-remove" title="Remove">×</button>`;
-    chip.querySelector('.league-chip-name').onclick = () => {
-      document.getElementById('league-id').value = league.id;
-      loadLeague();
-    };
-    chip.querySelector('.league-chip-remove').onclick = e => {
-      e.stopPropagation();
-      removeLeague(league.id);
-    };
-    container.appendChild(chip);
+  if (!savedLeagues.length) {
+    container.innerHTML = '<div class="leagues-empty">No leagues saved yet. Add one below.</div>';
+    return;
+  }
+  savedLeagues.forEach(league => {
+    const card = document.createElement('div');
+    card.className = 'league-card';
+    card.innerHTML = `
+      <span class="league-card-name">${league.name}</span>
+      <button class="btn small" data-load="${league.id}">LOAD →</button>
+      <button class="btn secondary small" data-remove="${league.id}">✕</button>`;
+    card.querySelector('[data-load]').onclick = () => loadLeague(league.id);
+    card.querySelector('[data-remove]').onclick = () => removeLeague(league.id);
+    container.appendChild(card);
   });
 }
 
 // ────────────────────────────────────────────────────────────────────────────
 // LOAD LEAGUE
 // ────────────────────────────────────────────────────────────────────────────
-async function loadLeague() {
-  const lid = document.getElementById('league-id').value.trim();
+async function loadLeague(presetId) {
+  const lid = presetId || document.getElementById('league-id').value.trim();
   if (!lid) { showError('Please enter your Sleeper League ID.'); return; }
   showError(''); showWarn('');
   showStep('loading');
@@ -515,7 +520,7 @@ async function loadLeague() {
     } catch(e) { showWarn('⚠️ FantasyCalc unavailable ('+e.message+') — AI will analyze without trade values.'); }
 
     setStatus('Step 4/4 — Building team grid...');
-    saveLeague(lid, leagueData.name || lid);
+    await saveLeague(lid, leagueData.name || lid);
     document.getElementById('league-name').textContent = leagueData.name || 'Your League';
     document.getElementById('league-meta').textContent =
       `${rostersData.length} teams · ${settings.dynasty?'Dynasty':'Redraft'} · ${settings.sf?'Superflex':'1QB'} · ${settings.ppr?'PPR':'Non-PPR'}`;
@@ -538,7 +543,7 @@ async function loadLeague() {
       grid.appendChild(btn);
     });
     showStep('pick-team');
-  } catch(err) { showError(err.message); showStep('setup'); }
+  } catch(err) { showError(err.message); showStep('leagues'); }
 }
 
 // ────────────────────────────────────────────────────────────────────────────
