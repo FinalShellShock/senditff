@@ -314,6 +314,7 @@ let savedLeagues = [];
 let currentUser  = null;
 let selectedModel = 'haiku';
 let allowedModel  = 'haiku';
+let _pickValMap  = {}; // pick label → value, built during generateOffers
 
 // ── Screen management ─────────────────────────────────────────────────────
 function showScreen(name) {
@@ -612,15 +613,57 @@ async function loadLeague(presetId) {
 // ────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ────────────────────────────────────────────────────────────────────────────
+// ── Pick slot helpers ──────────────────────────────────────────────────────
+// Sort teams worst-to-best by record to project draft order (1 = earliest pick)
+function standingsPickSlots() {
+  return [...rostersData]
+    .sort((a, b) => {
+      const wa = a.settings?.wins || 0, wb = b.settings?.wins || 0;
+      if (wa !== wb) return wa - wb;
+      const fa = parseFloat(a.settings?.fpts || 0), fb = parseFloat(b.settings?.fpts || 0);
+      return fa - fb;
+    })
+    .reduce((acc, r, i) => { acc[r.roster_id] = i + 1; return acc; }, {});
+}
+
+// Estimate pick value: tries FantasyCalc tier names first, falls back to hardcoded
+function pickEstValue(year, roundNum, slot) {
+  const n = rostersData.length || 12;
+  const third = Math.ceil(n / 3);
+  if (roundNum === 1) {
+    const tier = slot <= third ? 'early' : slot <= 2 * third ? 'mid' : 'late';
+    return (fcalcValues[normName(`${year} ${tier} 1st`)]
+         || fcalcValues[normName(`${year} 1st`)])?.value
+        || (slot <= third ? 2500 : slot <= 2 * third ? 2000 : 1500);
+  }
+  const labels = ['1st','2nd','3rd','4th'];
+  return fcalcValues[normName(`${year} ${labels[roundNum-1]}`)]?.value
+      || (roundNum === 2 ? 900 : roundNum === 3 ? 450 : 200);
+}
+
+// Lookup pick value from a label string (used in fmtItems for AI-returned pick names)
+function pickValueFromLabel(label) {
+  if (_pickValMap[label]) return _pickValMap[label];
+  // Try parsing "YYYY R.SS" slot notation directly
+  const m = label.match(/(\d{4})\s+(\d)\.(\d{2})/);
+  if (m) return pickEstValue(parseInt(m[1]), parseInt(m[2]), parseInt(m[3]));
+  return null;
+}
+
+// Returns array of { label, value } objects — slot notation e.g. "2026 1.03 (via TeamX)"
 function picksReadable(rosterId) {
+  const slots = standingsPickSlots();
   return Array.from(picksMap[rosterId]||[]).map(key => {
     const [year, round, origRid] = key.split('|');
-    const rdLabel = ['1st','2nd','3rd','4th'][parseInt(round)-1] || round+'th';
-    const origRoster = rostersData.find(r => r.roster_id === parseInt(origRid));
-    const origUser = usersData.find(u => u.user_id === origRoster?.owner_id);
-    const suffix = parseInt(origRid) !== rosterId ? ` (via ${origUser?.display_name||'Other'})` : '';
-    return `${year} ${rdLabel}${suffix}`;
-  }).sort();
+    const roundNum = parseInt(round), origRidInt = parseInt(origRid);
+    const origRoster = rostersData.find(r => r.roster_id === origRidInt);
+    const origUser   = usersData.find(u => u.user_id === origRoster?.owner_id);
+    const viaSuffix  = origRidInt !== rosterId ? ` (via ${origUser?.display_name||'Other'})` : '';
+    const slot = slots[origRidInt] || rostersData.length;
+    const slotStr = `${round}.${String(slot).padStart(2, '0')}`;
+    const value = pickEstValue(parseInt(year), roundNum, slot);
+    return { label: `${year} ${slotStr}${viaSuffix}`, value };
+  }).sort((a, b) => a.label.localeCompare(b.label));
 }
 
 function enrichRoster(roster) {
@@ -744,7 +787,9 @@ async function generateOffers() {
   const myUser   = usersData.find(u=>u.user_id===myRoster.owner_id);
   const myFull   = enrichRoster(myRoster);
   classifyTeam(myRoster, myFull);
-  const myPicks  = picksReadable(myRosterId);
+  _pickValMap = {};
+  const myPicksFull = picksReadable(myRosterId);
+  myPicksFull.forEach(p => { _pickValMap[p.label] = p.value; });
 
   const myRosterSummary = myFull.slice(0,15).map(p=>({
     name:p.name, pos:p.position, value:p.value, age:p.age, primeStatus:primeStatus(p.age,p.position)
@@ -769,6 +814,7 @@ async function generateOffers() {
     const players = enrichRoster(r);
     classifyTeam(r, players);
     const picks = picksReadable(r.roster_id);
+    picks.forEach(p => { _pickValMap[p.label] = p.value; });
     const byPos = {};
     players.forEach(p => { if(!byPos[p.position]) byPos[p.position]=[]; byPos[p.position].push(p); });
     const starters = { QB: settings.sf?2:1, RB:2, WR:2, TE:1 };
@@ -783,7 +829,7 @@ async function generateOffers() {
       record: `${r.settings?.wins||0}-${r.settings?.losses||0}`,
       topPlayers: players.slice(0,10).map(p=>({name:p.name,pos:p.position,value:p.value,age:p.age,primeStatus:primeStatus(p.age,p.position)})),
       posDepth,
-      draftPicks: picks,
+      draftPicks: picks.map(p => `${p.label} (~${p.value})`),
     };
   });
 
@@ -814,7 +860,7 @@ Silently use what you learn. Do not mention this step in your output.
 ---
 LEAGUE: ${settings.dynasty?'Dynasty':'Redraft'} · ${settings.sf?'Superflex':'1QB'} · ${settings.ppr?'PPR':'Non-PPR'}
 MY TEAM (${myUser?.display_name||'My Team'}) — ${myType} — ${myRoster.settings?.wins||0}-${myRoster.settings?.losses||0}
-My picks I own: ${myPicks.length?myPicks.join(', '):'none'}
+My picks I own: ${myPicksFull.length?myPicksFull.map(p=>`${p.label} (~${p.value})`).join(', '):'none'}
 My depth by position: ${JSON.stringify(myPosDepth)}
 My top roster: ${JSON.stringify(myRosterSummary)}
 
@@ -850,7 +896,7 @@ FOR EACH TRADE:
 
    Consolidation premium (+10% to single-player side): ONLY when iSend is exactly one player AND that player is the highest-value individual asset in the entire deal.
 
-   Pick values: 1st early/current ≈ 2000–2800 · 1st late ≈ 1400–2000 · 1st future ≈ 1200–1800 · 2nd ≈ 700–1100 · 3rd ≈ 350–550
+   Each pick's projected slot and value is shown in the draftPicks list (e.g. "2026 1.03 (via TeamX) (~2100)"). Use those values directly — the slot number reflects the pick's projected draft position based on current standings.
    Only use picks the team ACTUALLY OWNS (check their draftPicks list).
 
 2. QUALITY CHECKS — if ANY check fails, SKIP this trade entirely (do not include it in the JSON at all)
@@ -1017,8 +1063,13 @@ function renderResults(offers) {
   const lc = { High:'#22c55e', Medium:'#f59e0b' };
 
   const fmtItems = items => (items||[]).map(item => {
-    const isPick = /\d{4}/.test(item) && /(1st|2nd|3rd|4th)/.test(item);
-    if (isPick) return `<div class="trade-pick">🎟 ${item}</div>`;
+    // Detect slot notation "2026 1.03" OR legacy "2026 1st/2nd" format
+    const isPick = /^\d{4} \d\.\d{2}/.test(item) || (/\d{4}/.test(item) && /(1st|2nd|3rd|4th)/.test(item));
+    if (isPick) {
+      const pv = pickValueFromLabel(item);
+      const pvStr = pv ? `<span class="item-val">${pv.toLocaleString()}</span>` : '';
+      return `<div class="trade-player-row"><span style="color:#a78bfa;font-weight:700">🎟 ${item}</span>${pvStr}</div>`;
+    }
     const val = fcValue(item);
     const valStr = val ? `<span class="item-val">${val.toLocaleString()}</span>` : '';
     return `<div class="trade-player-row">
