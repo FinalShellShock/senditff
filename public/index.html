@@ -822,6 +822,8 @@ PLAYER I WANT TO MOVE: ${JSON.stringify(blockPlayer)}
 
 OTHER TEAMS: ${JSON.stringify(otherTeams)}
 
+⚠️ ROSTER AUTHORITY: The topPlayers and posDepth lists above are the ONLY players on each team. Do not add players from your NFL training data. If a player doesn't appear in a team's topPlayers list, they are NOT on that team — period. Before writing any analysis, verify every player name you mention appears in the data.
+
 ---
 ⚠️ TRADE DIRECTION — READ CAREFULLY. ERRORS HERE BREAK EVERYTHING.
 
@@ -843,21 +845,22 @@ FOR EACH TRADE:
    THEIR COST = FantasyCalc total of iReceive (what they give up)
 
    THEIR COST must be 0.90×–1.25× MY COST.
-   • Above 1.25×: they lose too much → they decline → DISCARD this trade
-   • Below 0.90×: I lose too much → DISCARD this trade
+   • Above 1.25×: they lose too much → they decline → SKIP (do not add to JSON)
+   • Below 0.90×: I lose too much → SKIP (do not add to JSON)
 
    Consolidation premium (+10% to single-player side): ONLY when iSend is exactly one player AND that player is the highest-value individual asset in the entire deal.
 
    Pick values: 1st early/current ≈ 2000–2800 · 1st late ≈ 1400–2000 · 1st future ≈ 1200–1800 · 2nd ≈ 700–1100 · 3rd ≈ 350–550
    Only use picks the team ACTUALLY OWNS (check their draftPicks list).
 
-2. QUALITY CHECKS (ALL must pass — if any fail, discard the trade)
+2. QUALITY CHECKS — if ANY check fails, SKIP this trade entirely (do not include it in the JSON at all)
    ✓ Does iSend fill a REAL positional gap for them? Check their posDepth.
    ✓ Does iReceive fill a REAL positional gap for me? Check my posDepth.
    ✓ Every piece on both sides must be a startable player or high-upside asset. No backups, no handcuffs, no WR5 depth.
    ✓ Team type match: Contender/Win-Now need proven starters now. Rebuilding want youth and picks — not aging veterans.
    ✓ dealRating must be 7 or higher. If you can't reach 7, skip this trade entirely.
    ✓ Only High or Medium likelihood. If it's a stretch, skip it.
+   → Skipped trades are OMITTED from the JSON. Never include a trade with a rejection note or "Discard" in its valueAnalysis.
 
 3. whyTheyAccept — MANDATORY FORMAT
    ✅ Required: "They receive [list the iSend items by name] which addresses their [position] need because [specific reason based on their roster]."
@@ -1003,8 +1006,13 @@ function renderResults(offers) {
   document.getElementById('results-player-name').textContent = selectedPlayer.name;
   const container = document.getElementById('offers-container');
   container.innerHTML = '';
-  // Filter out low-likelihood and low-rated trades
-  offers = (offers||[]).filter(o => o.likelihood !== 'Low' && (o.dealRating == null || o.dealRating >= 7));
+  // Filter out low-likelihood, low-rated, or self-rejected trades
+  offers = (offers||[]).filter(o => {
+    if ((o.likelihood||'').toLowerCase() === 'low') return false;
+    if (o.dealRating != null && o.dealRating < 7) return false;
+    if (o.valueAnalysis && /discard|reject/i.test(o.valueAnalysis)) return false;
+    return true;
+  });
   const vc = { Win:'#22c55e', Neutral:'#f59e0b', 'Slight Loss':'#f87171' };
   const lc = { High:'#22c55e', Medium:'#f59e0b' };
 
