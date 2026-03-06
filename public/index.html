@@ -127,7 +127,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
   import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, updateDoc }
+  import { getFirestore, doc, getDoc, setDoc, updateDoc }
     from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
   // Replace these with your Firebase project config (Firebase Console → Project Settings → General)
@@ -141,7 +141,7 @@
   window._fb = {
     auth: getAuth(app),
     db:   getFirestore(app),
-    signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, doc, getDoc, updateDoc,
+    signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, doc, getDoc, setDoc, updateDoc,
   };
   window.dispatchEvent(new Event('firebaseReady'));
 </script>
@@ -350,7 +350,18 @@ function initAuth() {
       return;
     }
     try {
-      const userSnap = await getDoc(doc(db, 'users', user.email));
+      const userRef = doc(db, 'users', user.email);
+      const userSnap = await getDoc(userRef);
+      // First-time signup: create the doc so we can grant access later
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          email: user.email,
+          displayName: user.displayName || '',
+          subscribed: false,
+          allowedModel: 'haiku',
+          createdAt: new Date().toISOString(),
+        });
+      }
       const userData = userSnap.exists() ? userSnap.data() : null;
       if (!userData?.subscribed) {
         currentUser = user; // keep them signed in so sign-out button works
