@@ -1072,7 +1072,8 @@ function renderResults(offers) {
     if (isPick) {
       const pv = pickValueFromLabel(item);
       const pvStr = pv ? `<span class="item-val">${pv.toLocaleString()}</span>` : '';
-      return `<div class="trade-player-row"><span style="color:#a78bfa;font-weight:700">🎟 ${item}</span>${pvStr}</div>`;
+      const cleanLabel = item.replace(/\s*\(~[\d,]+\)/g, '');
+      return `<div class="trade-player-row"><span style="color:#a78bfa;font-weight:700">🎟 ${cleanLabel}</span>${pvStr}</div>`;
     }
     const val = fcValue(item);
     const valStr = val ? `<span class="item-val">${val.toLocaleString()}</span>` : '';
