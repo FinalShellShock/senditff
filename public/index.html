@@ -892,7 +892,7 @@ Return ONLY valid JSON array, no markdown, no preamble:
         body: JSON.stringify({
           requestedModel: selectedModel,
           anthropicPayload: {
-            max_tokens: 3000,
+            max_tokens: 4096,
             tools,
             messages: loopMessages,
           },
@@ -935,10 +935,18 @@ Return ONLY valid JSON array, no markdown, no preamble:
       break;
     }
 
-    const clean = finalText.replace(/```json[\s\S]*?```/g, m => m.slice(7,-3)).replace(/```/g,'').trim();
+    const clean = finalText.replace(/```json([\s\S]*?)```/g, (_, inner) => inner).replace(/```/g,'').trim();
     const jsonMatch = clean.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error('No JSON array found in response. Raw: ' + clean.slice(0,200));
-    renderResults(JSON.parse(jsonMatch[0]));
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch {
+      // AI sometimes emits literal newlines inside string values; replace them inside strings only
+      const fixed = jsonMatch[0].replace(/"((?:[^"\\]|\\.)*)"/g, (_, s) => '"' + s.replace(/\n/g,'\\n').replace(/\r/g,'\\r') + '"');
+      parsed = JSON.parse(fixed);
+    }
+    renderResults(parsed);
   } catch(e) {
     showError('AI analysis failed: '+e.message);
     showStep('pick-player');
