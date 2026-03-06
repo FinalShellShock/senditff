@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Send It</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0c0f; color: #e2e8f0; font-family: 'Space Mono', monospace; padding: 32px 20px; min-height: 100vh; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #111; }
+  ::-webkit-scrollbar-thumb { background: #f59e0b44; border-radius: 2px; }
+
+  /* ── AUTH SCREENS ─────────────────────────────────────────────────────── */
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 64px); text-align: center; }
+  .auth-eyebrow { font-size: 11px; color: #f59e0b; letter-spacing: 4px; margin-bottom: 8px; }
+  .auth-title { font-family: 'Bebas Neue', sans-serif; font-size: 72px; line-height: 1; color: #fff; letter-spacing: 4px; margin-bottom: 12px; }
+  .auth-tagline { font-size: 14px; color: #64748b; margin-bottom: 48px; }
+  .btn-google { display: flex; align-items: center; gap: 10px; background: #fff; color: #1a1a1a; border: none; border-radius: 8px; padding: 13px 28px; font-weight: 700; font-size: 14px; cursor: pointer; font-family: 'Space Mono', monospace; letter-spacing: 0.5px; transition: all 0.15s; }
+  .btn-google:hover { opacity: 0.9; transform: translateY(-1px); }
+  .auth-error { margin-top: 16px; font-size: 12px; color: #fca5a5; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; padding: 8px 14px; }
+
+  /* ── STATUS BAR ───────────────────────────────────────────────────────── */
+  #status-bar { display: flex; align-items: center; gap: 12px; padding: 10px 0 10px; margin-bottom: 28px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; }
+  #status-brand { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; color: #fff; line-height: 1; }
+  #status-beta { font-size: 9px; color: #f59e0b; border: 1px solid rgba(245,158,11,0.4); border-radius: 3px; padding: 2px 6px; letter-spacing: 1px; }
+  #status-spacer { flex: 1; }
+  #status-user { color: #64748b; font-size: 11px; }
+  .model-select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 5px 10px; color: #e2e8f0; font-family: 'Space Mono', monospace; font-size: 11px; cursor: pointer; outline: none; }
+  .model-select:focus { border-color: rgba(245,158,11,0.4); }
+  .model-select option:disabled { color: #475569; }
+  .btn-status-signout { background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 5px 10px; color: #64748b; font-family: 'Space Mono', monospace; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+  .btn-status-signout:hover { color: #e2e8f0; border-color: rgba(255,255,255,0.25); }
+
+  /* ── EXISTING APP STYLES ──────────────────────────────────────────────── */
+  #app { max-width: 800px; margin: 0 auto; }
+  .header { margin-bottom: 32px; }
+  .header-eyebrow { font-size: 11px; color: #f59e0b; letter-spacing: 4px; margin-bottom: 6px; }
+  .header-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; line-height: 1; color: #fff; letter-spacing: 2px; }
+  .header-sub { font-size: 12px; color: #64748b; margin-top: 6px; }
+  .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; color: #f59e0b; font-weight: 700; letter-spacing: 1px; margin-bottom: 16px; }
+  .error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 20px; font-size: 13px; color: #fca5a5; display: none; }
+  .warn-box { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #fcd34d; display: none; }
+  input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-family: 'Space Mono', monospace; font-size: 14px; outline: none; width: 100%; transition: border-color 0.15s; }
+  input:focus { border-color: #f59e0b55; }
+  input::placeholder { color: #475569; }
+  .label { font-size: 11px; color: #64748b; letter-spacing: 1px; margin-bottom: 6px; margin-top: 14px; }
+  .sublabel { font-size: 11px; color: #475569; margin-top: 4px; }
+  .toggles { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+  .toggle { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #64748b; border-radius: 6px; padding: 6px 14px; font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 1px; transition: all 0.15s; }
+  .toggle.on { background: rgba(245,158,11,0.15); border-color: #f59e0b; color: #f59e0b; }
+  .btn { background: #f59e0b; color: #0a0c0f; border: none; border-radius: 8px; padding: 10px 22px; font-weight: 700; font-size: 14px; cursor: pointer; font-family: 'Space Mono', monospace; letter-spacing: 0.5px; transition: all 0.15s; }
+  .btn:hover { opacity: 0.85; transform: translateY(-1px); }
+  .btn:disabled { background: rgba(255,255,255,0.05); color: #555; cursor: not-allowed; transform: none; opacity: 1; }
+  .btn.secondary { background: transparent; color: #f59e0b; border: 1px solid #f59e0b; }
+  .btn.small { padding: 6px 14px; font-size: 12px; }
+  .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .team-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 14px; text-align: left; cursor: pointer; color: #94a3b8; font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; transition: all 0.15s; }
+  .team-btn:hover { border-color: rgba(245,158,11,0.3); }
+  .team-btn.selected { background: rgba(245,158,11,0.15); border-color: #f59e0b; color: #f59e0b; }
+  .team-btn .sub { font-size: 10px; color: #475569; font-weight: 400; margin-top: 2px; }
+  .player-list { max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+  .player-btn { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-family: 'Space Mono', monospace; transition: all 0.12s; width: 100%; text-align: left; }
+  .player-btn:hover { border-color: rgba(245,158,11,0.2); }
+  .player-btn.selected { background: rgba(245,158,11,0.12); border-color: #f59e0b; }
+  .player-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .player-name { color: #e2e8f0; font-size: 13px; font-weight: 700; }
+  .player-btn.selected .player-name { color: #f59e0b; }
+  .player-age { color: #475569; font-size: 10px; }
+  .player-value { font-family: monospace; font-size: 12px; color: #22c55e; white-space: nowrap; }
+  .player-value.no-val { color: #475569; }
+  .pos-tag { color: #fff; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; font-family: monospace; letter-spacing: 1px; }
+  .selected-bar { margin-top: 16px; padding: 12px 14px; background: rgba(245,158,11,0.08); border-radius: 8px; border: 1px solid rgba(245,158,11,0.2); display: flex; justify-content: space-between; align-items: center; }
+  .selected-bar .eyebrow { font-size: 11px; color: #f59e0b; letter-spacing: 1px; }
+  .selected-bar .name { font-weight: 700; font-size: 14px; }
+  .loading-box { text-align: center; padding: 48px; }
+  .loading-emoji { font-size: 32px; margin-bottom: 16px; }
+  .loading-title { color: #f59e0b; font-weight: 700; font-size: 14px; }
+  .loading-sub { color: #475569; font-size: 12px; margin-top: 8px; }
+  .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .results-eyebrow { font-size: 11px; color: #f59e0b; letter-spacing: 3px; }
+  .results-player { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; }
+  .offer-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; margin-bottom: 16px; position: relative; overflow: hidden; }
+  .offer-accent { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .offer-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; gap: 12px; }
+  .offer-num { font-size: 11px; color: #64748b; letter-spacing: 2px; }
+  .offer-team { font-weight: 700; font-size: 18px; color: #fff; }
+  .offer-why { font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.6; }
+  .offer-verdict { font-weight: 700; font-size: 13px; text-align: right; white-space: nowrap; }
+  .offer-rating { color: #475569; font-size: 11px; text-align: right; }
+  .trade-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: start; }
+  .trade-send { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.15); border-radius: 8px; padding: 12px; }
+  .trade-receive { background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.15); border-radius: 8px; padding: 12px; }
+  .trade-label { font-size: 10px; letter-spacing: 2px; margin-bottom: 8px; }
+  .trade-player { color: #e2e8f0; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .trade-pick { color: #a78bfa; font-size: 12px; margin-bottom: 4px; }
+  .trade-arrow { font-size: 22px; color: #475569; padding-top: 28px; text-align: center; }
+  .note-box { margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 12px; line-height: 1.6; }
+  .regen-row { margin-top: 20px; text-align: center; }
+  .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .trade-player-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; gap:8px; }
+  .trade-player { color: #e2e8f0; font-size:13px; font-weight:700; text-decoration:none; }
+  .trade-player:hover { color:#f59e0b; text-decoration:underline; }
+  .item-val { font-family:monospace; font-size:11px; color:#64748b; white-space:nowrap; }
+  .calc-row { display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap; }
+  .calc-label { font-size:11px; color:#475569; letter-spacing:1px; }
+  .calc-link { font-size:11px; color:#a78bfa; text-decoration:none; padding:3px 8px; border:1px solid rgba(167,139,250,0.3); border-radius:4px; }
+  .calc-link:hover { background:rgba(167,139,250,0.1); }
+  .calc-copy { font-size:11px; color:#64748b; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:4px; padding:3px 8px; cursor:pointer; font-family:'Space Mono',monospace; }
+  .calc-copy:hover { color:#e2e8f0; }
+  .hidden { display: none !important; }
+</style>
+
+<!-- Firebase Auth SDK (module, deferred automatically) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc }
+    from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+  // Replace these with your Firebase project config (Firebase Console → Project Settings → General)
+  const firebaseConfig = {
+    apiKey:      "PASTE_YOUR_FIREBASE_API_KEY_HERE",
+    authDomain:  "PASTE_YOUR_FIREBASE_AUTH_DOMAIN_HERE",
+    projectId:   "PASTE_YOUR_FIREBASE_PROJECT_ID_HERE",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  window._fb = {
+    auth: getAuth(app),
+    db:   getFirestore(app),
+    signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, doc, getDoc,
+  };
+  window.dispatchEvent(new Event('firebaseReady'));
+</script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- SIGN-IN SCREEN                                                         -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="screen-auth" class="auth-screen">
+  <div class="auth-eyebrow">DYNASTY FANTASY FOOTBALL</div>
+  <div class="auth-title">SEND IT</div>
+  <div class="auth-tagline">Dynasty trade analysis. Don't get fleeced.</div>
+  <button id="btn-google-signin" class="btn-google">
+    <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908C16.658 14.251 17.64 11.944 17.64 9.2z" fill="#4285F4"/>
+      <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+      <path d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/>
+      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+    </svg>
+    Sign in with Google
+  </button>
+  <div id="auth-error" class="auth-error hidden"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- ACCESS DENIED SCREEN                                                   -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="screen-denied" class="auth-screen hidden">
+  <div class="auth-eyebrow">DYNASTY FANTASY FOOTBALL</div>
+  <div class="auth-title">SEND IT</div>
+  <div style="color:#94a3b8;font-size:14px;margin-bottom:24px">You don't have beta access yet.</div>
+  <a href="#" id="btn-denied-signout" style="color:#f59e0b;font-size:13px;font-family:'Space Mono',monospace;text-decoration:none">Sign out</a>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- MAIN APP                                                               -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="app" class="hidden">
+
+  <!-- STATUS BAR -->
+  <div id="status-bar">
+    <span id="status-brand">SEND IT</span>
+    <span id="status-beta">BETA</span>
+    <span id="status-spacer"></span>
+    <span id="status-user"></span>
+    <select id="model-select" class="model-select">
+      <option value="haiku">Haiku</option>
+      <option value="sonnet" id="opt-sonnet">Sonnet</option>
+    </select>
+    <button id="btn-signout" class="btn-status-signout">Sign out</button>
+  </div>
+
+  <div class="header">
+    <div class="header-eyebrow">DYNASTY FANTASY FOOTBALL</div>
+    <div class="header-title">SEND IT</div>
+    <div class="header-sub">Put a player on the block → get real offers based on league rosters &amp; contention windows</div>
+  </div>
+
+  <div id="error-box" class="error-box"></div>
+  <div id="warn-box" class="warn-box"></div>
+
+  <!-- SETUP -->
+  <div id="step-setup" class="card">
+    <div class="card-title">LEAGUE SETUP</div>
+    <div class="label">SLEEPER LEAGUE ID</div>
+    <input type="text" id="league-id" placeholder="e.g. 1234567890123456789" />
+    <div class="sublabel">Sleeper app → League → Settings → scroll to League ID</div>
+    <div class="toggles">
+      <button class="toggle on" id="tog-dynasty" onclick="toggleSetting('dynasty')">Dynasty: ON</button>
+      <button class="toggle" id="tog-sf" onclick="toggleSetting('sf')">Superflex: OFF</button>
+      <button class="toggle on" id="tog-ppr" onclick="toggleSetting('ppr')">PPR: ON</button>
+    </div>
+    <button class="btn" onclick="loadLeague()">LOAD LEAGUE →</button>
+  </div>
+
+  <!-- LOADING -->
+  <div id="step-loading" class="card hidden">
+    <div class="loading-box">
+      <div class="loading-emoji">⚡</div>
+      <div class="loading-title" id="load-status">Loading...</div>
+      <div class="loading-sub">Pulling Sleeper rosters, picks, and FantasyCalc values...</div>
+    </div>
+  </div>
+
+  <!-- PICK TEAM -->
+  <div id="step-pick-team" class="card hidden">
+    <div class="header-row">
+      <div>
+        <div class="card-title" id="league-name" style="margin-bottom:2px;font-size:15px"></div>
+        <div style="font-size:11px;color:#475569" id="league-meta"></div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#94a3b8;margin:14px 0 10px">Which team is yours?</div>
+    <div class="team-grid" id="team-grid"></div>
+    <div style="margin-top:20px">
+      <button class="btn" id="btn-to-player" disabled onclick="showStep('pick-player')">SELECT MY PLAYER →</button>
+    </div>
+  </div>
+
+  <!-- PICK PLAYER -->
+  <div id="step-pick-player" class="hidden">
+    <div class="card">
+      <div class="header-row">
+        <div>
+          <div class="card-title" style="margin-bottom:2px">PUT ON THE BLOCK</div>
+          <div style="font-size:11px;color:#475569">Select the player you want to trade away</div>
+        </div>
+        <button class="btn secondary small" onclick="showStep('pick-team')">← BACK</button>
+      </div>
+      <input type="text" id="player-search" placeholder="Search players..." oninput="renderPlayers()" />
+      <div class="player-list" id="player-list"></div>
+      <div id="selected-bar" class="selected-bar hidden">
+        <div>
+          <div class="eyebrow">ON THE BLOCK</div>
+          <div class="name" id="selected-name"></div>
+        </div>
+        <button class="btn" onclick="generateOffers()">FIND OFFERS →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GENERATING -->
+  <div id="step-generating" class="card hidden">
+    <div class="loading-box">
+      <div class="loading-emoji">🤖</div>
+      <div class="loading-title">ANALYZING LEAGUE ROSTERS</div>
+      <div class="loading-sub">Evaluating contention windows, age curves, positional needs, and pick capital...</div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="step-results" class="hidden">
+    <div class="results-header">
+      <div>
+        <div class="results-eyebrow">TRADE OFFERS FOR</div>
+        <div class="results-player" id="results-player-name"></div>
+      </div>
+      <button class="btn secondary small" onclick="resetToPlayer()">TRY ANOTHER</button>
+    </div>
+    <div id="offers-container"></div>
+    <div class="regen-row">
+      <button class="btn secondary" onclick="generateOffers()">⟳ REGENERATE OFFERS</button>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<script>
+const SLEEPER = 'https://api.sleeper.app/v1';
+const FCALC   = 'https://api.fantasycalc.com/values/current';
+const POS_COLORS = { QB:'#f97316', RB:'#22c55e', WR:'#3b82f6', TE:'#a855f7' };
+// Age windows where each position is in prime fantasy production
+const POS_PRIME = { QB:[25,35], RB:[22,26], WR:[24,30], TE:[25,30] };
+
+const settings = { dynasty:true, sf:false, ppr:true };
+let leagueData={}, usersData=[], rostersData=[], sleeperPlayers={}, fcalcValues={}, picksMap={};
+let myRosterId=null, selectedPlayer=null, myPlayers=[];
+
+// ── Auth state ────────────────────────────────────────────────────────────
+let currentUser  = null;
+let selectedModel = 'haiku';
+let allowedModel  = 'haiku';
+
+// ── Screen management ─────────────────────────────────────────────────────
+function showScreen(name) {
+  document.getElementById('screen-auth').classList.toggle('hidden', name !== 'auth');
+  document.getElementById('screen-denied').classList.toggle('hidden', name !== 'denied');
+  document.getElementById('app').classList.toggle('hidden', name !== 'app');
+}
+
+function updateStatusBar(user) {
+  document.getElementById('status-user').textContent = '👤 ' + (user.displayName || user.email);
+  const sonnetOpt = document.getElementById('opt-sonnet');
+  if (allowedModel !== 'sonnet') {
+    sonnetOpt.disabled = true;
+    sonnetOpt.textContent = 'Sonnet';
+    sonnetOpt.title = 'Not available for your account.';
+  }
+  document.getElementById('model-select').value = 'haiku';
+}
+
+// ── Firebase auth init ────────────────────────────────────────────────────
+function initAuth() {
+  const { auth, db, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, doc, getDoc } = window._fb;
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      currentUser = null;
+      showScreen('auth');
+      return;
+    }
+    try {
+      const allowlistSnap = await getDoc(doc(db, 'allowlist', user.email));
+      if (!allowlistSnap.exists()) {
+        await signOut(auth);
+        showScreen('denied');
+        return;
+      }
+      const userSnap = await getDoc(doc(db, 'users', user.email));
+      allowedModel = userSnap.exists() ? (userSnap.data()?.allowedModel || 'haiku') : 'haiku';
+      currentUser = user;
+      updateStatusBar(user);
+      showScreen('app');
+    } catch {
+      await signOut(auth);
+      showScreen('auth');
+    }
+  });
+
+  document.getElementById('btn-google-signin').onclick = () => {
+    const errEl = document.getElementById('auth-error');
+    errEl.classList.add('hidden');
+    signInWithPopup(auth, new GoogleAuthProvider()).catch(() => {
+      errEl.textContent = 'Sign-in failed. Please try again.';
+      errEl.classList.remove('hidden');
+    });
+  };
+
+  document.getElementById('btn-signout').onclick = () => signOut(auth);
+
+  document.getElementById('btn-denied-signout').onclick = e => {
+    e.preventDefault();
+    showScreen('auth');
+    signOut(auth);
+  };
+
+  document.getElementById('model-select').onchange = function() {
+    selectedModel = this.value;
+  };
+}
+
+// Handle both orderings: module already done vs still loading
+if (window._fb) initAuth();
+else window.addEventListener('firebaseReady', initAuth, { once: true });
+
+// ────────────────────────────────────────────────────────────────────────────
+// EXISTING HELPERS
+// ────────────────────────────────────────────────────────────────────────────
+const normName = n => (n||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/jr$|sr$|ii$|iii$/,'').trim();
+
+const ktcSlug = n => (n||'').toLowerCase()
+  .replace(/'/g,'').replace(/[^a-z0-9\s]/g,'').trim()
+  .replace(/\s+/g,'-')
+  .replace(/-(jr|sr|ii|iii|iv)$/,'');
+const ktcURL  = n => `https://keeptradecut.com/dynasty/players/view/${ktcSlug(n)}`;
+const fcValue = n => { const v = fcalcValues[normName(n)]; return v ? v.value : null; };
+
+function toggleSetting(key) {
+  settings[key] = !settings[key];
+  const labels = {dynasty:'Dynasty',sf:'Superflex',ppr:'PPR'};
+  const el = document.getElementById('tog-'+key);
+  el.textContent = labels[key]+': '+(settings[key]?'ON':'OFF');
+  el.classList.toggle('on', settings[key]);
+}
+function showError(msg) { const e=document.getElementById('error-box'); e.textContent=msg; e.style.display=msg?'block':'none'; }
+function showWarn(msg)  { const e=document.getElementById('warn-box');  e.textContent=msg; e.style.display=msg?'block':'none'; }
+function setStatus(msg) { document.getElementById('load-status').textContent=msg; }
+
+const ALL_STEPS = ['setup','loading','pick-team','pick-player','generating','results'];
+function showStep(name) {
+  ALL_STEPS.forEach(s => {
+    const el = document.getElementById('step-'+s);
+    if (el) el.classList.toggle('hidden', s!==name);
+  });
+}
+function resetToPlayer() {
+  document.getElementById('step-results').classList.add('hidden');
+  showStep('pick-player');
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// LOAD LEAGUE
+// ────────────────────────────────────────────────────────────────────────────
+async function loadLeague() {
+  const lid = document.getElementById('league-id').value.trim();
+  if (!lid) { showError('Please enter your Sleeper League ID.'); return; }
+  showError(''); showWarn('');
+  showStep('loading');
+
+  try {
+    setStatus('Step 1/4 — Fetching league, rosters & traded picks...');
+    let lR, uR, rR, pR;
+    try {
+      [lR, uR, rR, pR] = await Promise.all([
+        fetch(`${SLEEPER}/league/${lid}`),
+        fetch(`${SLEEPER}/league/${lid}/users`),
+        fetch(`${SLEEPER}/league/${lid}/rosters`),
+        fetch(`${SLEEPER}/league/${lid}/traded_picks`),
+      ]);
+    } catch(e) { throw new Error('Step 1 failed — could not reach Sleeper API. ('+e.message+')'); }
+
+    if (!lR.ok) throw new Error('Step 1 failed — League not found (HTTP '+lR.status+'). Check your League ID.');
+    leagueData = await lR.json();
+    usersData  = await uR.json();
+    rostersData= await rR.json();
+    const tradedPicks = pR.ok ? await pR.json() : [];
+
+    // ── Build pick ownership ──────────────────────────────────────────────
+    const now = new Date().getFullYear();
+    const years = [now, now+1, now+2];
+    picksMap = {};
+    rostersData.forEach(r => {
+      picksMap[r.roster_id] = new Set();
+      years.forEach(y => [1,2,3,4].forEach(rd => picksMap[r.roster_id].add(`${y}|${rd}|${r.roster_id}`)));
+    });
+    (tradedPicks||[]).forEach(pk => {
+      const y = parseInt(pk.season);
+      if (!years.includes(y)) return;
+      const origKey = `${y}|${pk.round}|${pk.roster_id}`;
+      Object.values(picksMap).forEach(s => s.delete(origKey));
+      const currRoster = rostersData.find(r => r.owner_id === pk.owner_id);
+      if (currRoster) picksMap[currRoster.roster_id].add(origKey);
+    });
+
+    setStatus('Step 2/4 — Fetching player database (~10MB)...');
+    try {
+      const r = await fetch(`${SLEEPER}/players/nfl`);
+      if (!r.ok) throw new Error('HTTP '+r.status);
+      sleeperPlayers = await r.json();
+    } catch(e) { throw new Error('Step 2 failed — could not load player DB. ('+e.message+')'); }
+
+    setStatus('Step 3/4 — Fetching FantasyCalc dynasty values...');
+    fcalcValues = {};
+    try {
+      const r = await fetch(`${FCALC}?isDynasty=${settings.dynasty}&numQbs=${settings.sf?2:1}&ppr=${settings.ppr?1:0}`);
+      if (!r.ok) throw new Error('HTTP '+r.status);
+      const d = await r.json();
+      d.forEach(e => { const k=normName(e.player?.name); if(k) fcalcValues[k]={value:e.value,age:e.player?.age}; });
+    } catch(e) { showWarn('⚠️ FantasyCalc unavailable ('+e.message+') — AI will analyze without trade values.'); }
+
+    setStatus('Step 4/4 — Building team grid...');
+    document.getElementById('league-name').textContent = leagueData.name || 'Your League';
+    document.getElementById('league-meta').textContent =
+      `${rostersData.length} teams · ${settings.dynasty?'Dynasty':'Redraft'} · ${settings.sf?'Superflex':'1QB'} · ${settings.ppr?'PPR':'Non-PPR'}`;
+
+    const grid = document.getElementById('team-grid');
+    grid.innerHTML = '';
+    rostersData.forEach(r => {
+      const user = usersData.find(u => u.user_id === r.owner_id);
+      const picks = picksReadable(r.roster_id);
+      const btn = document.createElement('button');
+      btn.className = 'team-btn';
+      const rec = `${r.settings?.wins||0}-${r.settings?.losses||0}`;
+      btn.innerHTML = `${user?.display_name||'Team '+r.roster_id}<div class="sub">${(r.players||[]).length} players · ${picks.length} picks · ${rec}</div>`;
+      btn.onclick = () => {
+        document.querySelectorAll('.team-btn').forEach(b=>b.classList.remove('selected'));
+        btn.classList.add('selected');
+        myRosterId = r.roster_id;
+        document.getElementById('btn-to-player').disabled = false;
+        buildMyPlayers();
+      };
+      grid.appendChild(btn);
+    });
+    showStep('pick-team');
+  } catch(err) { showError(err.message); showStep('setup'); }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ────────────────────────────────────────────────────────────────────────────
+function picksReadable(rosterId) {
+  return Array.from(picksMap[rosterId]||[]).map(key => {
+    const [year, round, origRid] = key.split('|');
+    const rdLabel = ['1st','2nd','3rd','4th'][parseInt(round)-1] || round+'th';
+    const origRoster = rostersData.find(r => r.roster_id === parseInt(origRid));
+    const origUser = usersData.find(u => u.user_id === origRoster?.owner_id);
+    const suffix = parseInt(origRid) !== rosterId ? ` (via ${origUser?.display_name||'Other'})` : '';
+    return `${year} ${rdLabel}${suffix}`;
+  }).sort();
+}
+
+function enrichRoster(roster) {
+  return (roster.players||[]).map(id => {
+    const p = sleeperPlayers[id];
+    if (!p) return null;
+    const fc = fcalcValues[normName(p.full_name)]||{};
+    return { id, name:p.full_name, position:p.position, team:p.team, age:p.age||fc.age, value:fc.value||0 };
+  }).filter(p => p && ['QB','RB','WR','TE'].includes(p.position)).sort((a,b)=>b.value-a.value);
+}
+
+function primeStatus(age, pos) {
+  if (!age || !POS_PRIME[pos]) return 'unknown';
+  const [lo,hi] = POS_PRIME[pos];
+  return age < lo ? 'pre-prime' : age <= hi ? 'prime' : 'post-prime';
+}
+
+function classifyTeam(roster, players) {
+  const starters = { QB: settings.sf?2:1, RB:2, WR:settings.sf?3:2, TE:1 };
+
+  function starterValue(ps) {
+    let total = 0;
+    Object.entries(starters).forEach(([pos, n]) => {
+      const posPlayers = ps.filter(p=>p.position===pos).sort((a,b)=>b.value-a.value);
+      posPlayers.slice(0,n).forEach(p => total += p.value);
+    });
+    return total;
+  }
+
+  function starterAge(ps) {
+    const ages = [];
+    Object.entries(starters).forEach(([pos, n]) => {
+      ps.filter(p=>p.position===pos).sort((a,b)=>b.value-a.value)
+        .slice(0,n).forEach(p => { if(p.age) ages.push(p.age); });
+    });
+    return ages.length ? ages.reduce((a,b)=>a+b,0)/ages.length : 26;
+  }
+
+  roster._starterValue = starterValue(players);
+  roster._starterAge   = starterAge(players);
+  roster._pickCount    = (picksMap[roster.roster_id]||new Set()).size;
+  return '_pending_';
+}
+
+function finalizeTeamTypes() {
+  const scored = rostersData.map(r => ({
+    id: r.roster_id,
+    sv: r._starterValue || 0,
+    age: r._starterAge || 26,
+    picks: r._pickCount || 0,
+  }));
+
+  const values = scored.map(s=>s.sv).sort((a,b)=>a-b);
+  const median = values[Math.floor(values.length/2)] || 1;
+  const p75    = values[Math.floor(values.length*0.75)] || 1;
+  const p25    = values[Math.floor(values.length*0.25)] || 1;
+
+  const types = {};
+  scored.forEach(s => {
+    const isYoung  = s.age < 26.5;
+    const isOld    = s.age > 28.5;
+    const hasPicks = s.picks >= 6;
+
+    if (s.sv >= p75) {
+      types[s.id] = isYoung ? 'Juggernaut' : isOld ? 'Win-Now' : 'Contender';
+    } else if (s.sv >= median) {
+      types[s.id] = isYoung ? 'Rising'     : isOld ? 'Fading'  : 'Contender';
+    } else if (s.sv >= p25) {
+      types[s.id] = hasPicks ? 'Rebuilding' : isYoung ? 'Developing' : 'Wildcard';
+    } else {
+      types[s.id] = hasPicks ? 'Full Rebuild' : 'Declining';
+    }
+  });
+  return types;
+}
+
+function buildMyPlayers() {
+  const r = rostersData.find(r=>r.roster_id===myRosterId);
+  myPlayers = enrichRoster(r);
+  renderPlayers();
+}
+
+function renderPlayers() {
+  const search = document.getElementById('player-search').value.toLowerCase();
+  const list = document.getElementById('player-list');
+  const filtered = myPlayers.filter(p => !search || p.name.toLowerCase().includes(search));
+  list.innerHTML = '';
+  filtered.forEach(p => {
+    const btn = document.createElement('button');
+    const isSel = selectedPlayer?.id === p.id;
+    btn.className = 'player-btn' + (isSel?' selected':'');
+    const ps = primeStatus(p.age, p.position);
+    const psIcon = ps==='pre-prime'?'📈':ps==='prime'?'✅':ps==='post-prime'?'📉':'';
+    btn.innerHTML = `
+      <div class="player-left">
+        <span class="pos-tag" style="background:${POS_COLORS[p.position]||'#6b7280'}">${p.position}</span>
+        <span class="player-name">${p.name}</span>
+        ${p.age?`<span class="player-age">Age ${p.age} ${psIcon}</span>`:''}
+      </div>
+      <span class="${p.value>0?'player-value':'player-value no-val'}">${p.value>0?p.value.toLocaleString():'—'}</span>`;
+    btn.onclick = () => {
+      selectedPlayer = p;
+      renderPlayers();
+      document.getElementById('selected-name').textContent = p.name;
+      document.getElementById('selected-bar').classList.remove('hidden');
+    };
+    list.appendChild(btn);
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// GENERATE OFFERS — calls /api/analyze proxy
+// ────────────────────────────────────────────────────────────────────────────
+async function generateOffers() {
+  if (!selectedPlayer) return;
+  showStep('generating');
+  showError(''); showWarn('');
+
+  const myRoster = rostersData.find(r=>r.roster_id===myRosterId);
+  const myUser   = usersData.find(u=>u.user_id===myRoster.owner_id);
+  const myFull   = enrichRoster(myRoster);
+  classifyTeam(myRoster, myFull);
+  const myPicks  = picksReadable(myRosterId);
+
+  const myRosterSummary = myFull.slice(0,15).map(p=>({
+    name:p.name, pos:p.position, value:p.value, age:p.age, primeStatus:primeStatus(p.age,p.position)
+  }));
+
+  const myByPos = {};
+  myFull.forEach(p => { if(!myByPos[p.position]) myByPos[p.position]=[]; myByPos[p.position].push(p); });
+  const myStarterCounts = { QB: settings.sf?2:1, RB:2, WR:settings.sf?3:2, TE:1 };
+  const myPosDepth = Object.entries(myByPos).map(([pos,ps]) => {
+    const n = myStarterCounts[pos]||1;
+    return {
+      pos,
+      starters: ps.slice(0,n).map(p=>({name:p.name, value:p.value, age:p.age, primeStatus:primeStatus(p.age,p.position)})),
+      depth: ps.slice(n, n+3).map(p=>({name:p.name, value:p.value, age:p.age})),
+      total: ps.length,
+      starterTotalValue: ps.slice(0,n).reduce((s,p)=>s+p.value,0),
+    };
+  });
+
+  const otherTeams = rostersData.filter(r=>r.roster_id!==myRosterId).map(r => {
+    const user = usersData.find(u=>u.user_id===r.owner_id);
+    const players = enrichRoster(r);
+    classifyTeam(r, players);
+    const picks = picksReadable(r.roster_id);
+    const byPos = {};
+    players.forEach(p => { if(!byPos[p.position]) byPos[p.position]=[]; byPos[p.position].push(p); });
+    const starters = { QB: settings.sf?2:1, RB:2, WR:2, TE:1 };
+    const posDepth = Object.entries(byPos).map(([pos,ps]) => ({
+      pos,
+      starters: ps.slice(0,starters[pos]||1).map(p=>({name:p.name,value:p.value,age:p.age})),
+      depth: ps.slice(starters[pos]||1, (starters[pos]||1)+3).map(p=>({name:p.name,value:p.value,age:p.age})),
+    }));
+    return {
+      teamName: user?.display_name||'Team '+r.roster_id,
+      teamType: "_pending_",
+      record: `${r.settings?.wins||0}-${r.settings?.losses||0}`,
+      topPlayers: players.slice(0,10).map(p=>({name:p.name,pos:p.position,value:p.value,age:p.age,primeStatus:primeStatus(p.age,p.position)})),
+      posDepth,
+      draftPicks: picks,
+    };
+  });
+
+  const teamTypeMap = finalizeTeamTypes();
+  const myType = teamTypeMap[myRosterId] || 'Unknown';
+  otherTeams.forEach(ot => {
+    const r = rostersData.find(r => {
+      const u = usersData.find(u=>u.user_id===r.owner_id);
+      return (u?.display_name||'Team '+r.roster_id) === ot.teamName;
+    });
+    if (r) ot.teamType = teamTypeMap[r.roster_id] || 'Unknown';
+  });
+
+  const blockPlayer = {
+    name: selectedPlayer.name,
+    position: selectedPlayer.position,
+    age: selectedPlayer.age,
+    value: selectedPlayer.value,
+    primeStatus: primeStatus(selectedPlayer.age, selectedPlayer.position),
+  };
+
+  const prompt = `You are an expert dynasty fantasy football trade analyst. You think like the best managers in the community, not a trade calculator.
+
+STEP 0 — SEARCH REDDIT FIRST (REQUIRED)
+Before generating any trade offers, use the web_search tool to find real community sentiment on the player being traded.
+Search query: "site:reddit.com/r/dynastyfftradeadvice ${selectedPlayer.name} trade"
+Also try: "site:reddit.com/r/DynastyNerds ${selectedPlayer.name} trade value 2025"
+
+Extract from the results:
+- What is the community's current perception of this player's value?
+- Is this player trending up, down, or stable?
+- What do people typically expect in return for this player?
+- Any concerns about age, injury, situation, usage?
+
+Use this real-world intelligence to make your trade offers more accurate and grounded.
+If search returns nothing useful, proceed without it.
+
+
+STEP 0 — SEARCH REDDIT FIRST (REQUIRED)
+Before generating any trade offers, use the web_search tool to find real community sentiment on the player being traded.
+Search query: "site:reddit.com/r/dynastyfftradeadvice ${selectedPlayer.name} trade"
+Also try: "site:reddit.com/r/DynastyNerds ${selectedPlayer.name} trade value 2025"
+
+Extract from the results:
+- What is the community's current perception of this player's value?
+- Is this player trending up, down, or stable?
+- What do people typically expect in return for this player?
+- Any concerns about age, injury, situation, usage?
+
+Use this real-world intelligence to make your trade offers more accurate and grounded.
+If search returns nothing useful, proceed without it.
+
+LEAGUE FORMAT:
+
+LEAGUE FORMAT: ${settings.dynasty?'Dynasty':'Redraft'} - ${settings.sf?'Superflex':'1QB'} - ${settings.ppr?'PPR':'Non-PPR'}
+
+MY TEAM: "${myUser?.display_name||'My Team'}" - Status: ${myType} - Record: ${myRoster.settings?.wins||0}-${myRoster.settings?.losses||0}
+My draft picks I own: ${myPicks.length?myPicks.join(', '):'none'}
+My positional depth (CRITICAL - check this before suggesting any return pieces for me):
+${JSON.stringify(myPosDepth,null,2)}
+My full roster (top 15):
+${JSON.stringify(myRosterSummary,null,2)}
+
+PLAYER I WANT TO MOVE:
+${JSON.stringify(blockPlayer,null,2)}
+
+OTHER TEAMS:
+${JSON.stringify(otherTeams,null,2)}
+
+=== MANDATORY STEP 1: SIMULATE POST-TRADE ROSTERS ===
+For every offer you consider, mentally finalize who has what AFTER the trade:
+- MY ROSTER: remove iSend, add iReceive
+- THEIR ROSTER: remove iReceive, add iSend
+A player in iReceive is GONE from their team the moment the trade executes. Never describe them keeping or benefiting from a player they are trading away. Catch yourself and rewrite if you do.
+
+=== STEP 2: TEAM CLASSIFICATION ===
+Each team has a teamType based on their actual win/loss record and roster. Use this to drive every decision:
+- Juggernaut/Contender/Win-Now: open window, need starters who contribute THIS season, will pay consolidation premium
+- Rising/Wildcard: could go either way, need to clarify via their actual roster situation
+- Rebuilding/Declining: closed window, want youth and picks, DO NOT want aging veterans or backup-tier players
+
+=== STEP 3: TRADE QUALITY STANDARDS ===
+The dynasty community judges trades harshly. A good trade MUST:
+
+1. BOTH SIDES MUST CLEARLY IMPROVE
+   - "A bunch of nickels and dimes don't equal a dollar" - quantity never beats quality
+   - Never suggest a trade where one side receives depth pieces and backups for a starter
+   - If you can't articulate a clear, specific improvement for BOTH rosters after the trade, do not propose it
+   - A depth WR + backup QB for a starting RB is always a bad trade. Don't suggest it.
+
+2. NEVER GIVE UP THE BEST PLAYER UNLESS IT'S AN OBVIOUS WIN
+   - If the single player being sent is clearly the best player in the deal, the receiver of 2+ must be getting 1.12x or more in total value
+   - Contenders pay a premium to consolidate. Rebuilders accumulate youth and picks.
+
+3. ALL RECEIVED PIECES MUST BE STARTABLE OR HIGH-UPSIDE
+   - Every player in a trade package needs a clear role on the receiving roster
+   - "WR4/5 depth" pieces, "developmental" QBs, and "handcuffs" are not real trade pieces for a starter
+   - Ask: if I received this package, would it genuinely start on my team or be immediately tradeable for real value?
+
+4. POSITIONAL NEED MUST BE REAL
+   - Check posDepth carefully. The receiving team must have an actual gap in their lineup, not just "thinner depth"
+   - A team with 2 strong starters at a position does not need a third
+
+5. CONTENTION WINDOW ALIGNMENT
+   - RBs cliff after age 27 - rebuilders do not want proven 27+ RBs
+   - WRs hold value into early 30s - safer for any team type
+   - QBs hold value into mid-30s especially Superflex
+   - A contender trading away a QB backup is not "giving up depth" - they need that depth
+
+=== STEP 4: VALUE MATH WITH CONSOLIDATION PREMIUM ===
+Elite singular assets command a 10-15% premium over the sum of pieces received:
+- 1-for-2 fair threshold: single player value x 1.12 must be <= sum of 2 received
+- 2-for-3 fair threshold: sum of 2 sent x 1.10 must be <= sum of 3 received
+
+Draft pick approximate values:
+- Current/next year 1st (early): 2000-2800
+- Current/next year 1st (late): 1400-2000
+- Year+2 1st: 1200-1800
+- 2nd round: 700-1100
+- 3rd round: 350-550
+
+Always show math in valueAnalysis: "Sending [val] (x1.12 = [threshold] needed). Receiving [A]([v]) + [B]([v]) = [sum]. [result]."
+
+=== QUALITY GATE ===
+Before finalizing each offer, ask:
+- Can I clearly explain how BOTH teams improve? If no, discard and find a better offer.
+- CHECK MY POSITIONAL DEPTH FIRST: Look at myPosDepth above. If a position I would receive already has 2+ strong starters, do NOT include that position in my return. Example: if I have 3 TEs with value > 2000, never propose a trade where I receive another TE.
+- Are all received pieces startable or genuinely valuable? If not, discard.
+- Is the value math at least neutral after applying the consolidation premium? If not, mark as Slight Loss.
+- Does the receiving team have a REAL positional need based on their actual posDepth? If not, discard.
+
+Only generate offers with dealRating 6 or higher. If you cannot find 3 such offers, generate fewer. Never pad with bad trades just to hit 3.
+
+=== PACKAGE RULES ===
+- Exactly +1 player: 1-for-2 OR 2-for-3
+- Picks can be included - only use picks that team ACTUALLY owns (from their draftPicks list)
+- I can include one of my own picks to sweeten a deal if needed
+
+Return ONLY valid JSON array, no markdown, no preamble:
+[{
+  "teamName": "...",
+  "teamType": "...",
+  "whyTheyNeed": "2-3 sentences: why this specific team needs my player given their POST-trade roster and contention window - be specific about their actual gap",
+  "whyTheyAccept": "1-2 sentences: what they gain AFTER giving up these specific players - do NOT reference players they just traded away",
+  "iSend": ["exact names"],
+  "iReceive": ["exact names"],
+  "valueAnalysis": "Sending [val] (x1.12 = [threshold]). Receiving [piece]([val]) + [piece]([val]) = [total]. [Win/Neutral/Slight Loss].",
+  "myRosterImpact": "specific improvement to MY team's starting lineup or future after losing iSend",
+  "verdict": "Win" or "Neutral" or "Slight Loss",
+  "dealRating": 6-10 only,
+  "likelihood": "High" or "Medium" or "Low"
+}]`;
+
+  try {
+    const tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+    const messages = [{ role:'user', content: prompt }];
+    let finalText = '';
+    let loopMessages = [...messages];
+    let iterations = 0;
+
+    while (iterations < 5) {
+      iterations++;
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          requestedModel: selectedModel,
+          anthropicPayload: {
+            max_tokens: 3000,
+            tools,
+            messages: loopMessages,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Request failed (' + res.status + ')');
+      }
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+
+      const stopReason = data.stop_reason;
+      const contentBlocks = data.content || [];
+
+      if (stopReason === 'end_turn') {
+        finalText = contentBlocks.filter(b=>b.type==='text').map(b=>b.text).join('');
+        break;
+      }
+
+      if (stopReason === 'tool_use') {
+        const toolUseBlocks = contentBlocks.filter(b=>b.type==='tool_use');
+        if (!toolUseBlocks.length) {
+          finalText = contentBlocks.filter(b=>b.type==='text').map(b=>b.text).join('');
+          break;
+        }
+        loopMessages.push({ role: 'assistant', content: contentBlocks });
+        const toolResults = toolUseBlocks.map(tu => ({
+          type: 'tool_result',
+          tool_use_id: tu.id,
+          content: '',
+        }));
+        loopMessages.push({ role: 'user', content: toolResults });
+        continue;
+      }
+
+      finalText = contentBlocks.filter(b=>b.type==='text').map(b=>b.text).join('');
+      break;
+    }
+
+    const clean = finalText.replace(/```json[\s\S]*?```/g, m => m.slice(7,-3)).replace(/```/g,'').trim();
+    const jsonMatch = clean.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('No JSON array found in response. Raw: ' + clean.slice(0,200));
+    renderResults(JSON.parse(jsonMatch[0]));
+  } catch(e) {
+    showError('AI analysis failed: '+e.message);
+    showStep('pick-player');
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// RENDER RESULTS
+// ────────────────────────────────────────────────────────────────────────────
+function copyTradeText(iSend, iReceive, btn) {
+  const text = [
+    'TEAM 1 GETS: ' + iReceive.join(', '),
+    'TEAM 2 GETS: ' + iSend.join(', '),
+  ].join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy players', 1500);
+  });
+}
+
+function renderResults(offers) {
+  document.getElementById('results-player-name').textContent = selectedPlayer.name;
+  const container = document.getElementById('offers-container');
+  container.innerHTML = '';
+  const vc = { Win:'#22c55e', Neutral:'#f59e0b', 'Slight Loss':'#f87171' };
+  const lc = { High:'#22c55e', Medium:'#f59e0b', Low:'#f87171' };
+
+  const fmtItems = items => (items||[]).map(item => {
+    const isPick = /\d{4}/.test(item) && /(1st|2nd|3rd|4th)/.test(item);
+    if (isPick) return `<div class="trade-pick">🎟 ${item}</div>`;
+    const val = fcValue(item);
+    const valStr = val ? `<span class="item-val">${val.toLocaleString()}</span>` : '';
+    return `<div class="trade-player-row">
+      <a class="trade-player" href="${ktcURL(item)}" target="_blank" title="View on KTC">${item}</a>
+      ${valStr}
+    </div>`;
+  }).join('');
+
+  offers.forEach((offer, i) => {
+    const vColor = vc[offer.verdict]||'#f59e0b';
+    const lColor = lc[offer.likelihood]||'#f59e0b';
+    const div = document.createElement('div');
+    div.className = 'offer-card';
+    div.innerHTML = `
+      <div class="offer-accent" style="background:${vColor}"></div>
+      <div class="offer-top">
+        <div style="flex:1">
+          <div class="offer-num">OFFER #${i+1} &nbsp;·&nbsp; <span style="color:${lColor}">${offer.likelihood||''} LIKELIHOOD</span></div>
+          <div class="offer-team">${offer.teamName} <span style="font-size:11px;color:#475569;font-weight:400">(${offer.teamType||''})</span></div>
+          <div class="offer-why">${offer.whyTheyNeed||''}</div>
+        </div>
+        <div style="flex-shrink:0">
+          <div class="offer-verdict" style="color:${vColor}">${(offer.verdict||'').toUpperCase()}</div>
+          <div class="offer-rating">Rating: ${offer.dealRating}/10</div>
+        </div>
+      </div>
+      <div class="trade-grid">
+        <div class="trade-send">
+          <div class="trade-label" style="color:#f87171">YOU SEND</div>
+          ${fmtItems(offer.iSend)}
+        </div>
+        <div class="trade-arrow">⇄</div>
+        <div class="trade-receive">
+          <div class="trade-label" style="color:#22c55e">YOU RECEIVE</div>
+          ${fmtItems(offer.iReceive)}
+        </div>
+      </div>
+      ${offer.valueAnalysis?`<div class="note-box" style="background:rgba(255,255,255,0.03);color:#64748b">💡 ${offer.valueAnalysis}</div>`:''}
+      ${offer.myRosterImpact?`<div class="note-box" style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.12);color:#94a3b8">📊 <strong>Your team:</strong> ${offer.myRosterImpact}</div>`:''}
+      ${offer.whyTheyAccept?`<div class="note-box" style="background:rgba(34,197,94,0.04);border:1px solid rgba(34,197,94,0.1);color:#94a3b8">🤝 <strong>Why they'd accept:</strong> ${offer.whyTheyAccept}</div>`:''}
+      <div class="calc-row">
+        <span class="calc-label">Verify on:</span>
+        <a class="calc-link" href="https://keeptradecut.com/trade-calculator" target="_blank">KTC</a>
+        <a class="calc-link" href="https://dynasty-daddy.com/trade-calculator" target="_blank">Dynasty Daddy</a>
+        <a class="calc-link" href="https://api.fantasycalc.com/values/current?isDynasty=${settings.dynasty}&numQbs=${settings.sf?2:1}&ppr=${settings.ppr?1:0}" target="_blank">FantasyCalc</a>
+        <button class="calc-copy" onclick="copyTradeText(${JSON.stringify(offer.iSend)}, ${JSON.stringify(offer.iReceive)}, this)">📋 Copy players</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+
+  document.getElementById('step-results').classList.remove('hidden');
+  showStep('results');
+  document.getElementById('step-results').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
