@@ -805,125 +805,85 @@ async function generateOffers() {
     primeStatus: primeStatus(selectedPlayer.age, selectedPlayer.position),
   };
 
-  const prompt = `You are an expert dynasty fantasy football trade analyst. You think like the best managers in the community, not a trade calculator.
+  const prompt = `You are a dynasty fantasy football trade analyst. Find 2–4 realistic trades for the player I want to move that both sides would genuinely accept.
 
-STEP 0 — WEB SEARCH (REQUIRED, SILENT)
-Use the web_search tool to find current community sentiment on ${selectedPlayer.name}.
-Search: "site:reddit.com/r/dynastyfftradeadvice ${selectedPlayer.name} trade"
-Do NOT output any summary or preamble. Silently incorporate what you learn into the trade offers below.
-If search returns nothing useful, proceed without it.
+STEP 1 — WEB SEARCH (silent, no output):
+Use web_search: "site:reddit.com/r/dynastyfftradeadvice ${selectedPlayer.name} trade"
+Silently use what you learn. Do not mention this step in your output.
 
-⚠️ NFL FACTS WARNING: Only state NFL team affiliations, QB connections, or depth chart details that you are certain are current and accurate. Do NOT guess or infer team situations. Wrong facts (e.g. wrong team, wrong QB) destroy credibility. If unsure, omit it.
+---
+LEAGUE: ${settings.dynasty?'Dynasty':'Redraft'} · ${settings.sf?'Superflex':'1QB'} · ${settings.ppr?'PPR':'Non-PPR'}
+MY TEAM (${myUser?.display_name||'My Team'}) — ${myType} — ${myRoster.settings?.wins||0}-${myRoster.settings?.losses||0}
+My picks I own: ${myPicks.length?myPicks.join(', '):'none'}
+My depth by position: ${JSON.stringify(myPosDepth)}
+My top roster: ${JSON.stringify(myRosterSummary)}
 
-LEAGUE FORMAT: ${settings.dynasty?'Dynasty':'Redraft'} - ${settings.sf?'Superflex':'1QB'} - ${settings.ppr?'PPR':'Non-PPR'}
+PLAYER I WANT TO MOVE: ${JSON.stringify(blockPlayer)}
 
-MY TEAM: "${myUser?.display_name||'My Team'}" - Status: ${myType} - Record: ${myRoster.settings?.wins||0}-${myRoster.settings?.losses||0}
-My draft picks I own: ${myPicks.length?myPicks.join(', '):'none'}
-My positional depth (CRITICAL - check this before suggesting any return pieces for me):
-${JSON.stringify(myPosDepth,null,2)}
-My full roster (top 15):
-${JSON.stringify(myRosterSummary,null,2)}
+OTHER TEAMS: ${JSON.stringify(otherTeams)}
 
-PLAYER I WANT TO MOVE:
-${JSON.stringify(blockPlayer,null,2)}
+---
+⚠️ TRADE DIRECTION — READ CAREFULLY. ERRORS HERE BREAK EVERYTHING.
 
-OTHER TEAMS:
-${JSON.stringify(otherTeams,null,2)}
+  iSend   = what I send TO them  →  the other team RECEIVES iSend
+  iReceive = what they send TO me →  I RECEIVE iReceive
 
-=== MANDATORY STEP 1: SIMULATE POST-TRADE ROSTERS ===
-For every offer you consider, mentally finalize who has what AFTER the trade:
-- MY ROSTER: remove iSend, add iReceive
-- THEIR ROSTER: remove iReceive, add iSend
-A player in iReceive is GONE from their team the moment the trade executes. Never describe them keeping or benefiting from a player they are trading away. Catch yourself and rewrite if you do.
+Example: iSend = ["Player A", "Pick X"],  iReceive = ["Player B"]
+  → The other team RECEIVES Player A and Pick X
+  → I RECEIVE Player B
+  → whyTheyAccept explains why THEY want Player A and Pick X — NOT Player B
 
-=== STEP 2: TEAM CLASSIFICATION ===
-Each team has a teamType based on their actual win/loss record and roster. Use this to drive every decision:
-- Juggernaut/Contender/Win-Now: open window, need starters who contribute THIS season, will pay consolidation premium
-- Rising/Wildcard: could go either way, need to clarify via their actual roster situation
-- Rebuilding/Declining: closed window, want youth and picks, DO NOT want aging veterans or backup-tier players
+Before writing whyTheyAccept, say to yourself: "iSend items are flowing TO them. Only iSend items are their benefit."
 
-=== STEP 3: TRADE QUALITY STANDARDS ===
-The dynasty community judges trades harshly. A good trade MUST:
+---
+FOR EACH TRADE:
 
-1. BOTH SIDES MUST CLEARLY IMPROVE
-   - "A bunch of nickels and dimes don't equal a dollar" - quantity never beats quality
-   - Never suggest a trade where one side receives depth pieces and backups for a starter
-   - If you can't articulate a clear, specific improvement for BOTH rosters after the trade, do not propose it
-   - A depth WR + backup QB for a starting RB is always a bad trade. Don't suggest it.
+1. VALUE MATH
+   MY COST   = FantasyCalc total of iSend
+   THEIR COST = FantasyCalc total of iReceive (what they give up)
 
-2. NEVER GIVE UP THE BEST PLAYER UNLESS IT'S AN OBVIOUS WIN
-   - If the single player being sent is clearly the best player in the deal, the receiver of 2+ must be getting 1.12x or more in total value
-   - Contenders pay a premium to consolidate. Rebuilders accumulate youth and picks.
+   THEIR COST must be 0.90×–1.25× MY COST.
+   • Above 1.25×: they lose too much → they decline → DISCARD this trade
+   • Below 0.90×: I lose too much → DISCARD this trade
 
-3. ALL RECEIVED PIECES MUST BE STARTABLE OR HIGH-UPSIDE
-   - Every player in a trade package needs a clear role on the receiving roster
-   - "WR4/5 depth" pieces, "developmental" QBs, and "handcuffs" are not real trade pieces for a starter
-   - Ask: if I received this package, would it genuinely start on my team or be immediately tradeable for real value?
+   Consolidation premium (+10% to single-player side): ONLY when iSend is exactly one player AND that player is the highest-value individual asset in the entire deal.
 
-4. POSITIONAL NEED MUST BE REAL
-   - Check posDepth carefully. The receiving team must have an actual gap in their lineup, not just "thinner depth"
-   - A team with 2 strong starters at a position does not need a third
+   Pick values: 1st early/current ≈ 2000–2800 · 1st late ≈ 1400–2000 · 1st future ≈ 1200–1800 · 2nd ≈ 700–1100 · 3rd ≈ 350–550
+   Only use picks the team ACTUALLY OWNS (check their draftPicks list).
 
-5. CONTENTION WINDOW ALIGNMENT
-   - RBs cliff after age 27 - rebuilders do not want proven 27+ RBs
-   - WRs hold value into early 30s - safer for any team type
-   - QBs hold value into mid-30s especially Superflex
-   - A contender trading away a QB backup is not "giving up depth" - they need that depth
+2. QUALITY CHECKS (ALL must pass — if any fail, discard the trade)
+   ✓ Does iSend fill a REAL positional gap for them? Check their posDepth.
+   ✓ Does iReceive fill a REAL positional gap for me? Check my posDepth.
+   ✓ Every piece on both sides must be a startable player or high-upside asset. No backups, no handcuffs, no WR5 depth.
+   ✓ Team type match: Contender/Win-Now need proven starters now. Rebuilding want youth and picks — not aging veterans.
+   ✓ dealRating must be 7 or higher. If you can't reach 7, skip this trade entirely.
+   ✓ Only High or Medium likelihood. If it's a stretch, skip it.
 
-=== STEP 4: VALUE MATH — DUAL-SIDE CHECK ===
-For every offer, run BOTH sides of the math before finalizing:
+3. whyTheyAccept — MANDATORY FORMAT
+   ✅ Required: "They receive [list the iSend items by name] which addresses their [position] need because [specific reason based on their roster]."
+   ❌ Never mention iReceive items as benefits — those are what they're GIVING UP, not gaining.
+   ❌ Never mention players they already have on their roster.
 
-MY COST  = total FantasyCalc value of iSend
-THEIR COST = total FantasyCalc value of iReceive (what they give up)
+---
+ADDITIONAL RULES
+• Do NOT state NFL team, QB situation, or depth chart facts unless you are certain they are current. Wrong facts destroy credibility.
+• "A bunch of nickels and dimes don't equal a dollar" — never package multiple depth players to match a starter's value.
+• Fewer great trades beats more mediocre ones. If you can only find 2 quality trades, return 2.
 
-ACCEPTABLE RANGE: THEIR COST must be between 0.90× and 1.25× of MY COST.
-- Below 0.90×: I'm losing value → mark as Slight Loss only if trade still makes sense
-- Above 1.25×: they're losing value → they will NOT accept → rebuild the offer
-
-CONSOLIDATION PREMIUM (+8-15% to single-player side): Only applies when the single player traded is the HIGHEST-VALUE individual asset in the entire deal AND each piece being received is worth less individually than what was sent. It does NOT apply just because you happen to be on the "1 player" side.
-
-BAD EXAMPLE — NEVER DO THIS: I send Parker Washington (1946). I receive Alec Pierce (2118) + pick (450) = 2568. Ratio = 1.32×. REJECT — Alec Pierce alone is worth MORE than Parker, so I get no consolidation bonus. The other team gives up 2568 to get 1946. They lose 32%. No one accepts this.
-
-GOOD EXAMPLE: I send RB (5000). I receive WR (3200) + WR (2400) = 5600. Ratio = 1.12×. My player is clearly the best individual asset. Consolidation premium applies. Fair.
-
-Draft pick values:
-- 1st (early, current/next yr): 2000–2800 · 1st (late): 1400–2000 · 1st (yr+2): 1200–1800
-- 2nd: 700–1100 · 3rd: 350–550
-
-valueAnalysis format: "My cost: [iSend val]. Their cost: [iReceive total] ([ratio]×). [Accept/Reject reason]."
-
-=== STEP 5: THE OTHER MANAGER'S PERSPECTIVE ===
-Flip the trade. Ask: "If I were the other manager, would I actually accept losing THEIR COST to gain MY COST?"
-- If THEIR COST > MY COST × 1.25, they lose too much. Discard and rebuild.
-- The whyTheyAccept must describe ONLY what they receive (iSend pieces). Never mention players they are trading away or players they already have.
-
-=== QUALITY GATE ===
-- Can both sides clearly improve post-trade? If no, discard.
-- Is THEIR COST between 0.90× and 1.25× MY COST? If above 1.25×, rebuild.
-- CHECK MY POSITIONAL DEPTH: If I already have 2+ strong starters at a position, do not propose receiving another at that position.
-- Does the receiving team have a REAL gap in posDepth for my player? If not, discard.
-- Are all received pieces startable or genuinely valuable? If not, discard.
-
-Only generate offers with dealRating 6 or higher. If you cannot find 3 such offers, generate fewer. Never pad with bad trades just to hit 3.
-
-=== PACKAGE RULES ===
-- Exactly +1 player: 1-for-2 OR 2-for-3
-- Picks can be included - only use picks that team ACTUALLY owns (from their draftPicks list)
-- I can include one of my own picks to sweeten a deal if needed
-
-Return ONLY valid JSON array, no markdown, no preamble:
+---
+Return ONLY a valid JSON array. No markdown fences, no text before or after the array.
 [{
-  "teamName": "...",
-  "teamType": "...",
-  "whyTheyNeed": "2 sentences MAX: their specific roster gap and exactly why my player fills it. Be concrete, not generic.",
-  "whyTheyAccept": "1 sentence: what they receive (iSend pieces only) and why it fills their actual need. No players they already have, no players they are giving up.",
-  "iSend": ["exact names"],
-  "iReceive": ["exact names"],
-  "valueAnalysis": "My cost: [val]. Their cost: [val] ([ratio]x). [Accept/Reject and why].",
-  "myRosterImpact": "1 sentence: specific change to my starting lineup.",
-  "verdict": "Win" or "Neutral" or "Slight Loss",
-  "dealRating": 6-10 only,
-  "likelihood": "High" or "Medium" or "Low"
+  "teamName": "exact team name from data",
+  "teamType": "their classification",
+  "whyTheyNeed": "1–2 sentences: their specific roster gap and why the player I'm sending fills it exactly.",
+  "whyTheyAccept": "They receive [iSend items by name] which addresses their [position] need because [specific reason].",
+  "iSend": ["exact names — what goes TO them"],
+  "iReceive": ["exact names — what comes TO me"],
+  "valueAnalysis": "My cost: [X]. Their cost: [Y] ([ratio]×). [Fair/rejected + reason].",
+  "myRosterImpact": "1 sentence: what iReceive specifically changes about my starting lineup.",
+  "verdict": "Win" | "Neutral" | "Slight Loss",
+  "dealRating": 7 | 8 | 9 | 10,
+  "likelihood": "High" | "Medium"
 }]`;
 
   try {
@@ -1043,8 +1003,10 @@ function renderResults(offers) {
   document.getElementById('results-player-name').textContent = selectedPlayer.name;
   const container = document.getElementById('offers-container');
   container.innerHTML = '';
+  // Filter out low-likelihood and low-rated trades
+  offers = (offers||[]).filter(o => o.likelihood !== 'Low' && (o.dealRating == null || o.dealRating >= 7));
   const vc = { Win:'#22c55e', Neutral:'#f59e0b', 'Slight Loss':'#f87171' };
-  const lc = { High:'#22c55e', Medium:'#f59e0b', Low:'#f87171' };
+  const lc = { High:'#22c55e', Medium:'#f59e0b' };
 
   const fmtItems = items => (items||[]).map(item => {
     const isPick = /\d{4}/.test(item) && /(1st|2nd|3rd|4th)/.test(item);
@@ -1098,6 +1060,14 @@ function renderResults(offers) {
     `;
     container.appendChild(div);
   });
+
+  if (offers.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:48px 20px;color:#64748b;font-size:13px">
+      <div style="font-size:32px;margin-bottom:12px">🤷</div>
+      <div style="color:#94a3b8;margin-bottom:8px">No high-quality trades found.</div>
+      <div>The AI couldn't find realistic offers that work for both sides right now.<br>Try a different player or check back later.</div>
+    </div>`;
+  }
 
   document.getElementById('step-results').classList.remove('hidden');
   showStep('results');
