@@ -338,6 +338,8 @@ function initAuth() {
       currentUser = user;
       updateStatusBar(user);
       showScreen('app');
+      const savedLid = localStorage.getItem('sendit_league_id');
+      if (savedLid) document.getElementById('league-id').value = savedLid;
     } catch {
       await signOut(auth);
       showScreen('auth');
@@ -411,6 +413,7 @@ function resetToPlayer() {
 async function loadLeague() {
   const lid = document.getElementById('league-id').value.trim();
   if (!lid) { showError('Please enter your Sleeper League ID.'); return; }
+  localStorage.setItem('sendit_league_id', lid);
   showError(''); showWarn('');
   showStep('loading');
 
