@@ -323,7 +323,10 @@ function updateStatusBar(user) {
     sonnetOpt.textContent = 'Sonnet';
     sonnetOpt.title = 'Not available for your account.';
   }
-  document.getElementById('model-select').value = 'haiku';
+  const savedModel = localStorage.getItem('selectedModel') || 'haiku';
+  const validModel = (savedModel === 'sonnet' && allowedModel === 'sonnet') ? 'sonnet' : 'haiku';
+  selectedModel = validModel;
+  document.getElementById('model-select').value = validModel;
 }
 
 // ── Firebase auth init ────────────────────────────────────────────────────
@@ -376,6 +379,7 @@ function initAuth() {
 
   document.getElementById('model-select').onchange = function() {
     selectedModel = this.value;
+    localStorage.setItem('selectedModel', this.value);
   };
 }
 
@@ -804,10 +808,17 @@ The dynasty community judges trades harshly. A good trade MUST:
    - QBs hold value into mid-30s especially Superflex
    - A contender trading away a QB backup is not "giving up depth" - they need that depth
 
-=== STEP 4: VALUE MATH WITH CONSOLIDATION PREMIUM ===
-Elite singular assets command a 10-15% premium over the sum of pieces received:
-- 1-for-2 fair threshold: single player value x 1.12 must be <= sum of 2 received
-- 2-for-3 fair threshold: sum of 2 sent x 1.10 must be <= sum of 3 received
+=== STEP 4: VALUE MATH — FAIR RANGE (NOT JUST A FLOOR) ===
+The consolidation premium is 10-20% — NOT a license to suggest fantasy trades.
+
+1-for-2 FAIR RANGE: iSend value x 1.05 to x 1.30 total received.
+- FLOOR: you must receive at least 1.05x (or it's a loss)
+- CEILING: you must receive no more than 1.30x (or the other manager never accepts it)
+- Example: you send a player worth 3748 → you should receive between 3935 and 4872 total. Receiving 9000+ for 3748 is a fantasy trade that will NEVER be accepted. Never suggest it.
+
+2-for-3 FAIR RANGE: sum of 2 sent x 1.05 to x 1.25 total received.
+
+HARD RULE: If iReceive total > iSend x 1.35, discard and rebuild the offer. No real manager accepts a trade where they give up 2x+ the value they receive.
 
 Draft pick approximate values:
 - Current/next year 1st (early): 2000-2800
@@ -816,15 +827,24 @@ Draft pick approximate values:
 - 2nd round: 700-1100
 - 3rd round: 350-550
 
-Always show math in valueAnalysis: "Sending [val] (x1.12 = [threshold] needed). Receiving [A]([v]) + [B]([v]) = [sum]. [result]."
+Always show math in valueAnalysis: "Sending [val]. Fair receive range: [1.05x]–[1.30x]. Receiving [A]([v]) + [B]([v]) = [sum]. [result]."
+
+=== STEP 5: THE OTHER MANAGER'S PERSPECTIVE ===
+Before finalizing each offer, flip the trade. Ask: "If I were the other manager, would I actually accept this?"
+- You are building this app to generate REALISTIC trade offers — ones the other team might actually agree to
+- If the other manager is giving up significantly more value than they receive, they will not accept it
+- A contender pays 10-20% above market to consolidate talent — they do NOT give away 2 elite starters for 1 RB2
+- The whyTheyAccept must describe a genuine win FOR THEM — meaning the players/picks in iSend are actually good for their roster
+- CRITICAL: whyTheyAccept must ONLY describe what they RECEIVE (what is in iSend). Never describe what they keep from their own roster. Never mention players they are trading away as benefits to them.
 
 === QUALITY GATE ===
 Before finalizing each offer, ask:
 - Can I clearly explain how BOTH teams improve? If no, discard and find a better offer.
 - CHECK MY POSITIONAL DEPTH FIRST: Look at myPosDepth above. If a position I would receive already has 2+ strong starters, do NOT include that position in my return. Example: if I have 3 TEs with value > 2000, never propose a trade where I receive another TE.
 - Are all received pieces startable or genuinely valuable? If not, discard.
-- Is the value math at least neutral after applying the consolidation premium? If not, mark as Slight Loss.
+- Is iReceive total within the fair range (1.05x–1.30x of iSend)? If above 1.35x, rebuild the offer.
 - Does the receiving team have a REAL positional need based on their actual posDepth? If not, discard.
+- Would the other manager genuinely accept this? If not, discard.
 
 Only generate offers with dealRating 6 or higher. If you cannot find 3 such offers, generate fewer. Never pad with bad trades just to hit 3.
 
@@ -838,7 +858,7 @@ Return ONLY valid JSON array, no markdown, no preamble:
   "teamName": "...",
   "teamType": "...",
   "whyTheyNeed": "2-3 sentences: why this specific team needs my player given their POST-trade roster and contention window - be specific about their actual gap",
-  "whyTheyAccept": "1-2 sentences: what they gain AFTER giving up these specific players - do NOT reference players they just traded away",
+  "whyTheyAccept": "1-2 sentences: what they RECEIVE (iSend pieces only) and why those pieces fill a genuine need on their roster — do NOT mention any player they are trading away, and do NOT describe players they already have",
   "iSend": ["exact names"],
   "iReceive": ["exact names"],
   "valueAnalysis": "Sending [val] (x1.12 = [threshold]). Receiving [piece]([val]) + [piece]([val]) = [total]. [Win/Neutral/Slight Loss].",
