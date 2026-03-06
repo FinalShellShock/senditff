@@ -164,7 +164,8 @@
 <div id="screen-denied" class="auth-screen hidden">
   <div class="auth-eyebrow">DYNASTY FANTASY FOOTBALL</div>
   <div class="auth-title">SEND IT</div>
-  <div style="color:#94a3b8;font-size:14px;margin-bottom:24px">You don't have beta access yet.</div>
+  <div style="color:#94a3b8;font-size:14px;margin-bottom:8px">You don't have an active subscription.</div>
+  <div style="color:#475569;font-size:12px;margin-bottom:32px">Beta access is invite-only for now.</div>
   <a href="#" id="btn-denied-signout" style="color:#f59e0b;font-size:13px;font-family:'Space Mono',monospace;text-decoration:none">Sign out</a>
 </div>
 
@@ -326,14 +327,14 @@ function initAuth() {
       return;
     }
     try {
-      const allowlistSnap = await getDoc(doc(db, 'allowlist', user.email));
-      if (!allowlistSnap.exists()) {
-        await signOut(auth);
+      const userSnap = await getDoc(doc(db, 'users', user.email));
+      const userData = userSnap.exists() ? userSnap.data() : null;
+      if (!userData?.subscribed) {
+        currentUser = user; // keep them signed in so sign-out button works
         showScreen('denied');
         return;
       }
-      const userSnap = await getDoc(doc(db, 'users', user.email));
-      allowedModel = userSnap.exists() ? (userSnap.data()?.allowedModel || 'haiku') : 'haiku';
+      allowedModel = userData.allowedModel || 'haiku';
       currentUser = user;
       updateStatusBar(user);
       showScreen('app');

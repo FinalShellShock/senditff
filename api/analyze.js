@@ -40,17 +40,15 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // 2. Check allowlist
-    const allowlistDoc = await db.collection('allowlist').doc(email).get();
-    if (!allowlistDoc.exists) {
+    // 2. Check subscription
+    const userDoc = await db.collection('users').doc(email).get();
+    const userData = userDoc.exists ? userDoc.data() : null;
+    if (!userData?.subscribed) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
     // 3. Get user's allowed model (defaults to haiku)
-    const userDoc = await db.collection('users').doc(email).get();
-    const allowedModel = userDoc.exists
-      ? (userDoc.data()?.allowedModel || 'haiku')
-      : 'haiku';
+    const allowedModel = userData.allowedModel || 'haiku';
 
     const { requestedModel, anthropicPayload } = req.body;
 
