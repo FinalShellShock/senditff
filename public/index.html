@@ -743,36 +743,11 @@ async function generateOffers() {
 
   const prompt = `You are an expert dynasty fantasy football trade analyst. You think like the best managers in the community, not a trade calculator.
 
-STEP 0 — SEARCH REDDIT FIRST (REQUIRED)
-Before generating any trade offers, use the web_search tool to find real community sentiment on the player being traded.
-Search query: "site:reddit.com/r/dynastyfftradeadvice ${selectedPlayer.name} trade"
-Also try: "site:reddit.com/r/DynastyNerds ${selectedPlayer.name} trade value 2025"
-
-Extract from the results:
-- What is the community's current perception of this player's value?
-- Is this player trending up, down, or stable?
-- What do people typically expect in return for this player?
-- Any concerns about age, injury, situation, usage?
-
-Use this real-world intelligence to make your trade offers more accurate and grounded.
+STEP 0 — WEB SEARCH (REQUIRED, SILENT)
+Use the web_search tool to find current community sentiment on ${selectedPlayer.name}.
+Search: "site:reddit.com/r/dynastyfftradeadvice ${selectedPlayer.name} trade"
+Do NOT output any summary or preamble. Silently incorporate what you learn into the trade offers below.
 If search returns nothing useful, proceed without it.
-
-
-STEP 0 — SEARCH REDDIT FIRST (REQUIRED)
-Before generating any trade offers, use the web_search tool to find real community sentiment on the player being traded.
-Search query: "site:reddit.com/r/dynastyfftradeadvice ${selectedPlayer.name} trade"
-Also try: "site:reddit.com/r/DynastyNerds ${selectedPlayer.name} trade value 2025"
-
-Extract from the results:
-- What is the community's current perception of this player's value?
-- Is this player trending up, down, or stable?
-- What do people typically expect in return for this player?
-- Any concerns about age, injury, situation, usage?
-
-Use this real-world intelligence to make your trade offers more accurate and grounded.
-If search returns nothing useful, proceed without it.
-
-LEAGUE FORMAT:
 
 LEAGUE FORMAT: ${settings.dynasty?'Dynasty':'Redraft'} - ${settings.sf?'Superflex':'1QB'} - ${settings.ppr?'PPR':'Non-PPR'}
 
