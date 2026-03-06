@@ -865,6 +865,7 @@ My depth by position: ${JSON.stringify(myPosDepth)}
 My top roster: ${JSON.stringify(myRosterSummary)}
 
 PLAYER I WANT TO MOVE: ${JSON.stringify(blockPlayer)}
+⚠️ This player MUST appear in iSend for every single trade. Do not generate any trade where I keep this player.
 
 OTHER TEAMS: ${JSON.stringify(otherTeams)}
 
@@ -900,6 +901,8 @@ FOR EACH TRADE:
    Only use picks the team ACTUALLY OWNS (check their draftPicks list).
 
 2. QUALITY CHECKS — if ANY check fails, SKIP this trade entirely (do not include it in the JSON at all)
+   ✓ iSend MUST contain the player I want to move. No exceptions.
+   ✓ iReceive MUST contain at least one player (not just picks). Pure pick returns are not useful.
    ✓ Does iSend fill a REAL positional gap for them? Check their posDepth.
    ✓ Does iReceive fill a REAL positional gap for me? Check my posDepth.
    ✓ Every piece on both sides must be a startable player or high-upside asset. No backups, no handcuffs, no WR5 depth.
@@ -918,6 +921,7 @@ ADDITIONAL RULES
 • Do NOT state NFL team, QB situation, or depth chart facts unless you are certain they are current. Wrong facts destroy credibility.
 • "A bunch of nickels and dimes don't equal a dollar" — never package multiple depth players to match a starter's value.
 • Fewer great trades beats more mediocre ones. If you can only find 2 quality trades, return 2.
+• Picks sweeten deals but don't replace players. Every trade must be player-for-player (± picks). A pick-only return is never acceptable.
 
 ---
 Return ONLY a valid JSON array. No markdown fences, no text before or after the array.
