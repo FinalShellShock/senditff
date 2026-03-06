@@ -341,7 +341,7 @@ function updateStatusBar(user) {
 
 // ── Firebase auth init ────────────────────────────────────────────────────
 function initAuth() {
-  const { auth, db, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, doc, getDoc } = window._fb;
+  const { auth, db, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, doc, getDoc, setDoc } = window._fb;
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
