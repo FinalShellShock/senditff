@@ -77,8 +77,12 @@
   .selected-bar .name { font-weight: 700; font-size: 14px; }
   .loading-box { text-align: center; padding: 48px; }
   .loading-emoji { font-size: 32px; margin-bottom: 16px; }
+  .loading-spinner { width: 36px; height: 36px; border: 3px solid rgba(245,158,11,0.15); border-top-color: #f59e0b; border-radius: 50%; animation: spin 0.9s linear infinite; margin: 0 auto 20px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .loading-title { color: #f59e0b; font-weight: 700; font-size: 14px; }
-  .loading-sub { color: #475569; font-size: 12px; margin-top: 8px; }
+  .loading-sub { color: #475569; font-size: 12px; margin-top: 8px; transition: opacity 0.3s; }
+  .calc-toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); border-radius: 8px; padding: 8px 18px; font-size: 12px; color: #22c55e; pointer-events: none; opacity: 0; transition: opacity 0.25s; z-index: 999; white-space: nowrap; }
+  .calc-toast.show { opacity: 1; }
   .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .results-eyebrow { font-size: 11px; color: #f59e0b; letter-spacing: 3px; }
   .results-player { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; }
@@ -268,9 +272,9 @@
   <!-- GENERATING -->
   <div id="step-generating" class="card hidden">
     <div class="loading-box">
-      <div class="loading-emoji">🤖</div>
+      <div class="loading-spinner"></div>
       <div class="loading-title">ANALYZING LEAGUE ROSTERS</div>
-      <div class="loading-sub">Evaluating contention windows, age curves, positional needs, and pick capital...</div>
+      <div class="loading-sub" id="ai-loading-sub">Scanning rosters and contention windows...</div>
     </div>
   </div>
 
@@ -290,6 +294,9 @@
   </div>
 
 </div><!-- /#app -->
+
+<!-- Toast for clipboard feedback -->
+<div id="calc-toast" class="calc-toast">✓ Players copied — paste into calculator</div>
 
 <script>
 const SLEEPER = 'https://api.sleeper.app/v1';
@@ -323,8 +330,11 @@ function updateStatusBar(user) {
     sonnetOpt.textContent = 'Sonnet';
     sonnetOpt.title = 'Not available for your account.';
   }
-  const savedModel = localStorage.getItem('selectedModel') || 'haiku';
-  const validModel = (savedModel === 'sonnet' && allowedModel === 'sonnet') ? 'sonnet' : 'haiku';
+  const savedModel = localStorage.getItem('selectedModel');
+  // Default to Sonnet for Sonnet-tier users if they haven't made an explicit choice
+  const validModel = savedModel
+    ? (savedModel === 'sonnet' && allowedModel === 'sonnet' ? 'sonnet' : 'haiku')
+    : (allowedModel === 'sonnet' ? 'sonnet' : 'haiku');
   selectedModel = validModel;
   document.getElementById('model-select').value = validModel;
 }
@@ -409,6 +419,44 @@ function toggleSetting(key) {
 function showError(msg) { const e=document.getElementById('error-box'); e.textContent=msg; e.style.display=msg?'block':'none'; }
 function showWarn(msg)  { const e=document.getElementById('warn-box');  e.textContent=msg; e.style.display=msg?'block':'none'; }
 function setStatus(msg) { document.getElementById('load-status').textContent=msg; }
+
+// ── AI loading messages ────────────────────────────────────────────────────
+const AI_LOADING_MSGS = [
+  'Scanning rosters and contention windows...',
+  'Searching for community sentiment...',
+  'Calculating positional needs and pick values...',
+  'Checking value math from both sides...',
+  'Validating trade fairness for each team...',
+  'Finalizing realistic offers...',
+];
+let _aiMsgTimer = null;
+function startAiLoadingMessages() {
+  const el = document.getElementById('ai-loading-sub');
+  if (!el) return;
+  let i = 0;
+  el.textContent = AI_LOADING_MSGS[0];
+  _aiMsgTimer = setInterval(() => {
+    i = (i + 1) % AI_LOADING_MSGS.length;
+    el.style.opacity = '0';
+    setTimeout(() => { el.textContent = AI_LOADING_MSGS[i]; el.style.opacity = '1'; }, 300);
+  }, 3500);
+}
+function stopAiLoadingMessages() {
+  clearInterval(_aiMsgTimer);
+  _aiMsgTimer = null;
+}
+
+// ── Calc toast + open ──────────────────────────────────────────────────────
+let _toastTimer = null;
+function openCalc(url, iSend, iReceive, btn) {
+  const text = 'SEND: ' + iSend.join(', ') + '\nRECEIVE: ' + iReceive.join(', ');
+  navigator.clipboard.writeText(text).catch(() => {});
+  window.open(url, '_blank');
+  const toast = document.getElementById('calc-toast');
+  toast.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+}
 
 const ALL_STEPS = ['leagues','loading','pick-team','pick-player','generating','results'];
 function showStep(name) {
@@ -678,6 +726,7 @@ function renderPlayers() {
 async function generateOffers() {
   if (!selectedPlayer) return;
   showStep('generating');
+  startAiLoadingMessages();
   showError(''); showWarn('');
 
   const myRoster = rostersData.find(r=>r.roster_id===myRosterId);
@@ -753,6 +802,8 @@ Search: "site:reddit.com/r/dynastyfftradeadvice ${selectedPlayer.name} trade"
 Do NOT output any summary or preamble. Silently incorporate what you learn into the trade offers below.
 If search returns nothing useful, proceed without it.
 
+⚠️ NFL FACTS WARNING: Only state NFL team affiliations, QB connections, or depth chart details that you are certain are current and accurate. Do NOT guess or infer team situations. Wrong facts (e.g. wrong team, wrong QB) destroy credibility. If unsure, omit it.
+
 LEAGUE FORMAT: ${settings.dynasty?'Dynasty':'Redraft'} - ${settings.sf?'Superflex':'1QB'} - ${settings.ppr?'PPR':'Non-PPR'}
 
 MY TEAM: "${myUser?.display_name||'My Team'}" - Status: ${myType} - Record: ${myRoster.settings?.wins||0}-${myRoster.settings?.losses||0}
@@ -808,43 +859,39 @@ The dynasty community judges trades harshly. A good trade MUST:
    - QBs hold value into mid-30s especially Superflex
    - A contender trading away a QB backup is not "giving up depth" - they need that depth
 
-=== STEP 4: VALUE MATH — FAIR RANGE (NOT JUST A FLOOR) ===
-The consolidation premium is 10-20% — NOT a license to suggest fantasy trades.
+=== STEP 4: VALUE MATH — DUAL-SIDE CHECK ===
+For every offer, run BOTH sides of the math before finalizing:
 
-1-for-2 FAIR RANGE: iSend value x 1.05 to x 1.30 total received.
-- FLOOR: you must receive at least 1.05x (or it's a loss)
-- CEILING: you must receive no more than 1.30x (or the other manager never accepts it)
-- Example: you send a player worth 3748 → you should receive between 3935 and 4872 total. Receiving 9000+ for 3748 is a fantasy trade that will NEVER be accepted. Never suggest it.
+MY COST  = total FantasyCalc value of iSend
+THEIR COST = total FantasyCalc value of iReceive (what they give up)
 
-2-for-3 FAIR RANGE: sum of 2 sent x 1.05 to x 1.25 total received.
+ACCEPTABLE RANGE: THEIR COST must be between 0.90× and 1.25× of MY COST.
+- Below 0.90×: I'm losing value → mark as Slight Loss only if trade still makes sense
+- Above 1.25×: they're losing value → they will NOT accept → rebuild the offer
 
-HARD RULE: If iReceive total > iSend x 1.35, discard and rebuild the offer. No real manager accepts a trade where they give up 2x+ the value they receive.
+CONSOLIDATION PREMIUM (+8-15% to single-player side): Only applies when the single player traded is the HIGHEST-VALUE individual asset in the entire deal AND each piece being received is worth less individually than what was sent. It does NOT apply just because you happen to be on the "1 player" side.
 
-Draft pick approximate values:
-- Current/next year 1st (early): 2000-2800
-- Current/next year 1st (late): 1400-2000
-- Year+2 1st: 1200-1800
-- 2nd round: 700-1100
-- 3rd round: 350-550
+BAD EXAMPLE — NEVER DO THIS: I send Parker Washington (1946). I receive Alec Pierce (2118) + pick (450) = 2568. Ratio = 1.32×. REJECT — Alec Pierce alone is worth MORE than Parker, so I get no consolidation bonus. The other team gives up 2568 to get 1946. They lose 32%. No one accepts this.
 
-Always show math in valueAnalysis: "Sending [val]. Fair receive range: [1.05x]–[1.30x]. Receiving [A]([v]) + [B]([v]) = [sum]. [result]."
+GOOD EXAMPLE: I send RB (5000). I receive WR (3200) + WR (2400) = 5600. Ratio = 1.12×. My player is clearly the best individual asset. Consolidation premium applies. Fair.
+
+Draft pick values:
+- 1st (early, current/next yr): 2000–2800 · 1st (late): 1400–2000 · 1st (yr+2): 1200–1800
+- 2nd: 700–1100 · 3rd: 350–550
+
+valueAnalysis format: "My cost: [iSend val]. Their cost: [iReceive total] ([ratio]×). [Accept/Reject reason]."
 
 === STEP 5: THE OTHER MANAGER'S PERSPECTIVE ===
-Before finalizing each offer, flip the trade. Ask: "If I were the other manager, would I actually accept this?"
-- You are building this app to generate REALISTIC trade offers — ones the other team might actually agree to
-- If the other manager is giving up significantly more value than they receive, they will not accept it
-- A contender pays 10-20% above market to consolidate talent — they do NOT give away 2 elite starters for 1 RB2
-- The whyTheyAccept must describe a genuine win FOR THEM — meaning the players/picks in iSend are actually good for their roster
-- CRITICAL: whyTheyAccept must ONLY describe what they RECEIVE (what is in iSend). Never describe what they keep from their own roster. Never mention players they are trading away as benefits to them.
+Flip the trade. Ask: "If I were the other manager, would I actually accept losing THEIR COST to gain MY COST?"
+- If THEIR COST > MY COST × 1.25, they lose too much. Discard and rebuild.
+- The whyTheyAccept must describe ONLY what they receive (iSend pieces). Never mention players they are trading away or players they already have.
 
 === QUALITY GATE ===
-Before finalizing each offer, ask:
-- Can I clearly explain how BOTH teams improve? If no, discard and find a better offer.
-- CHECK MY POSITIONAL DEPTH FIRST: Look at myPosDepth above. If a position I would receive already has 2+ strong starters, do NOT include that position in my return. Example: if I have 3 TEs with value > 2000, never propose a trade where I receive another TE.
+- Can both sides clearly improve post-trade? If no, discard.
+- Is THEIR COST between 0.90× and 1.25× MY COST? If above 1.25×, rebuild.
+- CHECK MY POSITIONAL DEPTH: If I already have 2+ strong starters at a position, do not propose receiving another at that position.
+- Does the receiving team have a REAL gap in posDepth for my player? If not, discard.
 - Are all received pieces startable or genuinely valuable? If not, discard.
-- Is iReceive total within the fair range (1.05x–1.30x of iSend)? If above 1.35x, rebuild the offer.
-- Does the receiving team have a REAL positional need based on their actual posDepth? If not, discard.
-- Would the other manager genuinely accept this? If not, discard.
 
 Only generate offers with dealRating 6 or higher. If you cannot find 3 such offers, generate fewer. Never pad with bad trades just to hit 3.
 
@@ -857,12 +904,12 @@ Return ONLY valid JSON array, no markdown, no preamble:
 [{
   "teamName": "...",
   "teamType": "...",
-  "whyTheyNeed": "2-3 sentences: why this specific team needs my player given their POST-trade roster and contention window - be specific about their actual gap",
-  "whyTheyAccept": "1-2 sentences: what they RECEIVE (iSend pieces only) and why those pieces fill a genuine need on their roster — do NOT mention any player they are trading away, and do NOT describe players they already have",
+  "whyTheyNeed": "2 sentences MAX: their specific roster gap and exactly why my player fills it. Be concrete, not generic.",
+  "whyTheyAccept": "1 sentence: what they receive (iSend pieces only) and why it fills their actual need. No players they already have, no players they are giving up.",
   "iSend": ["exact names"],
   "iReceive": ["exact names"],
-  "valueAnalysis": "Sending [val] (x1.12 = [threshold]). Receiving [piece]([val]) + [piece]([val]) = [total]. [Win/Neutral/Slight Loss].",
-  "myRosterImpact": "specific improvement to MY team's starting lineup or future after losing iSend",
+  "valueAnalysis": "My cost: [val]. Their cost: [val] ([ratio]x). [Accept/Reject and why].",
+  "myRosterImpact": "1 sentence: specific change to my starting lineup.",
   "verdict": "Win" or "Neutral" or "Slight Loss",
   "dealRating": 6-10 only,
   "likelihood": "High" or "Medium" or "Low"
@@ -941,8 +988,10 @@ Return ONLY valid JSON array, no markdown, no preamble:
       const fixed = jsonMatch[0].replace(/"((?:[^"\\]|\\.)*)"/g, (_, s) => '"' + s.replace(/\n/g,'\\n').replace(/\r/g,'\\r') + '"');
       parsed = JSON.parse(fixed);
     }
+    stopAiLoadingMessages();
     renderResults(parsed);
   } catch(e) {
+    stopAiLoadingMessages();
     showError('AI analysis failed: '+e.message);
     showStep('pick-player');
   }
@@ -1014,10 +1063,9 @@ function renderResults(offers) {
       ${offer.whyTheyAccept?`<div class="note-box" style="background:rgba(34,197,94,0.04);border:1px solid rgba(34,197,94,0.1);color:#94a3b8">🤝 <strong>Why they'd accept:</strong> ${offer.whyTheyAccept}</div>`:''}
       <div class="calc-row">
         <span class="calc-label">Verify on:</span>
-        <a class="calc-link" href="https://keeptradecut.com/trade-calculator" target="_blank">KTC</a>
-        <a class="calc-link" href="https://dynasty-daddy.com/trade-calculator" target="_blank">Dynasty Daddy</a>
-        <a class="calc-link" href="https://api.fantasycalc.com/values/current?isDynasty=${settings.dynasty}&numQbs=${settings.sf?2:1}&ppr=${settings.ppr?1:0}" target="_blank">FantasyCalc</a>
-        <button class="calc-copy" onclick="copyTradeText(${JSON.stringify(offer.iSend)}, ${JSON.stringify(offer.iReceive)}, this)">📋 Copy players</button>
+        <button class="calc-link" onclick="openCalc('https://keeptradecut.com/trade-calculator',${JSON.stringify(offer.iSend)},${JSON.stringify(offer.iReceive)},this)">KTC</button>
+        <button class="calc-link" onclick="openCalc('https://dynasty-daddy.com/trade-calculator',${JSON.stringify(offer.iSend)},${JSON.stringify(offer.iReceive)},this)">Dynasty Daddy</button>
+        <button class="calc-link" onclick="openCalc('https://fantasycalc.com/trade-calculator',${JSON.stringify(offer.iSend)},${JSON.stringify(offer.iReceive)},this)">FantasyCalc</button>
       </div>
     `;
     container.appendChild(div);
