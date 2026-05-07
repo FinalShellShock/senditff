@@ -71,11 +71,7 @@ export function printTerminal(
   console.log(C.gray + " algorithm: " + C.reset + C.bold + ALGO_NAME + C.reset);
   console.log(C.bold + C.cyan + "═".repeat(80) + C.reset);
 
-  const sorted = [...profiles].sort((a, b) => {
-    if (a.isMine && !b.isMine) return -1;
-    if (!a.isMine && b.isMine) return 1;
-    return a.starterRank - b.starterRank;
-  });
+  const sorted = [...profiles].sort((a, b) => a.starterRank - b.starterRank);
 
   for (const t of sorted) printTeam(t);
 
@@ -304,11 +300,7 @@ export function writeHtmlReport(
   const slotStr = `${slot.QB}QB · ${slot.RB}RB · ${slot.WR}WR · ${slot.TE}TE${slot.FLEX ? ` · ${slot.FLEX}FLEX` : ""}${slot.SUPER_FLEX ? ` · ${slot.SUPER_FLEX}SF` : ""}`;
   const fmtStr = `${format.superflex ? "Superflex" : "1QB"} · ${format.scoring.toUpperCase()}${format.tep ? " · TEP" : ""}`;
 
-  const sorted = [...profiles].sort((a, b) => {
-    if (a.isMine && !b.isMine) return -1;
-    if (!a.isMine && b.isMine) return 1;
-    return a.starterRank - b.starterRank;
-  });
+  const sorted = [...profiles].sort((a, b) => a.starterRank - b.starterRank);
 
   const html = `<!DOCTYPE html>
 <html lang="en">
