@@ -514,10 +514,31 @@ export function detectArchetypes(
     out.push("age_arb_sell");
   }
 
-  // Need fill: any CRITICAL_NEED + any SURPLUS.
-  const hasCritical = POSITIONS.some((p) => team.positionScores[p].classification === "CRITICAL_NEED");
-  const hasSurplus = POSITIONS.some((p) => team.positionScores[p].classification === "SURPLUS");
-  if (hasCritical && hasSurplus) out.push("need_fill");
+  // Need fill flavors. Trigger if team has at least one CRITICAL_NEED.
+  //   stacked  = elite starter + elite depth at same pos (package multiple from this stack)
+  //   balanced = SURPLUS classification but not a stack (generic 1-for-1 candidate)
+  // The "thin" case (elite starter + weak depth) is already captured by tier_down_<pos>
+  // using raw value ratios — we don't duplicate it here.
+  // Note: stacked uses the raw starter/depth scores directly rather than gating on
+  // SURPLUS classification, because elite-stacked positions can have urgency just
+  // above the SURPLUS threshold due to window pressure (e.g. cwescoe at urgency 30).
+  const hasCritical = POSITIONS.some(
+    (p) => team.positionScores[p].classification === "CRITICAL_NEED",
+  );
+  if (hasCritical) {
+    for (const pos of POSITIONS) {
+      const ps = team.positionScores[pos];
+      const eliteStarter = ps.starterScore >= 80;
+      const eliteDepth = ps.depthScore >= 80;
+      if (eliteStarter && eliteDepth) {
+        out.push(`need_fill_stacked_${pos}`);
+        continue;
+      }
+      if (ps.classification === "SURPLUS") {
+        out.push(`need_fill_balanced_${pos}`);
+      }
+    }
+  }
 
   // Capital play
   if (
