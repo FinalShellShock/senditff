@@ -86,14 +86,14 @@ export type TeamProfile = {
   starterTotalValue: number;
   starterRank: number; // 1 = best in league
   competitiveness: Competitiveness;
-  weightedAge: number;
-  youngValueShare: number; // share of top-10 value held by players with adj_age <= 25
-  windowPressure: number; // 0-100, higher = window closing faster
+  weightedCalendarAge: number; // dynasty-value-weighted calendar age (display only)
+  teamAgePressure: number; // 0-100, curve-based; higher = career declining
+  windowPressure: number; // 0-100, blended age + pick pressure
   windowRank: number; // 1 = longest window in league
   windowTier: WindowTier;
   windowLabel: WindowLabel;
   positionScores: Record<Position, PositionScore>;
-  flex: FlexScore; // Spread-only: FLEX as its own dimension (zero TE share by default)
+  flex: FlexScore;
   pickCapital: { value: number; score: number; flag: PickFlag };
   archetypes: string[];
 };

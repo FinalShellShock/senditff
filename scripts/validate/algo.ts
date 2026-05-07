@@ -13,12 +13,35 @@ import type {
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 
-const AGE_MULT: Record<Position, number> = {
-  QB: 0.85,
-  RB: 1.20,
-  WR: 1.00,
-  TE: 1.05,
+// West Coast: position-aware age pressure curves.
+// Source: ESPN Cockcroft 2023, PFF, 4for4, FantasyLife.
+// Each player gets pressure 0-100 based on calendar age and position.
+// 0 = years of productivity ahead. 100 = career done.
+type CurveBreakpoints = {
+  productiveStart: number; // pressure starts climbing AFTER this (before = 0)
+  peakStart: number;       // entering prime
+  peakEnd: number;         // leaving prime
+  declineStart: number;    // sharp decline begins
+  done: number;            // pressure capped at 100 from here
 };
+
+const POSITION_CURVES: Record<Position, CurveBreakpoints> = {
+  // QB: long careers, peak 27-32 for pocket / 24-27 for dual-threat. Use averaged window.
+  QB: { productiveStart: 23, peakStart: 26, peakEnd: 32, declineStart: 35, done: 38 },
+  // RB: short careers, sharp decline 28-29.
+  RB: { productiveStart: 21, peakStart: 23, peakEnd: 27, declineStart: 28, done: 30 },
+  // WR: peak 26-30, decline 31-32.
+  WR: { productiveStart: 22, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 },
+  // TE: late breakout, peak 26-30, decline 32.
+  TE: { productiveStart: 23, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 },
+};
+
+// Pressure values at each curve breakpoint. Linear interp between.
+const PRESSURE_AT_PRODUCTIVE = 0;
+const PRESSURE_AT_PEAK_START = 0;
+const PRESSURE_AT_PEAK_END = 25;
+const PRESSURE_AT_DECLINE_START = 60;
+const PRESSURE_AT_DONE = 100;
 
 const PICK_DECAY: Record<number, number> = {
   0: 1.0,
@@ -27,22 +50,34 @@ const PICK_DECAY: Record<number, number> = {
   3: 0.55,
 };
 
-const PICK_ADJUSTED_AGE = 22;
+const PICK_AGE_PRESSURE = 0; // picks are long-window assets
 const TEP_MULTIPLIER = 1.15;
-const YOUNG_ADJ_AGE_CUTOFF = 25;
 
-// Window-pressure weights. Tunable.
-const W_AGE = 0.40;
-const W_YOUNG_SHARE = 0.35;
-const W_PICK_CAPITAL = 0.25;
+// Window pressure is age pressure adjusted by pick capital:
+//   windowPressure = teamAgePressure + pickAdjustment
+// where pickAdjustment = -8 / 0 / +12 by PICK_RICH/NEUTRAL/PICK_POOR.
+// Picks shift the window but don't dominate (a young roster with NEUTRAL picks
+// still lands LONG; an old roster with PICK_RICH still lands SHORT).
+const PICK_ADJUSTMENT_BY_FLAG: Record<"PICK_RICH" | "NEUTRAL" | "PICK_POOR", number> = {
+  PICK_RICH: -8,
+  NEUTRAL: 0,
+  PICK_POOR: 12,
+};
 
 // Threshold for the consolidate_flex archetype: a team with FLEX score this far
 // above league average has genuine "stackable trade chips" beyond positional needs.
 const FLEX_CONSOLIDATE_THRESHOLD = 55;
 
-// Audible: standard-deviation cutoff for STRONG/AVERAGE/WEAK and SHORT/MID/LONG.
-// 0.5σ = "noticeably above/below average for this league." Higher = stricter (more AVERAGE).
+// Audible: standard-deviation cutoff for STRONG/AVERAGE/WEAK on the
+// competitiveness axis. 0.5σ = "noticeably above/below average for this league."
 const STD_THRESHOLD = 0.5;
+
+// West Coast: absolute thresholds on window pressure, calibrated against the
+// position curves. Tunable.
+//   < 5   = LONG  (mostly pre-peak rosters, picks-rich rebuilds)
+//   > 14  = SHORT (significant aging starters or PICK_POOR mid-tier teams)
+const WINDOW_LONG_THRESHOLD = 5;
+const WINDOW_SHORT_THRESHOLD = 14;
 
 // In-season COMPETITIVENESS weights (parked here so we don't lose the formula).
 //   w_season = 0.25 + 0.04 * week
@@ -175,7 +210,34 @@ export function flexStrengthValue(
 
 // ── Window math (uses dynasty values) ────────────────────────────────────────
 
-export function weightedAge(players: Player[], picks: Pick[]): number {
+function interp(x: number, x0: number, x1: number, y0: number, y1: number): number {
+  if (x1 === x0) return y0;
+  return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
+}
+
+// Per-player age pressure (0-100). Piecewise linear over the position curve.
+export function agePressure(age: number, pos: Position): number {
+  const c = POSITION_CURVES[pos];
+  if (age <= c.productiveStart) return PRESSURE_AT_PRODUCTIVE;
+  if (age <= c.peakStart) {
+    return interp(age, c.productiveStart, c.peakStart, PRESSURE_AT_PRODUCTIVE, PRESSURE_AT_PEAK_START);
+  }
+  if (age <= c.peakEnd) {
+    return interp(age, c.peakStart, c.peakEnd, PRESSURE_AT_PEAK_START, PRESSURE_AT_PEAK_END);
+  }
+  if (age <= c.declineStart) {
+    return interp(age, c.peakEnd, c.declineStart, PRESSURE_AT_PEAK_END, PRESSURE_AT_DECLINE_START);
+  }
+  if (age <= c.done) {
+    return interp(age, c.declineStart, c.done, PRESSURE_AT_DECLINE_START, PRESSURE_AT_DONE);
+  }
+  return PRESSURE_AT_DONE;
+}
+
+// Team-level age pressure: dynasty-value-weighted avg of player pressures (top 10)
+// plus picks (which contribute pressure 0 at their dynasty pick value).
+// Replaces both weightedAge and youngValueShare from earlier algorithms.
+export function teamAgePressure(players: Player[], picks: Pick[]): number {
   const top10 = [...players].sort(byValueDesc(DYNASTY)).slice(0, 10);
 
   let totalNum = 0;
@@ -183,28 +245,28 @@ export function weightedAge(players: Player[], picks: Pick[]): number {
 
   for (const p of top10) {
     if (p.age == null) continue;
-    const adj = p.age * AGE_MULT[p.position];
-    totalNum += adj * p.valueDynasty;
+    const pressure = agePressure(p.age, p.position);
+    totalNum += pressure * p.valueDynasty;
     totalDen += p.valueDynasty;
   }
   for (const pk of picks) {
-    totalNum += PICK_ADJUSTED_AGE * pk.value;
+    totalNum += PICK_AGE_PRESSURE * pk.value;
     totalDen += pk.value;
   }
-  return totalDen > 0 ? totalNum / totalDen : 26;
+  return totalDen > 0 ? totalNum / totalDen : 50;
 }
 
-export function youngValueShare(players: Player[]): number {
+// Calendar (raw) weighted age — kept for display only, not used in window math.
+export function weightedCalendarAge(players: Player[]): number {
   const top10 = [...players].sort(byValueDesc(DYNASTY)).slice(0, 10);
-  let young = 0;
-  let total = 0;
+  let totalNum = 0;
+  let totalDen = 0;
   for (const p of top10) {
-    total += p.valueDynasty;
-    if (p.age != null && p.age * AGE_MULT[p.position] <= YOUNG_ADJ_AGE_CUTOFF) {
-      young += p.valueDynasty;
-    }
+    if (p.age == null) continue;
+    totalNum += p.age * p.valueDynasty;
+    totalDen += p.valueDynasty;
   }
-  return total > 0 ? young / total : 0;
+  return totalDen > 0 ? totalNum / totalDen : 25;
 }
 
 export function pickCapital(picks: Pick[], thisYear: number): number {
@@ -319,8 +381,8 @@ export function computeAllProfiles(
   type Stage1 = (typeof teams)[number] & {
     players: Player[];
     starterTotalValue: number;
-    weightedAge: number;
-    youngValueShare: number;
+    teamAgePressure: number;
+    weightedCalAge: number; // for display
     pickCapValue: number;
     flexValue: number;
     starters: Record<Position, Player[]>;
@@ -340,8 +402,8 @@ export function computeAllProfiles(
       ...t,
       players: playersAdj,
       starterTotalValue,
-      weightedAge: weightedAge(playersAdj, t.picks),
-      youngValueShare: youngValueShare(playersAdj),
+      teamAgePressure: teamAgePressure(playersAdj, t.picks),
+      weightedCalAge: weightedCalendarAge(playersAdj),
       pickCapValue: pickCapital(t.picks, thisYear),
       flexValue,
       starters,
@@ -368,11 +430,8 @@ export function computeAllProfiles(
     return "AVERAGE";
   };
 
-  // Window axis
-  const ages = stage1.map((t) => t.weightedAge);
-  const youngs = stage1.map((t) => t.youngValueShare);
+  // Window axis (West Coast: curve-based age pressure + pick capital)
   const caps = stage1.map((t) => t.pickCapValue);
-
   const meanCap = caps.reduce((s, v) => s + v, 0) / caps.length;
   const stdCap = Math.sqrt(
     caps.reduce((s, v) => s + (v - meanCap) ** 2, 0) / caps.length,
@@ -389,16 +448,15 @@ export function computeAllProfiles(
     pickFlag: TeamProfile["pickCapital"]["flag"];
   };
   const stage2: Stage2[] = stage1.map((t) => {
-    const agePressure = percentileRank(t.weightedAge, ages, true);
-    const youngPressure = percentileRank(t.youngValueShare, youngs, false);
-    const pickPressure = percentileRank(t.pickCapValue, caps, false);
-    const windowPressure =
-      agePressure * W_AGE + youngPressure * W_YOUNG_SHARE + pickPressure * W_PICK_CAPITAL;
+    // Window pressure is age pressure shifted by the pick flag adjustment.
+    // PICK_RICH eases the window (-8); PICK_POOR tightens it (+12).
+    const pickFlag = pickFlagFor(t.pickCapValue);
+    const windowPressure = Math.max(0, t.teamAgePressure + PICK_ADJUSTMENT_BY_FLAG[pickFlag]);
     return {
       ...t,
       competitiveness: compFor(t.starterTotalValue),
       windowPressure,
-      pickFlag: pickFlagFor(t.pickCapValue),
+      pickFlag,
     };
   });
 
@@ -410,14 +468,9 @@ export function computeAllProfiles(
   const windowRank = new Map<number, number>();
   sortedByPressure.forEach((t, i) => windowRank.set(t.rosterId, i + 1));
 
-  const pressures = stage2.map((t) => t.windowPressure);
-  const meanPressure = pressures.reduce((s, v) => s + v, 0) / pressures.length;
-  const stdPressure = Math.sqrt(
-    pressures.reduce((s, v) => s + (v - meanPressure) ** 2, 0) / pressures.length,
-  );
   const windowTierFor = (pressure: number): WindowTier => {
-    if (pressure < meanPressure - STD_THRESHOLD * stdPressure) return "LONG";
-    if (pressure > meanPressure + STD_THRESHOLD * stdPressure) return "SHORT";
+    if (pressure < WINDOW_LONG_THRESHOLD) return "LONG";
+    if (pressure > WINDOW_SHORT_THRESHOLD) return "SHORT";
     return "MID";
   };
 
@@ -463,8 +516,8 @@ export function computeAllProfiles(
       starterTotalValue: t.starterTotalValue,
       starterRank: starterRank.get(t.rosterId)!,
       competitiveness: t.competitiveness,
-      weightedAge: t.weightedAge,
-      youngValueShare: t.youngValueShare,
+      weightedCalendarAge: t.weightedCalAge,
+      teamAgePressure: t.teamAgePressure,
       windowPressure: t.windowPressure,
       windowRank: windowRank.get(t.rosterId)!,
       windowTier: tier,

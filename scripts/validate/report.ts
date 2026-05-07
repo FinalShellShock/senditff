@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
 import type { LeagueFormat, TeamProfile, WindowLabel } from "./types.ts";
 
-const ALGO_NAME = "Audible";
+const ALGO_NAME = "West Coast";
 
 // ── Terminal output (for me / debugging) ─────────────────────────────────────
 
@@ -98,8 +98,8 @@ function printTeam(t: TeamProfile): void {
     "  " +
     lColor + C.bold + pad(t.windowLabel, 12) + C.reset +
     C.gray + "(" + t.competitiveness + "/" + t.windowTier + ")  " + C.reset +
-    C.gray + "adj_age " + C.reset + t.weightedAge.toFixed(2).padEnd(6) +
-    C.gray + "young% " + C.reset + (t.youngValueShare * 100).toFixed(0).padEnd(4) +
+    C.gray + "cal_age " + C.reset + t.weightedCalendarAge.toFixed(1).padEnd(5) +
+    C.gray + "age_pres " + C.reset + t.teamAgePressure.toFixed(0).padEnd(4) +
     C.gray + "starter " + C.reset + Math.round(t.starterTotalValue).toLocaleString().padEnd(8) +
     C.gray + "flex " + C.reset + t.flex.score.toFixed(0).padEnd(4) +
     C.gray + "picks " + C.reset + pickColor + t.pickCapital.flag + C.reset +
@@ -216,8 +216,8 @@ function teamCardHtml(t: TeamProfile): string {
       <div class="team-meta">
         <span class="window-label" style="background:${labelColor}">${t.windowLabel}</span>
         <span class="meta-pill">${t.competitiveness} / ${t.windowTier}</span>
-        <span class="meta-pill">adj_age <strong>${t.weightedAge.toFixed(2)}</strong></span>
-        <span class="meta-pill">young% <strong>${(t.youngValueShare * 100).toFixed(0)}</strong></span>
+        <span class="meta-pill">cal_age <strong>${t.weightedCalendarAge.toFixed(1)}</strong></span>
+        <span class="meta-pill">age_pres <strong>${t.teamAgePressure.toFixed(0)}</strong></span>
         <span class="meta-pill">starter <strong>${Math.round(t.starterTotalValue).toLocaleString()}</strong></span>
         <span class="meta-pill">flex <strong>${t.flex.score.toFixed(0)}</strong></span>
         <span class="meta-pill" style="color:${pickColor}">${t.pickCapital.flag} (${Math.round(t.pickCapital.value).toLocaleString()})</span>
