@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
 import type { LeagueFormat, TeamProfile, WindowLabel } from "./types.ts";
 
-const ALGO_NAME = "Spread";
+const ALGO_NAME = "Audible";
 
 // ── Terminal output (for me / debugging) ─────────────────────────────────────
 

@@ -40,6 +40,10 @@ const W_PICK_CAPITAL = 0.25;
 // above league average has genuine "stackable trade chips" beyond positional needs.
 const FLEX_CONSOLIDATE_THRESHOLD = 55;
 
+// Audible: standard-deviation cutoff for STRONG/AVERAGE/WEAK and SHORT/MID/LONG.
+// 0.5σ = "noticeably above/below average for this league." Higher = stricter (more AVERAGE).
+const STD_THRESHOLD = 0.5;
+
 // In-season COMPETITIVENESS weights (parked here so we don't lose the formula).
 //   w_season = 0.25 + 0.04 * week
 //   w_recent = max(0, 0.20 - 0.01 * week)
@@ -345,16 +349,23 @@ export function computeAllProfiles(
     };
   });
 
-  // Competitiveness axis
+  // Competitiveness axis (Audible: std-dev cuts instead of terciles)
   const sortedByStarter = [...stage1].sort((a, b) => {
     if (b.starterTotalValue !== a.starterTotalValue) return b.starterTotalValue - a.starterTotalValue;
     return a.rosterId - b.rosterId;
   });
   const starterRank = new Map<number, number>();
   sortedByStarter.forEach((t, i) => starterRank.set(t.rosterId, i + 1));
-  const compFor = (rid: number): Competitiveness => {
-    const t = tercile(starterRank.get(rid)!, stage1.length);
-    return t === 0 ? "STRONG" : t === 1 ? "AVERAGE" : "WEAK";
+
+  const starterTotals = stage1.map((t) => t.starterTotalValue);
+  const meanStarter = starterTotals.reduce((s, v) => s + v, 0) / starterTotals.length;
+  const stdStarter = Math.sqrt(
+    starterTotals.reduce((s, v) => s + (v - meanStarter) ** 2, 0) / starterTotals.length,
+  );
+  const compFor = (totalValue: number): Competitiveness => {
+    if (totalValue > meanStarter + STD_THRESHOLD * stdStarter) return "STRONG";
+    if (totalValue < meanStarter - STD_THRESHOLD * stdStarter) return "WEAK";
+    return "AVERAGE";
   };
 
   // Window axis
@@ -385,21 +396,29 @@ export function computeAllProfiles(
       agePressure * W_AGE + youngPressure * W_YOUNG_SHARE + pickPressure * W_PICK_CAPITAL;
     return {
       ...t,
-      competitiveness: compFor(t.rosterId),
+      competitiveness: compFor(t.starterTotalValue),
       windowPressure,
       pickFlag: pickFlagFor(t.pickCapValue),
     };
   });
 
+  // Window axis (Audible: std-dev cuts instead of terciles)
   const sortedByPressure = [...stage2].sort((a, b) => {
     if (a.windowPressure !== b.windowPressure) return a.windowPressure - b.windowPressure;
     return a.rosterId - b.rosterId;
   });
   const windowRank = new Map<number, number>();
   sortedByPressure.forEach((t, i) => windowRank.set(t.rosterId, i + 1));
-  const windowTierFor = (rid: number): WindowTier => {
-    const t = tercile(windowRank.get(rid)!, stage2.length);
-    return t === 0 ? "LONG" : t === 1 ? "MID" : "SHORT";
+
+  const pressures = stage2.map((t) => t.windowPressure);
+  const meanPressure = pressures.reduce((s, v) => s + v, 0) / pressures.length;
+  const stdPressure = Math.sqrt(
+    pressures.reduce((s, v) => s + (v - meanPressure) ** 2, 0) / pressures.length,
+  );
+  const windowTierFor = (pressure: number): WindowTier => {
+    if (pressure < meanPressure - STD_THRESHOLD * stdPressure) return "LONG";
+    if (pressure > meanPressure + STD_THRESHOLD * stdPressure) return "SHORT";
+    return "MID";
   };
 
   // League averages
@@ -428,7 +447,7 @@ export function computeAllProfiles(
 
   // Final assembly
   return stage2.map((t) => {
-    const tier = windowTierFor(t.rosterId);
+    const tier = windowTierFor(t.windowPressure);
     const positionScores = computePositionScores(
       { players: t.players, competitiveness: t.competitiveness, windowTier: tier },
       format,
