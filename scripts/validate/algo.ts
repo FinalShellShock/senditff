@@ -31,19 +31,20 @@ const PICK_ADJUSTED_AGE = 22;
 const TEP_MULTIPLIER = 1.15;
 const YOUNG_ADJ_AGE_CUTOFF = 25;
 
-// Window-pressure weights. Tunable. Higher weight on age + young share since
-// pick capital is more speculative (picks could bust).
+// Window-pressure weights. Tunable.
 const W_AGE = 0.40;
 const W_YOUNG_SHARE = 0.35;
 const W_PICK_CAPITAL = 0.25;
 
-// In-season COMPETITIVENESS weights (parked here so we don't lose the formula
-// when wiring PPG up later). Source: lining103 power ranker, modified to use
-// PPG instead of W/L. Offseason -> 100% starter strength only.
+// Threshold for the consolidate_flex archetype: a team with FLEX score this far
+// above league average has genuine "stackable trade chips" beyond positional needs.
+const FLEX_CONSOLIDATE_THRESHOLD = 55;
+
+// In-season COMPETITIVENESS weights (parked here so we don't lose the formula).
 //   w_season = 0.25 + 0.04 * week
 //   w_recent = max(0, 0.20 - 0.01 * week)
 //   w_roster = 1 - w_season - w_recent
-// Use season_ppg_score and recent_ppg_score (last 3 games) once available.
+// Source: lining103 power ranker, modified to use PPG instead of W/L.
 
 export const COMPETITIVENESS_GRID: Record<Competitiveness, Record<WindowTier, WindowLabel>> = {
   STRONG: { LONG: "JUGGERNAUT", MID: "CONTEND", SHORT: "CLOSING" },
@@ -51,24 +52,32 @@ export const COMPETITIVENESS_GRID: Record<Competitiveness, Record<WindowTier, Wi
   WEAK: { LONG: "REBUILD", MID: "TRANSITION", SHORT: "STUCK" },
 };
 
-export function adjAge(player: Player): number | null {
-  if (player.age == null) return null;
-  return player.age * AGE_MULT[player.position];
+// ── Value getters ────────────────────────────────────────────────────────────
+// Competitiveness math (starter / FLEX / depth) uses redraft values.
+// Window math (age / young share) uses dynasty values.
+
+const REDRAFT = (p: Player): number => p.valueRedraft;
+const DYNASTY = (p: Player): number => p.valueDynasty;
+
+function byValueDesc(getValue: (p: Player) => number) {
+  return (a: Player, b: Player) => {
+    const va = getValue(a);
+    const vb = getValue(b);
+    if (vb !== va) return vb - va;
+    return a.id.localeCompare(b.id);
+  };
 }
 
-// Greedy starter fill: position-specific slots first, then FLEX from RB/WR/TE,
-// then SUPER_FLEX from QB/RB/WR/TE.
+// ── Greedy starter fill (redraft) ────────────────────────────────────────────
+
 export function fillStarters(
   players: Player[],
   format: LeagueFormat,
+  getValue: (p: Player) => number = REDRAFT,
 ): { starters: Record<Position, Player[]> } {
-  const sorted = [...players].sort((a, b) => {
-    if (b.value !== a.value) return b.value - a.value;
-    return a.id.localeCompare(b.id);
-  });
   const used = new Set<string>();
   const byPos: Record<Position, Player[]> = { QB: [], RB: [], WR: [], TE: [] };
-  for (const p of sorted) byPos[p.position].push(p);
+  for (const p of [...players].sort(byValueDesc(getValue))) byPos[p.position].push(p);
 
   const starters: Record<Position, Player[]> = { QB: [], RB: [], WR: [], TE: [] };
   const fillFrom = (pos: Position, n: number) => {
@@ -85,12 +94,13 @@ export function fillStarters(
   fillFrom("WR", format.starterSlots.WR);
   fillFrom("TE", format.starterSlots.TE);
 
+  // FLEX: best leftover RB/WR/TE
   for (let i = 0; i < format.starterSlots.FLEX; i++) {
     let best: Player | undefined;
     for (const pos of ["RB", "WR", "TE"] as Position[]) {
       for (const p of byPos[pos]) {
         if (used.has(p.id)) continue;
-        if (!best || p.value > best.value) best = p;
+        if (!best || getValue(p) > getValue(best)) best = p;
         break;
       }
     }
@@ -99,12 +109,13 @@ export function fillStarters(
     used.add(best.id);
   }
 
+  // SUPER_FLEX: best leftover QB/RB/WR/TE
   for (let i = 0; i < format.starterSlots.SUPER_FLEX; i++) {
     let best: Player | undefined;
     for (const pos of POSITIONS) {
       for (const p of byPos[pos]) {
         if (used.has(p.id)) continue;
-        if (!best || p.value > best.value) best = p;
+        if (!best || getValue(p) > getValue(best)) best = p;
         break;
       }
     }
@@ -116,12 +127,12 @@ export function fillStarters(
   return { starters };
 }
 
-// Spread: position depth uses BASE starter slots only — no FLEX share folded in.
-// "Depth at WR" answers "if my starting WR1/WR2 gets hurt, who replaces them?"
-// FLEX-able assets are scored separately via flexStrength().
+// ── Position depth (Spread: base starter slots only, no FLEX share) ──────────
+
 export function depthByPosition(
   players: Player[],
   format: LeagueFormat,
+  getValue: (p: Player) => number = REDRAFT,
 ): Record<Position, Player[]> {
   const baseStarters: Record<Position, number> = {
     QB: format.starterSlots.QB + (format.starterSlots.SUPER_FLEX > 0 ? 1 : 0),
@@ -131,57 +142,37 @@ export function depthByPosition(
   };
   const depth: Record<Position, Player[]> = { QB: [], RB: [], WR: [], TE: [] };
   for (const pos of POSITIONS) {
-    const sorted = players
-      .filter((p) => p.position === pos)
-      .sort((a, b) => {
-        if (b.value !== a.value) return b.value - a.value;
-        return a.id.localeCompare(b.id);
-      });
+    const sorted = players.filter((p) => p.position === pos).sort(byValueDesc(getValue));
     const baseN = baseStarters[pos];
     depth[pos] = sorted.slice(baseN, baseN + 3);
   }
   return depth;
 }
 
-// Spread: FLEX strength = best 3 RB/WR not in their position-specific starter slot.
-// Per Bruin Sports Analytics, TEs essentially never optimal in FLEX (38.9% above
-// median vs 51-56% for RB/WR), so TE share defaults to zero. This score answers
-// "do you have FLEX-able trade chips?" independently of position depth.
-export function flexStrength(
+// ── FLEX strength: total starter value minus position-specific value ─────────
+// Naturally captures whatever fills FLEX/SF (QB in SF, TE flexing in bye weeks,
+// etc.) without double-counting. Uses redraft values.
+
+export function flexStrengthValue(
   players: Player[],
   format: LeagueFormat,
-): { value: number; players: Player[] } {
-  const flexSlots = format.starterSlots.FLEX;
-  if (flexSlots === 0) return { value: 0, players: [] };
-
-  const baseRB = format.starterSlots.RB;
-  const baseWR = format.starterSlots.WR;
-  const sortedAtPos = (pos: Position) =>
-    players
-      .filter((p) => p.position === pos)
-      .sort((a, b) => {
-        if (b.value !== a.value) return b.value - a.value;
-        return a.id.localeCompare(b.id);
-      });
-
-  const rbCandidates = sortedAtPos("RB").slice(baseRB);
-  const wrCandidates = sortedAtPos("WR").slice(baseWR);
-  const merged = [...rbCandidates, ...wrCandidates].sort((a, b) => {
-    if (b.value !== a.value) return b.value - a.value;
-    return a.id.localeCompare(b.id);
-  });
-  const taken = merged.slice(0, flexSlots);
-  const value = taken.reduce((s, p) => s + p.value, 0);
-  return { value, players: taken };
+  totalStarterValue: number,
+  getValue: (p: Player) => number = REDRAFT,
+): number {
+  let positionSpecificValue = 0;
+  for (const pos of POSITIONS) {
+    const baseN = format.starterSlots[pos];
+    if (baseN <= 0) continue;
+    const sortedAtPos = players.filter((p) => p.position === pos).sort(byValueDesc(getValue));
+    positionSpecificValue += sortedAtPos.slice(0, baseN).reduce((s, p) => s + getValue(p), 0);
+  }
+  return Math.max(0, totalStarterValue - positionSpecificValue);
 }
 
+// ── Window math (uses dynasty values) ────────────────────────────────────────
+
 export function weightedAge(players: Player[], picks: Pick[]): number {
-  const top10 = [...players]
-    .sort((a, b) => {
-      if (b.value !== a.value) return b.value - a.value;
-      return a.id.localeCompare(b.id);
-    })
-    .slice(0, 10);
+  const top10 = [...players].sort(byValueDesc(DYNASTY)).slice(0, 10);
 
   let totalNum = 0;
   let totalDen = 0;
@@ -189,8 +180,8 @@ export function weightedAge(players: Player[], picks: Pick[]): number {
   for (const p of top10) {
     if (p.age == null) continue;
     const adj = p.age * AGE_MULT[p.position];
-    totalNum += adj * p.value;
-    totalDen += p.value;
+    totalNum += adj * p.valueDynasty;
+    totalDen += p.valueDynasty;
   }
   for (const pk of picks) {
     totalNum += PICK_ADJUSTED_AGE * pk.value;
@@ -199,20 +190,14 @@ export function weightedAge(players: Player[], picks: Pick[]): number {
   return totalDen > 0 ? totalNum / totalDen : 26;
 }
 
-// Share of top-10 value held by players whose adjusted_age <= 25.
 export function youngValueShare(players: Player[]): number {
-  const top10 = [...players]
-    .sort((a, b) => {
-      if (b.value !== a.value) return b.value - a.value;
-      return a.id.localeCompare(b.id);
-    })
-    .slice(0, 10);
+  const top10 = [...players].sort(byValueDesc(DYNASTY)).slice(0, 10);
   let young = 0;
   let total = 0;
   for (const p of top10) {
-    total += p.value;
+    total += p.valueDynasty;
     if (p.age != null && p.age * AGE_MULT[p.position] <= YOUNG_ADJ_AGE_CUTOFF) {
-      young += p.value;
+      young += p.valueDynasty;
     }
   }
   return total > 0 ? young / total : 0;
@@ -228,6 +213,8 @@ export function pickCapital(picks: Pick[], thisYear: number): number {
   return total;
 }
 
+// ── Score helpers ────────────────────────────────────────────────────────────
+
 export function score0to100(value: number, leagueAvg: number): number {
   if (leagueAvg <= 0) return 50;
   const score = 50 + ((value - leagueAvg) / leagueAvg) * 50;
@@ -241,7 +228,6 @@ export function classifyPosition(score: PositionScore["urgency"]): PositionScore
   return "SURPLUS";
 }
 
-// Tercile bucketing: smaller rank = better. Returns the bucket index (0=top, 1=mid, 2=bottom).
 export function tercile(rank: number, total: number): 0 | 1 | 2 {
   const third = total / 3;
   if (rank <= Math.ceil(third)) return 0;
@@ -249,24 +235,30 @@ export function tercile(rank: number, total: number): 0 | 1 | 2 {
   return 2;
 }
 
-// Window pressure components are normalized to percentile-rank within the league
-// rather than absolute thresholds. This keeps the metric meaningful regardless
-// of league scoring/format quirks.
 function percentileRank(value: number, all: number[], higherIsMore: boolean): number {
-  // returns 0-100 where 100 = highest pressure contribution.
   const sorted = [...all].sort((a, b) => a - b);
   let rank = 0;
-  for (const v of sorted) {
-    if (v < value) rank++;
-  }
+  for (const v of sorted) if (v < value) rank++;
   const pct = (rank / Math.max(1, sorted.length - 1)) * 100;
   return higherIsMore ? pct : 100 - pct;
 }
 
+// ── TEP applies to BOTH redraft and dynasty values ────────────────────────────
+
 export function applyTep(players: Player[], format: LeagueFormat): Player[] {
   if (!format.tep) return players;
-  return players.map((p) => (p.position === "TE" ? { ...p, value: p.value * TEP_MULTIPLIER } : p));
+  return players.map((p) =>
+    p.position === "TE"
+      ? {
+          ...p,
+          valueRedraft: p.valueRedraft * TEP_MULTIPLIER,
+          valueDynasty: p.valueDynasty * TEP_MULTIPLIER,
+        }
+      : p,
+  );
 }
+
+// ── Per-position scores ──────────────────────────────────────────────────────
 
 export function computePositionScores(
   team: { players: Player[]; competitiveness: Competitiveness; windowTier: WindowTier },
@@ -277,21 +269,19 @@ export function computePositionScores(
   const depth = depthByPosition(team.players, format);
   const out: Record<Position, PositionScore> = {} as Record<Position, PositionScore>;
 
-  // Window pressure feeds into urgency: STRONG-SHORT teams feel the most urgency,
-  // WEAK-LONG the least. This replaces the old WINDOW_PRESSURE table.
   const compFactor: Record<Competitiveness, number> = { STRONG: 90, AVERAGE: 60, WEAK: 30 };
   const windowFactor: Record<WindowTier, number> = { SHORT: 90, MID: 60, LONG: 30 };
   const pressure = (compFactor[team.competitiveness] + windowFactor[team.windowTier]) / 2;
 
   for (const pos of POSITIONS) {
-    const starterValue = starters[pos].reduce((s, p) => s + p.value, 0);
-    const depthValue = depth[pos].reduce((s, p) => s + p.value, 0);
+    const starterValue = starters[pos].reduce((s, p) => s + p.valueRedraft, 0);
+    const depthValue = depth[pos].reduce((s, p) => s + p.valueRedraft, 0);
     const starterScore = score0to100(starterValue, averages.starter[pos] || 1);
     const depthScore = score0to100(depthValue, averages.depth[pos] || 1);
 
     const starterGap = Math.max(0, 100 - starterScore);
     const depthGap = Math.max(0, 100 - depthScore);
-    const pickFactor = 50; // TODO once we tune this against the real app
+    const pickFactor = 50;
 
     const urgency =
       starterGap * 0.4 + pressure * 0.3 + depthGap * 0.15 + pickFactor * 0.15;
@@ -307,6 +297,8 @@ export function computePositionScores(
   }
   return out;
 }
+
+// ── Main pipeline ────────────────────────────────────────────────────────────
 
 export function computeAllProfiles(
   teams: Array<{
@@ -331,16 +323,15 @@ export function computeAllProfiles(
     depth: Record<Position, Player[]>;
   };
 
-  // Pass 1: per-team raw values (TEP-adjusted).
   const stage1: Stage1[] = teams.map((t) => {
     const playersAdj = applyTep(t.players, format);
     const { starters } = fillStarters(playersAdj, format);
     const depth = depthByPosition(playersAdj, format);
     const starterTotalValue = POSITIONS.reduce(
-      (s, pos) => s + starters[pos].reduce((a, p) => a + p.value, 0),
+      (s, pos) => s + starters[pos].reduce((a, p) => a + p.valueRedraft, 0),
       0,
     );
-    const flex = flexStrength(playersAdj, format);
+    const flexValue = flexStrengthValue(playersAdj, format, starterTotalValue);
     return {
       ...t,
       players: playersAdj,
@@ -348,13 +339,13 @@ export function computeAllProfiles(
       weightedAge: weightedAge(playersAdj, t.picks),
       youngValueShare: youngValueShare(playersAdj),
       pickCapValue: pickCapital(t.picks, thisYear),
-      flexValue: flex.value,
+      flexValue,
       starters,
       depth,
     };
   });
 
-  // ---- COMPETITIVENESS axis (offseason: pure starter strength) ----
+  // Competitiveness axis
   const sortedByStarter = [...stage1].sort((a, b) => {
     if (b.starterTotalValue !== a.starterTotalValue) return b.starterTotalValue - a.starterTotalValue;
     return a.rosterId - b.rosterId;
@@ -366,8 +357,7 @@ export function computeAllProfiles(
     return t === 0 ? "STRONG" : t === 1 ? "AVERAGE" : "WEAK";
   };
 
-  // ---- WINDOW axis ----
-  // For each component, percentile-rank across the league (higher pressure = window closing).
+  // Window axis
   const ages = stage1.map((t) => t.weightedAge);
   const youngs = stage1.map((t) => t.youngValueShare);
   const caps = stage1.map((t) => t.pickCapValue);
@@ -401,7 +391,6 @@ export function computeAllProfiles(
     };
   });
 
-  // Tercile by window pressure: lowest pressure = LONG window.
   const sortedByPressure = [...stage2].sort((a, b) => {
     if (a.windowPressure !== b.windowPressure) return a.windowPressure - b.windowPressure;
     return a.rosterId - b.rosterId;
@@ -413,14 +402,14 @@ export function computeAllProfiles(
     return t === 0 ? "LONG" : t === 1 ? "MID" : "SHORT";
   };
 
-  // League averages (per-position starter and depth values, plus FLEX).
+  // League averages
   const avgStarter: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const avgDepth: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   let avgFlex = 0;
   for (const t of stage2) {
     for (const pos of POSITIONS) {
-      avgStarter[pos] += t.starters[pos].reduce((s, p) => s + p.value, 0);
-      avgDepth[pos] += t.depth[pos].reduce((s, p) => s + p.value, 0);
+      avgStarter[pos] += t.starters[pos].reduce((s, p) => s + p.valueRedraft, 0);
+      avgDepth[pos] += t.depth[pos].reduce((s, p) => s + p.valueRedraft, 0);
     }
     avgFlex += t.flexValue;
   }
@@ -437,7 +426,7 @@ export function computeAllProfiles(
     pickCapitalStd: stdCap,
   };
 
-  // Pass 3: assemble final profiles.
+  // Final assembly
   return stage2.map((t) => {
     const tier = windowTierFor(t.rosterId);
     const positionScores = computePositionScores(
@@ -478,6 +467,8 @@ export function computeAllProfiles(
   });
 }
 
+// ── Archetypes ───────────────────────────────────────────────────────────────
+
 export function detectArchetypes(
   team: TeamProfile,
   averages: LeagueAverages,
@@ -493,7 +484,7 @@ export function detectArchetypes(
     if (eliteStarter && weakDepth) out.push(`tier_down_${pos}`);
   }
 
-  // Consolidate up: mid starter + decent depth at one pos + need at another.
+  // Per-position consolidate: mid starter + decent depth + need elsewhere.
   const needPositions = POSITIONS.filter(
     (p) => team.positionScores[p].classification === "CRITICAL_NEED" ||
            team.positionScores[p].classification === "NEED",
@@ -507,12 +498,18 @@ export function detectArchetypes(
     }
   }
 
-  // Age arbitrage (buy): LONG window + can absorb veterans (PICK_RICH or surplus picks).
+  // NEW: consolidate_flex — high FLEX score + at least one position need.
+  // Signals "you have stackable trade chips and somewhere productive to put them."
+  if (team.flex.score >= FLEX_CONSOLIDATE_THRESHOLD && needPositions.length > 0) {
+    out.push("consolidate_flex");
+  }
+
+  // Age arbitrage (buy): LONG window + can absorb veterans (PICK_RICH).
   if (team.windowTier === "LONG" && team.pickCapital.flag === "PICK_RICH") {
     out.push("age_arb_buy");
   }
 
-  // Age arbitrage (sell): old, still-strong roster — sell while value holds.
+  // Age arbitrage (sell): old, still-strong roster.
   if (team.windowTier === "SHORT" && team.competitiveness !== "WEAK") {
     out.push("age_arb_sell");
   }
@@ -522,8 +519,7 @@ export function detectArchetypes(
   const hasSurplus = POSITIONS.some((p) => team.positionScores[p].classification === "SURPLUS");
   if (hasCritical && hasSurplus) out.push("need_fill");
 
-  // Capital play: STRONG/AVERAGE-MID + PICK_POOR -> convert picks to production
-  //               WEAK/AVERAGE-LONG + PICK_RICH -> convert production to picks
+  // Capital play
   if (
     (team.competitiveness === "STRONG" || team.windowLabel === "CONTEND") &&
     team.pickCapital.flag === "PICK_POOR"

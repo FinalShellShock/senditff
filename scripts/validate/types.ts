@@ -25,7 +25,8 @@ export type Player = {
   position: Position;
   team: string | null;
   age: number | null;
-  value: number;
+  valueRedraft: number; // current-season-only value (FantasyCalc isDynasty=false). Used for competitiveness math.
+  valueDynasty: number; // long-term value (FantasyCalc isDynasty=true). Used for window math.
 };
 
 export type Pick = {

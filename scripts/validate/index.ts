@@ -31,14 +31,19 @@ async function main(): Promise<void> {
   }
 
   console.log(`Format: ${format.superflex ? "Superflex" : "1QB"} · ${format.scoring.toUpperCase()}${format.tep ? " · TEP" : ""}`);
-  console.log(`Fetching player DB and FantasyCalc values in parallel...`);
+  console.log(`Fetching player DB and FantasyCalc values (dynasty + redraft) in parallel...`);
   const [sleeperPlayers, fcalc] = await Promise.all([fetchPlayers(), fetchFantasyCalc(format)]);
 
-  // Build name -> {value, age} map
-  const valueMap = new Map<string, { value: number; age?: number }>();
-  for (const e of fcalc) {
+  // Two value maps. Dynasty also seeds pick values (redraft has no picks).
+  const dynastyMap = new Map<string, { value: number; age?: number }>();
+  const redraftMap = new Map<string, { value: number; age?: number }>();
+  for (const e of fcalc.dynasty) {
     const k = normName(e.player?.name);
-    if (k) valueMap.set(k, { value: e.value, age: e.player?.age });
+    if (k) dynastyMap.set(k, { value: e.value, age: e.player?.age });
+  }
+  for (const e of fcalc.redraft) {
+    const k = normName(e.player?.name);
+    if (k) redraftMap.set(k, { value: e.value, age: e.player?.age });
   }
 
   // Build pick ownership
@@ -47,20 +52,20 @@ async function main(): Promise<void> {
   const picksMap = buildPicksMap(rosters, tradedPicks, draftYears);
   const draftSlots = projectDraftSlots(rosters);
 
-  // Estimate pick value: simple table fallback if FantasyCalc lacks it.
+  // Pick values are dynasty (redraft has no picks). Used only by the window axis.
   const tieredFallback = (year: number, round: number, slot: number): number => {
     const teamCount = rosters.length;
     const third = Math.ceil(teamCount / 3);
     if (round === 1) {
       const tier = slot <= third ? "early" : slot <= 2 * third ? "mid" : "late";
       const v =
-        valueMap.get(normName(`${year} ${tier} 1st`))?.value ??
-        valueMap.get(normName(`${year} 1st`))?.value;
+        dynastyMap.get(normName(`${year} ${tier} 1st`))?.value ??
+        dynastyMap.get(normName(`${year} 1st`))?.value;
       if (v) return v;
       return slot <= third ? 2500 : slot <= 2 * third ? 2000 : 1500;
     }
     const labels = ["1st", "2nd", "3rd", "4th"] as const;
-    const v = valueMap.get(normName(`${year} ${labels[round - 1]}`))?.value;
+    const v = dynastyMap.get(normName(`${year} ${labels[round - 1]}`))?.value;
     if (v) return v;
     return round === 2 ? 900 : round === 3 ? 450 : 200;
   };
@@ -83,14 +88,17 @@ async function main(): Promise<void> {
         const fullName = sp.full_name ?? `${sp.first_name ?? ""} ${sp.last_name ?? ""}`.trim();
         const pos = sp.position;
         if (!pos || !POSITIONS.includes(pos as Position)) return null;
-        const fc = valueMap.get(normName(fullName));
+        const k = normName(fullName);
+        const dyn = dynastyMap.get(k);
+        const red = redraftMap.get(k);
         return {
           id,
           name: fullName,
           position: pos as Position,
           team: sp.team ?? null,
-          age: sp.age ?? fc?.age ?? null,
-          value: fc?.value ?? 0,
+          age: sp.age ?? dyn?.age ?? red?.age ?? null,
+          valueRedraft: red?.value ?? 0,
+          valueDynasty: dyn?.value ?? 0,
         };
       })
       .filter((p): p is Player => p !== null);
