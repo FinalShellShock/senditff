@@ -86,8 +86,8 @@ export type TeamProfile = {
   starterTotalValue: number;
   starterRank: number; // 1 = best in league
   competitiveness: Competitiveness;
-  weightedCalendarAge: number; // dynasty-value-weighted calendar age (display only)
-  teamAgePressure: number; // 0-100, curve-based; higher = career declining
+  starterCalAge: number; // redraft-value-weighted calendar age across starting lineup (display only)
+  starterAgePressure: number; // 0-100, curve-based on the starting lineup; higher = window closing
   windowPressure: number; // 0-100, blended age + pick pressure
   windowRank: number; // 1 = longest window in league
   windowTier: WindowTier;

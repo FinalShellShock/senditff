@@ -50,11 +50,10 @@ const PICK_DECAY: Record<number, number> = {
   3: 0.55,
 };
 
-const PICK_AGE_PRESSURE = 0; // picks are long-window assets
 const TEP_MULTIPLIER = 1.15;
 
 // Window pressure is age pressure adjusted by pick capital:
-//   windowPressure = teamAgePressure + pickAdjustment
+//   windowPressure = starterAgePressure + pickAdjustment
 // where pickAdjustment = -8 / 0 / +12 by PICK_RICH/NEUTRAL/PICK_POOR.
 // Picks shift the window but don't dominate (a young roster with NEUTRAL picks
 // still lands LONG; an old roster with PICK_RICH still lands SHORT).
@@ -234,37 +233,39 @@ export function agePressure(age: number, pos: Position): number {
   return PRESSURE_AT_DONE;
 }
 
-// Team-level age pressure: dynasty-value-weighted avg of player pressures (top 10)
-// plus picks (which contribute pressure 0 at their dynasty pick value).
-// Replaces both weightedAge and youngValueShare from earlier algorithms.
-export function teamAgePressure(players: Player[], picks: Pick[]): number {
-  const top10 = [...players].sort(byValueDesc(DYNASTY)).slice(0, 10);
-
+// Starter age pressure: REDRAFT-value-weighted avg of player pressures across
+// the actual starting lineup. Answers "are the players actually filling your
+// lineup right now aging out?"
+//   - Lineup chosen by greedy fill on redraft values (current production)
+//   - Each starter contributes pressure × their redraft value
+//   - Bench players don't count (they're not contributing this season)
+//   - Picks influence the window via PICK_RICH/POOR adjustment, not here
+export function starterAgePressure(players: Player[], format: LeagueFormat): number {
+  const { starters } = fillStarters(players, format, REDRAFT);
   let totalNum = 0;
   let totalDen = 0;
-
-  for (const p of top10) {
-    if (p.age == null) continue;
-    const pressure = agePressure(p.age, p.position);
-    totalNum += pressure * p.valueDynasty;
-    totalDen += p.valueDynasty;
-  }
-  for (const pk of picks) {
-    totalNum += PICK_AGE_PRESSURE * pk.value;
-    totalDen += pk.value;
+  for (const pos of POSITIONS) {
+    for (const p of starters[pos]) {
+      if (p.age == null) continue;
+      const pressure = agePressure(p.age, p.position);
+      totalNum += pressure * p.valueRedraft;
+      totalDen += p.valueRedraft;
+    }
   }
   return totalDen > 0 ? totalNum / totalDen : 50;
 }
 
-// Calendar (raw) weighted age — kept for display only, not used in window math.
-export function weightedCalendarAge(players: Player[]): number {
-  const top10 = [...players].sort(byValueDesc(DYNASTY)).slice(0, 10);
+// Calendar weighted age across the starting lineup — display only.
+export function starterCalendarAge(players: Player[], format: LeagueFormat): number {
+  const { starters } = fillStarters(players, format, REDRAFT);
   let totalNum = 0;
   let totalDen = 0;
-  for (const p of top10) {
-    if (p.age == null) continue;
-    totalNum += p.age * p.valueDynasty;
-    totalDen += p.valueDynasty;
+  for (const pos of POSITIONS) {
+    for (const p of starters[pos]) {
+      if (p.age == null) continue;
+      totalNum += p.age * p.valueRedraft;
+      totalDen += p.valueRedraft;
+    }
   }
   return totalDen > 0 ? totalNum / totalDen : 25;
 }
@@ -381,8 +382,8 @@ export function computeAllProfiles(
   type Stage1 = (typeof teams)[number] & {
     players: Player[];
     starterTotalValue: number;
-    teamAgePressure: number;
-    weightedCalAge: number; // for display
+    starterAgePressure: number;
+    starterCalAge: number; // for display
     pickCapValue: number;
     flexValue: number;
     starters: Record<Position, Player[]>;
@@ -402,8 +403,8 @@ export function computeAllProfiles(
       ...t,
       players: playersAdj,
       starterTotalValue,
-      teamAgePressure: teamAgePressure(playersAdj, t.picks),
-      weightedCalAge: weightedCalendarAge(playersAdj),
+      starterAgePressure: starterAgePressure(playersAdj, format),
+      starterCalAge: starterCalendarAge(playersAdj, format),
       pickCapValue: pickCapital(t.picks, thisYear),
       flexValue,
       starters,
@@ -451,7 +452,7 @@ export function computeAllProfiles(
     // Window pressure is age pressure shifted by the pick flag adjustment.
     // PICK_RICH eases the window (-8); PICK_POOR tightens it (+12).
     const pickFlag = pickFlagFor(t.pickCapValue);
-    const windowPressure = Math.max(0, t.teamAgePressure + PICK_ADJUSTMENT_BY_FLAG[pickFlag]);
+    const windowPressure = Math.max(0, t.starterAgePressure + PICK_ADJUSTMENT_BY_FLAG[pickFlag]);
     return {
       ...t,
       competitiveness: compFor(t.starterTotalValue),
@@ -516,8 +517,8 @@ export function computeAllProfiles(
       starterTotalValue: t.starterTotalValue,
       starterRank: starterRank.get(t.rosterId)!,
       competitiveness: t.competitiveness,
-      weightedCalendarAge: t.weightedCalAge,
-      teamAgePressure: t.teamAgePressure,
+      starterCalAge: t.starterCalAge,
+      starterAgePressure: t.starterAgePressure,
       windowPressure: t.windowPressure,
       windowRank: windowRank.get(t.rosterId)!,
       windowTier: tier,
@@ -581,9 +582,16 @@ export function detectArchetypes(
     out.push("age_arb_buy");
   }
 
-  // Age arbitrage (sell): old, still-strong roster.
+  // Age arbitrage (sell): old, still-strong roster — bail proactively for picks/youth.
   if (team.windowTier === "SHORT" && team.competitiveness !== "WEAK") {
     out.push("age_arb_sell");
+  }
+
+  // Push in: STRONG-window-closing — mortgage future for veterans, max out the
+  // 1-2 year window. Parallel option to age_arb_sell. Only fires for STRONG;
+  // an AVERAGE/SHORT (MIDDLING) team isn't a contender to push toward.
+  if (team.windowTier === "SHORT" && team.competitiveness === "STRONG") {
+    out.push("push_in");
   }
 
   // Need fill flavors. Trigger if team has at least one CRITICAL_NEED.
