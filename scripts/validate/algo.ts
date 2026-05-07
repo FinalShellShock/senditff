@@ -116,15 +116,17 @@ export function fillStarters(
   return { starters };
 }
 
-// Pillar 3 depth: positions starter+1 through starter+3 by raw position rank.
+// Spread: position depth uses BASE starter slots only — no FLEX share folded in.
+// "Depth at WR" answers "if my starting WR1/WR2 gets hurt, who replaces them?"
+// FLEX-able assets are scored separately via flexStrength().
 export function depthByPosition(
   players: Player[],
   format: LeagueFormat,
 ): Record<Position, Player[]> {
   const baseStarters: Record<Position, number> = {
     QB: format.starterSlots.QB + (format.starterSlots.SUPER_FLEX > 0 ? 1 : 0),
-    RB: format.starterSlots.RB + Math.ceil(format.starterSlots.FLEX / 3),
-    WR: format.starterSlots.WR + Math.ceil(format.starterSlots.FLEX / 3),
+    RB: format.starterSlots.RB,
+    WR: format.starterSlots.WR,
     TE: format.starterSlots.TE,
   };
   const depth: Record<Position, Player[]> = { QB: [], RB: [], WR: [], TE: [] };
@@ -139,6 +141,38 @@ export function depthByPosition(
     depth[pos] = sorted.slice(baseN, baseN + 3);
   }
   return depth;
+}
+
+// Spread: FLEX strength = best 3 RB/WR not in their position-specific starter slot.
+// Per Bruin Sports Analytics, TEs essentially never optimal in FLEX (38.9% above
+// median vs 51-56% for RB/WR), so TE share defaults to zero. This score answers
+// "do you have FLEX-able trade chips?" independently of position depth.
+export function flexStrength(
+  players: Player[],
+  format: LeagueFormat,
+): { value: number; players: Player[] } {
+  const flexSlots = format.starterSlots.FLEX;
+  if (flexSlots === 0) return { value: 0, players: [] };
+
+  const baseRB = format.starterSlots.RB;
+  const baseWR = format.starterSlots.WR;
+  const sortedAtPos = (pos: Position) =>
+    players
+      .filter((p) => p.position === pos)
+      .sort((a, b) => {
+        if (b.value !== a.value) return b.value - a.value;
+        return a.id.localeCompare(b.id);
+      });
+
+  const rbCandidates = sortedAtPos("RB").slice(baseRB);
+  const wrCandidates = sortedAtPos("WR").slice(baseWR);
+  const merged = [...rbCandidates, ...wrCandidates].sort((a, b) => {
+    if (b.value !== a.value) return b.value - a.value;
+    return a.id.localeCompare(b.id);
+  });
+  const taken = merged.slice(0, flexSlots);
+  const value = taken.reduce((s, p) => s + p.value, 0);
+  return { value, players: taken };
 }
 
 export function weightedAge(players: Player[], picks: Pick[]): number {
@@ -292,6 +326,7 @@ export function computeAllProfiles(
     weightedAge: number;
     youngValueShare: number;
     pickCapValue: number;
+    flexValue: number;
     starters: Record<Position, Player[]>;
     depth: Record<Position, Player[]>;
   };
@@ -305,6 +340,7 @@ export function computeAllProfiles(
       (s, pos) => s + starters[pos].reduce((a, p) => a + p.value, 0),
       0,
     );
+    const flex = flexStrength(playersAdj, format);
     return {
       ...t,
       players: playersAdj,
@@ -312,6 +348,7 @@ export function computeAllProfiles(
       weightedAge: weightedAge(playersAdj, t.picks),
       youngValueShare: youngValueShare(playersAdj),
       pickCapValue: pickCapital(t.picks, thisYear),
+      flexValue: flex.value,
       starters,
       depth,
     };
@@ -376,22 +413,26 @@ export function computeAllProfiles(
     return t === 0 ? "LONG" : t === 1 ? "MID" : "SHORT";
   };
 
-  // League averages (per-position starter and depth values).
+  // League averages (per-position starter and depth values, plus FLEX).
   const avgStarter: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const avgDepth: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  let avgFlex = 0;
   for (const t of stage2) {
     for (const pos of POSITIONS) {
       avgStarter[pos] += t.starters[pos].reduce((s, p) => s + p.value, 0);
       avgDepth[pos] += t.depth[pos].reduce((s, p) => s + p.value, 0);
     }
+    avgFlex += t.flexValue;
   }
   for (const pos of POSITIONS) {
     avgStarter[pos] /= stage2.length;
     avgDepth[pos] /= stage2.length;
   }
+  avgFlex /= stage2.length;
   const averages: LeagueAverages = {
     starter: avgStarter,
     depth: avgDepth,
+    flex: avgFlex,
     pickCapital: meanCap,
     pickCapitalStd: stdCap,
   };
@@ -421,6 +462,10 @@ export function computeAllProfiles(
       windowTier: tier,
       windowLabel: COMPETITIVENESS_GRID[t.competitiveness][tier],
       positionScores,
+      flex: {
+        value: t.flexValue,
+        score: score0to100(t.flexValue, averages.flex || 1),
+      },
       pickCapital: {
         value: t.pickCapValue,
         score: score0to100(t.pickCapValue, averages.pickCapital || 1),

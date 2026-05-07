@@ -70,6 +70,11 @@ export type PositionScore = {
   classification: "CRITICAL_NEED" | "NEED" | "HEALTHY" | "SURPLUS";
 };
 
+export type FlexScore = {
+  value: number; // sum of best-3 RB/WR not in their position-specific starter slot
+  score: number; // 0-100 vs league avg
+};
+
 export type TeamProfile = {
   rosterId: number;
   ownerName: string;
@@ -87,6 +92,7 @@ export type TeamProfile = {
   windowTier: WindowTier;
   windowLabel: WindowLabel;
   positionScores: Record<Position, PositionScore>;
+  flex: FlexScore; // Spread-only: FLEX as its own dimension (zero TE share by default)
   pickCapital: { value: number; score: number; flag: PickFlag };
   archetypes: string[];
 };
@@ -94,6 +100,7 @@ export type TeamProfile = {
 export type LeagueAverages = {
   starter: Record<Position, number>;
   depth: Record<Position, number>;
+  flex: number; // Spread: average value of best-3 RB/WR not starting at their pos
   pickCapital: number;
   pickCapitalStd: number;
 };

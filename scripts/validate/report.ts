@@ -1,6 +1,8 @@
 import { writeFileSync } from "node:fs";
 import type { LeagueFormat, TeamProfile, WindowLabel } from "./types.ts";
 
+const ALGO_NAME = "Spread";
+
 // ── Terminal output (for me / debugging) ─────────────────────────────────────
 
 const C = {
@@ -66,6 +68,7 @@ export function printTerminal(
   console.log(C.bold + C.cyan + "═".repeat(80) + C.reset);
   console.log(C.bold + " " + leagueName + C.reset);
   console.log(C.gray + " " + slotStr + "  ·  " + fmtStr + "  ·  " + profiles.length + " teams" + C.reset);
+  console.log(C.gray + " algorithm: " + C.reset + C.bold + ALGO_NAME + C.reset);
   console.log(C.bold + C.cyan + "═".repeat(80) + C.reset);
 
   const sorted = [...profiles].sort((a, b) => {
@@ -98,6 +101,7 @@ function printTeam(t: TeamProfile): void {
     C.gray + "adj_age " + C.reset + t.weightedAge.toFixed(2).padEnd(6) +
     C.gray + "young% " + C.reset + (t.youngValueShare * 100).toFixed(0).padEnd(4) +
     C.gray + "starter " + C.reset + Math.round(t.starterTotalValue).toLocaleString().padEnd(8) +
+    C.gray + "flex " + C.reset + t.flex.score.toFixed(0).padEnd(4) +
     C.gray + "picks " + C.reset + pickColor + t.pickCapital.flag + C.reset +
     C.gray + " (" + Math.round(t.pickCapital.value).toLocaleString() + ")" + C.reset,
   );
@@ -215,6 +219,7 @@ function teamCardHtml(t: TeamProfile): string {
         <span class="meta-pill">adj_age <strong>${t.weightedAge.toFixed(2)}</strong></span>
         <span class="meta-pill">young% <strong>${(t.youngValueShare * 100).toFixed(0)}</strong></span>
         <span class="meta-pill">starter <strong>${Math.round(t.starterTotalValue).toLocaleString()}</strong></span>
+        <span class="meta-pill">flex <strong>${t.flex.score.toFixed(0)}</strong></span>
         <span class="meta-pill" style="color:${pickColor}">${t.pickCapital.flag} (${Math.round(t.pickCapital.value).toLocaleString()})</span>
       </div>
       <div class="positions">${positions}</div>
@@ -314,7 +319,7 @@ export function writeHtmlReport(
 </head>
 <body>
   <h1>${escapeHtml(leagueName)}</h1>
-  <div class="meta">${escapeHtml(slotStr)}  ·  ${escapeHtml(fmtStr)}  ·  ${profiles.length} teams  ·  generated ${new Date().toISOString()}</div>
+  <div class="meta">${escapeHtml(slotStr)}  ·  ${escapeHtml(fmtStr)}  ·  ${profiles.length} teams  ·  algorithm: <strong>${ALGO_NAME}</strong>  ·  generated ${new Date().toISOString()}</div>
 
   <h2>LEAGUE SHAPE</h2>
   ${gridSummaryHtml(profiles)}
