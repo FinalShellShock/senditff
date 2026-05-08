@@ -1,5 +1,5 @@
 import { writeFileSync } from "node:fs";
-import type { LeagueFormat, TeamProfile, WindowLabel } from "./types.ts";
+import type { LeagueFormat, TeamProfile, WindowLabel } from "../../src/algo/index.ts";
 
 const ALGO_NAME = "West Coast";
 

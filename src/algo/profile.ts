@@ -1,101 +1,39 @@
+import {
+  COMPETITIVENESS_GRID,
+  PICK_ADJUSTMENT_BY_FLAG,
+  PICK_DECAY,
+  POSITIONS,
+  POSITION_CURVES,
+  PRESSURE_AT_DECLINE_START,
+  PRESSURE_AT_DONE,
+  PRESSURE_AT_PEAK_END,
+  PRESSURE_AT_PEAK_START,
+  PRESSURE_AT_PRODUCTIVE,
+  STD_THRESHOLD,
+  TEP_MULTIPLIER,
+  WINDOW_LONG_THRESHOLD,
+  WINDOW_SHORT_THRESHOLD,
+} from "./constants.ts";
+import { detectArchetypes } from "./archetypes.ts";
 import type {
   Competitiveness,
   LeagueAverages,
   LeagueFormat,
   Pick,
+  PickFlag,
   Player,
   Position,
   PositionScore,
+  TeamInput,
   TeamProfile,
-  WindowLabel,
   WindowTier,
 } from "./types.ts";
-
-const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
-
-// West Coast: position-aware age pressure curves.
-// Source: ESPN Cockcroft 2023, PFF, 4for4, FantasyLife.
-// Each player gets pressure 0-100 based on calendar age and position.
-// 0 = years of productivity ahead. 100 = career done.
-type CurveBreakpoints = {
-  productiveStart: number; // pressure starts climbing AFTER this (before = 0)
-  peakStart: number;       // entering prime
-  peakEnd: number;         // leaving prime
-  declineStart: number;    // sharp decline begins
-  done: number;            // pressure capped at 100 from here
-};
-
-const POSITION_CURVES: Record<Position, CurveBreakpoints> = {
-  // QB: long careers, peak 27-32 for pocket / 24-27 for dual-threat. Use averaged window.
-  QB: { productiveStart: 23, peakStart: 26, peakEnd: 32, declineStart: 35, done: 38 },
-  // RB: short careers, sharp decline 28-29.
-  RB: { productiveStart: 21, peakStart: 23, peakEnd: 27, declineStart: 28, done: 30 },
-  // WR: peak 26-30, decline 31-32.
-  WR: { productiveStart: 22, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 },
-  // TE: late breakout, peak 26-30, decline 32.
-  TE: { productiveStart: 23, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 },
-};
-
-// Pressure values at each curve breakpoint. Linear interp between.
-const PRESSURE_AT_PRODUCTIVE = 0;
-const PRESSURE_AT_PEAK_START = 0;
-const PRESSURE_AT_PEAK_END = 25;
-const PRESSURE_AT_DECLINE_START = 60;
-const PRESSURE_AT_DONE = 100;
-
-const PICK_DECAY: Record<number, number> = {
-  0: 1.0,
-  1: 0.85,
-  2: 0.70,
-  3: 0.55,
-};
-
-const TEP_MULTIPLIER = 1.15;
-
-// Window pressure is age pressure adjusted by pick capital:
-//   windowPressure = starterAgePressure + pickAdjustment
-// where pickAdjustment = -8 / 0 / +12 by PICK_RICH/NEUTRAL/PICK_POOR.
-// Picks shift the window but don't dominate (a young roster with NEUTRAL picks
-// still lands LONG; an old roster with PICK_RICH still lands SHORT).
-const PICK_ADJUSTMENT_BY_FLAG: Record<"PICK_RICH" | "NEUTRAL" | "PICK_POOR", number> = {
-  PICK_RICH: -8,
-  NEUTRAL: 0,
-  PICK_POOR: 12,
-};
-
-// Threshold for the consolidate_flex archetype: a team with FLEX score this far
-// above league average has genuine "stackable trade chips" beyond positional needs.
-const FLEX_CONSOLIDATE_THRESHOLD = 55;
-
-// Audible: standard-deviation cutoff for STRONG/AVERAGE/WEAK on the
-// competitiveness axis. 0.5σ = "noticeably above/below average for this league."
-const STD_THRESHOLD = 0.5;
-
-// West Coast: absolute thresholds on window pressure, calibrated against the
-// position curves. Tunable.
-//   < 5   = LONG  (mostly pre-peak rosters, picks-rich rebuilds)
-//   > 14  = SHORT (significant aging starters or PICK_POOR mid-tier teams)
-const WINDOW_LONG_THRESHOLD = 5;
-const WINDOW_SHORT_THRESHOLD = 14;
-
-// In-season COMPETITIVENESS weights (parked here so we don't lose the formula).
-//   w_season = 0.25 + 0.04 * week
-//   w_recent = max(0, 0.20 - 0.01 * week)
-//   w_roster = 1 - w_season - w_recent
-// Source: lining103 power ranker, modified to use PPG instead of W/L.
-
-export const COMPETITIVENESS_GRID: Record<Competitiveness, Record<WindowTier, WindowLabel>> = {
-  STRONG: { LONG: "JUGGERNAUT", MID: "CONTEND", SHORT: "CLOSING" },
-  AVERAGE: { LONG: "RISING", MID: "AVERAGE", SHORT: "MIDDLING" },
-  WEAK: { LONG: "REBUILD", MID: "TRANSITION", SHORT: "STUCK" },
-};
 
 // ── Value getters ────────────────────────────────────────────────────────────
 // Competitiveness math (starter / FLEX / depth) uses redraft values.
 // Window math (age / young share) uses dynasty values.
 
 const REDRAFT = (p: Player): number => p.valueRedraft;
-const DYNASTY = (p: Player): number => p.valueDynasty;
 
 function byValueDesc(getValue: (p: Player) => number) {
   return (a: Player, b: Player) => {
@@ -295,21 +233,6 @@ export function classifyPosition(score: PositionScore["urgency"]): PositionScore
   return "SURPLUS";
 }
 
-export function tercile(rank: number, total: number): 0 | 1 | 2 {
-  const third = total / 3;
-  if (rank <= Math.ceil(third)) return 0;
-  if (rank <= Math.ceil(2 * third)) return 1;
-  return 2;
-}
-
-function percentileRank(value: number, all: number[], higherIsMore: boolean): number {
-  const sorted = [...all].sort((a, b) => a - b);
-  let rank = 0;
-  for (const v of sorted) if (v < value) rank++;
-  const pct = (rank / Math.max(1, sorted.length - 1)) * 100;
-  return higherIsMore ? pct : 100 - pct;
-}
-
 // ── TEP applies to BOTH redraft and dynasty values ────────────────────────────
 
 export function applyTep(players: Player[], format: LeagueFormat): Player[] {
@@ -368,22 +291,14 @@ export function computePositionScores(
 // ── Main pipeline ────────────────────────────────────────────────────────────
 
 export function computeAllProfiles(
-  teams: Array<{
-    rosterId: number;
-    ownerName: string;
-    isMine: boolean;
-    record: string;
-    players: Player[];
-    picks: Pick[];
-  }>,
+  teams: TeamInput[],
   format: LeagueFormat,
   thisYear: number,
 ): TeamProfile[] {
-  type Stage1 = (typeof teams)[number] & {
-    players: Player[];
+  type Stage1 = TeamInput & {
     starterTotalValue: number;
     starterAgePressure: number;
-    starterCalAge: number; // for display
+    starterCalAge: number;
     pickCapValue: number;
     flexValue: number;
     starters: Record<Position, Player[]>;
@@ -437,7 +352,7 @@ export function computeAllProfiles(
   const stdCap = Math.sqrt(
     caps.reduce((s, v) => s + (v - meanCap) ** 2, 0) / caps.length,
   );
-  const pickFlagFor = (cap: number): TeamProfile["pickCapital"]["flag"] => {
+  const pickFlagFor = (cap: number): PickFlag => {
     if (cap > meanCap + 1.5 * stdCap) return "PICK_RICH";
     if (cap < meanCap - 1.5 * stdCap) return "PICK_POOR";
     return "NEUTRAL";
@@ -446,7 +361,7 @@ export function computeAllProfiles(
   type Stage2 = Stage1 & {
     competitiveness: Competitiveness;
     windowPressure: number;
-    pickFlag: TeamProfile["pickCapital"]["flag"];
+    pickFlag: PickFlag;
   };
   const stage2: Stage2[] = stage1.map((t) => {
     // Window pressure is age pressure shifted by the pick flag adjustment.
@@ -461,7 +376,6 @@ export function computeAllProfiles(
     };
   });
 
-  // Window axis (Audible: std-dev cuts instead of terciles)
   const sortedByPressure = [...stage2].sort((a, b) => {
     if (a.windowPressure !== b.windowPressure) return a.windowPressure - b.windowPressure;
     return a.rosterId - b.rosterId;
@@ -499,7 +413,6 @@ export function computeAllProfiles(
     pickCapitalStd: stdCap,
   };
 
-  // Final assembly
   return stage2.map((t) => {
     const tier = windowTierFor(t.windowPressure);
     const positionScores = computePositionScores(
@@ -538,101 +451,4 @@ export function computeAllProfiles(
     profile.archetypes = detectArchetypes(profile, averages, format);
     return profile;
   });
-}
-
-// ── Archetypes ───────────────────────────────────────────────────────────────
-
-export function detectArchetypes(
-  team: TeamProfile,
-  averages: LeagueAverages,
-  _format: LeagueFormat,
-): string[] {
-  const out: string[] = [];
-
-  // Tier down: elite starter at pos + weak depth there.
-  for (const pos of POSITIONS) {
-    const ps = team.positionScores[pos];
-    const eliteStarter = averages.starter[pos] > 0 && ps.starterValue > 1.4 * averages.starter[pos];
-    const weakDepth = averages.depth[pos] > 0 && ps.depthValue < 0.6 * averages.depth[pos];
-    if (eliteStarter && weakDepth) out.push(`tier_down_${pos}`);
-  }
-
-  // Per-position consolidate: mid starter + decent depth + need elsewhere.
-  const needPositions = POSITIONS.filter(
-    (p) => team.positionScores[p].classification === "CRITICAL_NEED" ||
-           team.positionScores[p].classification === "NEED",
-  );
-  for (const pos of POSITIONS) {
-    const ps = team.positionScores[pos];
-    const midStarter = ps.starterScore >= 40 && ps.starterScore <= 65;
-    const decentDepth = ps.depthScore >= 55;
-    if (midStarter && decentDepth && needPositions.some((np) => np !== pos)) {
-      out.push(`consolidate_${pos}`);
-    }
-  }
-
-  // NEW: consolidate_flex — high FLEX score + at least one position need.
-  // Signals "you have stackable trade chips and somewhere productive to put them."
-  if (team.flex.score >= FLEX_CONSOLIDATE_THRESHOLD && needPositions.length > 0) {
-    out.push("consolidate_flex");
-  }
-
-  // Age arbitrage (buy): LONG window + can absorb veterans (PICK_RICH).
-  if (team.windowTier === "LONG" && team.pickCapital.flag === "PICK_RICH") {
-    out.push("age_arb_buy");
-  }
-
-  // Age arbitrage (sell): old, still-strong roster — bail proactively for picks/youth.
-  if (team.windowTier === "SHORT" && team.competitiveness !== "WEAK") {
-    out.push("age_arb_sell");
-  }
-
-  // Push in: STRONG-window-closing — mortgage future for veterans, max out the
-  // 1-2 year window. Parallel option to age_arb_sell. Only fires for STRONG;
-  // an AVERAGE/SHORT (MIDDLING) team isn't a contender to push toward.
-  if (team.windowTier === "SHORT" && team.competitiveness === "STRONG") {
-    out.push("push_in");
-  }
-
-  // Need fill flavors. Trigger if team has at least one CRITICAL_NEED.
-  //   stacked  = elite starter + elite depth at same pos (package multiple from this stack)
-  //   balanced = SURPLUS classification but not a stack (generic 1-for-1 candidate)
-  // The "thin" case (elite starter + weak depth) is already captured by tier_down_<pos>
-  // using raw value ratios — we don't duplicate it here.
-  // Note: stacked uses the raw starter/depth scores directly rather than gating on
-  // SURPLUS classification, because elite-stacked positions can have urgency just
-  // above the SURPLUS threshold due to window pressure (e.g. cwescoe at urgency 30).
-  const hasCritical = POSITIONS.some(
-    (p) => team.positionScores[p].classification === "CRITICAL_NEED",
-  );
-  if (hasCritical) {
-    for (const pos of POSITIONS) {
-      const ps = team.positionScores[pos];
-      const eliteStarter = ps.starterScore >= 80;
-      const eliteDepth = ps.depthScore >= 80;
-      if (eliteStarter && eliteDepth) {
-        out.push(`need_fill_stacked_${pos}`);
-        continue;
-      }
-      if (ps.classification === "SURPLUS") {
-        out.push(`need_fill_balanced_${pos}`);
-      }
-    }
-  }
-
-  // Capital play
-  if (
-    (team.competitiveness === "STRONG" || team.windowLabel === "CONTEND") &&
-    team.pickCapital.flag === "PICK_POOR"
-  ) {
-    out.push("capital_convert_picks_to_production");
-  }
-  if (
-    (team.competitiveness === "WEAK" || team.windowTier === "LONG") &&
-    team.pickCapital.flag === "PICK_RICH"
-  ) {
-    out.push("capital_convert_production_to_picks");
-  }
-
-  return out;
 }

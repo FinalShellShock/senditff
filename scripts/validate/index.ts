@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
-import { computeAllProfiles } from "./algo.ts";
+import { computeAllProfiles } from "../../src/algo/index.ts";
+import type { Pick, Player, Position } from "../../src/algo/index.ts";
 import {
   buildPicksMap,
   detectFormat,
@@ -8,9 +9,9 @@ import {
   fetchPlayers,
   normName,
   projectDraftSlots,
-} from "./fetch.ts";
+} from "../../src/data/index.ts";
+import type { SleeperPlayer } from "../../src/data/index.ts";
 import { printTerminal, writeHtmlReport } from "./report.ts";
-import type { Pick, Player, Position, SleeperPlayer } from "./types.ts";
 
 const DEFAULT_LEAGUE_ID = "1336158419664506880";
 const MY_SLEEPER_USERNAME = "FinalShellShock";

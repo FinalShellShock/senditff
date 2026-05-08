@@ -1,5 +1,4 @@
-// Throwaway types for the algorithm validation script.
-// Will be re-derived once the real app exists; do not import these from app code.
+// Algorithm-domain types. Pure compute, no external API shapes.
 
 export type Position = "QB" | "RB" | "WR" | "TE";
 
@@ -25,8 +24,10 @@ export type Player = {
   position: Position;
   team: string | null;
   age: number | null;
-  valueRedraft: number; // current-season-only value (FantasyCalc isDynasty=false). Used for competitiveness math.
-  valueDynasty: number; // long-term value (FantasyCalc isDynasty=true). Used for window math.
+  // Current-season-only value (FantasyCalc isDynasty=false). Drives competitiveness math.
+  valueRedraft: number;
+  // Long-term value (FantasyCalc isDynasty=true). Drives window math.
+  valueDynasty: number;
 };
 
 export type Pick = {
@@ -40,7 +41,6 @@ export type Pick = {
 };
 
 // Two independent classification axes that combine into a 3x3 grid.
-// Final cell labels (the WindowLabel type) are placeholders — Johnny will name them later.
 export type Competitiveness = "STRONG" | "AVERAGE" | "WEAK";
 export type WindowTier = "LONG" | "MID" | "SHORT";
 
@@ -101,52 +101,17 @@ export type TeamProfile = {
 export type LeagueAverages = {
   starter: Record<Position, number>;
   depth: Record<Position, number>;
-  flex: number; // Spread: average value of best-3 RB/WR not starting at their pos
+  flex: number;
   pickCapital: number;
   pickCapitalStd: number;
 };
 
-export type SleeperLeague = {
-  league_id: string;
-  name: string;
-  total_rosters: number;
-  roster_positions: string[];
-  scoring_settings: Record<string, number>;
-  status?: string;
-};
-
-export type SleeperUser = {
-  user_id: string;
-  display_name: string;
-  username?: string;
-};
-
-export type SleeperRoster = {
-  roster_id: number;
-  owner_id: string | null;
-  players: string[] | null;
-  settings?: { wins?: number; losses?: number; fpts?: number | string };
-};
-
-export type SleeperTradedPick = {
-  season: string;
-  round: number;
-  roster_id: number;
-  owner_id: number;
-  previous_owner_id: number;
-};
-
-export type SleeperPlayer = {
-  player_id?: string;
-  full_name?: string;
-  first_name?: string;
-  last_name?: string;
-  position?: string;
-  team?: string | null;
-  age?: number;
-};
-
-export type FantasyCalcEntry = {
-  value: number;
-  player: { name?: string; age?: number; position?: string };
+// Input row for `computeAllProfiles`. The pipeline owns producing the full profile.
+export type TeamInput = {
+  rosterId: number;
+  ownerName: string;
+  isMine: boolean;
+  record: string;
+  players: Player[];
+  picks: Pick[];
 };
