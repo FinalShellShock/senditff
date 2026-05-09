@@ -33,12 +33,19 @@ export default function LeagueShell() {
 
   useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const myProfile = overview?.profiles.find((p) => p.isMine);
   const formatStr = overview
     ? `${overview.format.superflex ? "SF" : "1QB"} · ${overview.format.scoring.toUpperCase()}${overview.format.tep ? " · TEP" : ""}`
     : "";
 
   const isTeamsRoute = location.pathname.includes("/team/");
+
+  // Show whichever team is currently open in the nav; fall back to rank #1
+  const currentRosterMatch = location.pathname.match(/\/team\/(\d+)/);
+  const currentRosterId = currentRosterMatch ? Number(currentRosterMatch[1]) : null;
+  const rankedFirst = overview?.profiles.slice().sort((a, b) => a.starterRank - b.starterRank)[0];
+  const navTeam = currentRosterId
+    ? overview?.profiles.find((p) => p.rosterId === currentRosterId)
+    : rankedFirst;
 
   return (
     <div className="shell">
@@ -61,10 +68,10 @@ export default function LeagueShell() {
           OVERVIEW
         </NavLink>
         <NavLink
-          to={myProfile ? `/league/${id}/team/${myProfile.rosterId}` : "#"}
-          className={`league-nav-tab${isTeamsRoute ? " active" : ""}${!myProfile ? " disabled" : ""}`}
+          to={navTeam ? `/league/${id}/team/${navTeam.rosterId}` : "#"}
+          className={`league-nav-tab${isTeamsRoute ? " active" : ""}${!navTeam ? " disabled" : ""}`}
         >
-          {myProfile ? myProfile.ownerName.toUpperCase() : "MY TEAM"}
+          {currentRosterId && navTeam ? navTeam.ownerName.toUpperCase() : "TEAMS"}
         </NavLink>
         <NavLink
           to={`/league/${id}/trade`}
