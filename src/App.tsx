@@ -4,7 +4,8 @@ import MyLeagues from "./pages/MyLeagues.tsx";
 import LeagueShell from "./pages/LeagueShell.tsx";
 import LeagueOverview from "./pages/LeagueOverview.tsx";
 import TeamDeepDive from "./pages/TeamDeepDive.tsx";
-import TradeEval from "./pages/TradeEval.tsx";
+import SendIt from "./pages/SendIt.tsx";
+import Calc from "./pages/Calc.tsx";
 
 function SignInScreen() {
   const { signIn } = useAuth();
@@ -45,7 +46,8 @@ function AuthGate() {
       <Route path="/league/:id" element={<LeagueShell />}>
         <Route index element={<LeagueOverview />} />
         <Route path="team/:rosterId" element={<TeamDeepDive />} />
-        <Route path="trade" element={<TradeEval />} />
+        <Route path="sendit/:rosterId" element={<SendIt />} />
+        <Route path="calc" element={<Calc />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

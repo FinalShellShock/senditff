@@ -38,10 +38,11 @@ export default function LeagueShell() {
     : "";
 
   const isTeamsRoute = location.pathname.includes("/team/");
+  const isSendItRoute = location.pathname.includes("/sendit/");
 
-  // Show whichever team is currently open in the nav; fall back to rank #1
-  const currentRosterMatch = location.pathname.match(/\/team\/(\d+)/);
-  const currentRosterId = currentRosterMatch ? Number(currentRosterMatch[1]) : null;
+  // Track whichever team is open across both /team/ and /sendit/ routes
+  const rosterMatch = location.pathname.match(/\/(?:team|sendit)\/(\d+)/);
+  const currentRosterId = rosterMatch ? Number(rosterMatch[1]) : null;
   const rankedFirst = overview?.profiles.slice().sort((a, b) => a.starterRank - b.starterRank)[0];
   const navTeam = currentRosterId
     ? overview?.profiles.find((p) => p.rosterId === currentRosterId)
@@ -71,13 +72,19 @@ export default function LeagueShell() {
           to={navTeam ? `/league/${id}/team/${navTeam.rosterId}` : "#"}
           className={`league-nav-tab${isTeamsRoute ? " active" : ""}${!navTeam ? " disabled" : ""}`}
         >
-          {currentRosterId && navTeam ? navTeam.ownerName.toUpperCase() : "TEAMS"}
+          TEAMS
         </NavLink>
         <NavLink
-          to={`/league/${id}/trade`}
+          to={navTeam ? `/league/${id}/sendit/${navTeam.rosterId}` : "#"}
+          className={`league-nav-tab${isSendItRoute ? " active" : ""}${!navTeam ? " disabled" : ""}`}
+        >
+          SEND IT
+        </NavLink>
+        <NavLink
+          to={`/league/${id}/calc`}
           className={({ isActive }) => `league-nav-tab${isActive ? " active" : ""}`}
         >
-          TRADE EVAL
+          CALC
         </NavLink>
       </nav>
 
