@@ -72,23 +72,31 @@ export default function MyLeagues() {
                 <div className="league-card-main">
                   <div className="league-name">{league.name}</div>
                   <div className="league-meta-row">
-                    <span className="format-badge">{formatBadge(league)}</span>
-                    <span className="dim-text">synced {timeAgo(league.lastRefreshed)}</span>
+                    {league.lastRefreshed ? (
+                      <>
+                        <span className="format-badge">{formatBadge(league)}</span>
+                        <span className="dim-text">synced {timeAgo(league.lastRefreshed)}</span>
+                      </>
+                    ) : (
+                      <span className="dim-text">not synced yet</span>
+                    )}
                   </div>
                 </div>
                 <div className="league-card-actions">
-                  <button
-                    className="btn-primary"
-                    onClick={() => navigate(`/league/${league.leagueId}`)}
-                  >
-                    Open
-                  </button>
+                  {league.lastRefreshed && (
+                    <button
+                      className="btn-primary"
+                      onClick={() => navigate(`/league/${league.leagueId}`)}
+                    >
+                      Open
+                    </button>
+                  )}
                   <button
                     className="btn-secondary"
                     disabled={syncing === league.leagueId}
                     onClick={() => handleSync(league.leagueId, league.leagueId)}
                   >
-                    {syncing === league.leagueId ? "Syncing..." : "Refresh"}
+                    {syncing === league.leagueId ? "Syncing..." : league.lastRefreshed ? "Refresh" : "Sync"}
                   </button>
                 </div>
               </div>

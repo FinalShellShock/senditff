@@ -8,7 +8,7 @@ export type LeagueMeta = {
   superflex: boolean;
   scoring: "ppr" | "half" | "std";
   tep: boolean;
-  lastRefreshed: string;
+  lastRefreshed: string | null; // null = never synced
 };
 
 // Subscribes to the user's leagueIds list, then fetches metadata for each.
@@ -36,7 +36,9 @@ export function useLeagues(uid: string): {
       const metas = await Promise.all(
         leagueIds.map(async (id) => {
           const snap = await getDoc(doc(db, "leagues", id));
-          if (!snap.exists()) return null;
+          if (!snap.exists()) {
+            return { leagueId: id, name: id, superflex: false, scoring: "ppr" as const, tep: false, lastRefreshed: null };
+          }
           const d = snap.data();
           return {
             leagueId: id,
@@ -49,7 +51,7 @@ export function useLeagues(uid: string): {
         }),
       );
 
-      setLeagues(metas.filter((m): m is LeagueMeta => m !== null));
+      setLeagues(metas);
       setLoading(false);
     });
 

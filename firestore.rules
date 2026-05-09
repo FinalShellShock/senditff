@@ -4,7 +4,8 @@ service cloud.firestore {
 
     // Each user manages their own doc (client writes on sign-up before approval)
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if request.auth != null
+        && (request.auth.uid == uid || request.auth.token.email == uid);
     }
 
     // League data and value snapshots: Admin SDK writes only;
