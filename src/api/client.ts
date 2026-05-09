@@ -1,5 +1,16 @@
 import type { TeamProfile } from "../algo/types.ts";
 
+export type TradePackage = {
+  counterTeam: string;
+  counterRosterId: number;
+  give: Array<{ id: string; name: string; position: string; valueDynasty: number }>;
+  receive: Array<{ id: string; name: string; position: string; valueDynasty: number }>;
+  valueGive: number;
+  valueReceive: number;
+  archetype: string;
+  rationale: string;
+};
+
 type GetTokenFn = () => Promise<string>;
 
 async function apiFetch<T>(
@@ -57,5 +68,11 @@ export function makeApiClient(getToken: GetTokenFn) {
 
     getOverview: (leagueId: string) =>
       apiFetch<OverviewResponse>(getToken, `/api/leagues/overview?leagueId=${leagueId}`),
+
+    findTrades: (leagueId: string, rosterId: number) =>
+      apiFetch<{ packages: TradePackage[] }>(getToken, "/api/trades/find", {
+        method: "POST",
+        body: JSON.stringify({ leagueId, rosterId }),
+      }),
   };
 }

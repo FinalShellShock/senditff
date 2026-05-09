@@ -35,7 +35,8 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
-function TeamCard({ profile }: { profile: TeamProfile }) {
+function TeamCard({ profile, leagueId }: { profile: TeamProfile; leagueId: string }) {
+  const navigate = useNavigate();
   const labelColor = LABEL_COLOR[profile.windowLabel];
   return (
     <div className={`team-card${profile.isMine ? " mine" : ""}`}>
@@ -44,7 +45,16 @@ function TeamCard({ profile }: { profile: TeamProfile }) {
           {profile.ownerName}
           {profile.isMine && <span className="mine-mark">★ YOU</span>}
         </div>
-        <div className="team-rank">rank #{profile.starterRank} · {profile.record}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="team-rank">rank #{profile.starterRank} · {profile.record}</div>
+          <button
+            className="btn-secondary"
+            style={{ padding: "4px 10px", fontSize: 11 }}
+            onClick={() => navigate(`/league/${leagueId}/team/${profile.rosterId}`)}
+          >
+            View
+          </button>
+        </div>
       </div>
 
       <div className="team-meta">
@@ -217,7 +227,7 @@ export default function LeagueOverview() {
             <section className="overview-section">
               <h2 className="section-title">Teams</h2>
               <div className="team-list">
-                {sorted.map((p) => <TeamCard key={p.rosterId} profile={p} />)}
+                {sorted.map((p) => <TeamCard key={p.rosterId} profile={p} leagueId={id!} />)}
               </div>
             </section>
           </>

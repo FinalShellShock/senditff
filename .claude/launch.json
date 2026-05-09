@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vite",
+      "runtimeExecutable": "/Users/johnny/dynasty-trade/sendit/node_modules/.bin/vite",
+      "runtimeArgs": [],
+      "port": 5173
+    }
+  ]
+}
