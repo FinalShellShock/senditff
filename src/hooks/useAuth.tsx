@@ -33,7 +33,9 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function checkApproval(user: User): Promise<boolean> {
   const snap = await getDoc(doc(db, "users", user.uid));
-  return snap.exists() && snap.data()?.["approved"] === true;
+  if (!snap.exists()) return false;
+  const d = snap.data();
+  return d?.["approved"] === true || d?.["subscribed"] === true;
 }
 
 async function ensureUserDoc(user: User): Promise<void> {
