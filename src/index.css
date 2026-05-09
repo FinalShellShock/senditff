@@ -698,28 +698,121 @@ body {
   color: #64748b;
 }
 
-/* ── Team card needs/surplus summary ────────────────────────────────── */
+/* ── Mini bar (shared across league table + position dashboard) ──────── */
 
-.card-needs-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255,255,255,0.05);
-  margin-top: 4px;
+.mini-bar-track {
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  flex: 1;
+  min-width: 32px;
 }
 
-.card-needs-group {
+.mini-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+/* ── League table ────────────────────────────────────────────────────── */
+
+.league-table {
   display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.lt-header,
+.lt-row {
+  display: grid;
+  /* rank | team | QB | RB | WR | TE | picks */
+  grid-template-columns: 28px 1fr 96px 96px 96px 96px 54px;
+  gap: 10px;
   align-items: center;
-  gap: 5px;
+  padding: 10px 12px;
 }
 
-.card-needs-label {
+.lt-header {
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.lt-header-label {
   font-size: 9px;
   color: #334155;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  font-weight: 700;
 }
+
+.lt-pos-header { text-align: center; }
+
+.lt-row {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.12s;
+  align-items: start;
+}
+
+.lt-row:hover { border-color: rgba(255,255,255,0.12); }
+.lt-row.mine { border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.03); }
+
+.lt-rank {
+  font-size: 11px;
+  color: #334155;
+  font-weight: 700;
+  padding-top: 2px;
+}
+
+.lt-owner { min-width: 0; }
+
+.lt-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.lt-pos-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.lt-pos-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lt-pos-label {
+  font-size: 8px;
+  color: #334155;
+  letter-spacing: 1px;
+  width: 14px;
+  flex-shrink: 0;
+}
+
+.lt-pos-score {
+  font-size: 10px;
+  color: #64748b;
+  width: 20px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.lt-pos-class {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-top: 2px;
+}
+
+.lt-picks { text-align: right; }
 
 /* ── Positional needs board ──────────────────────────────────────────── */
 
@@ -793,6 +886,105 @@ body {
 .needs-board-empty {
   font-size: 11px;
   color: #1e293b;
+}
+
+/* ── Position dashboard (team deep dive) ────────────────────────────── */
+
+.pos-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pos-dash-header-row,
+.pos-dash-row {
+  display: grid;
+  /* pos-tag | classification | starter | depth | best player */
+  grid-template-columns: 34px 160px 1fr 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.pos-dash-header-row {
+  padding: 0 10px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.pos-dash-col-label {
+  font-size: 9px;
+  color: #334155;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+.pos-dash-row {
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 5px;
+}
+
+.pos-dash-class { }
+
+.pos-dash-metric {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pos-dash-num {
+  font-size: 11px;
+  color: #64748b;
+  width: 22px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.pos-dash-player {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Compact roster ──────────────────────────────────────────────────── */
+
+.roster-compact {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3px;
+}
+
+.roster-row {
+  display: grid;
+  grid-template-columns: 26px 1fr 22px 54px;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.015);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 4px;
+}
+
+.roster-name {
+  font-size: 11px;
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roster-age {
+  font-size: 10px;
+  color: #475569;
+  text-align: center;
+}
+
+.roster-val {
+  font-size: 10px;
+  color: #475569;
+  text-align: right;
 }
 
 /* ── Trade cards ─────────────────────────────────────────────────────── */

@@ -27,42 +27,12 @@ const POS_CLASS_COLOR: Record<string, string> = {
 
 const POSITIONS = ["QB", "RB", "WR", "TE"] as const;
 
-function ScoreBar({ score }: { score: number }) {
+function MiniBar({ score }: { score: number }) {
   const pct = Math.max(0, Math.min(100, score));
   const color = pct >= 70 ? "#22c55e" : pct >= 50 ? "#06b6d4" : pct >= 30 ? "#eab308" : "#ef4444";
   return (
-    <div className="bar-track">
-      <div className="bar-fill" style={{ width: `${pct}%`, background: color }} />
-    </div>
-  );
-}
-
-function NeedsSummaryRow({ profile }: { profile: TeamProfile }) {
-  const criticals = POSITIONS.filter((p) => profile.positionScores[p].classification === "CRITICAL_NEED");
-  const needs     = POSITIONS.filter((p) => profile.positionScores[p].classification === "NEED");
-  const surpluses = POSITIONS.filter((p) => profile.positionScores[p].classification === "SURPLUS");
-  if (criticals.length === 0 && needs.length === 0 && surpluses.length === 0) return null;
-  return (
-    <div className="card-needs-row">
-      {(criticals.length > 0 || needs.length > 0) && (
-        <div className="card-needs-group">
-          <span className="card-needs-label">NEEDS</span>
-          {criticals.map((p) => (
-            <span key={p} className={`pos-tag pos-${p}`} style={{ opacity: 1 }}>{p}</span>
-          ))}
-          {needs.map((p) => (
-            <span key={p} className={`pos-tag pos-${p}`} style={{ opacity: 0.6 }}>{p}</span>
-          ))}
-        </div>
-      )}
-      {surpluses.length > 0 && (
-        <div className="card-needs-group">
-          <span className="card-needs-label">SURPLUS</span>
-          {surpluses.map((p) => (
-            <span key={p} className={`pos-tag pos-${p}`} style={{ opacity: 0.6 }}>{p}</span>
-          ))}
-        </div>
-      )}
+    <div className="mini-bar-track">
+      <div className="mini-bar-fill" style={{ width: `${pct}%`, background: color }} />
     </div>
   );
 }
@@ -130,62 +100,55 @@ function NeedsBoard({ profiles, leagueId }: { profiles: TeamProfile[]; leagueId:
   );
 }
 
-function TeamCard({ profile, leagueId }: { profile: TeamProfile; leagueId: string }) {
+function LeagueTableRow({ profile, leagueId }: { profile: TeamProfile; leagueId: string }) {
   const navigate = useNavigate();
   const labelColor = LABEL_COLOR[profile.windowLabel];
+  const pickColor = profile.pickCapital.flag === "PICK_RICH" ? "#22c55e"
+    : profile.pickCapital.flag === "PICK_POOR" ? "#ef4444"
+    : "#94a3b8";
   return (
     <div
-      className={`team-card${profile.isMine ? " mine" : ""}`}
+      className={`lt-row${profile.isMine ? " mine" : ""}`}
       onClick={() => navigate(`/league/${leagueId}/team/${profile.rosterId}`)}
-      style={{ cursor: "pointer" }}
     >
-      <div className="team-header">
-        <div className="team-name">
+      <span className="lt-rank">#{profile.starterRank}</span>
+      <div className="lt-owner">
+        <span className="lt-name">
           {profile.ownerName}
-          {profile.isMine && <span className="mine-mark">★ YOU</span>}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div className="team-rank">rank #{profile.starterRank} · {profile.record}</div>
-          <span className="window-label" style={{ background: labelColor }}>{profile.windowLabel}</span>
-        </div>
-      </div>
-
-      <div className="team-meta" style={{ marginBottom: 8 }}>
-        <span className="meta-pill">{profile.competitiveness} / {profile.windowTier}</span>
-        <span className="meta-pill">age <strong>{profile.starterCalAge.toFixed(1)}</strong></span>
-        <span className="meta-pill">
-          picks <strong style={{ color: profile.pickCapital.flag === "PICK_RICH" ? "#22c55e" : profile.pickCapital.flag === "PICK_POOR" ? "#ef4444" : "#94a3b8" }}>
-            {profile.pickCapital.flag.replace("_", " ")}
-          </strong>
-          <span style={{ color: "#475569" }}> · {profile.pickCapital.score.toFixed(0)}</span>
+          {profile.isMine && <span className="mine-mark"> ★</span>}
         </span>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
+          <span className="window-label" style={{ background: labelColor, fontSize: 9, padding: "1px 6px" }}>{profile.windowLabel}</span>
+          <span style={{ fontSize: 10, color: "#475569" }}>{profile.record}</span>
+          <span style={{ fontSize: 10, color: "#475569" }}>age {profile.starterCalAge.toFixed(1)}</span>
+        </div>
       </div>
-
-      <div className="pos-grid">
-        {POSITIONS.map((pos) => {
-          const ps = profile.positionScores[pos];
-          return (
-            <div key={pos} className="pos-row">
-              <span className={`pos-tag pos-${pos}`}>{pos}</span>
-              <div className="bar-group">
-                <span className="bar-label">str</span>
-                <ScoreBar score={ps.starterScore} />
-                <span className="bar-num">{ps.starterScore.toFixed(0)}</span>
-              </div>
-              <div className="bar-group">
-                <span className="bar-label">dep</span>
-                <ScoreBar score={ps.depthScore} />
-                <span className="bar-num">{ps.depthScore.toFixed(0)}</span>
-              </div>
-              <span className="pos-class" style={{ color: POS_CLASS_COLOR[ps.classification] }}>
-                {ps.classification.replace("_", " ")}
-              </span>
+      {POSITIONS.map((pos) => {
+        const ps = profile.positionScores[pos];
+        return (
+          <div key={pos} className="lt-pos-cell">
+            <div className="lt-pos-bar-row">
+              <span className="lt-pos-label">str</span>
+              <MiniBar score={ps.starterScore} />
+              <span className="lt-pos-score">{ps.starterScore.toFixed(0)}</span>
             </div>
-          );
-        })}
+            <div className="lt-pos-bar-row">
+              <span className="lt-pos-label">dep</span>
+              <MiniBar score={ps.depthScore} />
+              <span className="lt-pos-score">{ps.depthScore.toFixed(0)}</span>
+            </div>
+            <span className="lt-pos-class" style={{ color: POS_CLASS_COLOR[ps.classification] }}>
+              {ps.classification.replace("_", " ")}
+            </span>
+          </div>
+        );
+      })}
+      <div className="lt-picks">
+        <span style={{ color: pickColor, fontWeight: 700, fontSize: 10 }}>
+          {profile.pickCapital.flag === "PICK_RICH" ? "RICH" : profile.pickCapital.flag === "PICK_POOR" ? "POOR" : "NEU"}
+        </span>
+        <span style={{ fontSize: 10, color: "#475569", display: "block" }}>· {profile.pickCapital.score.toFixed(0)}</span>
       </div>
-
-      <NeedsSummaryRow profile={profile} />
     </div>
   );
 }
@@ -296,8 +259,17 @@ export default function LeagueOverview() {
 
       <section className="overview-section">
         <h2 className="section-title">Teams</h2>
-        <div className="team-list">
-          {sorted.map((p) => <TeamCard key={p.rosterId} profile={p} leagueId={id!} />)}
+        <div className="league-table">
+          <div className="lt-header">
+            <div />
+            <div className="lt-header-label">TEAM</div>
+            <div className="lt-header-label lt-pos-header">QB</div>
+            <div className="lt-header-label lt-pos-header">RB</div>
+            <div className="lt-header-label lt-pos-header">WR</div>
+            <div className="lt-header-label lt-pos-header">TE</div>
+            <div className="lt-header-label">PICKS</div>
+          </div>
+          {sorted.map((p) => <LeagueTableRow key={p.rosterId} profile={p} leagueId={id!} />)}
         </div>
       </section>
     </>

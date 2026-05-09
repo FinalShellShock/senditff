@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import type { Player, Pick as DraftPick, TeamProfile, WindowLabel } from "../algo/types.ts";
+import type { Pick as DraftPick, TeamProfile, WindowLabel } from "../algo/types.ts";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 
 const LABEL_COLOR: Record<WindowLabel, string> = {
@@ -27,14 +27,17 @@ const ARCHETYPE_LABELS: Record<string, string> = {
   tier_down_RB:      "Trade elite RB for two mid-tier RBs",
   tier_down_WR:      "Trade elite WR for two mid-tier WRs",
   tier_down_TE:      "Trade elite TE for two mid-tier TEs",
-  consolidate:       "Consolidate depth into a starter",
-  consolidate_flex:  "Convert flex depth into a starter",
+  consolidate_QB:    "Consolidate QB depth into a true starter",
+  consolidate_RB:    "Consolidate RB depth into a true starter",
+  consolidate_WR:    "Consolidate WR depth into a true starter",
+  consolidate_TE:    "Consolidate TE depth into a true starter",
+  consolidate_flex:  "Convert flex depth into a positional starter",
   age_arb_buy:       "Buy young players before their breakout",
   age_arb_sell:      "Sell aging veterans at peak value",
   push_in:           "Aggressive push into contention",
-  need_fill_stacked: "Fill a critical positional need",
-  need_fill_balanced:"Fill positional needs across the board",
-  capital_convert:   "Convert pick capital into players",
+  need_fill:         "Fill critical positional needs",
+  capital_convert_picks_to_production: "Convert pick capital into proven production",
+  capital_convert_production_to_picks: "Trade production for future pick capital",
 };
 
 const POSITIONS = ["QB", "RB", "WR", "TE"] as const;
@@ -44,25 +47,12 @@ function posColor(pos: string) {
   return map[pos] ?? "#94a3b8";
 }
 
-function valueBar(value: number, max = 10000) {
-  const pct = Math.min(100, (value / max) * 100);
-  const color = pct >= 70 ? "#22c55e" : pct >= 40 ? "#06b6d4" : pct >= 20 ? "#eab308" : "#ef4444";
-  return { pct, color };
-}
-
-function PlayerRow({ player, rank }: { player: Player; rank: number }) {
-  const bar = valueBar(player.valueDynasty);
+function MiniBar({ score }: { score: number }) {
+  const pct = Math.min(100, Math.max(0, score));
+  const color = pct >= 70 ? "#22c55e" : pct >= 50 ? "#06b6d4" : pct >= 30 ? "#eab308" : "#ef4444";
   return (
-    <div className="dive-player-row">
-      <span className="dive-player-rank">{rank}</span>
-      <span className="dive-player-name">{player.name}</span>
-      {player.age != null && <span className="dive-player-age">{player.age}</span>}
-      <div className="dive-bar-wrap">
-        <div className="bar-track">
-          <div className="bar-fill" style={{ width: `${bar.pct}%`, background: bar.color }} />
-        </div>
-      </div>
-      <span className="dive-player-value">{player.valueDynasty.toLocaleString()}</span>
+    <div className="mini-bar-track">
+      <div className="mini-bar-fill" style={{ width: `${pct}%`, background: color }} />
     </div>
   );
 }
@@ -76,16 +66,15 @@ function PickRow({ pick }: { pick: DraftPick }) {
   );
 }
 
-
 export default function TeamDeepDive() {
   const { id: leagueId, rosterId: rosterIdStr } = useParams<{ id: string; rosterId: string }>();
   const rosterId = Number(rosterIdStr);
   const navigate = useNavigate();
   const { overview } = useOutletContext<LeagueOutletContext>();
 
-  useEffect(() => {}, [leagueId, rosterId]); // keep dep tracking consistent
+  useEffect(() => {}, [leagueId, rosterId]);
 
-  const profile = overview.profiles.find((p) => p.rosterId === rosterId);
+  const profile = overview.profiles.find((p) => p.rosterId === rosterId) as TeamProfile | undefined;
   const sortedTeams = [...overview.profiles].sort((a, b) => a.starterRank - b.starterRank);
 
   if (!profile) {
@@ -94,20 +83,21 @@ export default function TeamDeepDive() {
 
   const labelColor = LABEL_COLOR[profile.windowLabel];
 
-  const playersByPos = (pos: string): Player[] =>
-    profile.players
-      .filter((p) => p.position === pos)
-      .sort((a, b) => b.valueDynasty - a.valueDynasty);
-
   const sortedPicks = [...profile.picks].sort((a, b) => {
     if (a.year !== b.year) return a.year - b.year;
     if (a.round !== b.round) return a.round - b.round;
     return a.slot - b.slot;
   });
 
+  const sortedRoster = [...profile.players].sort((a, b) => b.valueDynasty - a.valueDynasty);
+
+  const pickFlagColor = profile.pickCapital.flag === "PICK_RICH" ? "#22c55e"
+    : profile.pickCapital.flag === "PICK_POOR" ? "#ef4444"
+    : "#94a3b8";
+
   return (
     <>
-      {/* Team header + switcher */}
+      {/* Header */}
       <div className="dive-header">
         <div className="dive-title-row">
           <h1 className="dive-owner">
@@ -122,13 +112,7 @@ export default function TeamDeepDive() {
             <span className="meta-pill">rank <strong>#{profile.starterRank}</strong></span>
             <span className="meta-pill">age <strong>{profile.starterCalAge.toFixed(1)}</strong></span>
             <span className="meta-pill">
-              picks <strong style={{
-                color: profile.pickCapital.flag === "PICK_RICH" ? "#22c55e"
-                     : profile.pickCapital.flag === "PICK_POOR" ? "#ef4444"
-                     : "#94a3b8",
-              }}>
-                {profile.pickCapital.flag}
-              </strong>
+              picks <strong style={{ color: pickFlagColor }}>{profile.pickCapital.flag.replace("_", " ")}</strong>
               <span style={{ color: "#475569" }}> · {profile.pickCapital.score.toFixed(0)}</span>
             </span>
             <span className="meta-pill">{profile.record}</span>
@@ -150,7 +134,7 @@ export default function TeamDeepDive() {
         </div>
       </div>
 
-      {/* Scouting report */}
+      {/* Scouting Report — main focus */}
       {profile.archetypes.length > 0 && (
         <section className="dive-pos-section">
           <h2 className="section-title">SCOUTING REPORT</h2>
@@ -165,32 +149,49 @@ export default function TeamDeepDive() {
         </section>
       )}
 
-      {/* Roster by position */}
-      {POSITIONS.map((pos) => {
-        const players = playersByPos(pos);
-        const ps = profile.positionScores[pos];
-        if (players.length === 0) return null;
-        return (
-          <section key={pos} className="dive-pos-section">
-            <div className="dive-pos-header">
-              <span className="pos-tag" style={{ background: posColor(pos), color: "#fff", padding: "2px 8px", borderRadius: 3, fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>
-                {pos}
-              </span>
-              <span className="pos-class" style={{ color: POS_CLASS_COLOR[ps.classification], fontSize: 11, fontWeight: 700 }}>
-                {ps.classification.replace("_", " ")}
-                <span style={{ color: "#475569", fontWeight: 400 }}> · {ps.urgency.toFixed(0)}</span>
-              </span>
-              <div className="dive-pos-bars">
-                <span className="bar-label">str {ps.starterScore.toFixed(0)}</span>
-                <span className="bar-label" style={{ marginLeft: 8 }}>dep {ps.depthScore.toFixed(0)}</span>
+      {/* Position dashboard */}
+      <section className="dive-pos-section">
+        <h2 className="section-title">POSITIONS</h2>
+        <div className="pos-dashboard">
+          <div className="pos-dash-header-row">
+            <div />
+            <div className="pos-dash-col-label">CLASSIFICATION</div>
+            <div className="pos-dash-col-label">STARTER</div>
+            <div className="pos-dash-col-label">DEPTH</div>
+            <div className="pos-dash-col-label">BEST PLAYER</div>
+          </div>
+          {POSITIONS.map((pos) => {
+            const ps = profile.positionScores[pos];
+            const top = profile.players
+              .filter((p) => p.position === pos)
+              .sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
+            return (
+              <div key={pos} className="pos-dash-row">
+                <span className="pos-tag" style={{ background: posColor(pos), color: "#fff", padding: "2px 6px", borderRadius: 3, fontSize: 9, fontWeight: 700, letterSpacing: 1, textAlign: "center" }}>
+                  {pos}
+                </span>
+                <div className="pos-dash-class">
+                  <span style={{ color: POS_CLASS_COLOR[ps.classification], fontWeight: 700, fontSize: 11 }}>
+                    {ps.classification.replace("_", " ")}
+                  </span>
+                  <span style={{ color: "#475569", fontSize: 10 }}> · {ps.urgency.toFixed(0)}</span>
+                </div>
+                <div className="pos-dash-metric">
+                  <MiniBar score={ps.starterScore} />
+                  <span className="pos-dash-num">{ps.starterScore.toFixed(0)}</span>
+                </div>
+                <div className="pos-dash-metric">
+                  <MiniBar score={ps.depthScore} />
+                  <span className="pos-dash-num">{ps.depthScore.toFixed(0)}</span>
+                </div>
+                <span className="pos-dash-player">
+                  {top ? `${top.name}${top.age != null ? ` (${top.age})` : ""}` : "—"}
+                </span>
               </div>
-            </div>
-            <div className="dive-player-list">
-              {players.map((p, i) => <PlayerRow key={p.id} player={p} rank={i + 1} />)}
-            </div>
-          </section>
-        );
-      })}
+            );
+          })}
+        </div>
+      </section>
 
       {/* Picks */}
       {sortedPicks.length > 0 && (
@@ -201,14 +202,7 @@ export default function TeamDeepDive() {
               total <strong>{sortedPicks.reduce((s, p) => s + p.value, 0).toLocaleString()}</strong>
             </span>
             <span className="meta-pill" style={{ fontSize: 10 }}>
-              capital{" "}
-              <strong style={{
-                color: profile.pickCapital.flag === "PICK_RICH" ? "#22c55e"
-                     : profile.pickCapital.flag === "PICK_POOR" ? "#ef4444"
-                     : "#94a3b8",
-              }}>
-                {profile.pickCapital.flag.replace("_", " ")}
-              </strong>
+              capital <strong style={{ color: pickFlagColor }}>{profile.pickCapital.flag.replace("_", " ")}</strong>
               <span style={{ color: "#475569" }}> · {profile.pickCapital.score.toFixed(0)}</span>
             </span>
           </div>
@@ -219,6 +213,26 @@ export default function TeamDeepDive() {
           </div>
         </section>
       )}
+
+      {/* Roster — compact, deprioritized */}
+      <section className="dive-pos-section">
+        <h2 className="section-title">ROSTER</h2>
+        <div className="roster-compact">
+          {sortedRoster.map((p) => (
+            <div key={p.id} className="roster-row">
+              <span
+                className="pos-tag"
+                style={{ background: posColor(p.position), color: "#fff", padding: "1px 4px", borderRadius: 2, fontSize: 8, fontWeight: 700, letterSpacing: 0.5, flexShrink: 0 }}
+              >
+                {p.position}
+              </span>
+              <span className="roster-name">{p.name}</span>
+              {p.age != null && <span className="roster-age">{p.age}</span>}
+              <span className="roster-val">{p.valueDynasty.toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      </section>
     </>
   );
 }
