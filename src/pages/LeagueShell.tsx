@@ -75,16 +75,16 @@ export default function LeagueShell() {
           TEAMS
         </NavLink>
         <NavLink
-          to={navTeam ? `/league/${id}/sendit/${navTeam.rosterId}` : "#"}
-          className={`league-nav-tab${isSendItRoute ? " active" : ""}${!navTeam ? " disabled" : ""}`}
-        >
-          SEND IT
-        </NavLink>
-        <NavLink
           to={`/league/${id}/calc`}
           className={({ isActive }) => `league-nav-tab${isActive ? " active" : ""}`}
         >
           CALC
+        </NavLink>
+        <NavLink
+          to={navTeam ? `/league/${id}/sendit/${navTeam.rosterId}` : "#"}
+          className={`league-nav-tab${isSendItRoute ? " active" : ""}${!navTeam ? " disabled" : ""}`}
+        >
+          SEND IT
         </NavLink>
       </nav>
 
