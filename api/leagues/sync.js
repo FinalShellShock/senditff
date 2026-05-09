@@ -73,61 +73,57 @@ var COMPETITIVENESS_GRID = {
 };
 
 // src/algo/archetypes.ts
+var ARCHETYPE_THRESHOLD = 50;
+function clamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
+function scoreArchetypes(team, averages) {
+  const s = {};
+  for (const pos of POSITIONS) {
+    const ps = team.positionScores[pos];
+    const avgS = averages.starter[pos] || 1;
+    const avgD = averages.depth[pos] || 1;
+    const eliteFactor = clamp((ps.starterValue / avgS - 1) / 0.4, 0, 1);
+    const thinFactor = clamp(1 - ps.depthValue / avgD / 0.6, 0, 1);
+    s[`tier_down_${pos}`] = Math.round(eliteFactor * thinFactor * 100);
+  }
+  for (const pos of POSITIONS) {
+    const ps = team.positionScores[pos];
+    const midFactor = clamp(1 - Math.abs(ps.starterScore - 52.5) / 12.5, 0, 1);
+    const depthFactor = clamp((ps.depthScore - 40) / 15, 0, 1);
+    const otherUrgency = POSITIONS.filter((p) => p !== pos).reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
+    const needFactor = clamp((otherUrgency - 40) / 60, 0, 1);
+    s[`consolidate_${pos}`] = Math.round(midFactor * depthFactor * needFactor * 100);
+  }
+  const maxUrgency = POSITIONS.reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
+  const flexFactor = clamp((team.flex.score - 40) / (FLEX_CONSOLIDATE_THRESHOLD - 40), 0, 1);
+  s["consolidate_flex"] = Math.round(flexFactor * clamp(maxUrgency / 70, 0, 1) * 100);
+  const longFactor = clamp(1 - team.windowPressure / WINDOW_SHORT_THRESHOLD, 0, 1);
+  const richFactor = clamp((team.pickCapital.score - 50) / 50, 0, 1);
+  s["age_arb_buy"] = Math.round(longFactor * richFactor * 100);
+  const shortFactor = clamp(
+    (team.windowPressure - WINDOW_LONG_THRESHOLD) / (WINDOW_SHORT_THRESHOLD - WINDOW_LONG_THRESHOLD),
+    0,
+    1
+  );
+  const notWeakFactor = team.competitiveness === "STRONG" ? 1 : team.competitiveness === "AVERAGE" ? 0.6 : 0.1;
+  s["age_arb_sell"] = Math.round(shortFactor * notWeakFactor * 100);
+  const strongFactor = team.competitiveness === "STRONG" ? 1 : team.competitiveness === "AVERAGE" ? 0.3 : 0;
+  s["push_in"] = Math.round(shortFactor * strongFactor * 100);
+  const minUrgency = POSITIONS.reduce((min, p) => Math.min(min, team.positionScores[p].urgency), 100);
+  const urgencyFactor = clamp((maxUrgency - 40) / 60, 0, 1);
+  const surplusFactor = clamp((50 - minUrgency) / 50, 0, 1);
+  s["need_fill"] = Math.round(urgencyFactor * surplusFactor * 100);
+  const contenderFactor = team.competitiveness === "STRONG" ? 1 : team.competitiveness === "AVERAGE" ? 0.4 : 0.1;
+  const poorFactor = clamp((50 - team.pickCapital.score) / 50, 0, 1);
+  s["capital_convert_picks_to_production"] = Math.round(contenderFactor * poorFactor * 100);
+  const rebuilderFactor = team.competitiveness === "WEAK" ? 1 : team.competitiveness === "AVERAGE" ? 0.4 : 0.1;
+  s["capital_convert_production_to_picks"] = Math.round(rebuilderFactor * richFactor * 100);
+  return s;
+}
 function detectArchetypes(team, averages, _format) {
-  const out = [];
-  for (const pos of POSITIONS) {
-    const ps = team.positionScores[pos];
-    const eliteStarter = averages.starter[pos] > 0 && ps.starterValue > 1.4 * averages.starter[pos];
-    const weakDepth = averages.depth[pos] > 0 && ps.depthValue < 0.6 * averages.depth[pos];
-    if (eliteStarter && weakDepth) out.push(`tier_down_${pos}`);
-  }
-  const needPositions = POSITIONS.filter(
-    (p) => team.positionScores[p].classification === "CRITICAL_NEED" || team.positionScores[p].classification === "NEED"
-  );
-  for (const pos of POSITIONS) {
-    const ps = team.positionScores[pos];
-    const midStarter = ps.starterScore >= 40 && ps.starterScore <= 65;
-    const decentDepth = ps.depthScore >= 55;
-    if (midStarter && decentDepth && needPositions.some((np) => np !== pos)) {
-      out.push(`consolidate_${pos}`);
-    }
-  }
-  if (team.flex.score >= FLEX_CONSOLIDATE_THRESHOLD && needPositions.length > 0) {
-    out.push("consolidate_flex");
-  }
-  if (team.windowTier === "LONG" && team.pickCapital.flag === "PICK_RICH") {
-    out.push("age_arb_buy");
-  }
-  if (team.windowTier === "SHORT" && team.competitiveness !== "WEAK") {
-    out.push("age_arb_sell");
-  }
-  if (team.windowTier === "SHORT" && team.competitiveness === "STRONG") {
-    out.push("push_in");
-  }
-  const hasCritical = POSITIONS.some(
-    (p) => team.positionScores[p].classification === "CRITICAL_NEED"
-  );
-  if (hasCritical) {
-    for (const pos of POSITIONS) {
-      const ps = team.positionScores[pos];
-      const eliteStarter = ps.starterScore >= 80;
-      const eliteDepth = ps.depthScore >= 80;
-      if (eliteStarter && eliteDepth) {
-        out.push(`need_fill_stacked_${pos}`);
-        continue;
-      }
-      if (ps.classification === "SURPLUS") {
-        out.push(`need_fill_balanced_${pos}`);
-      }
-    }
-  }
-  if ((team.competitiveness === "STRONG" || team.windowLabel === "CONTEND") && team.pickCapital.flag === "PICK_POOR") {
-    out.push("capital_convert_picks_to_production");
-  }
-  if ((team.competitiveness === "WEAK" || team.windowTier === "LONG") && team.pickCapital.flag === "PICK_RICH") {
-    out.push("capital_convert_production_to_picks");
-  }
-  return out;
+  const scores = scoreArchetypes(team, averages);
+  return Object.entries(scores).filter(([, score]) => score >= ARCHETYPE_THRESHOLD).map(([key]) => key);
 }
 
 // src/algo/profile.ts
@@ -440,9 +436,11 @@ function computeAllProfiles(teams, format, thisYear) {
         score: score0to100(t.pickCapValue, averages.pickCapital || 1),
         flag: t.pickFlag
       },
-      archetypes: []
+      archetypes: [],
+      archetypeScores: {}
     };
     profile.archetypes = detectArchetypes(profile, averages, format);
+    profile.archetypeScores = scoreArchetypes(profile, averages);
     return profile;
   });
 }
