@@ -15,25 +15,28 @@
 
 body {
   min-height: 100vh;
-  padding: 64px 24px;
+}
+
+/* ── Auth / pending screens ───────────────────────────────────────────── */
+
+.auth-screen {
+  min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-}
-
-.shell {
+  padding: 24px;
   text-align: center;
-  max-width: 800px;
 }
 
-.eyebrow {
+.auth-eyebrow {
   font-size: 11px;
   color: #f59e0b;
   letter-spacing: 4px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
-h1 {
+.auth-title {
   font-family: "Bebas Neue", sans-serif;
   font-size: 96px;
   line-height: 1;
@@ -42,8 +45,100 @@ h1 {
   margin-bottom: 16px;
 }
 
-.tagline {
+.auth-tagline {
   font-size: 13px;
   color: #64748b;
   letter-spacing: 1px;
+  margin-bottom: 32px;
+}
+
+.btn-google {
+  padding: 12px 28px;
+  background: #fff;
+  color: #0a0c0f;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+.btn-google:hover {
+  background: #e2e8f0;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.btn-link:hover {
+  color: #e2e8f0;
+}
+
+/* ── App shell ────────────────────────────────────────────────────────── */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+}
+
+.status-brand {
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #fff;
+}
+
+.status-beta {
+  font-size: 9px;
+  color: #f59e0b;
+  letter-spacing: 1px;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border: 1px solid #f59e0b;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.status-user {
+  color: #94a3b8;
+}
+
+.app-content {
+  flex: 1;
+  padding: 48px 24px;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.placeholder {
+  color: #334155;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 120px;
 }
