@@ -19,7 +19,7 @@ await Promise.all(
       target: "node20",
       format: "cjs",
       packages: "external",
-      outfile: join(root, entry.replace(/\.ts$/, ".cjs")),
+      outfile: join(root, entry.replace(/\.ts$/, ".js")),
     }),
   ),
 );

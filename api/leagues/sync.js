@@ -501,7 +501,7 @@ async function fetchPlayers() {
 }
 
 // api/_lib/admin.ts
-var admin = __toESM(require("firebase-admin"), 1);
+var admin = __toESM(require("firebase-admin"));
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(
