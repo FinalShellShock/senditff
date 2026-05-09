@@ -1,8 +1,7 @@
 import {
   GoogleAuthProvider,
   onAuthStateChanged,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signOut,
   type User,
 } from "firebase/auth";
@@ -54,23 +53,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({ status: "loading" });
 
   useEffect(() => {
-    // Consume any pending redirect result on page load (errors would otherwise be swallowed)
-    getRedirectResult(auth).catch(() => {});
-
     return onAuthStateChanged(auth, async (user) => {
       if (!user) {
         setAuthState({ status: "signed_out" });
         return;
       }
-      await ensureUserDoc(user);
-      const approved = await checkApproval(user);
-      setAuthState(approved ? { status: "approved", user } : { status: "pending", user });
+      try {
+        await ensureUserDoc(user);
+        const approved = await checkApproval(user);
+        setAuthState(approved ? { status: "approved", user } : { status: "pending", user });
+      } catch (err) {
+        console.error("Auth state error:", err);
+        setAuthState({ status: "pending", user });
+      }
     });
   }, []);
 
   const signIn = useCallback(async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithRedirect(auth, provider);
+    await signInWithPopup(auth, provider);
   }, []);
 
   const signOutUser = useCallback(async () => {
