@@ -17,9 +17,9 @@ await Promise.all(
       bundle: true,
       platform: "node",
       target: "node20",
-      format: "esm",
+      format: "cjs",
       packages: "external",
-      outfile: join(root, entry.replace(/\.ts$/, ".js")),
+      outfile: join(root, entry.replace(/\.ts$/, ".cjs")),
     }),
   ),
 );
