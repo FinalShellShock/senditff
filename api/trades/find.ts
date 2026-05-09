@@ -74,6 +74,23 @@ function bestGiveFor(
   return best ? [best] : [];
 }
 
+// Returns archetypes that are clearly active (above threshold) or the best available
+// if none clear it — guarantees every team has something to trade toward.
+function activeArchetypes(mine: TeamProfile): Set<string> {
+  const scores = mine.archetypeScores ?? {};
+  const THRESHOLD = 50;
+  const above = Object.entries(scores)
+    .filter(([, s]) => s >= THRESHOLD)
+    .map(([k]) => k);
+  if (above.length > 0) return new Set(above);
+  const top = Object.entries(scores)
+    .filter(([, s]) => s > 0)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3)
+    .map(([k]) => k);
+  return new Set(top);
+}
+
 function scorePackage(
   mine: TeamProfile,
   give: Player[],
@@ -92,10 +109,12 @@ function scorePackage(
   const posScore = mine.positionScores[receivePos as (typeof POSITIONS)[number]];
   const fillQuality = posScore ? posScore.urgency / 100 : 0.5;
 
-  // Archetype alignment
-  const archetypeMatch = mine.archetypes.some((a) => a.includes(archetype.split("_")[0]!))
-    ? 1
-    : 0.5;
+  // Archetype alignment — continuous score from archetypeScores (0.5 floor, 1.0 ceiling)
+  const scoreKey = archetype.startsWith("need_fill") ? "need_fill"
+    : archetype.startsWith("tier_down") ? archetype
+    : archetype;
+  const archetypeRaw = mine.archetypeScores?.[scoreKey] ?? 0;
+  const archetypeMatch = 0.5 + (archetypeRaw / 100) * 0.5;
 
   return fillQuality * 0.5 + balanceScore * 0.35 + archetypeMatch * 0.15;
 }
@@ -107,12 +126,11 @@ function generatePackages(
   const candidates: Array<Omit<TradePackage, "rationale"> & { score: number }> = [];
   const others = allProfiles.filter((p) => p.rosterId !== mine.rosterId);
 
-  // Need-fill trades: for each of my critical/regular needs, find players on other teams
-  const needPositions = POSITIONS.filter(
-    (p) =>
-      mine.positionScores[p].classification === "CRITICAL_NEED" ||
-      mine.positionScores[p].classification === "NEED",
-  ).sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency);
+  // Need-fill trades: always try the top positions by urgency — no binary threshold.
+  // A "healthy" team still benefits from upgrading its weakest spots.
+  const needPositions = [...POSITIONS]
+    .sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency)
+    .slice(0, 3);
 
   for (const needPos of needPositions) {
     for (const them of others) {
@@ -138,9 +156,10 @@ function generatePackages(
     }
   }
 
-  // Tier-down trades: if I have an elite player with weak depth, trade down for two mid-tiers
+  // Tier-down trades: try any position with a nonzero tier_down score.
+  // The scorePackage weight will naturally rank true tier-down candidates above mediocre ones.
   for (const pos of POSITIONS) {
-    if (!mine.archetypes.includes(`tier_down_${pos}`)) continue;
+    if ((mine.archetypeScores?.[`tier_down_${pos}`] ?? 0) === 0) continue;
     const myElite = topPlayersByPos(mine, pos, 1)[0];
     if (!myElite) continue;
 

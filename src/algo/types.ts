@@ -96,6 +96,7 @@ export type TeamProfile = {
   flex: FlexScore;
   pickCapital: { value: number; score: number; flag: PickFlag };
   archetypes: string[];
+  archetypeScores: Record<string, number>;
 };
 
 export type LeagueAverages = {

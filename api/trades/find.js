@@ -118,15 +118,15 @@ function scorePackage(mine, give, receive, archetype) {
   const receivePos = receive[0]?.position ?? "QB";
   const posScore = mine.positionScores[receivePos];
   const fillQuality = posScore ? posScore.urgency / 100 : 0.5;
-  const archetypeMatch = mine.archetypes.some((a) => a.includes(archetype.split("_")[0])) ? 1 : 0.5;
+  const scoreKey = archetype.startsWith("need_fill") ? "need_fill" : archetype.startsWith("tier_down") ? archetype : archetype;
+  const archetypeRaw = mine.archetypeScores?.[scoreKey] ?? 0;
+  const archetypeMatch = 0.5 + archetypeRaw / 100 * 0.5;
   return fillQuality * 0.5 + balanceScore * 0.35 + archetypeMatch * 0.15;
 }
 function generatePackages(mine, allProfiles) {
   const candidates = [];
   const others = allProfiles.filter((p) => p.rosterId !== mine.rosterId);
-  const needPositions = POSITIONS.filter(
-    (p) => mine.positionScores[p].classification === "CRITICAL_NEED" || mine.positionScores[p].classification === "NEED"
-  ).sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency);
+  const needPositions = [...POSITIONS].sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency).slice(0, 3);
   for (const needPos of needPositions) {
     for (const them of others) {
       const theirTop = topPlayersByPos(them, needPos, 2);
@@ -151,7 +151,7 @@ function generatePackages(mine, allProfiles) {
     }
   }
   for (const pos of POSITIONS) {
-    if (!mine.archetypes.includes(`tier_down_${pos}`)) continue;
+    if ((mine.archetypeScores?.[`tier_down_${pos}`] ?? 0) === 0) continue;
     const myElite = topPlayersByPos(mine, pos, 1)[0];
     if (!myElite) continue;
     for (const them of others) {

@@ -14,7 +14,7 @@ import {
   WINDOW_LONG_THRESHOLD,
   WINDOW_SHORT_THRESHOLD,
 } from "./constants";
-import { detectArchetypes } from "./archetypes";
+import { detectArchetypes, scoreArchetypes } from "./archetypes";
 import type {
   Competitiveness,
   LeagueAverages,
@@ -447,8 +447,10 @@ export function computeAllProfiles(
         flag: t.pickFlag,
       },
       archetypes: [],
+      archetypeScores: {},
     };
     profile.archetypes = detectArchetypes(profile, averages, format);
+    profile.archetypeScores = scoreArchetypes(profile, averages);
     return profile;
   });
 }

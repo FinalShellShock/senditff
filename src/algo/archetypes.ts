@@ -1,97 +1,91 @@
-import { FLEX_CONSOLIDATE_THRESHOLD, POSITIONS } from "./constants";
+import { FLEX_CONSOLIDATE_THRESHOLD, POSITIONS, WINDOW_LONG_THRESHOLD, WINDOW_SHORT_THRESHOLD } from "./constants";
 import type { LeagueAverages, LeagueFormat, TeamProfile } from "./types";
+
+export const ARCHETYPE_THRESHOLD = 50;
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+// Continuous 0-100 scores for every archetype. Used in two ways:
+//   1. `detectArchetypes` filters these at ARCHETYPE_THRESHOLD for display in the team deep dive.
+//   2. `find.ts` reads them off the stored profile so package generation always has
+//      something to work with — best available when nothing clears the threshold.
+export function scoreArchetypes(
+  team: TeamProfile,
+  averages: LeagueAverages,
+): Record<string, number> {
+  const s: Record<string, number> = {};
+
+  // tier_down_{pos}: elite starter (approaching 1.4× avg) + thin depth (approaching 0.6× avg)
+  for (const pos of POSITIONS) {
+    const ps = team.positionScores[pos];
+    const avgS = averages.starter[pos] || 1;
+    const avgD = averages.depth[pos] || 1;
+    const eliteFactor = clamp((ps.starterValue / avgS - 1.0) / 0.4, 0, 1);
+    const thinFactor  = clamp(1 - (ps.depthValue / avgD) / 0.6, 0, 1);
+    s[`tier_down_${pos}`] = Math.round(eliteFactor * thinFactor * 100);
+  }
+
+  // consolidate_{pos}: mid starter [40-65] + decent depth + need elsewhere
+  for (const pos of POSITIONS) {
+    const ps = team.positionScores[pos];
+    const midFactor   = clamp(1 - Math.abs(ps.starterScore - 52.5) / 12.5, 0, 1);
+    const depthFactor = clamp((ps.depthScore - 40) / 15, 0, 1);
+    const otherUrgency = POSITIONS
+      .filter((p) => p !== pos)
+      .reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
+    const needFactor = clamp((otherUrgency - 40) / 60, 0, 1);
+    s[`consolidate_${pos}`] = Math.round(midFactor * depthFactor * needFactor * 100);
+  }
+
+  // consolidate_flex: flex above threshold + somewhere to put the upgrade
+  const maxUrgency = POSITIONS.reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
+  const flexFactor = clamp((team.flex.score - 40) / (FLEX_CONSOLIDATE_THRESHOLD - 40), 0, 1);
+  s["consolidate_flex"] = Math.round(flexFactor * clamp(maxUrgency / 70, 0, 1) * 100);
+
+  // age_arb_buy: low window pressure + pick rich
+  const longFactor = clamp(1 - team.windowPressure / WINDOW_SHORT_THRESHOLD, 0, 1);
+  const richFactor = clamp((team.pickCapital.score - 50) / 50, 0, 1);
+  s["age_arb_buy"] = Math.round(longFactor * richFactor * 100);
+
+  // age_arb_sell: high window pressure + not a weak team
+  const shortFactor   = clamp(
+    (team.windowPressure - WINDOW_LONG_THRESHOLD) / (WINDOW_SHORT_THRESHOLD - WINDOW_LONG_THRESHOLD),
+    0, 1,
+  );
+  const notWeakFactor = team.competitiveness === "STRONG" ? 1 : team.competitiveness === "AVERAGE" ? 0.6 : 0.1;
+  s["age_arb_sell"] = Math.round(shortFactor * notWeakFactor * 100);
+
+  // push_in: closing window + STRONG only (AVERAGE teams aren't in contention)
+  const strongFactor = team.competitiveness === "STRONG" ? 1 : team.competitiveness === "AVERAGE" ? 0.3 : 0;
+  s["push_in"] = Math.round(shortFactor * strongFactor * 100);
+
+  // need_fill: biggest positional need + enough surplus elsewhere to send
+  const minUrgency    = POSITIONS.reduce((min, p) => Math.min(min, team.positionScores[p].urgency), 100);
+  const urgencyFactor = clamp((maxUrgency - 40) / 60, 0, 1);
+  const surplusFactor = clamp((50 - minUrgency) / 50, 0, 1);
+  s["need_fill"] = Math.round(urgencyFactor * surplusFactor * 100);
+
+  // capital_convert_picks_to_production: contender + pick poor
+  const contenderFactor = team.competitiveness === "STRONG" ? 1 : team.competitiveness === "AVERAGE" ? 0.4 : 0.1;
+  const poorFactor      = clamp((50 - team.pickCapital.score) / 50, 0, 1);
+  s["capital_convert_picks_to_production"] = Math.round(contenderFactor * poorFactor * 100);
+
+  // capital_convert_production_to_picks: rebuilder + pick rich
+  const rebuilderFactor = team.competitiveness === "WEAK" ? 1 : team.competitiveness === "AVERAGE" ? 0.4 : 0.1;
+  s["capital_convert_production_to_picks"] = Math.round(rebuilderFactor * richFactor * 100);
+
+  return s;
+}
 
 export function detectArchetypes(
   team: TeamProfile,
   averages: LeagueAverages,
   _format: LeagueFormat,
 ): string[] {
-  const out: string[] = [];
-
-  // Tier down: elite starter at pos + weak depth there.
-  for (const pos of POSITIONS) {
-    const ps = team.positionScores[pos];
-    const eliteStarter = averages.starter[pos] > 0 && ps.starterValue > 1.4 * averages.starter[pos];
-    const weakDepth = averages.depth[pos] > 0 && ps.depthValue < 0.6 * averages.depth[pos];
-    if (eliteStarter && weakDepth) out.push(`tier_down_${pos}`);
-  }
-
-  // Per-position consolidate: mid starter + decent depth + need elsewhere.
-  const needPositions = POSITIONS.filter(
-    (p) => team.positionScores[p].classification === "CRITICAL_NEED" ||
-           team.positionScores[p].classification === "NEED",
-  );
-  for (const pos of POSITIONS) {
-    const ps = team.positionScores[pos];
-    const midStarter = ps.starterScore >= 40 && ps.starterScore <= 65;
-    const decentDepth = ps.depthScore >= 55;
-    if (midStarter && decentDepth && needPositions.some((np) => np !== pos)) {
-      out.push(`consolidate_${pos}`);
-    }
-  }
-
-  // consolidate_flex — high FLEX score + at least one position need.
-  // Signals "you have stackable trade chips and somewhere productive to put them."
-  if (team.flex.score >= FLEX_CONSOLIDATE_THRESHOLD && needPositions.length > 0) {
-    out.push("consolidate_flex");
-  }
-
-  // Age arbitrage (buy): LONG window + can absorb veterans (PICK_RICH).
-  if (team.windowTier === "LONG" && team.pickCapital.flag === "PICK_RICH") {
-    out.push("age_arb_buy");
-  }
-
-  // Age arbitrage (sell): old, still-strong roster — bail proactively for picks/youth.
-  if (team.windowTier === "SHORT" && team.competitiveness !== "WEAK") {
-    out.push("age_arb_sell");
-  }
-
-  // Push in: STRONG-window-closing — mortgage future for veterans, max out the
-  // 1-2 year window. Parallel option to age_arb_sell. Only fires for STRONG;
-  // an AVERAGE/SHORT (MIDDLING) team isn't a contender to push toward.
-  if (team.windowTier === "SHORT" && team.competitiveness === "STRONG") {
-    out.push("push_in");
-  }
-
-  // Need fill flavors. Trigger if team has at least one CRITICAL_NEED.
-  //   stacked  = elite starter + elite depth at same pos (package multiple from this stack)
-  //   balanced = SURPLUS classification but not a stack (generic 1-for-1 candidate)
-  // The "thin" case (elite starter + weak depth) is already captured by tier_down_<pos>
-  // using raw value ratios — we don't duplicate it here.
-  // Note: stacked uses the raw starter/depth scores directly rather than gating on
-  // SURPLUS classification, because elite-stacked positions can have urgency just
-  // above the SURPLUS threshold due to window pressure (e.g. cwescoe at urgency 30).
-  const hasCritical = POSITIONS.some(
-    (p) => team.positionScores[p].classification === "CRITICAL_NEED",
-  );
-  if (hasCritical) {
-    for (const pos of POSITIONS) {
-      const ps = team.positionScores[pos];
-      const eliteStarter = ps.starterScore >= 80;
-      const eliteDepth = ps.depthScore >= 80;
-      if (eliteStarter && eliteDepth) {
-        out.push(`need_fill_stacked_${pos}`);
-        continue;
-      }
-      if (ps.classification === "SURPLUS") {
-        out.push(`need_fill_balanced_${pos}`);
-      }
-    }
-  }
-
-  // Capital play
-  if (
-    (team.competitiveness === "STRONG" || team.windowLabel === "CONTEND") &&
-    team.pickCapital.flag === "PICK_POOR"
-  ) {
-    out.push("capital_convert_picks_to_production");
-  }
-  if (
-    (team.competitiveness === "WEAK" || team.windowTier === "LONG") &&
-    team.pickCapital.flag === "PICK_RICH"
-  ) {
-    out.push("capital_convert_production_to_picks");
-  }
-
-  return out;
+  const scores = scoreArchetypes(team, averages);
+  return Object.entries(scores)
+    .filter(([, score]) => score >= ARCHETYPE_THRESHOLD)
+    .map(([key]) => key);
 }
