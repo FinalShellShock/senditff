@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { adminAuth, adminDb } from "./admin.ts";
+import { adminAuth, adminDb } from "./admin";
 
 export type ApprovedUser = {
   uid: string;

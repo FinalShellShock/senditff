@@ -1,5 +1,5 @@
-import { normName } from "./normalize.ts";
-import type { SleeperRoster, SleeperTradedPick } from "./types.ts";
+import { normName } from "./normalize";
+import type { SleeperRoster, SleeperTradedPick } from "./types";
 
 // Build pick ownership map: rosterId -> Set of "year|round|origRosterId" keys.
 export function buildPicksMap(

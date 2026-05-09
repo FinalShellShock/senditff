@@ -12,7 +12,7 @@ export type {
   TeamProfile,
   WindowLabel,
   WindowTier,
-} from "./types.ts";
+} from "./types";
 
 export {
   COMPETITIVENESS_GRID,
@@ -25,7 +25,7 @@ export {
   TEP_MULTIPLIER,
   WINDOW_LONG_THRESHOLD,
   WINDOW_SHORT_THRESHOLD,
-} from "./constants.ts";
+} from "./constants";
 
 export {
   agePressure,
@@ -40,6 +40,6 @@ export {
   score0to100,
   starterAgePressure,
   starterCalendarAge,
-} from "./profile.ts";
+} from "./profile";
 
-export { detectArchetypes } from "./archetypes.ts";
+export { detectArchetypes } from "./archetypes";

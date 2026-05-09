@@ -5,10 +5,10 @@ export type {
   SleeperRoster,
   SleeperTradedPick,
   SleeperUser,
-} from "./types.ts";
+} from "./types";
 
-export { normName } from "./normalize.ts";
-export { detectFormat } from "./format.ts";
-export { fetchLeague, fetchPlayers } from "./sleeper.ts";
-export { fetchFantasyCalc } from "./fantasycalc.ts";
-export { buildPicksMap, projectDraftSlots, resolvePickValue } from "./picks.ts";
+export { normName } from "./normalize";
+export { detectFormat } from "./format";
+export { fetchLeague, fetchPlayers } from "./sleeper";
+export { fetchFantasyCalc } from "./fantasycalc";
+export { buildPicksMap, projectDraftSlots, resolvePickValue } from "./picks";

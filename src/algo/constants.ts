@@ -1,4 +1,4 @@
-import type { Competitiveness, PickFlag, Position, WindowLabel, WindowTier } from "./types.ts";
+import type { Competitiveness, PickFlag, Position, WindowLabel, WindowTier } from "./types";
 
 export const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 

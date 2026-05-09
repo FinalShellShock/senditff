@@ -4,7 +4,7 @@ import type {
   SleeperRoster,
   SleeperTradedPick,
   SleeperUser,
-} from "./types.ts";
+} from "./types";
 
 const SLEEPER = "https://api.sleeper.app/v1";
 

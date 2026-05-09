@@ -1,5 +1,5 @@
-import type { LeagueFormat } from "../algo/types.ts";
-import type { FantasyCalcEntry } from "./types.ts";
+import type { LeagueFormat } from "../algo/types";
+import type { FantasyCalcEntry } from "./types";
 
 const FCALC = "https://api.fantasycalc.com/values/current";
 

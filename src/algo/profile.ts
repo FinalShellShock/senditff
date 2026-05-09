@@ -13,8 +13,8 @@ import {
   TEP_MULTIPLIER,
   WINDOW_LONG_THRESHOLD,
   WINDOW_SHORT_THRESHOLD,
-} from "./constants.ts";
-import { detectArchetypes } from "./archetypes.ts";
+} from "./constants";
+import { detectArchetypes } from "./archetypes";
 import type {
   Competitiveness,
   LeagueAverages,
@@ -27,7 +27,7 @@ import type {
   TeamInput,
   TeamProfile,
   WindowTier,
-} from "./types.ts";
+} from "./types";
 
 // ── Value getters ────────────────────────────────────────────────────────────
 // Competitiveness math (starter / FLEX / depth) uses redraft values.

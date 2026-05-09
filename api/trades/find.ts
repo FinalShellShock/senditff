@@ -1,8 +1,8 @@
 import { createHash } from "crypto";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import type { Player, TeamProfile } from "../../src/algo/types.ts";
-import { adminDb } from "../_lib/admin.ts";
-import { requireApprovedUser } from "../_lib/auth.ts";
+import type { Player, TeamProfile } from "../../src/algo/types";
+import { adminDb } from "../_lib/admin";
+import { requireApprovedUser } from "../_lib/auth";
 
 const MODEL_HAIKU = "claude-haiku-4-5-20251001";
 const POSITIONS = ["QB", "RB", "WR", "TE"] as const;

@@ -1,5 +1,5 @@
-import { FLEX_CONSOLIDATE_THRESHOLD, POSITIONS } from "./constants.ts";
-import type { LeagueAverages, LeagueFormat, TeamProfile } from "./types.ts";
+import { FLEX_CONSOLIDATE_THRESHOLD, POSITIONS } from "./constants";
+import type { LeagueAverages, LeagueFormat, TeamProfile } from "./types";
 
 export function detectArchetypes(
   team: TeamProfile,

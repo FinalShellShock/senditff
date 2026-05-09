@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { computeAllProfiles } from "../../src/algo/profile.ts";
-import { detectFormat } from "../../src/data/format.ts";
-import { fetchLeague, fetchPlayers } from "../../src/data/sleeper.ts";
-import { adminDb } from "../_lib/admin.ts";
-import { requireApprovedUser } from "../_lib/auth.ts";
-import { buildTeamInputs } from "../_lib/buildTeams.ts";
-import { getValueMaps } from "../_lib/snapshot.ts";
+import { computeAllProfiles } from "../../src/algo/profile";
+import { detectFormat } from "../../src/data/format";
+import { fetchLeague, fetchPlayers } from "../../src/data/sleeper";
+import { adminDb } from "../_lib/admin";
+import { requireApprovedUser } from "../_lib/auth";
+import { buildTeamInputs } from "../_lib/buildTeams";
+import { getValueMaps } from "../_lib/snapshot";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });

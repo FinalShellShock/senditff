@@ -2,15 +2,15 @@ import {
   buildPicksMap,
   projectDraftSlots,
   resolvePickValue,
-} from "../../src/data/picks.ts";
-import { normName } from "../../src/data/normalize.ts";
-import type { LeagueFormat, Pick, Player, TeamInput } from "../../src/algo/types.ts";
+} from "../../src/data/picks";
+import { normName } from "../../src/data/normalize";
+import type { LeagueFormat, Pick, Player, TeamInput } from "../../src/algo/types";
 import type {
   SleeperRoster,
   SleeperTradedPick,
   SleeperUser,
-} from "../../src/data/types.ts";
-import type { ValueMaps } from "./snapshot.ts";
+} from "../../src/data/types";
+import type { ValueMaps } from "./snapshot";
 
 const POSITIONS = ["QB", "RB", "WR", "TE"] as const;
 type Position = (typeof POSITIONS)[number];

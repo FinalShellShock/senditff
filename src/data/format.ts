@@ -1,5 +1,5 @@
-import type { LeagueFormat } from "../algo/types.ts";
-import type { SleeperLeague } from "./types.ts";
+import type { LeagueFormat } from "../algo/types";
+import type { SleeperLeague } from "./types";
 
 export function detectFormat(league: SleeperLeague): LeagueFormat {
   const slots = { QB: 0, RB: 0, WR: 0, TE: 0, FLEX: 0, SUPER_FLEX: 0 };

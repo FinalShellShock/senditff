@@ -1,7 +1,7 @@
-import { fetchFantasyCalc } from "../../src/data/fantasycalc.ts";
-import { normName } from "../../src/data/normalize.ts";
-import type { LeagueFormat } from "../../src/algo/types.ts";
-import { adminDb } from "./admin.ts";
+import { fetchFantasyCalc } from "../../src/data/fantasycalc";
+import { normName } from "../../src/data/normalize";
+import type { LeagueFormat } from "../../src/algo/types";
+import { adminDb } from "./admin";
 
 const SNAPSHOT_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
 
