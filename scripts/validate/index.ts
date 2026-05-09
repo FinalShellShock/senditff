@@ -9,6 +9,7 @@ import {
   fetchPlayers,
   normName,
   projectDraftSlots,
+  resolvePickValue,
 } from "../../src/data/index.ts";
 import type { SleeperPlayer } from "../../src/data/index.ts";
 import { printTerminal, writeHtmlReport } from "./report.ts";
@@ -54,22 +55,6 @@ async function main(): Promise<void> {
   const draftSlots = projectDraftSlots(rosters);
 
   // Pick values are dynasty (redraft has no picks). Used only by the window axis.
-  const tieredFallback = (year: number, round: number, slot: number): number => {
-    const teamCount = rosters.length;
-    const third = Math.ceil(teamCount / 3);
-    if (round === 1) {
-      const tier = slot <= third ? "early" : slot <= 2 * third ? "mid" : "late";
-      const v =
-        dynastyMap.get(normName(`${year} ${tier} 1st`))?.value ??
-        dynastyMap.get(normName(`${year} 1st`))?.value;
-      if (v) return v;
-      return slot <= third ? 2500 : slot <= 2 * third ? 2000 : 1500;
-    }
-    const labels = ["1st", "2nd", "3rd", "4th"] as const;
-    const v = dynastyMap.get(normName(`${year} ${labels[round - 1]}`))?.value;
-    if (v) return v;
-    return round === 2 ? 900 : round === 3 ? 450 : 200;
-  };
 
   const myUser = users.find(
     (u) =>
@@ -113,7 +98,7 @@ async function main(): Promise<void> {
         const round = parseInt(roundStr!, 10);
         const origRosterId = parseInt(origStr!, 10);
         const slot = draftSlots.get(origRosterId) ?? rosters.length;
-        const value = tieredFallback(year, round, slot);
+        const value = resolvePickValue(dynastyMap, rosters.length, year, round, slot);
         const slotStr = `${round}.${String(slot).padStart(2, "0")}`;
         const origRoster = rosters.find((rr) => rr.roster_id === origRosterId);
         const origUser = users.find((u) => u.user_id === origRoster?.owner_id);

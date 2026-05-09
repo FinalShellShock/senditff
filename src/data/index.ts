@@ -11,4 +11,4 @@ export { normName } from "./normalize.ts";
 export { detectFormat } from "./format.ts";
 export { fetchLeague, fetchPlayers } from "./sleeper.ts";
 export { fetchFantasyCalc } from "./fantasycalc.ts";
-export { buildPicksMap, projectDraftSlots } from "./picks.ts";
+export { buildPicksMap, projectDraftSlots, resolvePickValue } from "./picks.ts";

@@ -1,3 +1,4 @@
+import { normName } from "./normalize.ts";
 import type { SleeperRoster, SleeperTradedPick } from "./types.ts";
 
 // Build pick ownership map: rosterId -> Set of "year|round|origRosterId" keys.
@@ -24,6 +25,31 @@ export function buildPicksMap(
     if (newOwner) newOwner.add(origKey);
   }
   return map;
+}
+
+// Resolve a pick's dynasty value from the FantasyCalc dynasty map.
+// Round 1 uses tiered labels (early/mid/late 1st) when available.
+// Falls back to hardcoded defaults when FantasyCalc has no entry.
+export function resolvePickValue(
+  dynastyValues: Map<string, { value: number; age?: number }>,
+  teamCount: number,
+  year: number,
+  round: number,
+  slot: number,
+): number {
+  const third = Math.ceil(teamCount / 3);
+  if (round === 1) {
+    const tier = slot <= third ? "early" : slot <= 2 * third ? "mid" : "late";
+    const v =
+      dynastyValues.get(normName(`${year} ${tier} 1st`))?.value ??
+      dynastyValues.get(normName(`${year} 1st`))?.value;
+    if (v) return v;
+    return slot <= third ? 2500 : slot <= 2 * third ? 2000 : 1500;
+  }
+  const labels = ["1st", "2nd", "3rd", "4th"] as const;
+  const v = dynastyValues.get(normName(`${year} ${labels[round - 1]}`))?.value;
+  if (v) return v;
+  return round === 2 ? 900 : round === 3 ? 450 : 200;
 }
 
 // Project draft slot per roster: 1 = earliest pick (worst record).
