@@ -508,6 +508,7 @@ if (!admin.apps.length) {
       JSON.parse(process.env["FIREBASE_SERVICE_ACCOUNT_JSON"] ?? "{}")
     )
   });
+  admin.firestore().settings({ ignoreUndefinedProperties: true });
 }
 var adminAuth = admin.auth();
 var adminDb = admin.firestore();

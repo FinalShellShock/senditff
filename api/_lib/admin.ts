@@ -7,6 +7,7 @@ if (!admin.apps.length) {
       JSON.parse(process.env["FIREBASE_SERVICE_ACCOUNT_JSON"] ?? "{}"),
     ),
   });
+  admin.firestore().settings({ ignoreUndefinedProperties: true });
 }
 
 export const adminAuth = admin.auth();
