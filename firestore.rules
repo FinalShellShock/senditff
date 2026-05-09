@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Each user manages their own doc (client writes on sign-up before approval)
+    match /users/{uid} {
+      allow read, write: if request.auth != null
+        && (request.auth.uid == uid || request.auth.token.email == uid);
+    }
+
+    // League data and value snapshots: Admin SDK writes only;
+    // approved users can read.
+    match /leagues/{leagueId}/{document=**} {
+      allow read: if isApproved();
+      allow write: if false;
+    }
+
+    match /valueSnapshots/{formatKey} {
+      allow read: if isApproved();
+      allow write: if false;
+    }
+
+    function isApproved() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid))
+             .data.get('approved', false) == true;
+    }
+  }
+}
