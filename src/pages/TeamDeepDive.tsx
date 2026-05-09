@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { makeApiClient, type OverviewResponse, type TradePackage } from "../api/client.ts";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { makeApiClient, type TradePackage } from "../api/client.ts";
 import type { Player, Pick as DraftPick, TeamProfile, WindowLabel } from "../algo/types.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
+import type { LeagueOutletContext } from "./LeagueShell.tsx";
 
 const LABEL_COLOR: Record<WindowLabel, string> = {
   JUGGERNAUT: "#16a34a",
@@ -82,12 +83,11 @@ function TradeCard({ pkg }: { pkg: TradePackage }) {
   const receiveNames = pkg.receive.map((p) => p.name).join(" + ");
   const delta = pkg.valueReceive - pkg.valueGive;
   const deltaColor = delta > 200 ? "#22c55e" : delta < -200 ? "#ef4444" : "#94a3b8";
-  const archetypeLabel = pkg.archetype.replace(/_/g, " ");
 
   return (
     <div className="trade-card">
       <div className="trade-card-header">
-        <span className="trade-arch-tag">{archetypeLabel}</span>
+        <span className="trade-arch-tag">{pkg.archetype.replace(/_/g, " ")}</span>
         <span className="trade-counter-team">{pkg.counterTeam}</span>
       </div>
       <div className="trade-players">
@@ -103,9 +103,7 @@ function TradeCard({ pkg }: { pkg: TradePackage }) {
           <span className="trade-val" style={{ color: deltaColor }}>{pkg.valueReceive.toLocaleString()}</span>
         </div>
       </div>
-      {pkg.rationale && (
-        <p className="trade-rationale">{pkg.rationale}</p>
-      )}
+      {pkg.rationale && <p className="trade-rationale">{pkg.rationale}</p>}
     </div>
   );
 }
@@ -115,199 +113,164 @@ export default function TeamDeepDive() {
   const rosterId = Number(rosterIdStr);
   const navigate = useNavigate();
   const { getToken } = useAuth();
+  const { overview } = useOutletContext<LeagueOutletContext>();
   const api = makeApiClient(getToken);
 
-  const [data, setData] = useState<OverviewResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const [trades, setTrades] = useState<TradePackage[] | null>(null);
-  const [tradesLoading, setTradesLoading] = useState(false);
+  const [tradesLoading, setTradesLoading] = useState(true);
   const [tradesError, setTradesError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!leagueId) return;
-    api.getOverview(leagueId)
-      .then(setData)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leagueId]);
-
-  async function handleFindTrades() {
-    if (!leagueId) return;
+    if (!leagueId || !rosterId) return;
+    setTrades(null);
     setTradesLoading(true);
     setTradesError(null);
-    try {
-      const result = await api.findTrades(leagueId, rosterId);
-      setTrades(result.packages);
-    } catch (e) {
-      setTradesError(e instanceof Error ? e.message : "Failed to find trades");
-    } finally {
-      setTradesLoading(false);
-    }
+    api.findTrades(leagueId, rosterId)
+      .then((r) => setTrades(r.packages))
+      .catch((e) => setTradesError(e instanceof Error ? e.message : "Failed to find trades"))
+      .finally(() => setTradesLoading(false));
+  }, [leagueId, rosterId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const profile = overview.profiles.find((p) => p.rosterId === rosterId);
+  const sortedTeams = [...overview.profiles].sort((a, b) => a.starterRank - b.starterRank);
+
+  if (!profile) {
+    return <p className="dim-text" style={{ marginTop: 48, textAlign: "center" }}>Team not found.</p>;
   }
 
-  const profile: TeamProfile | undefined = data?.profiles.find((p) => p.rosterId === rosterId);
+  const labelColor = LABEL_COLOR[profile.windowLabel];
 
   const playersByPos = (pos: string): Player[] =>
-    (profile?.players ?? [])
+    profile.players
       .filter((p) => p.position === pos)
       .sort((a, b) => b.valueDynasty - a.valueDynasty);
 
-  const sortedPicks = [...(profile?.picks ?? [])].sort((a, b) => {
+  const sortedPicks = [...profile.picks].sort((a, b) => {
     if (a.year !== b.year) return a.year - b.year;
     if (a.round !== b.round) return a.round - b.round;
     return a.slot - b.slot;
   });
 
-  const labelColor = profile ? LABEL_COLOR[profile.windowLabel] : "#94a3b8";
-
   return (
-    <div className="shell">
-      <div className="status-bar">
-        <div className="status-left">
-          <button className="btn-link" onClick={() => navigate(`/league/${leagueId}`)}>
-            ← League
-          </button>
-          {data && <span className="status-brand">{data.name}</span>}
+    <>
+      {/* Team header + switcher */}
+      <div className="dive-header">
+        <div className="dive-title-row">
+          <h1 className="dive-owner">
+            {profile.ownerName}
+            {profile.isMine && <span className="mine-mark">★ YOU</span>}
+          </h1>
+          <span className="window-label" style={{ background: labelColor }}>{profile.windowLabel}</span>
         </div>
-        <div className="status-right">
-          {profile && (
-            <span className="dim-text">
-              {data?.format.superflex ? "SF" : "1QB"} ·{" "}
-              {data?.format.scoring.toUpperCase()}
-              {data?.format.tep ? " · TEP" : ""}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+          <div className="team-meta" style={{ marginBottom: 0 }}>
+            <span className="meta-pill">{profile.competitiveness} / {profile.windowTier}</span>
+            <span className="meta-pill">rank <strong>#{profile.starterRank}</strong></span>
+            <span className="meta-pill">age <strong>{profile.starterCalAge.toFixed(1)}</strong></span>
+            <span className="meta-pill">
+              picks <strong style={{
+                color: profile.pickCapital.flag === "PICK_RICH" ? "#22c55e"
+                     : profile.pickCapital.flag === "PICK_POOR" ? "#ef4444"
+                     : "#94a3b8",
+              }}>
+                {profile.pickCapital.flag}
+              </strong>
             </span>
-          )}
+            <span className="meta-pill">{profile.record}</span>
+          </div>
+          <div className="team-switcher">
+            <span className="dim-text" style={{ fontSize: 10, letterSpacing: 1 }}>TEAM</span>
+            <select
+              className="team-switcher-select"
+              value={rosterId}
+              onChange={(e) => navigate(`/league/${leagueId}/team/${e.target.value}`)}
+            >
+              {sortedTeams.map((t) => (
+                <option key={t.rosterId} value={t.rosterId}>
+                  #{t.starterRank} {t.ownerName}{t.isMine ? " ★" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className="app-content">
-        {error && <div className="error-banner">{error}</div>}
+      {/* Trade targets — first */}
+      <section className="dive-pos-section">
+        <h2 className="section-title">TRADE TARGETS</h2>
+        {tradesLoading && (
+          <div className="trades-loading">
+            <span className="dim-text">Generating trade packages...</span>
+          </div>
+        )}
+        {tradesError && <div className="error-banner">{tradesError}</div>}
+        {trades && trades.length === 0 && (
+          <p className="dim-text">No trade packages found for this team.</p>
+        )}
+        {trades && trades.length > 0 && (
+          <div className="trade-list">
+            {trades.map((pkg, i) => <TradeCard key={i} pkg={pkg} />)}
+          </div>
+        )}
+      </section>
 
-        {loading ? (
-          <p className="dim-text" style={{ marginTop: 48, textAlign: "center" }}>Loading team...</p>
-        ) : !profile ? (
-          <p className="dim-text" style={{ marginTop: 48, textAlign: "center" }}>Team not found.</p>
-        ) : (
-          <>
-            {/* Team header */}
-            <div className="dive-header">
-              <div className="dive-title-row">
-                <h1 className="dive-owner">
-                  {profile.ownerName}
-                  {profile.isMine && <span className="mine-mark">★ YOU</span>}
-                </h1>
-                <span className="window-label" style={{ background: labelColor }}>
-                  {profile.windowLabel}
-                </span>
+      {/* Scouting report */}
+      {profile.archetypes.length > 0 && (
+        <section className="dive-pos-section">
+          <h2 className="section-title">SCOUTING REPORT</h2>
+          <div className="dive-archetypes">
+            {profile.archetypes.map((a) => (
+              <div key={a} className="dive-arch-row">
+                <span className="arch-tag">{a.replace(/_/g, " ")}</span>
+                <span className="dive-arch-desc">{ARCHETYPE_LABELS[a] ?? a.replace(/_/g, " ")}</span>
               </div>
-              <div className="team-meta" style={{ marginTop: 8 }}>
-                <span className="meta-pill">{profile.competitiveness} / {profile.windowTier}</span>
-                <span className="meta-pill">rank <strong>#{profile.starterRank}</strong></span>
-                <span className="meta-pill">age <strong>{profile.starterCalAge.toFixed(1)}</strong></span>
-                <span className="meta-pill">
-                  picks{" "}
-                  <strong style={{
-                    color: profile.pickCapital.flag === "PICK_RICH" ? "#22c55e"
-                         : profile.pickCapital.flag === "PICK_POOR" ? "#ef4444"
-                         : "#94a3b8",
-                  }}>
-                    {profile.pickCapital.flag}
-                  </strong>
-                </span>
-                <span className="meta-pill">{profile.record}</span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Roster by position */}
+      {POSITIONS.map((pos) => {
+        const players = playersByPos(pos);
+        const ps = profile.positionScores[pos];
+        if (players.length === 0) return null;
+        return (
+          <section key={pos} className="dive-pos-section">
+            <div className="dive-pos-header">
+              <span className="pos-tag" style={{ background: posColor(pos), color: "#fff", padding: "2px 8px", borderRadius: 3, fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>
+                {pos}
+              </span>
+              <span className="pos-class" style={{ color: POS_CLASS_COLOR[ps.classification], fontSize: 11, fontWeight: 700 }}>
+                {ps.classification.replace("_", " ")}
+              </span>
+              <div className="dive-pos-bars">
+                <span className="bar-label">str {ps.starterScore.toFixed(0)}</span>
+                <span className="bar-label" style={{ marginLeft: 8 }}>dep {ps.depthScore.toFixed(0)}</span>
               </div>
             </div>
+            <div className="dive-player-list">
+              {players.map((p, i) => <PlayerRow key={p.id} player={p} rank={i + 1} />)}
+            </div>
+          </section>
+        );
+      })}
 
-            {/* Position sections */}
-            {POSITIONS.map((pos) => {
-              const players = playersByPos(pos);
-              const ps = profile.positionScores[pos];
-              if (players.length === 0) return null;
-              return (
-                <section key={pos} className="dive-pos-section">
-                  <div className="dive-pos-header">
-                    <span className="pos-tag" style={{ background: posColor(pos), color: "#fff", padding: "2px 8px", borderRadius: 3, fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>
-                      {pos}
-                    </span>
-                    <span className="pos-class" style={{ color: POS_CLASS_COLOR[ps.classification], fontSize: 11, fontWeight: 700 }}>
-                      {ps.classification.replace("_", " ")}
-                    </span>
-                    <div className="dive-pos-bars">
-                      <span className="bar-label">str {ps.starterScore.toFixed(0)}</span>
-                      <span className="bar-label" style={{ marginLeft: 8 }}>dep {ps.depthScore.toFixed(0)}</span>
-                    </div>
-                  </div>
-                  <div className="dive-player-list">
-                    {players.map((p, i) => <PlayerRow key={p.id} player={p} rank={i + 1} />)}
-                  </div>
-                </section>
-              );
-            })}
-
-            {/* Picks */}
-            {sortedPicks.length > 0 && (
-              <section className="dive-pos-section">
-                <div className="dive-pos-header">
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: 2 }}>PICKS</span>
-                  <span className="meta-pill" style={{ fontSize: 10 }}>
-                    total{" "}
-                    <strong>{sortedPicks.reduce((s, p) => s + p.value, 0).toLocaleString()}</strong>
-                  </span>
-                </div>
-                <div className="dive-pick-list">
-                  {sortedPicks.map((pick) => (
-                    <PickRow key={`${pick.year}-${pick.round}-${pick.origRosterId}`} pick={pick} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Archetypes */}
-            {profile.archetypes.length > 0 && (
-              <section className="dive-pos-section">
-                <h2 className="section-title">SCOUTING REPORT</h2>
-                <div className="dive-archetypes">
-                  {profile.archetypes.map((a) => (
-                    <div key={a} className="dive-arch-row">
-                      <span className="arch-tag">{a.replace(/_/g, " ")}</span>
-                      <span className="dive-arch-desc">
-                        {ARCHETYPE_LABELS[a] ?? a.replace(/_/g, " ")}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Trade recommendations */}
-            <section className="dive-pos-section">
-              <h2 className="section-title">TRADE TARGETS</h2>
-              {!trades && !tradesLoading && (
-                <button className="btn-primary" onClick={handleFindTrades}>
-                  Find Trades
-                </button>
-              )}
-              {tradesLoading && (
-                <p className="dim-text">Finding trades...</p>
-              )}
-              {tradesError && <div className="error-banner">{tradesError}</div>}
-              {trades && trades.length === 0 && (
-                <p className="dim-text">No trade packages found.</p>
-              )}
-              {trades && trades.length > 0 && (
-                <div className="trade-list">
-                  {trades.map((pkg, i) => (
-                    <TradeCard key={i} pkg={pkg} />
-                  ))}
-                </div>
-              )}
-            </section>
-          </>
-        )}
-      </div>
-    </div>
+      {/* Picks */}
+      {sortedPicks.length > 0 && (
+        <section className="dive-pos-section">
+          <div className="dive-pos-header">
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: 2 }}>PICKS</span>
+            <span className="meta-pill" style={{ fontSize: 10 }}>
+              total <strong>{sortedPicks.reduce((s, p) => s + p.value, 0).toLocaleString()}</strong>
+            </span>
+          </div>
+          <div className="dive-pick-list">
+            {sortedPicks.map((pick) => (
+              <PickRow key={`${pick.year}-${pick.round}-${pick.origRosterId}`} pick={pick} />
+            ))}
+          </div>
+        </section>
+      )}
+    </>
   );
 }

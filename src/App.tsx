@@ -1,8 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./hooks/useAuth.tsx";
 import MyLeagues from "./pages/MyLeagues.tsx";
+import LeagueShell from "./pages/LeagueShell.tsx";
 import LeagueOverview from "./pages/LeagueOverview.tsx";
 import TeamDeepDive from "./pages/TeamDeepDive.tsx";
+import TradeEval from "./pages/TradeEval.tsx";
 
 function SignInScreen() {
   const { signIn } = useAuth();
@@ -40,8 +42,11 @@ function AuthGate() {
   return (
     <Routes>
       <Route path="/" element={<MyLeagues />} />
-      <Route path="/league/:id" element={<LeagueOverview />} />
-      <Route path="/league/:id/team/:rosterId" element={<TeamDeepDive />} />
+      <Route path="/league/:id" element={<LeagueShell />}>
+        <Route index element={<LeagueOverview />} />
+        <Route path="team/:rosterId" element={<TeamDeepDive />} />
+        <Route path="trade" element={<TradeEval />} />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

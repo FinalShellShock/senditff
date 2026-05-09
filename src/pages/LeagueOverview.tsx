@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { makeApiClient, type OverviewResponse } from "../api/client.ts";
+import { useState } from "react";
+import { useOutletContext, useParams } from "react-router-dom";
+import { makeApiClient } from "../api/client.ts";
 import type { TeamProfile, WindowLabel } from "../algo/types.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
+import { useNavigate } from "react-router-dom";
+import type { LeagueOutletContext } from "./LeagueShell.tsx";
 
 const LABEL_COLOR: Record<WindowLabel, string> = {
   JUGGERNAUT: "#16a34a",
@@ -39,7 +41,11 @@ function TeamCard({ profile, leagueId }: { profile: TeamProfile; leagueId: strin
   const navigate = useNavigate();
   const labelColor = LABEL_COLOR[profile.windowLabel];
   return (
-    <div className={`team-card${profile.isMine ? " mine" : ""}`}>
+    <div
+      className={`team-card${profile.isMine ? " mine" : ""}`}
+      onClick={() => navigate(`/league/${leagueId}/team/${profile.rosterId}`)}
+      style={{ cursor: "pointer" }}
+    >
       <div className="team-header">
         <div className="team-name">
           {profile.ownerName}
@@ -47,20 +53,11 @@ function TeamCard({ profile, leagueId }: { profile: TeamProfile; leagueId: strin
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div className="team-rank">rank #{profile.starterRank} · {profile.record}</div>
-          <button
-            className="btn-secondary"
-            style={{ padding: "4px 10px", fontSize: 11 }}
-            onClick={() => navigate(`/league/${leagueId}/team/${profile.rosterId}`)}
-          >
-            View
-          </button>
+          <span className="window-label" style={{ background: labelColor }}>{profile.windowLabel}</span>
         </div>
       </div>
 
-      <div className="team-meta">
-        <span className="window-label" style={{ background: labelColor }}>
-          {profile.windowLabel}
-        </span>
+      <div className="team-meta" style={{ marginBottom: 8 }}>
         <span className="meta-pill">{profile.competitiveness} / {profile.windowTier}</span>
         <span className="meta-pill">age <strong>{profile.starterCalAge.toFixed(1)}</strong></span>
         <span className="meta-pill">
@@ -93,19 +90,13 @@ function TeamCard({ profile, leagueId }: { profile: TeamProfile; leagueId: strin
           );
         })}
       </div>
-
-      {profile.archetypes.length > 0 && (
-        <div className="archetypes">
-          {profile.archetypes.map((a) => (
-            <span key={a} className="arch-tag">{a.replace(/_/g, " ")}</span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
 
 function LeagueGrid({ profiles }: { profiles: TeamProfile[] }) {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   type Cell = { label: WindowLabel; teams: TeamProfile[] } | null;
   const grid: Record<string, TeamProfile[]> = {};
   for (const p of profiles) {
@@ -136,11 +127,14 @@ function LeagueGrid({ profiles }: { profiles: TeamProfile[] }) {
               <div key={tier} className={`grid-cell${!c ? " empty" : ""}`}>
                 {c ? (
                   <>
-                    <div className="grid-label" style={{ background: LABEL_COLOR[c.label] }}>
-                      {c.label}
-                    </div>
+                    <div className="grid-label" style={{ background: LABEL_COLOR[c.label] }}>{c.label}</div>
                     {c.teams.map((t) => (
-                      <div key={t.rosterId} className={`grid-name${t.isMine ? " mine-name" : ""}`}>
+                      <div
+                        key={t.rosterId}
+                        className={`grid-name${t.isMine ? " mine-name" : ""}`}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => navigate(`/league/${id}/team/${t.rosterId}`)}
+                      >
                         {t.ownerName}
                       </div>
                     ))}
@@ -157,31 +151,19 @@ function LeagueGrid({ profiles }: { profiles: TeamProfile[] }) {
 
 export default function LeagueOverview() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { getToken } = useAuth();
-  const api = makeApiClient(getToken);
+  const { overview, reload } = useOutletContext<LeagueOutletContext>();
 
-  const [data, setData] = useState<OverviewResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-
-  useEffect(() => {
-    if (!id) return;
-    api.getOverview(id)
-      .then(setData)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleRefresh() {
     if (!id) return;
     setRefreshing(true);
     setError(null);
     try {
-      const result = await makeApiClient(getToken).syncLeague(id);
-      setData((prev) => prev ? { ...prev, profiles: result.profiles, lastRefreshed: new Date().toISOString() } : prev);
+      await makeApiClient(getToken).syncLeague(id);
+      await reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Refresh failed");
     } finally {
@@ -189,50 +171,29 @@ export default function LeagueOverview() {
     }
   }
 
-  const sorted = data
-    ? [...data.profiles].sort((a, b) => a.starterRank - b.starterRank)
-    : [];
-
-  const formatStr = data
-    ? `${data.format.superflex ? "SF" : "1QB"} · ${data.format.scoring.toUpperCase()}${data.format.tep ? " · TEP" : ""}`
-    : "";
+  const sorted = [...overview.profiles].sort((a, b) => a.starterRank - b.starterRank);
 
   return (
-    <div className="shell">
-      <div className="status-bar">
-        <div className="status-left">
-          <button className="btn-link" onClick={() => navigate("/")}>← Leagues</button>
-          {data && <span className="status-brand">{data.name}</span>}
-        </div>
-        <div className="status-right">
-          {formatStr && <span className="dim-text">{formatStr}</span>}
-          <button className="btn-secondary" disabled={refreshing} onClick={handleRefresh}>
-            {refreshing ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
+    <>
+      {error && <div className="error-banner">{error}</div>}
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 32 }}>
+        <button className="btn-secondary" disabled={refreshing} onClick={handleRefresh}>
+          {refreshing ? "Refreshing..." : "Refresh Data"}
+        </button>
       </div>
 
-      <div className="app-content">
-        {error && <div className="error-banner">{error}</div>}
+      <section className="overview-section">
+        <h2 className="section-title">League Shape</h2>
+        <LeagueGrid profiles={overview.profiles} />
+      </section>
 
-        {loading ? (
-          <p className="dim-text" style={{ marginTop: 48, textAlign: "center" }}>Loading league...</p>
-        ) : !data ? null : (
-          <>
-            <section className="overview-section">
-              <h2 className="section-title">League Shape</h2>
-              <LeagueGrid profiles={data.profiles} />
-            </section>
-
-            <section className="overview-section">
-              <h2 className="section-title">Teams</h2>
-              <div className="team-list">
-                {sorted.map((p) => <TeamCard key={p.rosterId} profile={p} leagueId={id!} />)}
-              </div>
-            </section>
-          </>
-        )}
-      </div>
-    </div>
+      <section className="overview-section">
+        <h2 className="section-title">Teams</h2>
+        <div className="team-list">
+          {sorted.map((p) => <TeamCard key={p.rosterId} profile={p} leagueId={id!} />)}
+        </div>
+      </section>
+    </>
   );
 }

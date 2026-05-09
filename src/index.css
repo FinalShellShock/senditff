@@ -514,6 +514,71 @@ body {
   border: 1px solid rgba(168,85,247,0.2);
 }
 
+/* ── League Nav ──────────────────────────────────────────────────────── */
+
+.league-nav {
+  display: flex;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 0 24px;
+  flex-shrink: 0;
+}
+
+.league-nav-tab {
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #475569;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+
+.league-nav-tab:hover { color: #94a3b8; }
+.league-nav-tab.active { color: #f59e0b; border-bottom-color: #f59e0b; }
+.league-nav-tab.disabled { pointer-events: none; opacity: 0.3; }
+
+/* ── Team switcher ───────────────────────────────────────────────────── */
+
+.team-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.team-switcher-select {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 5px;
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 5px 8px;
+  cursor: pointer;
+  outline: none;
+  max-width: 180px;
+}
+
+.team-switcher-select:focus { border-color: #f59e0b; }
+.team-switcher-select option { background: #0f1318; }
+
+/* ── Trades loading ──────────────────────────────────────────────────── */
+
+.trades-loading {
+  padding: 24px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 /* ── Team Deep Dive ──────────────────────────────────────────────────── */
 
 .dive-header {
