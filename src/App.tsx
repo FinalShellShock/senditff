@@ -1,4 +1,7 @@
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./hooks/useAuth.tsx";
+import MyLeagues from "./pages/MyLeagues.tsx";
+import LeagueOverview from "./pages/LeagueOverview.tsx";
 
 function SignInScreen() {
   const { signIn } = useAuth();
@@ -26,39 +29,28 @@ function PendingScreen() {
   );
 }
 
-function AppShell() {
-  const { authState, signOutUser } = useAuth();
-  const user = authState.status === "approved" ? authState.user : null;
-
-  return (
-    <div className="shell">
-      <div className="status-bar">
-        <span className="status-brand">Send It <span className="status-beta">Beta</span></span>
-        <div className="status-right">
-          {user && <span className="status-user">{user.displayName}</span>}
-          <button className="btn-link" onClick={signOutUser}>Sign out</button>
-        </div>
-      </div>
-      <div className="app-content">
-        <p className="placeholder">App coming soon.</p>
-      </div>
-    </div>
-  );
-}
-
 function AuthGate() {
   const { authState } = useAuth();
 
   if (authState.status === "loading") return null;
   if (authState.status === "signed_out") return <SignInScreen />;
   if (authState.status === "pending") return <PendingScreen />;
-  return <AppShell />;
+
+  return (
+    <Routes>
+      <Route path="/" element={<MyLeagues />} />
+      <Route path="/league/:id" element={<LeagueOverview />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AuthGate />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AuthGate />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

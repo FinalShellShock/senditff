@@ -26,6 +26,7 @@ type AuthContextValue = {
   authState: AuthState;
   signIn: () => Promise<void>;
   signOutUser: () => Promise<void>;
+  getToken: () => Promise<string>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -73,8 +74,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth);
   }, []);
 
+  const getToken = useCallback(async (): Promise<string> => {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Not signed in");
+    return user.getIdToken();
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ authState, signIn, signOutUser }}>
+    <AuthContext.Provider value={{ authState, signIn, signOutUser, getToken }}>
       {children}
     </AuthContext.Provider>
   );
