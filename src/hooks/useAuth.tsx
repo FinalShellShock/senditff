@@ -41,14 +41,32 @@ async function checkApproval(user: User): Promise<boolean> {
 async function ensureUserDoc(user: User): Promise<void> {
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
-  if (!snap.exists()) {
-    await setDoc(ref, {
-      email: user.email,
-      displayName: user.displayName,
-      approved: false,
-      createdAt: new Date().toISOString(),
-    });
+  if (snap.exists()) return;
+
+  // New sign-in — check for a V1 email-keyed doc to migrate approval + leagues
+  let approved = false;
+  let leagueIds: string[] = [];
+  if (user.email) {
+    try {
+      const v1Snap = await getDoc(doc(db, "users", user.email));
+      if (v1Snap.exists()) {
+        const v1 = v1Snap.data();
+        approved = v1["subscribed"] === true || v1["approved"] === true;
+        const saved = v1["savedLeagues"] as Array<{ id: string }> | undefined;
+        leagueIds = saved?.map((l) => l.id) ?? [];
+      }
+    } catch {
+      // V1 doc unreadable — proceed with defaults
+    }
   }
+
+  await setDoc(ref, {
+    email: user.email,
+    displayName: user.displayName,
+    approved,
+    leagueIds,
+    createdAt: new Date().toISOString(),
+  });
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
