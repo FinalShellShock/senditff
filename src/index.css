@@ -698,6 +698,103 @@ body {
   color: #64748b;
 }
 
+/* ── Team card needs/surplus summary ────────────────────────────────── */
+
+.card-needs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  margin-top: 4px;
+}
+
+.card-needs-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.card-needs-label {
+  font-size: 9px;
+  color: #334155;
+  letter-spacing: 1px;
+}
+
+/* ── Positional needs board ──────────────────────────────────────────── */
+
+.needs-board-header {
+  display: grid;
+  grid-template-columns: 36px 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.needs-board-col-label {
+  font-size: 9px;
+  color: #334155;
+  letter-spacing: 2px;
+  padding-left: 4px;
+}
+
+.needs-board {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.needs-board-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 1fr;
+  gap: 8px;
+  align-items: start;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 6px;
+}
+
+.needs-board-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.needs-board-name {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.needs-board-name:hover { opacity: 0.8; }
+
+.needs-board-critical {
+  background: rgba(239,68,68,0.12);
+  color: #fca5a5;
+  border: 1px solid rgba(239,68,68,0.25);
+}
+
+.needs-board-need {
+  background: rgba(234,179,8,0.10);
+  color: #fde047;
+  border: 1px solid rgba(234,179,8,0.20);
+}
+
+.needs-board-surp {
+  background: rgba(6,182,212,0.10);
+  color: #67e8f9;
+  border: 1px solid rgba(6,182,212,0.20);
+}
+
+.needs-board-empty {
+  font-size: 11px;
+  color: #1e293b;
+}
+
 /* ── Trade cards ─────────────────────────────────────────────────────── */
 
 .trade-list {

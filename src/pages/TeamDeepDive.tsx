@@ -129,6 +129,7 @@ export default function TeamDeepDive() {
               }}>
                 {profile.pickCapital.flag}
               </strong>
+              <span style={{ color: "#475569" }}> · {profile.pickCapital.score.toFixed(0)}</span>
             </span>
             <span className="meta-pill">{profile.record}</span>
           </div>
@@ -177,6 +178,7 @@ export default function TeamDeepDive() {
               </span>
               <span className="pos-class" style={{ color: POS_CLASS_COLOR[ps.classification], fontSize: 11, fontWeight: 700 }}>
                 {ps.classification.replace("_", " ")}
+                <span style={{ color: "#475569", fontWeight: 400 }}> · {ps.urgency.toFixed(0)}</span>
               </span>
               <div className="dive-pos-bars">
                 <span className="bar-label">str {ps.starterScore.toFixed(0)}</span>
@@ -197,6 +199,17 @@ export default function TeamDeepDive() {
             <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: 2 }}>PICKS</span>
             <span className="meta-pill" style={{ fontSize: 10 }}>
               total <strong>{sortedPicks.reduce((s, p) => s + p.value, 0).toLocaleString()}</strong>
+            </span>
+            <span className="meta-pill" style={{ fontSize: 10 }}>
+              capital{" "}
+              <strong style={{
+                color: profile.pickCapital.flag === "PICK_RICH" ? "#22c55e"
+                     : profile.pickCapital.flag === "PICK_POOR" ? "#ef4444"
+                     : "#94a3b8",
+              }}>
+                {profile.pickCapital.flag.replace("_", " ")}
+              </strong>
+              <span style={{ color: "#475569" }}> · {profile.pickCapital.score.toFixed(0)}</span>
             </span>
           </div>
           <div className="dive-pick-list">

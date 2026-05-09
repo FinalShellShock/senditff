@@ -37,6 +37,99 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
+function NeedsSummaryRow({ profile }: { profile: TeamProfile }) {
+  const criticals = POSITIONS.filter((p) => profile.positionScores[p].classification === "CRITICAL_NEED");
+  const needs     = POSITIONS.filter((p) => profile.positionScores[p].classification === "NEED");
+  const surpluses = POSITIONS.filter((p) => profile.positionScores[p].classification === "SURPLUS");
+  if (criticals.length === 0 && needs.length === 0 && surpluses.length === 0) return null;
+  return (
+    <div className="card-needs-row">
+      {(criticals.length > 0 || needs.length > 0) && (
+        <div className="card-needs-group">
+          <span className="card-needs-label">NEEDS</span>
+          {criticals.map((p) => (
+            <span key={p} className={`pos-tag pos-${p}`} style={{ opacity: 1 }}>{p}</span>
+          ))}
+          {needs.map((p) => (
+            <span key={p} className={`pos-tag pos-${p}`} style={{ opacity: 0.6 }}>{p}</span>
+          ))}
+        </div>
+      )}
+      {surpluses.length > 0 && (
+        <div className="card-needs-group">
+          <span className="card-needs-label">SURPLUS</span>
+          {surpluses.map((p) => (
+            <span key={p} className={`pos-tag pos-${p}`} style={{ opacity: 0.6 }}>{p}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NeedsBoard({ profiles, leagueId }: { profiles: TeamProfile[]; leagueId: string }) {
+  const navigate = useNavigate();
+  const rows = POSITIONS.map((pos) => {
+    const criticals = profiles
+      .filter((p) => p.positionScores[pos].classification === "CRITICAL_NEED")
+      .sort((a, b) => b.positionScores[pos].urgency - a.positionScores[pos].urgency);
+    const needs = profiles
+      .filter((p) => p.positionScores[pos].classification === "NEED")
+      .sort((a, b) => b.positionScores[pos].urgency - a.positionScores[pos].urgency);
+    const surpluses = profiles
+      .filter((p) => p.positionScores[pos].classification === "SURPLUS")
+      .sort((a, b) => a.positionScores[pos].urgency - b.positionScores[pos].urgency);
+    return { pos, criticals, needs, surpluses };
+  });
+
+  return (
+    <div className="needs-board">
+      {rows.map(({ pos, criticals, needs, surpluses }) => (
+        <div key={pos} className="needs-board-row">
+          <span className={`pos-tag pos-${pos}`} style={{ flexShrink: 0 }}>{pos}</span>
+          <div className="needs-board-cell needs-board-needs">
+            {criticals.map((p) => (
+              <span
+                key={p.rosterId}
+                className="needs-board-name needs-board-critical"
+                onClick={() => navigate(`/league/${leagueId}/team/${p.rosterId}`)}
+              >
+                {p.ownerName}
+              </span>
+            ))}
+            {needs.map((p) => (
+              <span
+                key={p.rosterId}
+                className="needs-board-name needs-board-need"
+                onClick={() => navigate(`/league/${leagueId}/team/${p.rosterId}`)}
+              >
+                {p.ownerName}
+              </span>
+            ))}
+            {criticals.length === 0 && needs.length === 0 && (
+              <span className="needs-board-empty">—</span>
+            )}
+          </div>
+          <div className="needs-board-cell needs-board-surplus">
+            {surpluses.map((p) => (
+              <span
+                key={p.rosterId}
+                className="needs-board-name needs-board-surp"
+                onClick={() => navigate(`/league/${leagueId}/team/${p.rosterId}`)}
+              >
+                {p.ownerName}
+              </span>
+            ))}
+            {surpluses.length === 0 && (
+              <span className="needs-board-empty">—</span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TeamCard({ profile, leagueId }: { profile: TeamProfile; leagueId: string }) {
   const navigate = useNavigate();
   const labelColor = LABEL_COLOR[profile.windowLabel];
@@ -62,8 +155,9 @@ function TeamCard({ profile, leagueId }: { profile: TeamProfile; leagueId: strin
         <span className="meta-pill">age <strong>{profile.starterCalAge.toFixed(1)}</strong></span>
         <span className="meta-pill">
           picks <strong style={{ color: profile.pickCapital.flag === "PICK_RICH" ? "#22c55e" : profile.pickCapital.flag === "PICK_POOR" ? "#ef4444" : "#94a3b8" }}>
-            {profile.pickCapital.flag}
+            {profile.pickCapital.flag.replace("_", " ")}
           </strong>
+          <span style={{ color: "#475569" }}> · {profile.pickCapital.score.toFixed(0)}</span>
         </span>
       </div>
 
@@ -90,6 +184,8 @@ function TeamCard({ profile, leagueId }: { profile: TeamProfile; leagueId: strin
           );
         })}
       </div>
+
+      <NeedsSummaryRow profile={profile} />
     </div>
   );
 }
@@ -186,6 +282,16 @@ export default function LeagueOverview() {
       <section className="overview-section">
         <h2 className="section-title">League Shape</h2>
         <LeagueGrid profiles={overview.profiles} />
+      </section>
+
+      <section className="overview-section">
+        <h2 className="section-title">Positional Needs</h2>
+        <div className="needs-board-header">
+          <div />
+          <div className="needs-board-col-label">NEEDS</div>
+          <div className="needs-board-col-label">SURPLUS</div>
+        </div>
+        <NeedsBoard profiles={overview.profiles} leagueId={id!} />
       </section>
 
       <section className="overview-section">
