@@ -40,8 +40,8 @@ function MiniBar({ score }: { score: number }) {
 function getTeamNeeds(profile: TeamProfile): { pos: Position; classification: string }[] {
   const scored = POSITIONS.map((pos) => ({
     pos,
-    classification: profile.positionScores[pos].classification,
-    urgency: profile.positionScores[pos].urgency,
+    classification: profile.positionScores?.[pos]?.classification ?? "HEALTHY",
+    urgency: profile.positionScores?.[pos]?.urgency ?? 0,
   }));
   const needs = scored
     .filter((p) => p.classification === "CRITICAL_NEED" || p.classification === "NEED")
@@ -139,7 +139,7 @@ function QuadrantPlot({ profiles }: { profiles: TeamProfile[] }) {
   const maxV = Math.max(...values);
   const vRange = maxV - minV || 1;
 
-  const dotX = (p: TeamProfile) => PAD.left + (p.windowPressure / 100) * plotW;
+  const dotX = (p: TeamProfile) => PAD.left + ((p.windowPressure ?? 50) / 100) * plotW;
   const dotY = (p: TeamProfile) => PAD.top + (1 - (p.starterTotalValue - minV) / vRange) * plotH;
 
   const midX = PAD.left + plotW / 2;
@@ -257,25 +257,25 @@ function LeagueTableRow({ profile, leagueId }: { profile: TeamProfile; leagueId:
         </div>
       </div>
       {POSITIONS.map((pos) => {
-        const ps = profile.positionScores[pos];
+        const ps = profile.positionScores?.[pos];
         return (
           <div key={pos} className="lt-col-pos lt-pos-cell">
             <div className="lt-pos-bar-row">
-              <MiniBar score={ps.starterScore} />
-              <span className="lt-pos-score">{ps.starterScore.toFixed(0)}</span>
+              <MiniBar score={ps?.starterScore ?? 0} />
+              <span className="lt-pos-score">{(ps?.starterScore ?? 0).toFixed(0)}</span>
             </div>
             <div className="lt-pos-bar-row">
-              <MiniBar score={ps.depthScore} />
-              <span className="lt-pos-score">{ps.depthScore.toFixed(0)}</span>
+              <MiniBar score={ps?.depthScore ?? 0} />
+              <span className="lt-pos-score">{(ps?.depthScore ?? 0).toFixed(0)}</span>
             </div>
-            <span className="lt-pos-class" style={{ color: POS_CLASS_COLOR[ps.classification] }}>
-              {ps.classification.replace("_", " ")}
+            <span className="lt-pos-class" style={{ color: POS_CLASS_COLOR[ps?.classification ?? "HEALTHY"] }}>
+              {(ps?.classification ?? "—").replace("_", " ")}
             </span>
           </div>
         );
       })}
       <div className="lt-col-picks">
-        <PicksDots picks={profile.picks} flag={profile.pickCapital.flag} />
+        <PicksDots picks={profile.picks ?? []} flag={profile.pickCapital?.flag ?? "NEUTRAL"} />
       </div>
     </div>
   );
@@ -303,12 +303,16 @@ export default function LeagueOverview() {
   }
 
   const sorted = [...overview.profiles].sort((a, b) => a.starterRank - b.starterRank);
+  const needsResync = overview.profiles.some((p) => !p.positionScores || !p.pickCapital);
 
   return (
     <>
       {error && <div className="error-banner">{error}</div>}
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 32 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, marginBottom: 32 }}>
+        {needsResync && (
+          <span className="dim-text" style={{ fontSize: 12 }}>League data is outdated — refresh to see full analysis</span>
+        )}
         <button className="btn-secondary" disabled={refreshing} onClick={handleRefresh}>
           {refreshing ? "Refreshing..." : "Refresh Data"}
         </button>
