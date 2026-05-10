@@ -1136,6 +1136,41 @@ body {
   font-size: 13px;
   font-weight: 700;
   color: #e2e8f0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.trade-side-receive .trade-names {
+  justify-content: flex-end;
+}
+
+.trade-asset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.trade-asset-tag {
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.trade-asset-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.trade-asset-sep {
+  color: #475569;
+  font-weight: 400;
+  margin: 0 2px;
 }
 
 .trade-val {

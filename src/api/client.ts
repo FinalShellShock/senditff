@@ -1,10 +1,18 @@
 import type { TeamProfile } from "../algo/types.ts";
 
+export type TradeAssetWire = {
+  id: string;
+  kind: "player" | "pick";
+  name: string;
+  position?: string;
+  valueDynasty: number;
+};
+
 export type TradePackage = {
   counterTeam: string;
   counterRosterId: number;
-  give: Array<{ id: string; name: string; position: string; valueDynasty: number }>;
-  receive: Array<{ id: string; name: string; position: string; valueDynasty: number }>;
+  give: TradeAssetWire[];
+  receive: TradeAssetWire[];
   valueGive: number;
   valueReceive: number;
   archetype: string;

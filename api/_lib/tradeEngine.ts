@@ -1,213 +1,131 @@
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+// Trade engine: deterministic package generation + scoring.
+//
+// Each archetype has a generator that yields candidate packages in shapes that
+// fit the archetype. Every candidate is then scored uniformly using:
+//   1. Impact simulation (recompute position scores for both teams post-trade)
+//   2. Two-sided fit (does it help me AND make sense for the counter-team)
+//   3. Archetype match (does the shape line up with archetypes both teams have)
+//   4. Value balance (is the dynasty-value gap acceptable)
 
-// api/trades/find.ts
-var find_exports = {};
-__export(find_exports, {
-  default: () => handler
-});
-module.exports = __toCommonJS(find_exports);
-var import_crypto = require("crypto");
+import { PICK_DECAY, POSITIONS } from "../../src/algo/constants";
+import {
+  depthByPosition,
+  fillStarters,
+  flexStrengthValue,
+  score0to100,
+} from "../../src/algo/profile";
+import type {
+  LeagueAverages,
+  LeagueFormat,
+  Pick,
+  Player,
+  Position,
+  TeamProfile,
+} from "../../src/algo/types";
 
-// api/_lib/admin.ts
-var admin = __toESM(require("firebase-admin"));
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(
-      JSON.parse(process.env["FIREBASE_SERVICE_ACCOUNT_JSON"] ?? "{}")
-    )
-  });
-  admin.firestore().settings({ ignoreUndefinedProperties: true });
-}
-var adminAuth = admin.auth();
-var adminDb = admin.firestore();
+// ── Wire types ───────────────────────────────────────────────────────────────
 
-// api/_lib/auth.ts
-async function requireApprovedUser(req, res) {
-  const authHeader = req.headers["authorization"] ?? "";
-  if (!authHeader.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Unauthorized" });
-    return null;
-  }
-  let uid;
-  let email;
-  try {
-    const decoded = await adminAuth.verifyIdToken(authHeader.slice(7));
-    uid = decoded.uid;
-    email = decoded.email ?? "";
-  } catch {
-    res.status(401).json({ error: "Unauthorized" });
-    return null;
-  }
-  const userSnap = await adminDb.collection("users").doc(uid).get();
-  if (!userSnap.exists || userSnap.data()?.["approved"] !== true) {
-    res.status(403).json({ error: "Forbidden" });
-    return null;
-  }
-  return { uid, email };
-}
-
-// src/algo/constants.ts
-var POSITIONS = ["QB", "RB", "WR", "TE"];
-var PICK_DECAY = {
-  0: 1,
-  1: 0.85,
-  2: 0.7,
-  3: 0.55
+export type TradeAssetWire = {
+  id: string;
+  kind: "player" | "pick";
+  name: string;
+  position?: string;
+  valueDynasty: number;
 };
 
-// src/algo/profile.ts
-var REDRAFT = (p) => p.valueRedraft;
-function byValueDesc(getValue) {
-  return (a, b) => {
-    const va = getValue(a);
-    const vb = getValue(b);
-    if (vb !== va) return vb - va;
-    return a.id.localeCompare(b.id);
-  };
-}
-function fillStarters(players, format, getValue = REDRAFT) {
-  const used = /* @__PURE__ */ new Set();
-  const byPos = { QB: [], RB: [], WR: [], TE: [] };
-  for (const p of [...players].sort(byValueDesc(getValue))) byPos[p.position].push(p);
-  const starters = { QB: [], RB: [], WR: [], TE: [] };
-  const fillFrom = (pos, n) => {
-    for (const p of byPos[pos]) {
-      if (starters[pos].length >= n) break;
-      if (!used.has(p.id)) {
-        starters[pos].push(p);
-        used.add(p.id);
-      }
-    }
-  };
-  fillFrom("QB", format.starterSlots.QB);
-  fillFrom("RB", format.starterSlots.RB);
-  fillFrom("WR", format.starterSlots.WR);
-  fillFrom("TE", format.starterSlots.TE);
-  for (let i = 0; i < format.starterSlots.FLEX; i++) {
-    let best;
-    for (const pos of ["RB", "WR", "TE"]) {
-      for (const p of byPos[pos]) {
-        if (used.has(p.id)) continue;
-        if (!best || getValue(p) > getValue(best)) best = p;
-        break;
-      }
-    }
-    if (!best) break;
-    starters[best.position].push(best);
-    used.add(best.id);
-  }
-  for (let i = 0; i < format.starterSlots.SUPER_FLEX; i++) {
-    let best;
-    for (const pos of POSITIONS) {
-      for (const p of byPos[pos]) {
-        if (used.has(p.id)) continue;
-        if (!best || getValue(p) > getValue(best)) best = p;
-        break;
-      }
-    }
-    if (!best) break;
-    starters[best.position].push(best);
-    used.add(best.id);
-  }
-  return { starters };
-}
-function depthByPosition(players, format, getValue = REDRAFT) {
-  const baseStarters = {
-    QB: format.starterSlots.QB + (format.starterSlots.SUPER_FLEX > 0 ? 1 : 0),
-    RB: format.starterSlots.RB,
-    WR: format.starterSlots.WR,
-    TE: format.starterSlots.TE
-  };
-  const depth = { QB: [], RB: [], WR: [], TE: [] };
-  for (const pos of POSITIONS) {
-    const sorted = players.filter((p) => p.position === pos).sort(byValueDesc(getValue));
-    const baseN = baseStarters[pos];
-    depth[pos] = sorted.slice(baseN, baseN + 3);
-  }
-  return depth;
-}
-function flexStrengthValue(players, format, totalStarterValue, getValue = REDRAFT) {
-  let positionSpecificValue = 0;
-  for (const pos of POSITIONS) {
-    const baseN = format.starterSlots[pos];
-    if (baseN <= 0) continue;
-    const sortedAtPos = players.filter((p) => p.position === pos).sort(byValueDesc(getValue));
-    positionSpecificValue += sortedAtPos.slice(0, baseN).reduce((s, p) => s + getValue(p), 0);
-  }
-  return Math.max(0, totalStarterValue - positionSpecificValue);
-}
-function score0to100(value, leagueAvg) {
-  if (leagueAvg <= 0) return 50;
-  const score = 50 + (value - leagueAvg) / leagueAvg * 50;
-  return Math.max(0, Math.min(100, score));
-}
+export type TradePackage = {
+  counterTeam: string;
+  counterRosterId: number;
+  give: TradeAssetWire[];
+  receive: TradeAssetWire[];
+  valueGive: number;
+  valueReceive: number;
+  archetype: string;
+  rationale: string;
+};
 
-// api/_lib/tradeEngine.ts
-var ARCHETYPE_THRESHOLD = 30;
-function playerAsset(p, ownerRosterId) {
+// ── Internal types ───────────────────────────────────────────────────────────
+
+type Asset =
+  | { kind: "player"; player: Player; ownerRosterId: number }
+  | { kind: "pick"; pick: Pick; ownerRosterId: number };
+
+type Candidate = {
+  give: Asset[];
+  receive: Asset[];
+  counterRosterId: number;
+  archetype: string;
+};
+
+type ScoredCandidate = Candidate & {
+  total: number;
+  myFit: number;
+  theirFit: number;
+  balance: number;
+  archMatch: number;
+  valueGive: number;
+  valueReceive: number;
+};
+
+type GenContext = {
+  mine: TeamProfile;
+  others: TeamProfile[];
+  format: LeagueFormat;
+  averages: LeagueAverages;
+  thisYear: number;
+};
+
+// ── Asset helpers ────────────────────────────────────────────────────────────
+
+const ARCHETYPE_THRESHOLD = 30; // softer than archetypes.ts (50) so we explore neighbours
+
+function playerAsset(p: Player, ownerRosterId: number): Asset {
   return { kind: "player", player: p, ownerRosterId };
 }
-function pickAsset(pk, ownerRosterId) {
+function pickAsset(pk: Pick, ownerRosterId: number): Asset {
   return { kind: "pick", pick: pk, ownerRosterId };
 }
-function assetValue(a) {
+function assetValue(a: Asset): number {
   return a.kind === "player" ? a.player.valueDynasty : a.pick.value;
 }
-function assetId(a) {
-  return a.kind === "player" ? `p:${a.player.id}` : `pk:${a.pick.year}-${a.pick.round}-${a.pick.origRosterId}`;
+function assetId(a: Asset): string {
+  return a.kind === "player"
+    ? `p:${a.player.id}`
+    : `pk:${a.pick.year}-${a.pick.round}-${a.pick.origRosterId}`;
 }
-function toWire(a) {
+function toWire(a: Asset): TradeAssetWire {
   if (a.kind === "player") {
     return {
       id: a.player.id,
       kind: "player",
       name: a.player.name,
       position: a.player.position,
-      valueDynasty: a.player.valueDynasty
+      valueDynasty: a.player.valueDynasty,
     };
   }
   return {
     id: `${a.pick.year}-${a.pick.round}-${a.pick.origRosterId}`,
     kind: "pick",
     name: a.pick.label,
-    valueDynasty: a.pick.value
+    valueDynasty: a.pick.value,
   };
 }
-function topPlayersByPos(profile, pos, n) {
-  return profile.players.filter((p) => p.position === pos).sort((a, b) => {
-    if (b.valueDynasty !== a.valueDynasty) return b.valueDynasty - a.valueDynasty;
-    return a.id.localeCompare(b.id);
-  }).slice(0, n);
+
+function topPlayersByPos(profile: TeamProfile, pos: Position, n: number): Player[] {
+  return profile.players
+    .filter((p) => p.position === pos)
+    .sort((a, b) => {
+      if (b.valueDynasty !== a.valueDynasty) return b.valueDynasty - a.valueDynasty;
+      return a.id.localeCompare(b.id);
+    })
+    .slice(0, n);
 }
-function computeLeagueAverages(profiles) {
-  const starter = { QB: 0, RB: 0, WR: 0, TE: 0 };
-  const depth = { QB: 0, RB: 0, WR: 0, TE: 0 };
+
+// ── League averages (recomputed from profiles since they're not stored) ──────
+
+export function computeLeagueAverages(profiles: TeamProfile[]): LeagueAverages {
+  const starter: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const depth: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   let flex = 0;
   let cap = 0;
   for (const p of profiles) {
@@ -228,24 +146,45 @@ function computeLeagueAverages(profiles) {
   const variance = profiles.reduce((s, p) => s + (p.pickCapital.value - cap) ** 2, 0) / n;
   return { starter, depth, flex, pickCapital: cap, pickCapitalStd: Math.sqrt(variance) };
 }
-function simulateImpact(team, give, receive, format, averages, thisYear) {
+
+// ── Impact simulation ────────────────────────────────────────────────────────
+// Apply a trade to a roster and recompute position / flex / pickCapital scores.
+// Holds competitiveness + window tier fixed (a single trade rarely flips them,
+// and assuming it would makes scoring circular with the inputs we depend on).
+
+type ImpactDelta = {
+  perPosition: Record<Position, { starterScoreDelta: number; depthScoreDelta: number; urgency: number }>;
+  flexScoreDelta: number;
+  pickCapitalScoreDelta: number;
+};
+
+function simulateImpact(
+  team: TeamProfile,
+  give: Asset[],
+  receive: Asset[],
+  format: LeagueFormat,
+  averages: LeagueAverages,
+  thisYear: number,
+): ImpactDelta {
   const giveIds = new Set(give.map(assetId));
   const newPlayers = team.players.filter((p) => !giveIds.has(`p:${p.id}`));
   const newPicks = team.picks.filter(
-    (pk) => !giveIds.has(`pk:${pk.year}-${pk.round}-${pk.origRosterId}`)
+    (pk) => !giveIds.has(`pk:${pk.year}-${pk.round}-${pk.origRosterId}`),
   );
   for (const a of receive) {
     if (a.kind === "player") newPlayers.push(a.player);
     else newPicks.push(a.pick);
   }
+
   const { starters } = fillStarters(newPlayers, format);
   const depth = depthByPosition(newPlayers, format);
   const newStarterTotal = POSITIONS.reduce(
     (s, pos) => s + starters[pos].reduce((a, p) => a + p.valueRedraft, 0),
-    0
+    0,
   );
   const newFlexValue = flexStrengthValue(newPlayers, format, newStarterTotal);
-  const perPosition = {};
+
+  const perPosition = {} as ImpactDelta["perPosition"];
   for (const pos of POSITIONS) {
     const newStarterValue = starters[pos].reduce((a, p) => a + p.valueRedraft, 0);
     const newDepthValue = depth[pos].reduce((a, p) => a + p.valueRedraft, 0);
@@ -254,71 +193,109 @@ function simulateImpact(team, give, receive, format, averages, thisYear) {
     perPosition[pos] = {
       starterScoreDelta: newStarterScore - team.positionScores[pos].starterScore,
       depthScoreDelta: newDepthScore - team.positionScores[pos].depthScore,
-      urgency: team.positionScores[pos].urgency
+      urgency: team.positionScores[pos].urgency,
     };
   }
+
   const newFlexScore = score0to100(newFlexValue, averages.flex || 1);
+
   let newPickCapValue = 0;
   for (const pk of newPicks) {
     const yearsOut = pk.year - thisYear;
     newPickCapValue += pk.value * (PICK_DECAY[yearsOut] ?? 0);
   }
   const newPickCapScore = score0to100(newPickCapValue, averages.pickCapital || 1);
+
   return {
     perPosition,
     flexScoreDelta: newFlexScore - team.flex.score,
-    pickCapitalScoreDelta: newPickCapScore - team.pickCapital.score
+    pickCapitalScoreDelta: newPickCapScore - team.pickCapital.score,
   };
 }
-function fitScore(impact) {
+
+// Roll an ImpactDelta into a single fit score in [-1, 1].
+// Positive = trade improves positions this team needs; negative = it damages
+// them or piles onto surplus.
+function fitScore(impact: ImpactDelta): number {
   let score = 0;
   for (const pos of POSITIONS) {
     const ps = impact.perPosition[pos];
-    const urgencyWeight = 0.3 + ps.urgency / 100 * 1.2;
+    // Higher urgency = bigger reward for filling, bigger penalty for losing.
+    const urgencyWeight = 0.3 + (ps.urgency / 100) * 1.2; // [0.3, 1.5]
     score += ps.starterScoreDelta * urgencyWeight;
     score += ps.depthScoreDelta * urgencyWeight * 0.4;
   }
   score += impact.flexScoreDelta * 0.4;
   score += impact.pickCapitalScoreDelta * 0.3;
+  // Empirical scale: meaningful trades shift ~30 weighted score points total.
   return Math.max(-1, Math.min(1, score / 35));
 }
-var COUNTER_ARCHETYPES = {
-  tier_down: (pos) => pos ? [`consolidate_${pos}`, "push_in"] : [],
-  consolidate: (pos) => pos ? [`tier_down_${pos}`] : [],
+
+// ── Counter archetype mapping ────────────────────────────────────────────────
+// For a given trade archetype on my side, which archetypes on the counter-team
+// would naturally support the same deal? Used as a scoring bonus.
+
+const COUNTER_ARCHETYPES: Record<string, (pos?: Position) => string[]> = {
+  tier_down: (pos) => (pos ? [`consolidate_${pos}`, "push_in"] : []),
+  consolidate: (pos) => (pos ? [`tier_down_${pos}`] : []),
   consolidate_flex: () => ["tier_down_RB", "tier_down_WR", "tier_down_TE"],
   age_arb_buy: () => ["age_arb_sell", "capital_convert_production_to_picks"],
   age_arb_sell: () => ["age_arb_buy", "capital_convert_picks_to_production", "push_in"],
   push_in: () => ["capital_convert_production_to_picks"],
   capital_convert_picks_to_production: () => ["capital_convert_production_to_picks"],
   capital_convert_production_to_picks: () => ["capital_convert_picks_to_production", "push_in"],
-  need_fill: (pos) => pos ? [`consolidate_${pos}`, `tier_down_${pos}`] : []
+  need_fill: (pos) => (pos ? [`consolidate_${pos}`, `tier_down_${pos}`] : []),
 };
-function counterArchetypeScore(archetype, theirProfile) {
+
+function counterArchetypeScore(archetype: string, theirProfile: TeamProfile): number {
+  // Parse archetype: "tier_down_RB" → family "tier_down", pos "RB"
   const parts = archetype.split("_");
-  const lastIsPos = POSITIONS.includes(parts[parts.length - 1]);
-  const pos = lastIsPos ? parts.pop() : void 0;
+  const lastIsPos = POSITIONS.includes(parts[parts.length - 1] as Position);
+  const pos = lastIsPos ? (parts.pop() as Position) : undefined;
   const family = parts.join("_");
   const candidates = COUNTER_ARCHETYPES[family]?.(pos) ?? [];
   if (candidates.length === 0) return 0;
   const scores = candidates.map((k) => theirProfile.archetypeScores?.[k] ?? 0);
   return Math.max(...scores) / 100;
 }
-function scoreCandidate(cand, myProfile, others, ctx) {
-  const them = others.find((p) => p.rosterId === cand.counterRosterId);
+
+// ── Scoring ──────────────────────────────────────────────────────────────────
+
+function scoreCandidate(
+  cand: Candidate,
+  myProfile: TeamProfile,
+  others: TeamProfile[],
+  ctx: GenContext,
+): ScoredCandidate {
+  const them = others.find((p) => p.rosterId === cand.counterRosterId)!;
   const myImpact = simulateImpact(myProfile, cand.give, cand.receive, ctx.format, ctx.averages, ctx.thisYear);
   const theirImpact = simulateImpact(them, cand.receive, cand.give, ctx.format, ctx.averages, ctx.thisYear);
+
   const myFit = fitScore(myImpact);
   const theirFit = fitScore(theirImpact);
+
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
   const maxVal = Math.max(valueGive, valueReceive, 1);
   const balance = 1 - Math.abs(valueGive - valueReceive) / maxVal;
+
+  // Archetype match: how strongly the trade shape fits both teams' archetypes.
   const myArchScore = (myProfile.archetypeScores?.[cand.archetype] ?? 0) / 100;
-  const myArchScoreFallback = cand.archetype.startsWith("need_fill") ? (myProfile.archetypeScores?.["need_fill"] ?? 0) / 100 : myArchScore;
+  // need_fill is stored as a single key (no per-position variant), fall back.
+  const myArchScoreFallback = cand.archetype.startsWith("need_fill")
+    ? (myProfile.archetypeScores?.["need_fill"] ?? 0) / 100
+    : myArchScore;
   const myArch = Math.max(myArchScore, myArchScoreFallback);
   const theirArch = counterArchetypeScore(cand.archetype, them);
   const archMatch = myArch * 0.7 + theirArch * 0.3;
-  const total = (myFit + 1) / 2 * 0.4 + balance * 0.2 + archMatch * 0.2 + (theirFit + 1) / 2 * 0.2;
+
+  // Combined score, normalised to [0, 1].
+  const total =
+    ((myFit + 1) / 2) * 0.40 +
+    balance * 0.20 +
+    archMatch * 0.20 +
+    ((theirFit + 1) / 2) * 0.20;
+
   return {
     ...cand,
     total,
@@ -327,32 +304,38 @@ function scoreCandidate(cand, myProfile, others, ctx) {
     balance,
     archMatch,
     valueGive,
-    valueReceive
+    valueReceive,
   };
 }
-function within(value, target, tolerance) {
+
+// ── Give-side construction ───────────────────────────────────────────────────
+
+function within(value: number, target: number, tolerance: number): boolean {
   if (target <= 0) return false;
   const ratio = value / target;
   return ratio >= 1 - tolerance && ratio <= 1 + tolerance;
 }
-function* combinations(arr, maxSize) {
-  const n = Math.min(arr.length, 12);
+
+// Combinations of size up to maxSize from an array.
+function* combinations<T>(arr: T[], maxSize: number): Generator<T[]> {
+  const n = Math.min(arr.length, 12); // cap to keep this cheap
   const items = arr.slice(0, n);
   for (let size = 1; size <= maxSize; size++) {
     yield* combs(items, size, 0, []);
   }
 }
-function* combs(items, size, start, prefix) {
+function* combs<T>(items: T[], size: number, start: number, prefix: T[]): Generator<T[]> {
   if (prefix.length === size) {
     yield prefix;
     return;
   }
   for (let i = start; i < items.length; i++) {
-    yield* combs(items, size, i + 1, [...prefix, items[i]]);
+    yield* combs(items, size, i + 1, [...prefix, items[i]!]);
   }
 }
-function bestPickSet(picks, target, maxCount) {
-  let best = null;
+
+function bestPickSet(picks: Pick[], target: number, maxCount: number): Pick[] | null {
+  let best: Pick[] | null = null;
   let bestDelta = Infinity;
   for (const combo of combinations(picks, maxCount)) {
     const v = combo.reduce((s, p) => s + p.value, 0);
@@ -364,20 +347,42 @@ function bestPickSet(picks, target, maxCount) {
   }
   return best;
 }
-function eligiblePlayersForGiving(mine, excludePos, avoidIds) {
-  return mine.players.filter((p) => !excludePos.includes(p.position)).filter((p) => !avoidIds.has(p.id)).sort((a, b) => {
-    const aUrg = mine.positionScores[a.position]?.urgency ?? 50;
-    const bUrg = mine.positionScores[b.position]?.urgency ?? 50;
-    if (aUrg !== bUrg) return aUrg - bUrg;
-    if (a.valueDynasty !== b.valueDynasty) return a.valueDynasty - b.valueDynasty;
-    return a.id.localeCompare(b.id);
-  });
+
+function eligiblePlayersForGiving(
+  mine: TeamProfile,
+  excludePos: Position[],
+  avoidIds: Set<string>,
+): Player[] {
+  return mine.players
+    .filter((p) => !excludePos.includes(p.position))
+    .filter((p) => !avoidIds.has(p.id))
+    .sort((a, b) => {
+      // Prefer giving from low-urgency (surplus) positions first.
+      const aUrg = mine.positionScores[a.position]?.urgency ?? 50;
+      const bUrg = mine.positionScores[b.position]?.urgency ?? 50;
+      if (aUrg !== bUrg) return aUrg - bUrg;
+      // Within same urgency, give cheaper player first (preserve elites)
+      if (a.valueDynasty !== b.valueDynasty) return a.valueDynasty - b.valueDynasty;
+      return a.id.localeCompare(b.id);
+    });
 }
-function buildGiveSides(mine, targetValue, opts = {}) {
-  const players = eligiblePlayersForGiving(mine, opts.excludePos ?? [], opts.avoidIds ?? /* @__PURE__ */ new Set());
+
+// Build candidate "give" sides hitting a target value across multiple shapes.
+function buildGiveSides(
+  mine: TeamProfile,
+  targetValue: number,
+  opts: {
+    excludePos?: Position[];
+    avoidIds?: Set<string>;
+    canIncludePicks?: boolean;
+  } = {},
+): Asset[][] {
+  const players = eligiblePlayersForGiving(mine, opts.excludePos ?? [], opts.avoidIds ?? new Set());
   const picks = [...mine.picks].sort((a, b) => a.year - b.year || a.round - b.round);
-  const shapes = [];
-  let bestSingle = null;
+  const shapes: Asset[][] = [];
+
+  // 1-for-1: closest single player within 22%
+  let bestSingle: Player | null = null;
   let bestSingleDelta = Infinity;
   for (const p of players) {
     const d = Math.abs(p.valueDynasty - targetValue);
@@ -389,16 +394,18 @@ function buildGiveSides(mine, targetValue, opts = {}) {
   if (bestSingle && within(bestSingle.valueDynasty, targetValue, 0.22)) {
     shapes.push([playerAsset(bestSingle, mine.rosterId)]);
   }
+
+  // 2-for-1: search top 8 surplus-side players for best pair
   const top = players.slice(0, 8);
-  let bestPair = null;
+  let bestPair: [Player, Player] | null = null;
   let bestPairDelta = Infinity;
   for (let i = 0; i < top.length; i++) {
     for (let j = i + 1; j < top.length; j++) {
-      const v = top[i].valueDynasty + top[j].valueDynasty;
+      const v = top[i]!.valueDynasty + top[j]!.valueDynasty;
       const d = Math.abs(v - targetValue);
       if (d < bestPairDelta) {
         bestPairDelta = d;
-        bestPair = [top[i], top[j]];
+        bestPair = [top[i]!, top[j]!];
       }
     }
   }
@@ -408,7 +415,9 @@ function buildGiveSides(mine, targetValue, opts = {}) {
       shapes.push([playerAsset(bestPair[0], mine.rosterId), playerAsset(bestPair[1], mine.rosterId)]);
     }
   }
+
   if (opts.canIncludePicks && picks.length > 0) {
+    // player + pick: pick fills the gap to target
     for (const pl of players.slice(0, 10)) {
       const gap = targetValue - pl.valueDynasty;
       if (gap < 200) continue;
@@ -418,44 +427,56 @@ function buildGiveSides(mine, targetValue, opts = {}) {
       if (within(v, targetValue, 0.15)) {
         shapes.push([
           playerAsset(pl, mine.rosterId),
-          ...pickSet.map((pk) => pickAsset(pk, mine.rosterId))
+          ...pickSet.map((pk) => pickAsset(pk, mine.rosterId)),
         ]);
-        break;
+        break; // one player+pick variant per call
       }
     }
-    if (targetValue <= 4e3) {
+
+    // pick(s) only — only when target value is reasonable for a pick package
+    if (targetValue <= 4000) {
       const pickSet = bestPickSet(picks, targetValue, 3);
       if (pickSet) {
         const v = pickSet.reduce((s, p) => s + p.value, 0);
-        if (within(v, targetValue, 0.2)) {
+        if (within(v, targetValue, 0.20)) {
           shapes.push(pickSet.map((pk) => pickAsset(pk, mine.rosterId)));
         }
       }
     }
   }
+
   return shapes;
 }
-function genNeedFill(ctx) {
-  const out = [];
+
+// ── Generators ───────────────────────────────────────────────────────────────
+
+function genNeedFill(ctx: GenContext): Candidate[] {
+  const out: Candidate[] = [];
   const { mine, others } = ctx;
-  const needPositions = [...POSITIONS].sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency).filter((pos) => mine.positionScores[pos].urgency >= 40).slice(0, 2);
+  // Top 2 most-urgent positions where urgency clears 40
+  const needPositions = [...POSITIONS]
+    .sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency)
+    .filter((pos) => mine.positionScores[pos].urgency >= 40)
+    .slice(0, 2);
   if (needPositions.length === 0) return out;
+
   for (const needPos of needPositions) {
     for (const them of others) {
+      // Skip if they themselves have a NEED at this pos — won't trade their guy
       if (them.positionScores[needPos].classification === "CRITICAL_NEED") continue;
       const targets = topPlayersByPos(them, needPos, 2);
       for (const target of targets) {
         if (target.valueDynasty < 500) continue;
         const giveSides = buildGiveSides(mine, target.valueDynasty, {
           excludePos: [needPos],
-          canIncludePicks: true
+          canIncludePicks: true,
         });
         for (const give of giveSides) {
           out.push({
             give,
             receive: [playerAsset(target, them.rosterId)],
             counterRosterId: them.rosterId,
-            archetype: `need_fill_${needPos}`
+            archetype: `need_fill_${needPos}`,
           });
         }
       }
@@ -463,27 +484,32 @@ function genNeedFill(ctx) {
   }
   return out;
 }
-function genTierDown(ctx) {
-  const out = [];
+
+function genTierDown(ctx: GenContext): Candidate[] {
+  const out: Candidate[] = [];
   const { mine, others } = ctx;
   for (const pos of POSITIONS) {
     if ((mine.archetypeScores?.[`tier_down_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
     const myElite = topPlayersByPos(mine, pos, 1)[0];
     if (!myElite || myElite.valueDynasty < 2500) continue;
+
     for (const them of others) {
       const theirAtPos = topPlayersByPos(them, pos, 4);
       const pair = theirAtPos.slice(1, 3);
       if (pair.length < 2) continue;
       const pairValue = pair.reduce((s, p) => s + p.valueDynasty, 0);
       const ratio = pairValue / myElite.valueDynasty;
-      if (ratio >= 0.75 && ratio <= 1.3) {
+
+      if (ratio >= 0.75 && ratio <= 1.30) {
         out.push({
           give: [playerAsset(myElite, mine.rosterId)],
           receive: pair.map((p) => playerAsset(p, them.rosterId)),
           counterRosterId: them.rosterId,
-          archetype: `tier_down_${pos}`
+          archetype: `tier_down_${pos}`,
         });
       }
+
+      // Their pick(s) sweeten the deal when their pair is light
       if (ratio < 0.95 && them.picks.length > 0) {
         const gap = myElite.valueDynasty - pairValue;
         const pickSet = bestPickSet(them.picks, gap, 2);
@@ -494,14 +520,16 @@ function genTierDown(ctx) {
               give: [playerAsset(myElite, mine.rosterId)],
               receive: [
                 ...pair.map((p) => playerAsset(p, them.rosterId)),
-                ...pickSet.map((pk) => pickAsset(pk, them.rosterId))
+                ...pickSet.map((pk) => pickAsset(pk, them.rosterId)),
               ],
               counterRosterId: them.rosterId,
-              archetype: `tier_down_${pos}`
+              archetype: `tier_down_${pos}`,
             });
           }
         }
       }
+
+      // Single-player tier-down: their #2 alone if it's close enough
       const theirSecond = theirAtPos[1];
       if (theirSecond) {
         const gap = myElite.valueDynasty - theirSecond.valueDynasty;
@@ -514,10 +542,10 @@ function genTierDown(ctx) {
                 give: [playerAsset(myElite, mine.rosterId)],
                 receive: [
                   playerAsset(theirSecond, them.rosterId),
-                  ...pickSet.map((pk) => pickAsset(pk, them.rosterId))
+                  ...pickSet.map((pk) => pickAsset(pk, them.rosterId)),
                 ],
                 counterRosterId: them.rosterId,
-                archetype: `tier_down_${pos}`
+                archetype: `tier_down_${pos}`,
               });
             }
           }
@@ -527,28 +555,33 @@ function genTierDown(ctx) {
   }
   return out;
 }
-function genConsolidate(ctx) {
-  const out = [];
+
+function genConsolidate(ctx: GenContext): Candidate[] {
+  const out: Candidate[] = [];
   const { mine, others } = ctx;
   for (const pos of POSITIONS) {
     if ((mine.archetypeScores?.[`consolidate_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
     const myAtPos = topPlayersByPos(mine, pos, 4);
-    const myPair = myAtPos.slice(1, 3);
+    const myPair = myAtPos.slice(1, 3); // my #2 + #3
     if (myPair.length < 2) continue;
     const pairValue = myPair.reduce((s, p) => s + p.valueDynasty, 0);
+
     for (const them of others) {
       const theirElite = topPlayersByPos(them, pos, 1)[0];
       if (!theirElite) continue;
+      // Counter must outvalue my pair by a noticeable margin (otherwise it's not a consolidation)
       if (theirElite.valueDynasty < pairValue * 0.85) continue;
+
       const ratio = pairValue / theirElite.valueDynasty;
-      if (ratio >= 0.8 && ratio <= 1.18) {
+      if (ratio >= 0.80 && ratio <= 1.18) {
         out.push({
           give: myPair.map((p) => playerAsset(p, mine.rosterId)),
           receive: [playerAsset(theirElite, them.rosterId)],
           counterRosterId: them.rosterId,
-          archetype: `consolidate_${pos}`
+          archetype: `consolidate_${pos}`,
         });
       }
+      // Sweeten with my pick if I'm short
       if (pairValue < theirElite.valueDynasty * 0.95 && mine.picks.length > 0) {
         const gap = theirElite.valueDynasty - pairValue;
         const pickSet = bestPickSet(mine.picks, gap, 2);
@@ -558,11 +591,11 @@ function genConsolidate(ctx) {
             out.push({
               give: [
                 ...myPair.map((p) => playerAsset(p, mine.rosterId)),
-                ...pickSet.map((pk) => pickAsset(pk, mine.rosterId))
+                ...pickSet.map((pk) => pickAsset(pk, mine.rosterId)),
               ],
               receive: [playerAsset(theirElite, them.rosterId)],
               counterRosterId: them.rosterId,
-              archetype: `consolidate_${pos}`
+              archetype: `consolidate_${pos}`,
             });
           }
         }
@@ -571,88 +604,110 @@ function genConsolidate(ctx) {
   }
   return out;
 }
-function genConsolidateFlex(ctx) {
-  const out = [];
+
+function genConsolidateFlex(ctx: GenContext): Candidate[] {
+  const out: Candidate[] = [];
   const { mine, others } = ctx;
   if ((mine.archetypeScores?.["consolidate_flex"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+
+  // Pick the position with highest urgency to upgrade INTO
   const upgradePos = [...POSITIONS].sort(
-    (a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency
-  )[0];
+    (a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency,
+  )[0]!;
+
+  // Two flex-y players from RB+WR (most flexable positions): take #2 RB + #2 WR
   const myRB2 = topPlayersByPos(mine, "RB", 3)[1];
   const myWR2 = topPlayersByPos(mine, "WR", 3)[1];
   if (!myRB2 && !myWR2) return out;
-  const candidatesGive = [myRB2, myWR2].filter((p) => !!p);
+  const candidatesGive: Player[] = [myRB2, myWR2].filter((p): p is Player => !!p);
   if (candidatesGive.length < 2) return out;
+
   const giveValue = candidatesGive.reduce((s, p) => s + p.valueDynasty, 0);
+
   for (const them of others) {
     const target = topPlayersByPos(them, upgradePos, 2)[0];
     if (!target) continue;
     if (target.valueDynasty < giveValue * 0.85) continue;
     const ratio = giveValue / target.valueDynasty;
-    if (ratio >= 0.8 && ratio <= 1.2) {
+    if (ratio >= 0.80 && ratio <= 1.20) {
       out.push({
         give: candidatesGive.map((p) => playerAsset(p, mine.rosterId)),
         receive: [playerAsset(target, them.rosterId)],
         counterRosterId: them.rosterId,
-        archetype: "consolidate_flex"
+        archetype: "consolidate_flex",
       });
     }
   }
   return out;
 }
-function genAgeArbBuy(ctx) {
-  const out = [];
+
+function genAgeArbBuy(ctx: GenContext): Candidate[] {
+  const out: Candidate[] = [];
   const { mine, others } = ctx;
   if ((mine.archetypeScores?.["age_arb_buy"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+
   for (const them of others) {
-    if (them.windowTier === "LONG") continue;
+    if (them.windowTier === "LONG") continue; // they're young too, not a seller
     for (const pos of POSITIONS) {
-      const aging = them.players.filter((p) => p.position === pos && (p.age ?? 0) >= 27 && p.valueDynasty >= 1500).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
+      // Aging high-value player on their roster
+      const aging = them.players
+        .filter((p) => p.position === pos && (p.age ?? 0) >= 27 && p.valueDynasty >= 1500)
+        .sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
       if (!aging) continue;
+      // Pay slightly above value with picks + maybe a young player they'd want
       const giveSides = buildGiveSides(mine, aging.valueDynasty * 1.05, {
         excludePos: [],
-        canIncludePicks: true
+        canIncludePicks: true,
       });
       for (const give of giveSides) {
         out.push({
           give,
           receive: [playerAsset(aging, them.rosterId)],
           counterRosterId: them.rosterId,
-          archetype: "age_arb_buy"
+          archetype: "age_arb_buy",
         });
       }
     }
   }
   return out;
 }
-function genAgeArbSell(ctx) {
-  const out = [];
+
+function genAgeArbSell(ctx: GenContext): Candidate[] {
+  const out: Candidate[] = [];
   const { mine, others } = ctx;
   if ((mine.archetypeScores?.["age_arb_sell"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+
   for (const pos of POSITIONS) {
-    const myAging = mine.players.filter((p) => p.position === pos && (p.age ?? 0) >= 28 && p.valueDynasty >= 1500).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
+    const myAging = mine.players
+      .filter((p) => p.position === pos && (p.age ?? 0) >= 28 && p.valueDynasty >= 1500)
+      .sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
     if (!myAging) continue;
+
     for (const them of others) {
-      if (them.windowTier === "SHORT") continue;
-      const theirYouth = them.players.filter((p) => (p.age ?? 99) <= 25 && p.valueDynasty >= 1e3).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
+      if (them.windowTier === "SHORT") continue; // they're old too, won't take vets
+      // Receive: their younger high-value player at same pos (or any pos), or picks
+      const theirYouth = them.players
+        .filter((p) => (p.age ?? 99) <= 25 && p.valueDynasty >= 1000)
+        .sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
       if (theirYouth) {
         out.push({
           give: [playerAsset(myAging, mine.rosterId)],
           receive: [playerAsset(theirYouth, them.rosterId)],
           counterRosterId: them.rosterId,
-          archetype: "age_arb_sell"
+          archetype: "age_arb_sell",
         });
       }
+      // Receive: a chunk of picks instead
       if (them.picks.length > 0) {
-        const pickSet = bestPickSet(them.picks, myAging.valueDynasty * 0.9, 3);
+        const pickSet = bestPickSet(them.picks, myAging.valueDynasty * 0.90, 3);
         if (pickSet) {
           const v = pickSet.reduce((s, p) => s + p.value, 0);
-          if (within(v, myAging.valueDynasty, 0.2)) {
+          if (within(v, myAging.valueDynasty, 0.20)) {
             out.push({
               give: [playerAsset(myAging, mine.rosterId)],
               receive: pickSet.map((pk) => pickAsset(pk, them.rosterId)),
               counterRosterId: them.rosterId,
-              archetype: "age_arb_sell"
+              archetype: "age_arb_sell",
             });
           }
         }
@@ -661,37 +716,43 @@ function genAgeArbSell(ctx) {
   }
   return out;
 }
-function genPushIn(ctx) {
-  const out = [];
+
+function genPushIn(ctx: GenContext): Candidate[] {
+  const out: Candidate[] = [];
   const { mine, others } = ctx;
   if ((mine.archetypeScores?.["push_in"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+
+  // Convert future capital + a depth piece into proven production at a need spot.
   const needPos = [...POSITIONS].sort(
-    (a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency
-  )[0];
+    (a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency,
+  )[0]!;
+
   for (const them of others) {
-    if (them.competitiveness === "STRONG" && them.windowTier === "SHORT") continue;
+    if (them.competitiveness === "STRONG" && them.windowTier === "SHORT") continue; // they need now too
     const target = topPlayersByPos(them, needPos, 2)[0];
     if (!target || target.valueDynasty < 1500) continue;
     const giveSides = buildGiveSides(mine, target.valueDynasty, {
       excludePos: [needPos],
-      canIncludePicks: true
-    }).filter((g) => g.some((a) => a.kind === "pick"));
+      canIncludePicks: true,
+    }).filter((g) => g.some((a) => a.kind === "pick")); // push_in must include picks
     for (const give of giveSides) {
       out.push({
         give,
         receive: [playerAsset(target, them.rosterId)],
         counterRosterId: them.rosterId,
-        archetype: "push_in"
+        archetype: "push_in",
       });
     }
   }
   return out;
 }
-function genCapitalConvertPicksToProduction(ctx) {
-  const out = [];
+
+function genCapitalConvertPicksToProduction(ctx: GenContext): Candidate[] {
+  const out: Candidate[] = [];
   const { mine, others } = ctx;
   if ((mine.archetypeScores?.["capital_convert_picks_to_production"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
   if (mine.picks.length === 0) return out;
+
   for (const them of others) {
     for (const pos of POSITIONS) {
       const target = topPlayersByPos(them, pos, 2)[0];
@@ -699,40 +760,49 @@ function genCapitalConvertPicksToProduction(ctx) {
       const pickSet = bestPickSet(mine.picks, target.valueDynasty, 3);
       if (!pickSet) continue;
       const v = pickSet.reduce((s, p) => s + p.value, 0);
-      if (!within(v, target.valueDynasty, 0.2)) continue;
+      if (!within(v, target.valueDynasty, 0.20)) continue;
       out.push({
         give: pickSet.map((pk) => pickAsset(pk, mine.rosterId)),
         receive: [playerAsset(target, them.rosterId)],
         counterRosterId: them.rosterId,
-        archetype: "capital_convert_picks_to_production"
+        archetype: "capital_convert_picks_to_production",
       });
     }
   }
   return out;
 }
-function genCapitalConvertProductionToPicks(ctx) {
-  const out = [];
+
+function genCapitalConvertProductionToPicks(ctx: GenContext): Candidate[] {
+  const out: Candidate[] = [];
   const { mine, others } = ctx;
   if ((mine.archetypeScores?.["capital_convert_production_to_picks"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
-  const sellable = mine.players.filter((p) => p.valueDynasty >= 1500).filter((p) => mine.positionScores[p.position].classification !== "CRITICAL_NEED").sort((a, b) => b.valueDynasty - a.valueDynasty).slice(0, 6);
+
+  // Sell aging or low-urgency-position players for picks.
+  const sellable = mine.players
+    .filter((p) => p.valueDynasty >= 1500)
+    .filter((p) => mine.positionScores[p.position].classification !== "CRITICAL_NEED")
+    .sort((a, b) => b.valueDynasty - a.valueDynasty)
+    .slice(0, 6);
+
   for (const seller of sellable) {
     for (const them of others) {
       if (them.picks.length === 0) continue;
       const pickSet = bestPickSet(them.picks, seller.valueDynasty * 0.95, 3);
       if (!pickSet) continue;
       const v = pickSet.reduce((s, p) => s + p.value, 0);
-      if (!within(v, seller.valueDynasty, 0.2)) continue;
+      if (!within(v, seller.valueDynasty, 0.20)) continue;
       out.push({
         give: [playerAsset(seller, mine.rosterId)],
         receive: pickSet.map((pk) => pickAsset(pk, them.rosterId)),
         counterRosterId: them.rosterId,
-        archetype: "capital_convert_production_to_picks"
+        archetype: "capital_convert_production_to_picks",
       });
     }
   }
   return out;
 }
-var GENERATORS = [
+
+const GENERATORS = [
   genNeedFill,
   genTierDown,
   genConsolidate,
@@ -741,47 +811,71 @@ var GENERATORS = [
   genAgeArbSell,
   genPushIn,
   genCapitalConvertPicksToProduction,
-  genCapitalConvertProductionToPicks
+  genCapitalConvertProductionToPicks,
 ];
-function candidateKey(c) {
+
+// ── Top-level orchestration ──────────────────────────────────────────────────
+
+function candidateKey(c: Candidate): string {
   const g = c.give.map(assetId).sort().join("|");
   const r = c.receive.map(assetId).sort().join("|");
   return `${g}::${r}`;
 }
-function generatePackages(mine, allProfiles, format, thisYear, limit = 5) {
+
+export function generatePackages(
+  mine: TeamProfile,
+  allProfiles: TeamProfile[],
+  format: LeagueFormat,
+  thisYear: number,
+  limit = 5,
+): Omit<TradePackage, "rationale">[] {
   const others = allProfiles.filter((p) => p.rosterId !== mine.rosterId);
   const averages = computeLeagueAverages(allProfiles);
-  const ctx = { mine, others, format, averages, thisYear };
+  const ctx: GenContext = { mine, others, format, averages, thisYear };
+
+  // Generate raw candidates from every applicable archetype
   const rawCandidates = GENERATORS.flatMap((g) => g(ctx));
-  const seen = /* @__PURE__ */ new Set();
-  const unique = [];
+
+  // Dedup identical packages, keep first occurrence
+  const seen = new Set<string>();
+  const unique: Candidate[] = [];
   for (const c of rawCandidates) {
     const key = candidateKey(c);
     if (seen.has(key)) continue;
     seen.add(key);
     unique.push(c);
   }
+
+  // Score everything
   const scored = unique.map((c) => scoreCandidate(c, mine, others, ctx));
+
+  // Hard rejects: severely lopsided fits
   const filtered = scored.filter(
-    (s) => s.myFit > -0.1 && s.theirFit > -0.4 && s.balance > 0.55
+    (s) => s.myFit > -0.10 && s.theirFit > -0.40 && s.balance > 0.55,
   );
+
+  // Sort by score; deterministic tiebreak by candidate key
   filtered.sort((a, b) => {
     if (b.total !== a.total) return b.total - a.total;
     return candidateKey(a).localeCompare(candidateKey(b));
   });
-  const perCounter = /* @__PURE__ */ new Map();
-  const archFamiliesUsed = /* @__PURE__ */ new Set();
-  const top = [];
+
+  // Diversity: max 2 per counter-team, prefer spanning archetype families
+  const perCounter = new Map<number, number>();
+  const archFamiliesUsed = new Set<string>();
+  const top: ScoredCandidate[] = [];
   for (const s of filtered) {
     const cnt = perCounter.get(s.counterRosterId) ?? 0;
     if (cnt >= 2) continue;
     const family = s.archetype.replace(/_(QB|RB|WR|TE)$/, "");
+    // First pass: only add if archetype family is new (boosts diversity)
     if (top.length < limit / 2 && archFamiliesUsed.has(family)) continue;
     top.push(s);
     perCounter.set(s.counterRosterId, cnt + 1);
     archFamiliesUsed.add(family);
     if (top.length >= limit) break;
   }
+  // Second pass: fill remaining slots from highest-scored regardless of family
   if (top.length < limit) {
     for (const s of filtered) {
       if (top.includes(s)) continue;
@@ -792,6 +886,7 @@ function generatePackages(mine, allProfiles, format, thisYear, limit = 5) {
       if (top.length >= limit) break;
     }
   }
+
   return top.map((s) => {
     const counter = others.find((p) => p.rosterId === s.counterRosterId);
     return {
@@ -801,93 +896,7 @@ function generatePackages(mine, allProfiles, format, thisYear, limit = 5) {
       receive: s.receive.map(toWire),
       valueGive: s.valueGive,
       valueReceive: s.valueReceive,
-      archetype: s.archetype
+      archetype: s.archetype,
     };
   });
-}
-
-// api/trades/find.ts
-var MODEL_HAIKU = "claude-haiku-4-5-20251001";
-function rationaleHash(pkg, myProfile) {
-  const key = JSON.stringify({
-    give: pkg.give.map((a) => a.id).sort(),
-    receive: pkg.receive.map((a) => a.id).sort(),
-    archetype: pkg.archetype,
-    myWindow: myProfile.windowLabel
-  });
-  return (0, import_crypto.createHash)("sha256").update(key).digest("hex");
-}
-function describeAsset(a) {
-  return a.kind === "player" ? `${a.name} (${a.position})` : a.name;
-}
-async function generateRationale(pkg, myProfile) {
-  const giveNames = pkg.give.map(describeAsset).join(", ");
-  const receiveNames = pkg.receive.map(describeAsset).join(", ");
-  const archetypeLabel = pkg.archetype.replace(/_/g, " ");
-  const prompt = `You are analyzing a dynasty fantasy football trade for a team classified as ${myProfile.windowLabel} (${myProfile.competitiveness} competitiveness, ${myProfile.windowTier} window).
-
-Trade: Send ${giveNames} and receive ${receiveNames} from ${pkg.counterTeam}.
-Trade type: ${archetypeLabel}.
-
-Write 2-3 sentences explaining why this trade makes sense for this team right now. Be specific about the players, picks, and the team's situation. Do not use em dashes.`;
-  const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env["ANTHROPIC_API_KEY"] ?? "",
-      "anthropic-version": "2023-06-01"
-    },
-    body: JSON.stringify({
-      model: MODEL_HAIKU,
-      max_tokens: 200,
-      messages: [{ role: "user", content: prompt }]
-    })
-  });
-  if (!apiRes.ok) return "Rationale unavailable.";
-  const data = await apiRes.json();
-  return data.content?.[0]?.text?.trim() ?? "Rationale unavailable.";
-}
-async function addRationale(pkg, myProfile) {
-  const hash = rationaleHash(pkg, myProfile);
-  const cacheRef = adminDb.collection("rationaleCache").doc(hash);
-  const cached = await cacheRef.get();
-  if (cached.exists) {
-    return { ...pkg, rationale: cached.data()?.["rationale"] };
-  }
-  const rationale = await generateRationale(pkg, myProfile);
-  await cacheRef.set({ hash, rationale, archetype: pkg.archetype, generatedAt: (/* @__PURE__ */ new Date()).toISOString() });
-  return { ...pkg, rationale };
-}
-async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  const user = await requireApprovedUser(req, res);
-  if (!user) return;
-  const { leagueId, rosterId } = req.body;
-  if (!leagueId || rosterId == null) {
-    return res.status(400).json({ error: "leagueId and rosterId required" });
-  }
-  try {
-    const leagueRef = adminDb.collection("leagues").doc(leagueId);
-    const [leagueSnap, profilesSnap] = await Promise.all([
-      leagueRef.get(),
-      leagueRef.collection("profiles").get()
-    ]);
-    const leagueData = leagueSnap.data();
-    const members = leagueData?.["members"] ?? [];
-    if (!members.includes(user.uid)) return res.status(403).json({ error: "Forbidden" });
-    const format = leagueData?.["format"];
-    if (!format) return res.status(500).json({ error: "League format missing" });
-    const profiles = profilesSnap.docs.map((d) => d.data());
-    const myProfile = profiles.find((p) => p.rosterId === Number(rosterId));
-    if (!myProfile) return res.status(404).json({ error: "Team not found" });
-    const thisYear = (/* @__PURE__ */ new Date()).getFullYear();
-    const packages = generatePackages(myProfile, profiles, format, thisYear, 5);
-    const withRationales = await Promise.all(
-      packages.map((pkg) => addRationale(pkg, myProfile))
-    );
-    return res.status(200).json({ packages: withRationales });
-  } catch (err) {
-    console.error("trades/find error", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
 }

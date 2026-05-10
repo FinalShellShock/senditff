@@ -1,12 +1,34 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import { makeApiClient, type TradePackage } from "../api/client.ts";
+import { makeApiClient, type TradeAssetWire, type TradePackage } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 
+function posColor(pos?: string) {
+  const map: Record<string, string> = { QB: "#c2410c", RB: "#ca8a04", WR: "#3b82f6", TE: "#a855f7" };
+  return pos ? map[pos] ?? "#94a3b8" : "#475569";
+}
+
+function AssetList({ assets }: { assets: TradeAssetWire[] }) {
+  return (
+    <span className="trade-names">
+      {assets.map((a, i) => (
+        <span key={a.id} className="trade-asset">
+          <span
+            className="trade-asset-tag"
+            style={{ background: a.kind === "pick" ? "#475569" : posColor(a.position) }}
+          >
+            {a.kind === "pick" ? "PICK" : a.position}
+          </span>
+          <span className="trade-asset-name">{a.name}</span>
+          {i < assets.length - 1 && <span className="trade-asset-sep"> + </span>}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function TradeCard({ pkg }: { pkg: TradePackage }) {
-  const giveNames = pkg.give.map((p) => p.name).join(" + ");
-  const receiveNames = pkg.receive.map((p) => p.name).join(" + ");
   const delta = pkg.valueReceive - pkg.valueGive;
   const deltaColor = delta > 200 ? "#22c55e" : delta < -200 ? "#ef4444" : "#94a3b8";
 
@@ -19,13 +41,13 @@ function TradeCard({ pkg }: { pkg: TradePackage }) {
       <div className="trade-players">
         <div className="trade-side">
           <span className="trade-dir">SEND</span>
-          <span className="trade-names">{giveNames}</span>
+          <AssetList assets={pkg.give} />
           <span className="trade-val">{pkg.valueGive.toLocaleString()}</span>
         </div>
         <div className="trade-arrow">⇄</div>
         <div className="trade-side trade-side-receive">
           <span className="trade-dir">GET</span>
-          <span className="trade-names">{receiveNames}</span>
+          <AssetList assets={pkg.receive} />
           <span className="trade-val" style={{ color: deltaColor }}>{pkg.valueReceive.toLocaleString()}</span>
         </div>
       </div>
