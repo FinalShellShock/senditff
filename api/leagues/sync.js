@@ -17,10 +17,6 @@ var __copyProps = (to, from, except, desc) => {
   return to;
 };
 var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
@@ -36,13 +32,9 @@ module.exports = __toCommonJS(sync_exports);
 // src/algo/constants.ts
 var POSITIONS = ["QB", "RB", "WR", "TE"];
 var POSITION_CURVES = {
-  // QB: long careers, peak 27-32 for pocket / 24-27 for dual-threat. Use averaged window.
   QB: { productiveStart: 23, peakStart: 26, peakEnd: 32, declineStart: 35, done: 38 },
-  // RB: short careers, sharp decline 28-29.
   RB: { productiveStart: 21, peakStart: 23, peakEnd: 27, declineStart: 28, done: 30 },
-  // WR: peak 26-30, decline 31-32.
   WR: { productiveStart: 22, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 },
-  // TE: late breakout, peak 26-30, decline 32.
   TE: { productiveStart: 23, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 }
 };
 var PRESSURE_AT_PRODUCTIVE = 0;
@@ -137,7 +129,7 @@ function byValueDesc(getValue) {
   };
 }
 function fillStarters(players, format, getValue = REDRAFT) {
-  const used = /* @__PURE__ */ new Set();
+  const used = new Set();
   const byPos = { QB: [], RB: [], WR: [], TE: [] };
   for (const p of [...players].sort(byValueDesc(getValue))) byPos[p.position].push(p);
   const starters = { QB: [], RB: [], WR: [], TE: [] };
@@ -338,7 +330,7 @@ function computeAllProfiles(teams, format, thisYear) {
     if (b.starterTotalValue !== a.starterTotalValue) return b.starterTotalValue - a.starterTotalValue;
     return a.rosterId - b.rosterId;
   });
-  const starterRank = /* @__PURE__ */ new Map();
+  const starterRank = new Map();
   sortedByStarter.forEach((t, i) => starterRank.set(t.rosterId, i + 1));
   const starterTotals = stage1.map((t) => t.starterTotalValue);
   const meanStarter = starterTotals.reduce((s, v) => s + v, 0) / starterTotals.length;
@@ -374,7 +366,7 @@ function computeAllProfiles(teams, format, thisYear) {
     if (a.windowPressure !== b.windowPressure) return a.windowPressure - b.windowPressure;
     return a.rosterId - b.rosterId;
   });
-  const windowRank = /* @__PURE__ */ new Map();
+  const windowRank = new Map();
   sortedByPressure.forEach((t, i) => windowRank.set(t.rosterId, i + 1));
   const windowTierFor = (pressure) => {
     if (pressure < WINDOW_LONG_THRESHOLD) return "LONG";
@@ -448,7 +440,7 @@ function computeAllProfiles(teams, format, thisYear) {
 // src/data/format.ts
 function detectFormat(league) {
   const slots = { QB: 0, RB: 0, WR: 0, TE: 0, FLEX: 0, SUPER_FLEX: 0 };
-  const idpSlots = /* @__PURE__ */ new Set(["DL", "LB", "DB", "DEF", "IDP_FLEX", "DT", "DE", "CB", "S"]);
+  const idpSlots = new Set(["DL", "LB", "DB", "DEF", "IDP_FLEX", "DT", "DE", "CB", "S"]);
   let idp = false;
   for (const slot of league.roster_positions) {
     if (slot === "QB") slots.QB++;
@@ -529,7 +521,9 @@ async function requireApprovedUser(req, res) {
     return null;
   }
   const userSnap = await adminDb.collection("users").doc(uid).get();
-  if (!userSnap.exists || userSnap.data()?.["approved"] !== true) {
+  const d = userSnap.data();
+  const isApproved = d?.["approved"] === true || d?.["subscribed"] === true;
+  if (!userSnap.exists || !isApproved) {
     res.status(403).json({ error: "Forbidden" });
     return null;
   }
@@ -544,9 +538,9 @@ function normName(name) {
 
 // src/data/picks.ts
 function buildPicksMap(rosters, tradedPicks, draftYears, rounds = [1, 2, 3, 4]) {
-  const map = /* @__PURE__ */ new Map();
+  const map = new Map();
   for (const r of rosters) {
-    const set = /* @__PURE__ */ new Set();
+    const set = new Set();
     for (const y of draftYears) for (const rd of rounds) set.add(`${y}|${rd}|${r.roster_id}`);
     map.set(r.roster_id, set);
   }
@@ -584,7 +578,7 @@ function projectDraftSlots(rosters) {
     if (fa !== fb) return fa - fb;
     return a.roster_id - b.roster_id;
   });
-  const map = /* @__PURE__ */ new Map();
+  const map = new Map();
   ordered.forEach((r, i) => map.set(r.roster_id, i + 1));
   return map;
 }
@@ -619,7 +613,7 @@ function buildTeamInputs(params) {
         valueDynasty: dyn?.value ?? 0
       };
     }).filter((p) => p !== null);
-    const ownPicks = picksMap.get(r.roster_id) ?? /* @__PURE__ */ new Set();
+    const ownPicks = picksMap.get(r.roster_id) ?? new Set();
     const picks = Array.from(ownPicks).map((key) => {
       const [yearStr, roundStr, origStr] = key.split("|");
       const year = parseInt(yearStr, 10);
@@ -688,8 +682,8 @@ async function getValueMaps(format) {
     }
   }
   const fcalc = await fetchFantasyCalc(format);
-  const dynastyValues = /* @__PURE__ */ new Map();
-  const redraftValues = /* @__PURE__ */ new Map();
+  const dynastyValues = new Map();
+  const redraftValues = new Map();
   for (const e of fcalc.dynasty) {
     const k = normName(e.player?.name);
     if (k) dynastyValues.set(k, { value: e.value, age: e.player?.age });
@@ -730,7 +724,7 @@ async function handler(req, res) {
       return res.status(422).json({ error: "IDP leagues are not supported yet." });
     }
     const valueMaps = await getValueMaps(format);
-    const thisYear = (/* @__PURE__ */ new Date()).getFullYear();
+    const thisYear = new Date().getFullYear();
     const teamInputs = buildTeamInputs({
       rosters,
       users,
@@ -755,13 +749,13 @@ async function handler(req, res) {
         format,
         members,
         ownerId: leagueSnap.exists ? leagueSnap.data()?.["ownerId"] : user.uid,
-        lastRefreshed: (/* @__PURE__ */ new Date()).toISOString()
+        lastRefreshed: new Date().toISOString()
       },
       { merge: true }
     );
     for (const profile of profiles) {
       const profileRef = leagueRef.collection("profiles").doc(String(profile.rosterId));
-      batch.set(profileRef, { ...profile, generatedAt: (/* @__PURE__ */ new Date()).toISOString() });
+      batch.set(profileRef, { ...profile, generatedAt: new Date().toISOString() });
     }
     await batch.commit();
     const userRef = adminDb.collection("users").doc(user.uid);
