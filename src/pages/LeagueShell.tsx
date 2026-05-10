@@ -58,8 +58,9 @@ export default function LeagueShell() {
 
   useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const formatStr = overview
-    ? `${overview.format.superflex ? "SF" : "1QB"} · ${overview.format.scoring.toUpperCase()}${overview.format.tep ? " · TEP" : ""}`
+  const fmt = overview?.format;
+  const formatStr = fmt
+    ? `${fmt.superflex ? "SF" : "1QB"} · ${fmt.scoring?.toUpperCase() ?? "PPR"}${fmt.tep ? " · TEP" : ""}`
     : "";
 
   const isTeamsRoute = location.pathname.includes("/team/");
