@@ -73,7 +73,7 @@ function GridTeamCard({ profile, onClick }: { profile: TeamProfile; onClick: () 
       </div>
       <div className="gtc-age">
         <span className="gtc-age-label">age </span>
-        <span className="gtc-age-val">{profile.starterCalAge.toFixed(1)}</span>
+        <span className="gtc-age-val">{(profile.starterCalAge ?? 0).toFixed(1)}</span>
       </div>
     </div>
   );
@@ -134,13 +134,13 @@ function QuadrantPlot({ profiles }: { profiles: TeamProfile[] }) {
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
 
-  const values = profiles.map((p) => p.starterTotalValue);
+  const values = profiles.map((p) => p.starterTotalValue ?? 0);
   const minV = Math.min(...values);
   const maxV = Math.max(...values);
   const vRange = maxV - minV || 1;
 
   const dotX = (p: TeamProfile) => PAD.left + ((p.windowPressure ?? 50) / 100) * plotW;
-  const dotY = (p: TeamProfile) => PAD.top + (1 - (p.starterTotalValue - minV) / vRange) * plotH;
+  const dotY = (p: TeamProfile) => PAD.top + (1 - ((p.starterTotalValue ?? 0) - minV) / vRange) * plotH;
 
   const midX = PAD.left + plotW / 2;
   const midY = PAD.top + plotH / 2;
@@ -148,50 +148,32 @@ function QuadrantPlot({ profiles }: { profiles: TeamProfile[] }) {
   return (
     <div className="quadrant-wrap">
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: W, display: "block" }}>
-        {/* Quadrant fills */}
         <rect x={PAD.left} y={PAD.top} width={plotW / 2} height={plotH / 2} fill="rgba(22,163,74,0.05)" />
         <rect x={midX} y={PAD.top} width={plotW / 2} height={plotH / 2} fill="rgba(239,68,68,0.05)" />
         <rect x={PAD.left} y={midY} width={plotW / 2} height={plotH / 2} fill="rgba(59,130,246,0.05)" />
         <rect x={midX} y={midY} width={plotW / 2} height={plotH / 2} fill="rgba(220,38,38,0.04)" />
-
-        {/* Quadrant labels */}
         <text x={PAD.left + 6} y={PAD.top + 14} fontSize={8} fontFamily={FONT} fill="rgba(22,163,74,0.4)" letterSpacing={1}>JUGGERNAUT</text>
         <text x={midX + 6} y={PAD.top + 14} fontSize={8} fontFamily={FONT} fill="rgba(239,68,68,0.4)" letterSpacing={1}>CLOSING</text>
         <text x={PAD.left + 6} y={PAD.top + plotH - 6} fontSize={8} fontFamily={FONT} fill="rgba(59,130,246,0.4)" letterSpacing={1}>REBUILD</text>
         <text x={midX + 6} y={PAD.top + plotH - 6} fontSize={8} fontFamily={FONT} fill="rgba(220,38,38,0.4)" letterSpacing={1}>STUCK</text>
-
-        {/* Axes */}
         <line x1={PAD.left} y1={PAD.top + plotH} x2={PAD.left + plotW} y2={PAD.top + plotH} stroke="rgba(255,255,255,0.1)" />
         <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + plotH} stroke="rgba(255,255,255,0.1)" />
         <line x1={midX} y1={PAD.top} x2={midX} y2={PAD.top + plotH} stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
         <line x1={PAD.left} y1={midY} x2={PAD.left + plotW} y2={midY} stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
-
-        {/* Axis labels */}
         <text x={PAD.left} y={H - 4} fontSize={8} fontFamily={FONT} fill="#334155" letterSpacing={1}>← LONG WINDOW</text>
         <text x={PAD.left + plotW} y={H - 4} fontSize={8} fontFamily={FONT} fill="#334155" letterSpacing={1} textAnchor="end">SHORT WINDOW →</text>
         <text x={PAD.left - 6} y={PAD.top + 4} fontSize={8} fontFamily={FONT} fill="#334155" letterSpacing={1} textAnchor="end">STRONG</text>
         <text x={PAD.left - 6} y={PAD.top + plotH} fontSize={8} fontFamily={FONT} fill="#334155" letterSpacing={1} textAnchor="end">WEAK</text>
-
-        {/* Team dots */}
         {profiles.map((p) => {
           const x = dotX(p);
           const y = dotY(p);
-          const color = LABEL_COLOR[p.windowLabel];
+          const color = LABEL_COLOR[p.windowLabel] ?? "#94a3b8";
           const label = p.ownerName.split(" ")[0] ?? p.ownerName;
           return (
             <g key={p.rosterId}>
               {p.isMine && <circle cx={x} cy={y} r={10} fill="none" stroke={color} strokeWidth={1.5} opacity={0.5} />}
               <circle cx={x} cy={y} r={p.isMine ? 6 : 5} fill={color} opacity={0.9} />
-              <text
-                x={x} y={y - 10}
-                textAnchor="middle"
-                fontSize={8}
-                fontFamily={FONT}
-                fill="#94a3b8"
-                style={{ pointerEvents: "none", userSelect: "none" }}
-              >
-                {label}
-              </text>
+              <text x={x} y={y - 10} textAnchor="middle" fontSize={8} fontFamily={FONT} fill="#94a3b8" style={{ pointerEvents: "none", userSelect: "none" }}>{label}</text>
             </g>
           );
         })}
@@ -217,11 +199,7 @@ function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
               <span className="picks-year-label">'{String(year).slice(2)}</span>
               <div className="picks-dots">
                 {yp.map((pick, i) => (
-                  <div
-                    key={i}
-                    className={`pick-dot pick-dot-r${Math.min(pick.round, 3)}`}
-                    title={pick.label}
-                  />
+                  <div key={i} className={`pick-dot pick-dot-r${Math.min(pick.round, 3)}`} title={pick.label} />
                 ))}
               </div>
             </div>
@@ -234,7 +212,7 @@ function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
 
 function LeagueTableRow({ profile, leagueId }: { profile: TeamProfile; leagueId: string }) {
   const navigate = useNavigate();
-  const labelColor = LABEL_COLOR[profile.windowLabel];
+  const labelColor = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
   return (
     <div
       className={`lt-row${profile.isMine ? " mine" : ""}`}
@@ -249,10 +227,10 @@ function LeagueTableRow({ profile, leagueId }: { profile: TeamProfile; leagueId:
           </span>
           <div style={{ display: "flex", gap: 5, alignItems: "center", marginTop: 2, flexWrap: "wrap" }}>
             <span className="window-label" style={{ background: labelColor, fontSize: 9, padding: "1px 5px" }}>
-              {profile.windowLabel}
+              {profile.windowLabel ?? "—"}
             </span>
             <span style={{ fontSize: 10, color: "#475569" }}>{profile.record}</span>
-            <span style={{ fontSize: 10, color: "#475569" }}>age {profile.starterCalAge.toFixed(1)}</span>
+            <span style={{ fontSize: 10, color: "#475569" }}>age {(profile.starterCalAge ?? 0).toFixed(1)}</span>
           </div>
         </div>
       </div>
