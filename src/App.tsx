@@ -1,3 +1,4 @@
+import { Component, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./hooks/useAuth.tsx";
 import MyLeagues from "./pages/MyLeagues.tsx";
@@ -6,6 +7,26 @@ import LeagueOverview from "./pages/LeagueOverview.tsx";
 import TeamDeepDive from "./pages/TeamDeepDive.tsx";
 import SendIt from "./pages/SendIt.tsx";
 import Calc from "./pages/Calc.tsx";
+
+class AppErrorBoundary extends Component<{ children: ReactNode }, { caught: Error | null }> {
+  state: { caught: Error | null } = { caught: null };
+  static getDerivedStateFromError(e: Error) { return { caught: e }; }
+  render() {
+    if (this.state.caught) {
+      return (
+        <div style={{ padding: 48, fontFamily: "monospace", color: "#ef4444" }}>
+          <div style={{ marginBottom: 12, fontWeight: 700 }}>Something went wrong</div>
+          <div style={{ marginBottom: 16, opacity: 0.8, fontSize: 13 }}>{this.state.caught.message}</div>
+          <button onClick={() => { this.setState({ caught: null }); window.location.reload(); }}
+            style={{ background: "none", border: "1px solid #ef4444", color: "#ef4444", padding: "6px 14px", cursor: "pointer", fontFamily: "monospace" }}>
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function SignInScreen() {
   const { signIn } = useAuth();
@@ -56,10 +77,12 @@ function AuthGate() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AuthGate />
-      </AuthProvider>
-    </BrowserRouter>
+    <AppErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <AuthGate />
+        </AuthProvider>
+      </BrowserRouter>
+    </AppErrorBoundary>
   );
 }
