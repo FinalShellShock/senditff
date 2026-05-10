@@ -25,7 +25,6 @@ const POS_CLASS_COLOR: Record<string, string> = {
 };
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
-const FONT = "'Space Mono', monospace";
 
 function MiniBar({ score }: { score: number }) {
   const pct = Math.max(0, Math.min(100, score));
@@ -54,6 +53,7 @@ function getTeamNeeds(profile: TeamProfile): { pos: Position; classification: st
 
 function GridTeamCard({ profile, onClick }: { profile: TeamProfile; onClick: () => void }) {
   const needs = getTeamNeeds(profile);
+  const needsText = needs.map(n => n.pos).join(" · ");
   return (
     <div className={`grid-team-card${profile.isMine ? " mine" : ""}`} onClick={onClick}>
       <div className="gtc-header">
@@ -129,61 +129,6 @@ function LeagueGrid({ profiles }: { profiles: TeamProfile[] }) {
   );
 }
 
-function QuadrantPlot({ profiles }: { profiles: TeamProfile[] }) {
-  if (profiles.length === 0) return null;
-
-  const W = 560, H = 260;
-  const PAD = { left: 52, right: 16, top: 24, bottom: 36 };
-  const plotW = W - PAD.left - PAD.right;
-  const plotH = H - PAD.top - PAD.bottom;
-
-  const values = profiles.map((p) => p.starterTotalValue ?? 0);
-  const minV = Math.min(...values);
-  const maxV = Math.max(...values);
-  const vRange = maxV - minV || 1;
-
-  const dotX = (p: TeamProfile) => PAD.left + ((p.windowPressure ?? 50) / 100) * plotW;
-  const dotY = (p: TeamProfile) => PAD.top + (1 - ((p.starterTotalValue ?? 0) - minV) / vRange) * plotH;
-
-  const midX = PAD.left + plotW / 2;
-  const midY = PAD.top + plotH / 2;
-
-  return (
-    <div className="quadrant-wrap">
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: W, display: "block" }}>
-        <rect x={PAD.left} y={PAD.top} width={plotW / 2} height={plotH / 2} fill="rgba(22,163,74,0.05)" />
-        <rect x={midX} y={PAD.top} width={plotW / 2} height={plotH / 2} fill="rgba(239,68,68,0.05)" />
-        <rect x={PAD.left} y={midY} width={plotW / 2} height={plotH / 2} fill="rgba(59,130,246,0.05)" />
-        <rect x={midX} y={midY} width={plotW / 2} height={plotH / 2} fill="rgba(220,38,38,0.04)" />
-        <text x={PAD.left + 6} y={PAD.top + 14} fontSize={8} fontFamily={FONT} fill="rgba(22,163,74,0.4)" letterSpacing={1}>JUGGERNAUT</text>
-        <text x={midX + 6} y={PAD.top + 14} fontSize={8} fontFamily={FONT} fill="rgba(239,68,68,0.4)" letterSpacing={1}>CLOSING</text>
-        <text x={PAD.left + 6} y={PAD.top + plotH - 6} fontSize={8} fontFamily={FONT} fill="rgba(59,130,246,0.4)" letterSpacing={1}>REBUILD</text>
-        <text x={midX + 6} y={PAD.top + plotH - 6} fontSize={8} fontFamily={FONT} fill="rgba(220,38,38,0.4)" letterSpacing={1}>STUCK</text>
-        <line x1={PAD.left} y1={PAD.top + plotH} x2={PAD.left + plotW} y2={PAD.top + plotH} stroke="rgba(255,255,255,0.1)" />
-        <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + plotH} stroke="rgba(255,255,255,0.1)" />
-        <line x1={midX} y1={PAD.top} x2={midX} y2={PAD.top + plotH} stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
-        <line x1={PAD.left} y1={midY} x2={PAD.left + plotW} y2={midY} stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
-        <text x={PAD.left} y={H - 4} fontSize={8} fontFamily={FONT} fill="#64748b" letterSpacing={1}>← LONG WINDOW</text>
-        <text x={PAD.left + plotW} y={H - 4} fontSize={8} fontFamily={FONT} fill="#64748b" letterSpacing={1} textAnchor="end">SHORT WINDOW →</text>
-        <text x={PAD.left - 6} y={PAD.top + 4} fontSize={8} fontFamily={FONT} fill="#64748b" letterSpacing={1} textAnchor="end">STRONG</text>
-        <text x={PAD.left - 6} y={PAD.top + plotH} fontSize={8} fontFamily={FONT} fill="#64748b" letterSpacing={1} textAnchor="end">WEAK</text>
-        {profiles.map((p) => {
-          const x = dotX(p);
-          const y = dotY(p);
-          const color = LABEL_COLOR[p.windowLabel] ?? "#94a3b8";
-          const label = p.ownerName.split(" ")[0] ?? p.ownerName;
-          return (
-            <g key={p.rosterId}>
-              {p.isMine && <circle cx={x} cy={y} r={10} fill="none" stroke={color} strokeWidth={1.5} opacity={0.5} />}
-              <circle cx={x} cy={y} r={p.isMine ? 6 : 5} fill={color} opacity={0.9} />
-              <text x={x} y={y - 10} textAnchor="middle" fontSize={8} fontFamily={FONT} fill="#94a3b8" style={{ pointerEvents: "none", userSelect: "none" }}>{label}</text>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
 
 function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
   const years = [...new Set(picks.map((p) => p.year))].sort().slice(0, 3);
@@ -299,15 +244,14 @@ export default function LeagueOverview() {
         </button>
       </div>
 
-      <section className="overview-section">
-        <h2 className="section-title">League Shape</h2>
-        <QuadrantPlot profiles={overview.profiles} />
-        <LeagueGrid profiles={overview.profiles} />
-      </section>
+      <div className="table-scroll-wrapper">
+        <section className="overview-section">
+          <h2 className="section-title">League Shape</h2>
+          <LeagueGrid profiles={overview.profiles} />
+        </section>
 
-      <section className="overview-section">
-        <h2 className="section-title">Teams</h2>
-        <div className="table-scroll-wrapper">
+        <section className="overview-section">
+          <h2 className="section-title">Teams</h2>
           <div className="league-table">
             <div className="lt-header">
               <div className="lt-col-sticky lt-header-sticky">
@@ -330,8 +274,8 @@ export default function LeagueOverview() {
               <LeagueTableRow key={p.rosterId} profile={p} leagueId={id!} />
             ))}
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </>
   );
 }

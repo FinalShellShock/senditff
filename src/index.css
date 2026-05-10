@@ -314,24 +314,12 @@ body {
 
 /* ── League Overview ─────────────────────────────────────────────────── */
 
-.quadrant-wrap {
-  margin-bottom: 24px;
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 8px;
-  padding: 12px 8px 4px;
-}
-
-.grid-scroll-wrap {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
 .league-grid {
-  display: inline-grid;
-  grid-template-columns: 72px repeat(3, 200px);
+  display: grid;
+  grid-template-columns: 52px repeat(3, 1fr);
   gap: 5px;
-  min-width: 672px;
+  min-width: 630px;
+  margin-bottom: 8px;
 }
 
 .grid-header-row, .grid-row {
@@ -992,6 +980,51 @@ body {
 .picks-none {
   font-size: 9px;
   color: #1e293b;
+}
+
+/* ── Mobile table tweaks ─────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .lt-col-sticky {
+    width: 130px;
+  }
+
+  .lt-name {
+    font-size: 11px;
+  }
+
+  .lt-col-pos {
+    width: 72px;
+    padding: 6px 4px;
+  }
+
+  .lt-pos-bar-row {
+    gap: 2px;
+  }
+
+  .lt-pos-score {
+    font-size: 9px;
+    width: 16px;
+  }
+
+  .lt-col-picks {
+    width: 60px;
+    padding: 6px 6px 6px 4px;
+  }
+
+  .picks-flag {
+    font-size: 8px;
+  }
+
+  .league-grid {
+    grid-template-columns: 40px repeat(3, 1fr);
+  }
+
+  .grid-col-label, .grid-row-label {
+    font-size: 8px;
+    letter-spacing: 1px;
+    padding: 3px 4px;
+  }
 }
 
 /* ── Position dashboard (team deep dive) ────────────────────────────── */
