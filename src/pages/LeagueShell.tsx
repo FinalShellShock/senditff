@@ -7,7 +7,7 @@ class ContentErrorBoundary extends Component<
   { children: ReactNode; onReset: () => void },
   { caught: Error | null }
 > {
-  state = { caught: null };
+  state: { caught: Error | null } = { caught: null };
   static getDerivedStateFromError(e: Error) { return { caught: e }; }
   render() {
     if (this.state.caught) {
