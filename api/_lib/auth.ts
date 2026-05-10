@@ -31,7 +31,9 @@ export async function requireApprovedUser(
   }
 
   const userSnap = await adminDb.collection("users").doc(uid).get();
-  if (!userSnap.exists || userSnap.data()?.["approved"] !== true) {
+  const d = userSnap.data();
+  const isApproved = d?.["approved"] === true || d?.["subscribed"] === true;
+  if (!userSnap.exists || !isApproved) {
     res.status(403).json({ error: "Forbidden" });
     return null;
   }
