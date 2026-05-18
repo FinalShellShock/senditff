@@ -60,17 +60,20 @@ function GridTeamCard({ profile, onClick }: { profile: TeamProfile; onClick: () 
         <span className="gtc-rank">#{profile.starterRank}</span>
         <span className="gtc-name">{profile.ownerName}</span>
       </div>
-      <div className="gtc-needs">
-        {needs.map(({ pos, classification }) => (
-          <span
-            key={pos}
-            className={`gtc-need-tag pos-tag pos-${pos}`}
-            style={{ opacity: classification === "CRITICAL_NEED" ? 1 : 0.6 }}
-          >
-            {pos}
-          </span>
-        ))}
-      </div>
+      {needs.length > 0 && (
+        <div className="gtc-needs">
+          <span className="gtc-needs-label">NEEDS</span>
+          {needs.map(({ pos, classification }) => (
+            <span
+              key={pos}
+              className={`gtc-need-tag pos-tag pos-${pos}`}
+              style={{ opacity: classification === "CRITICAL_NEED" ? 1 : 0.6 }}
+            >
+              {pos}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="gtc-age">
         <span className="gtc-age-label">age </span>
         <span className="gtc-age-val">{(profile.starterCalAge ?? 0).toFixed(1)}</span>
@@ -106,7 +109,7 @@ function LeagueGrid({ profiles }: { profiles: TeamProfile[] }) {
             {cols.map((tier) => {
               const teams = grid[`${comp}-${tier}`] ?? [];
               return (
-                <div key={tier} className={`grid-cell${!teams.length ? " empty" : ""}`}>
+                <div key={tier} className={`grid-cell${!teams.length ? " empty" : ""}`} data-comp={comp}>
                   {teams.length === 0
                     ? "—"
                     : teams.map((t) => (
@@ -160,10 +163,10 @@ function QuadrantPlot({ profiles }: { profiles: TeamProfile[] }) {
         <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + plotH} stroke="rgba(255,255,255,0.1)" />
         <line x1={midX} y1={PAD.top} x2={midX} y2={PAD.top + plotH} stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
         <line x1={PAD.left} y1={midY} x2={PAD.left + plotW} y2={midY} stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
-        <text x={PAD.left} y={H - 4} fontSize={8} fontFamily={FONT} fill="#334155" letterSpacing={1}>← LONG WINDOW</text>
-        <text x={PAD.left + plotW} y={H - 4} fontSize={8} fontFamily={FONT} fill="#334155" letterSpacing={1} textAnchor="end">SHORT WINDOW →</text>
-        <text x={PAD.left - 6} y={PAD.top + 4} fontSize={8} fontFamily={FONT} fill="#334155" letterSpacing={1} textAnchor="end">STRONG</text>
-        <text x={PAD.left - 6} y={PAD.top + plotH} fontSize={8} fontFamily={FONT} fill="#334155" letterSpacing={1} textAnchor="end">WEAK</text>
+        <text x={PAD.left} y={H - 4} fontSize={8} fontFamily={FONT} fill="#64748b" letterSpacing={1}>← LONG WINDOW</text>
+        <text x={PAD.left + plotW} y={H - 4} fontSize={8} fontFamily={FONT} fill="#64748b" letterSpacing={1} textAnchor="end">SHORT WINDOW →</text>
+        <text x={PAD.left - 6} y={PAD.top + 4} fontSize={8} fontFamily={FONT} fill="#64748b" letterSpacing={1} textAnchor="end">STRONG</text>
+        <text x={PAD.left - 6} y={PAD.top + plotH} fontSize={8} fontFamily={FONT} fill="#64748b" letterSpacing={1} textAnchor="end">WEAK</text>
         {profiles.map((p) => {
           const x = dotX(p);
           const y = dotY(p);
