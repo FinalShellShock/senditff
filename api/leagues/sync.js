@@ -130,6 +130,12 @@ function detectArchetypes(team, averages, _format) {
 
 // src/algo/profile.ts
 var REDRAFT = (p) => p.valueRedraft;
+var DYNASTY = (p) => p.valueDynasty;
+function depthSlotsFor(pos, format) {
+  if (pos === "QB") return format.superflex ? 2 : 1;
+  if (pos === "TE") return format.tep ? 2 : 1;
+  return 3;
+}
 function byValueDesc(getValue) {
   return (a, b) => {
     const va = getValue(a);
@@ -195,7 +201,8 @@ function depthByPosition(players, format, getValue = REDRAFT) {
   for (const pos of POSITIONS) {
     const sorted = players.filter((p) => p.position === pos).sort(byValueDesc(getValue));
     const baseN = baseStarters[pos];
-    depth[pos] = sorted.slice(baseN, baseN + 3);
+    const depthN = depthSlotsFor(pos, format);
+    depth[pos] = sorted.slice(baseN, baseN + depthN);
   }
   return depth;
 }
@@ -271,11 +278,57 @@ function score0to100(value, leagueAvg) {
   const score = 50 + (value - leagueAvg) / leagueAvg * 50;
   return Math.max(0, Math.min(100, score));
 }
-function classifyPosition(score) {
-  if (score > 70) return "CRITICAL_NEED";
-  if (score >= 50) return "NEED";
-  if (score >= 30) return "HEALTHY";
-  return "SURPLUS";
+function avgRankInPool(value, pool) {
+  const n = pool.length;
+  if (n <= 1) return { avgRank: 1, n };
+  const sorted = [...pool].sort((a, b) => b - a);
+  let strictlyGreater = 0;
+  let equal = 0;
+  for (const v of sorted) {
+    if (v > value) strictlyGreater++;
+    else if (v === value) equal++;
+  }
+  const firstRank = strictlyGreater + 1;
+  const lastRank = equal === 0 ? firstRank : strictlyGreater + equal;
+  return { avgRank: (firstRank + lastRank) / 2, n };
+}
+function positionScoreFromPool(value, pool, startable) {
+  const { avgRank, n } = avgRankInPool(value, pool);
+  if (n <= 1) return 50;
+  const safeStartable = Math.max(1, Math.min(n, startable));
+  if (avgRank <= safeStartable) {
+    if (safeStartable <= 1) return 100;
+    return Math.max(50, Math.min(100, 100 - 50 * (avgRank - 1) / (safeStartable - 1)));
+  }
+  const remaining = n - safeStartable;
+  if (remaining <= 0) return 50;
+  return Math.max(0, Math.min(50, 50 * (n - avgRank) / remaining));
+}
+function weightedSlotAverage(scores) {
+  if (scores.length === 0) return 0;
+  if (scores.length === 1) return scores[0] ?? 0;
+  const sorted = [...scores].sort((a, b) => a - b);
+  let weightedSum = 0;
+  let totalWeight = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    const weight = sorted.length - i;
+    weightedSum += (sorted[i] ?? 0) * weight;
+    totalWeight += weight;
+  }
+  return totalWeight > 0 ? weightedSum / totalWeight : 0;
+}
+function classifyPositionRich(args) {
+  const { starterScore, minStarterSlotScore, depthScore, depthSlots, pressure, urgency } = args;
+  if (minStarterSlotScore < 25) return "CRITICAL_NEED";
+  if (minStarterSlotScore < 40) return "NEED";
+  if (depthScore < 20 && depthSlots >= 2) return "NEED";
+  if (depthScore < 10) return "NEED";
+  if (urgency > 70) return "CRITICAL_NEED";
+  if (urgency >= 50) return "NEED";
+  if (urgency < 30 && starterScore > 70 && depthScore > 55 && pressure < 50) {
+    return "SURPLUS";
+  }
+  return "HEALTHY";
 }
 function applyTep(players, format) {
   if (!format.tep) return players;
@@ -289,27 +342,50 @@ function applyTep(players, format) {
 }
 function computePositionScores(team, format, averages) {
   const { starters } = fillStarters(team.players, format);
-  const depth = depthByPosition(team.players, format);
+  const depth = depthByPosition(team.players, format, DYNASTY);
   const out = {};
   const compFactor = { STRONG: 90, AVERAGE: 60, WEAK: 30 };
   const windowFactor = { SHORT: 90, MID: 60, LONG: 30 };
   const pressure = (compFactor[team.competitiveness] + windowFactor[team.windowTier]) / 2;
   for (const pos of POSITIONS) {
     const starterValue = starters[pos].reduce((s, p) => s + p.valueRedraft, 0);
-    const depthValue = depth[pos].reduce((s, p) => s + p.valueRedraft, 0);
-    const starterScore = score0to100(starterValue, averages.starter[pos] || 1);
-    const depthScore = score0to100(depthValue, averages.depth[pos] || 1);
+    const depthValue = depth[pos].reduce((s, p) => s + p.valueDynasty, 0);
+    const starterPlayerScores = starters[pos].map(
+      (p) => positionScoreFromPool(p.valueRedraft, averages.starterPlayerPool[pos], averages.startersInUse[pos])
+    );
+    const depthPlayerScores = depth[pos].map(
+      (p) => positionScoreFromPool(p.valueDynasty, averages.depthPlayerPool[pos], averages.depthSlotsTotal[pos])
+    );
+    const starterScore = weightedSlotAverage(starterPlayerScores);
+    const minStarterSlotScore = starterPlayerScores.length > 0 ? Math.min(...starterPlayerScores) : 0;
+    const depthScore = weightedSlotAverage(depthPlayerScores);
+    const depthSlots = depthSlotsFor(pos, format);
+    const baseDepthWeight = 0.15;
+    const baseStarterWeight = 0.5;
+    const depthWeight = baseDepthWeight * (depthSlots / 3);
+    const starterWeight = baseStarterWeight + (baseDepthWeight - depthWeight);
+    const pickWeight = 0.15;
     const starterGap = Math.max(0, 100 - starterScore);
     const depthGap = Math.max(0, 100 - depthScore);
     const pickFactor = 50;
-    const urgency = starterGap * 0.4 + pressure * 0.3 + depthGap * 0.15 + pickFactor * 0.15;
+    const gapUrgency = starterGap * starterWeight + depthGap * depthWeight + pickFactor * pickWeight;
+    const pressureMult = 0.6 + pressure / 100 * 0.6;
+    const urgency = gapUrgency * pressureMult;
     out[pos] = {
       starterValue,
       starterScore,
+      minStarterSlotScore,
       depthValue,
       depthScore,
       urgency,
-      classification: classifyPosition(urgency)
+      classification: classifyPositionRich({
+        starterScore,
+        minStarterSlotScore,
+        depthScore,
+        depthSlots,
+        pressure,
+        urgency
+      })
     };
   }
   return out;
@@ -318,7 +394,7 @@ function computeAllProfiles(teams, format, thisYear) {
   const stage1 = teams.map((t) => {
     const playersAdj = applyTep(t.players, format);
     const { starters } = fillStarters(playersAdj, format);
-    const depth = depthByPosition(playersAdj, format);
+    const depth = depthByPosition(playersAdj, format, DYNASTY);
     const starterTotalValue = POSITIONS.reduce(
       (s, pos) => s + starters[pos].reduce((a, p) => a + p.valueRedraft, 0),
       0
@@ -383,19 +459,35 @@ function computeAllProfiles(teams, format, thisYear) {
     if (pressure > WINDOW_SHORT_THRESHOLD) return "SHORT";
     return "MID";
   };
-  const avgStarter = { QB: 0, RB: 0, WR: 0, TE: 0 };
-  const avgDepth = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const starterPool = { QB: [], RB: [], WR: [], TE: [] };
+  const depthPool = { QB: [], RB: [], WR: [], TE: [] };
+  const starterPlayerPool = { QB: [], RB: [], WR: [], TE: [] };
+  const depthPlayerPool = { QB: [], RB: [], WR: [], TE: [] };
+  const startersInUse = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const depthSlotsTotal = { QB: 0, RB: 0, WR: 0, TE: 0 };
   let avgFlex = 0;
   for (const t of stage2) {
     for (const pos of POSITIONS) {
-      avgStarter[pos] += t.starters[pos].reduce((s, p) => s + p.valueRedraft, 0);
-      avgDepth[pos] += t.depth[pos].reduce((s, p) => s + p.valueRedraft, 0);
+      starterPool[pos].push(t.starters[pos].reduce((s, p) => s + p.valueRedraft, 0));
+      depthPool[pos].push(t.depth[pos].reduce((s, p) => s + p.valueDynasty, 0));
+      startersInUse[pos] += t.starters[pos].length;
+    }
+    for (const p of t.players) {
+      starterPlayerPool[p.position].push(p.valueRedraft);
+      depthPlayerPool[p.position].push(p.valueDynasty);
     }
     avgFlex += t.flexValue;
   }
   for (const pos of POSITIONS) {
-    avgStarter[pos] /= stage2.length;
-    avgDepth[pos] /= stage2.length;
+    depthSlotsTotal[pos] = stage2.length * depthSlotsFor(pos, format);
+  }
+  const avgStarter = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const avgDepth = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  for (const pos of POSITIONS) {
+    const sSum = starterPool[pos].reduce((s, v) => s + v, 0);
+    const dSum = depthPool[pos].reduce((s, v) => s + v, 0);
+    avgStarter[pos] = sSum / starterPool[pos].length;
+    avgDepth[pos] = dSum / depthPool[pos].length;
   }
   avgFlex /= stage2.length;
   const averages = {
@@ -403,7 +495,13 @@ function computeAllProfiles(teams, format, thisYear) {
     depth: avgDepth,
     flex: avgFlex,
     pickCapital: meanCap,
-    pickCapitalStd: stdCap
+    pickCapitalStd: stdCap,
+    starterPool,
+    depthPool,
+    starterPlayerPool,
+    depthPlayerPool,
+    startersInUse,
+    depthSlotsTotal
   };
   return stage2.map((t) => {
     const tier = windowTierFor(t.windowPressure);
