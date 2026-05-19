@@ -19,6 +19,7 @@ import type {
   Competitiveness,
   LeagueAverages,
   LeagueFormat,
+  NeedKind,
   Pick,
   PickFlag,
   Player,
@@ -319,11 +320,11 @@ export function classifyPosition(score: PositionScore["urgency"]): PositionScore
   return "SURPLUS";
 }
 
-// Rules-based classifier that considers each component. Fixes:
-//   "97 starter / 13 depth = SURPLUS" (wrong — depth is awful)
-//   "70 starter / 46 depth + CLOSING pressure = NEED" (wrong — pressure was
-//   pushing healthy positions into need additively)
-// Both came from a single urgency-threshold lookup that didn't see structure.
+// Rules-based classifier + need-kind output. The score < 50 rule comes from
+// the dual-zone definition: 50 is the boundary between "real starter" and
+// "below replacement." If your starter scores below that, you don't have a
+// real starter at this position, period — regardless of how the urgency
+// math averages out.
 export function classifyPositionRich(args: {
   starterScore: number;
   minStarterSlotScore: number;
@@ -331,24 +332,57 @@ export function classifyPositionRich(args: {
   depthSlots: number;
   pressure: number;
   urgency: number;
-}): PositionScore["classification"] {
+}): { classification: PositionScore["classification"]; needKind: NeedKind } {
   const { starterScore, minStarterSlotScore, depthScore, depthSlots, pressure, urgency } = args;
-  // Any starter slot below replacement is a critical hole — even if other
-  // slots are filled (Olave + trash WR3 type situations).
-  if (minStarterSlotScore < 25) return "CRITICAL_NEED";
-  if (minStarterSlotScore < 40) return "NEED";
-  // Catastrophic depth: matters most at positions where depth is real.
-  if (depthScore < 20 && depthSlots >= 2) return "NEED";
-  if (depthScore < 10) return "NEED";
-  // Urgency-driven fallbacks.
-  if (urgency > 70) return "CRITICAL_NEED";
-  if (urgency >= 50) return "NEED";
-  // SURPLUS requires both halves strong AND low pressure. A contender with
-  // elite starter + elite depth shouldn't be told to sell — they need it.
-  if (urgency < 30 && starterScore > 70 && depthScore > 55 && pressure < 50) {
-    return "SURPLUS";
+
+  const starterWeak = minStarterSlotScore < 50;
+  const starterCritical = minStarterSlotScore < 25;
+  const depthCatastrophic = depthScore < 10 || (depthScore < 20 && depthSlots >= 2);
+  const depthWeak = depthScore < 35;
+
+  // Catastrophic starter slot is critical regardless of depth.
+  if (starterCritical) {
+    return { classification: "CRITICAL_NEED", needKind: depthWeak ? "both" : "starter" };
   }
-  return "HEALTHY";
+  // Starter below replacement (< 50 = bottom dual-zone) is NEED. If depth is
+  // also bad, it's "both" — drives stronger trade pressure.
+  if (starterWeak) {
+    return { classification: "NEED", needKind: depthWeak ? "both" : "starter" };
+  }
+  // Starter is fine; check depth alone.
+  if (depthCatastrophic) {
+    return { classification: "NEED", needKind: "depth" };
+  }
+  // Urgency-driven fallback for borderline cases (e.g., decent starter but
+  // multiple lukewarm signals piling up).
+  if (urgency > 70) return { classification: "CRITICAL_NEED", needKind: "both" };
+  if (urgency >= 50) {
+    // Pick the side that's worse to label needKind.
+    const kind: NeedKind = starterScore - 50 < depthScore - 50 ? "starter" : "depth";
+    return { classification: "NEED", needKind: kind };
+  }
+  // SURPLUS requires both halves strong AND low pressure.
+  if (urgency < 30 && starterScore > 70 && depthScore > 55 && pressure < 50) {
+    return { classification: "SURPLUS", needKind: null };
+  }
+  return { classification: "HEALTHY", needKind: null };
+}
+
+// Position importance multipliers per format. These reflect marginal value
+// of upgrading the position — how much going from "below replacement" to
+// "above average" actually impacts wins, given league scoring + start counts.
+// Calibrated from VBD scoring curves and dynasty community consensus:
+//   - 1QB QB: flat curve, low marginal value → 0.7
+//   - SF QB: steep curve (start 2), high marginal value → 1.0
+//   - RB: steepest current-year curve in most formats → 0.95
+//   - WR: deep but high-leverage in PPR → 1.0
+//   - TE non-TEP: bimodal, only top ~3 truly matter → 0.7
+//   - TE TEP: top ~6 matter, importance climbs → 1.0
+export function positionImportance(pos: Position, format: LeagueFormat): number {
+  if (pos === "QB") return format.superflex ? 1.0 : 0.7;
+  if (pos === "TE") return format.tep ? 1.0 : 0.7;
+  if (pos === "RB") return 0.95;
+  return 1.0; // WR
 }
 
 // ── TEP applies to BOTH redraft and dynasty values ────────────────────────────
@@ -403,30 +437,38 @@ export function computePositionScores(
       : 0;
     const depthScore = weightedSlotAverage(depthPlayerScores);
 
-    // Format-aware urgency weights. Depth carries less weight in formats
-    // where the position has only 1 depth slot (1QB QB, non-TEP TE) since
-    // backup depth there is a luxury, not a real roster need. Missing weight
-    // shifts to starter (the dominant signal).
+    // Format-aware gap weights. Depth carries less weight in formats where
+    // the position has only 1 depth slot. The dead pickFactor was removed —
+    // it was a constant 50 with weight 0.15 that uniformly inflated every
+    // urgency by 7.5 without saying anything useful.
     const depthSlots = depthSlotsFor(pos, format);
     const baseDepthWeight = 0.15;
     const baseStarterWeight = 0.50;
     const depthWeight = baseDepthWeight * (depthSlots / 3);
     const starterWeight = baseStarterWeight + (baseDepthWeight - depthWeight);
-    const pickWeight = 0.15;
 
     const starterGap = Math.max(0, 100 - starterScore);
     const depthGap = Math.max(0, 100 - depthScore);
-    const pickFactor = 50;
 
-    // Urgency = weighted gap, then amplified by pressure as a multiplier.
-    // Pressure no longer adds urgency by itself — a contender with no actual
-    // holes won't get classified as needy just because of competitive context.
+    // Urgency = weighted gap × pressure × position importance.
+    //   pressure: contender bias, doesn't manufacture urgency on its own
+    //   importance: 1QB QB has flat scoring curve so QB gaps matter less;
+    //     TEP TE flips the other way. Calibrated from VBD curves.
     const gapUrgency =
       starterGap * starterWeight +
-      depthGap * depthWeight +
-      pickFactor * pickWeight;
+      depthGap * depthWeight;
     const pressureMult = 0.6 + (pressure / 100) * 0.6; // [0.6, 1.2]
-    const urgency = gapUrgency * pressureMult;
+    const importance = positionImportance(pos, format);
+    const urgency = gapUrgency * pressureMult * importance;
+
+    const { classification, needKind } = classifyPositionRich({
+      starterScore,
+      minStarterSlotScore,
+      depthScore,
+      depthSlots,
+      pressure,
+      urgency,
+    });
 
     out[pos] = {
       starterValue,
@@ -435,14 +477,8 @@ export function computePositionScores(
       depthValue,
       depthScore,
       urgency,
-      classification: classifyPositionRich({
-        starterScore,
-        minStarterSlotScore,
-        depthScore,
-        depthSlots,
-        pressure,
-        urgency,
-      }),
+      classification,
+      needKind,
     };
   }
   return out;
@@ -450,10 +486,21 @@ export function computePositionScores(
 
 // ── Main pipeline ────────────────────────────────────────────────────────────
 
+// Optional global player pools sourced from FantasyCalc. When provided, used
+// for player-level rank scoring instead of league-rostered values. This lets
+// us avoid the "dropped startable player shifts ranks" distortion and
+// matches the user's intuition that every league shares the same player
+// universe — only format and team count are league-specific.
+export type GlobalPlayerPools = {
+  dynastyByPos: Record<Position, number[]>;
+  redraftByPos: Record<Position, number[]>;
+};
+
 export function computeAllProfiles(
   teams: TeamInput[],
   format: LeagueFormat,
   thisYear: number,
+  globalPlayerPools?: GlobalPlayerPools,
 ): TeamProfile[] {
   type Stage1 = TeamInput & {
     starterTotalValue: number;
@@ -557,10 +604,16 @@ export function computeAllProfiles(
   //   league (data-driven, captures format + actual FLEX usage).
   const starterPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
   const depthPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
-  const starterPlayerPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
-  const depthPlayerPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
   const startersInUse: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depthSlotsTotal: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  // Prefer the FantasyCalc-global pool when available; only fall back to
+  // assembling pools from rostered players if globalPlayerPools wasn't passed.
+  const starterPlayerPool: Record<Position, number[]> = globalPlayerPools
+    ? { ...globalPlayerPools.redraftByPos }
+    : { QB: [], RB: [], WR: [], TE: [] };
+  const depthPlayerPool: Record<Position, number[]> = globalPlayerPools
+    ? { ...globalPlayerPools.dynastyByPos }
+    : { QB: [], RB: [], WR: [], TE: [] };
   let avgFlex = 0;
   for (const t of stage2) {
     for (const pos of POSITIONS) {
@@ -568,9 +621,11 @@ export function computeAllProfiles(
       depthPool[pos].push(t.depth[pos].reduce((s, p) => s + p.valueDynasty, 0));
       startersInUse[pos] += t.starters[pos].length;
     }
-    for (const p of t.players) {
-      starterPlayerPool[p.position].push(p.valueRedraft);
-      depthPlayerPool[p.position].push(p.valueDynasty);
+    if (!globalPlayerPools) {
+      for (const p of t.players) {
+        starterPlayerPool[p.position].push(p.valueRedraft);
+        depthPlayerPool[p.position].push(p.valueDynasty);
+      }
     }
     avgFlex += t.flexValue;
   }

@@ -3,6 +3,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import type { LeagueFormat, TeamProfile } from "../../src/algo/types";
 import { adminDb } from "../_lib/admin";
 import { requireApprovedUser } from "../_lib/auth";
+import { getValueMaps } from "../_lib/snapshot";
 import { generatePackages, type TradePackage } from "../_lib/tradeEngine";
 
 export type { TradePackage } from "../_lib/tradeEngine";
@@ -108,7 +109,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!myProfile) return res.status(404).json({ error: "Team not found" });
 
     const thisYear = new Date().getFullYear();
-    const packages = generatePackages(myProfile, profiles, format, thisYear, 5);
+    const valueMaps = await getValueMaps(format);
+    const packages = generatePackages(myProfile, profiles, format, thisYear, 5, {
+      dynastyByPos: valueMaps.dynastyByPos,
+      redraftByPos: valueMaps.redraftByPos,
+    });
 
     const withRationales = await Promise.all(
       packages.map((pkg) => addRationale(pkg, myProfile)),

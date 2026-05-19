@@ -319,16 +319,34 @@ function weightedSlotAverage(scores) {
 }
 function classifyPositionRich(args) {
   const { starterScore, minStarterSlotScore, depthScore, depthSlots, pressure, urgency } = args;
-  if (minStarterSlotScore < 25) return "CRITICAL_NEED";
-  if (minStarterSlotScore < 40) return "NEED";
-  if (depthScore < 20 && depthSlots >= 2) return "NEED";
-  if (depthScore < 10) return "NEED";
-  if (urgency > 70) return "CRITICAL_NEED";
-  if (urgency >= 50) return "NEED";
-  if (urgency < 30 && starterScore > 70 && depthScore > 55 && pressure < 50) {
-    return "SURPLUS";
+  const starterWeak = minStarterSlotScore < 50;
+  const starterCritical = minStarterSlotScore < 25;
+  const depthCatastrophic = depthScore < 10 || depthScore < 20 && depthSlots >= 2;
+  const depthWeak = depthScore < 35;
+  if (starterCritical) {
+    return { classification: "CRITICAL_NEED", needKind: depthWeak ? "both" : "starter" };
   }
-  return "HEALTHY";
+  if (starterWeak) {
+    return { classification: "NEED", needKind: depthWeak ? "both" : "starter" };
+  }
+  if (depthCatastrophic) {
+    return { classification: "NEED", needKind: "depth" };
+  }
+  if (urgency > 70) return { classification: "CRITICAL_NEED", needKind: "both" };
+  if (urgency >= 50) {
+    const kind = starterScore - 50 < depthScore - 50 ? "starter" : "depth";
+    return { classification: "NEED", needKind: kind };
+  }
+  if (urgency < 30 && starterScore > 70 && depthScore > 55 && pressure < 50) {
+    return { classification: "SURPLUS", needKind: null };
+  }
+  return { classification: "HEALTHY", needKind: null };
+}
+function positionImportance(pos, format) {
+  if (pos === "QB") return format.superflex ? 1 : 0.7;
+  if (pos === "TE") return format.tep ? 1 : 0.7;
+  if (pos === "RB") return 0.95;
+  return 1;
 }
 function applyTep(players, format) {
   if (!format.tep) return players;
@@ -364,13 +382,20 @@ function computePositionScores(team, format, averages) {
     const baseStarterWeight = 0.5;
     const depthWeight = baseDepthWeight * (depthSlots / 3);
     const starterWeight = baseStarterWeight + (baseDepthWeight - depthWeight);
-    const pickWeight = 0.15;
     const starterGap = Math.max(0, 100 - starterScore);
     const depthGap = Math.max(0, 100 - depthScore);
-    const pickFactor = 50;
-    const gapUrgency = starterGap * starterWeight + depthGap * depthWeight + pickFactor * pickWeight;
+    const gapUrgency = starterGap * starterWeight + depthGap * depthWeight;
     const pressureMult = 0.6 + pressure / 100 * 0.6;
-    const urgency = gapUrgency * pressureMult;
+    const importance = positionImportance(pos, format);
+    const urgency = gapUrgency * pressureMult * importance;
+    const { classification, needKind } = classifyPositionRich({
+      starterScore,
+      minStarterSlotScore,
+      depthScore,
+      depthSlots,
+      pressure,
+      urgency
+    });
     out[pos] = {
       starterValue,
       starterScore,
@@ -378,19 +403,13 @@ function computePositionScores(team, format, averages) {
       depthValue,
       depthScore,
       urgency,
-      classification: classifyPositionRich({
-        starterScore,
-        minStarterSlotScore,
-        depthScore,
-        depthSlots,
-        pressure,
-        urgency
-      })
+      classification,
+      needKind
     };
   }
   return out;
 }
-function computeAllProfiles(teams, format, thisYear) {
+function computeAllProfiles(teams, format, thisYear, globalPlayerPools) {
   const stage1 = teams.map((t) => {
     const playersAdj = applyTep(t.players, format);
     const { starters } = fillStarters(playersAdj, format);
@@ -461,10 +480,10 @@ function computeAllProfiles(teams, format, thisYear) {
   };
   const starterPool = { QB: [], RB: [], WR: [], TE: [] };
   const depthPool = { QB: [], RB: [], WR: [], TE: [] };
-  const starterPlayerPool = { QB: [], RB: [], WR: [], TE: [] };
-  const depthPlayerPool = { QB: [], RB: [], WR: [], TE: [] };
   const startersInUse = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depthSlotsTotal = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const starterPlayerPool = globalPlayerPools ? { ...globalPlayerPools.redraftByPos } : { QB: [], RB: [], WR: [], TE: [] };
+  const depthPlayerPool = globalPlayerPools ? { ...globalPlayerPools.dynastyByPos } : { QB: [], RB: [], WR: [], TE: [] };
   let avgFlex = 0;
   for (const t of stage2) {
     for (const pos of POSITIONS) {
@@ -472,9 +491,11 @@ function computeAllProfiles(teams, format, thisYear) {
       depthPool[pos].push(t.depth[pos].reduce((s, p) => s + p.valueDynasty, 0));
       startersInUse[pos] += t.starters[pos].length;
     }
-    for (const p of t.players) {
-      starterPlayerPool[p.position].push(p.valueRedraft);
-      depthPlayerPool[p.position].push(p.valueDynasty);
+    if (!globalPlayerPools) {
+      for (const p of t.players) {
+        starterPlayerPool[p.position].push(p.valueRedraft);
+        depthPlayerPool[p.position].push(p.valueDynasty);
+      }
     }
     avgFlex += t.flexValue;
   }
@@ -778,6 +799,7 @@ async function fetchFantasyCalc(format) {
 
 // api/_lib/snapshot.ts
 var SNAPSHOT_TTL_MS = 12 * 60 * 60 * 1e3;
+var SCORING_POSITIONS = ["QB", "RB", "WR", "TE"];
 function formatKey(format) {
   return `${format.superflex ? "sf" : "1qb"}_${format.scoring}${format.tep ? "_tep" : ""}`;
 }
@@ -787,34 +809,51 @@ async function getValueMaps(format) {
   const snap = await ref.get();
   const now = Date.now();
   if (snap.exists) {
-    const updatedAt = snap.data()?.["updatedAt"];
-    if (updatedAt && now - new Date(updatedAt).getTime() < SNAPSHOT_TTL_MS) {
-      return deserializeSnapshot(snap.data());
+    const data = snap.data();
+    const updatedAt = data?.["updatedAt"];
+    const hasNewSchema = !!data?.["dynastyByPos"] && !!data?.["redraftByPos"];
+    if (updatedAt && hasNewSchema && now - new Date(updatedAt).getTime() < SNAPSHOT_TTL_MS) {
+      return deserializeSnapshot(data);
     }
   }
   const fcalc = await fetchFantasyCalc(format);
   const dynastyValues = /* @__PURE__ */ new Map();
   const redraftValues = /* @__PURE__ */ new Map();
+  const dynastyByPos = { QB: [], RB: [], WR: [], TE: [] };
+  const redraftByPos = { QB: [], RB: [], WR: [], TE: [] };
   for (const e of fcalc.dynasty) {
     const k = normName(e.player?.name);
     if (k) dynastyValues.set(k, { value: e.value, age: e.player?.age });
+    const pos = e.player?.position;
+    if (pos && SCORING_POSITIONS.includes(pos)) dynastyByPos[pos].push(e.value);
   }
   for (const e of fcalc.redraft) {
     const k = normName(e.player?.name);
     if (k) redraftValues.set(k, { value: e.value, age: e.player?.age });
+    const pos = e.player?.position;
+    if (pos && SCORING_POSITIONS.includes(pos)) redraftByPos[pos].push(e.value);
+  }
+  for (const pos of SCORING_POSITIONS) {
+    dynastyByPos[pos].sort((a, b) => b - a);
+    redraftByPos[pos].sort((a, b) => b - a);
   }
   const stored = {
     dynastyValues: Object.fromEntries(dynastyValues),
     redraftValues: Object.fromEntries(redraftValues),
+    dynastyByPos,
+    redraftByPos,
     updatedAt: new Date(now).toISOString()
   };
   await ref.set(stored);
-  return { dynastyValues, redraftValues };
+  return { dynastyValues, redraftValues, dynastyByPos, redraftByPos };
 }
 function deserializeSnapshot(data) {
+  const empty = { QB: [], RB: [], WR: [], TE: [] };
   return {
     dynastyValues: new Map(Object.entries(data.dynastyValues)),
-    redraftValues: new Map(Object.entries(data.redraftValues))
+    redraftValues: new Map(Object.entries(data.redraftValues)),
+    dynastyByPos: data.dynastyByPos ?? empty,
+    redraftByPos: data.redraftByPos ?? empty
   };
 }
 
@@ -849,7 +888,10 @@ async function handler(req, res) {
       mySleeperUserId,
       thisYear
     });
-    const profiles = computeAllProfiles(teamInputs, format, thisYear);
+    const profiles = computeAllProfiles(teamInputs, format, thisYear, {
+      dynastyByPos: valueMaps.dynastyByPos,
+      redraftByPos: valueMaps.redraftByPos
+    });
     const batch = adminDb.batch();
     const leagueRef = adminDb.collection("leagues").doc(leagueId);
     const leagueSnap = await leagueRef.get();

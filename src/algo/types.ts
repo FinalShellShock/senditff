@@ -62,6 +62,8 @@ export type WindowLabel =
 
 export type PickFlag = "PICK_RICH" | "PICK_POOR" | "NEUTRAL";
 
+export type NeedKind = "starter" | "depth" | "both" | null;
+
 export type PositionScore = {
   starterValue: number;
   starterScore: number;
@@ -73,6 +75,10 @@ export type PositionScore = {
   depthScore: number;
   urgency: number;
   classification: "CRITICAL_NEED" | "NEED" | "HEALTHY" | "SURPLUS";
+  // When classification is NEED or CRITICAL_NEED, indicates whether the issue
+  // is the starter, the depth, or both. Drives UI labelling and influences
+  // which trade archetypes the engine prioritises for this position.
+  needKind?: NeedKind;
 };
 
 export type FlexScore = {

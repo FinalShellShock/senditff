@@ -74,6 +74,90 @@ async function requireApprovedUser(req, res) {
   return { uid, email };
 }
 
+// src/data/fantasycalc.ts
+var FCALC = "https://api.fantasycalc.com/values/current";
+async function fetchFantasyCalcOne(format, isDynasty) {
+  const ppr = format.scoring === "ppr" ? 1 : format.scoring === "half" ? 0.5 : 0;
+  const numQbs = format.superflex ? 2 : 1;
+  const url = `${FCALC}?isDynasty=${isDynasty}&numQbs=${numQbs}&ppr=${ppr}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`FantasyCalc fetch failed: HTTP ${r.status} (${url})`);
+  return await r.json();
+}
+async function fetchFantasyCalc(format) {
+  const [dynasty, redraft] = await Promise.all([
+    fetchFantasyCalcOne(format, true),
+    fetchFantasyCalcOne(format, false)
+  ]);
+  return { dynasty, redraft };
+}
+
+// src/data/normalize.ts
+function normName(name) {
+  if (!name) return "";
+  return name.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/(jr|sr|ii|iii|iv|v)$/, "");
+}
+
+// api/_lib/snapshot.ts
+var SNAPSHOT_TTL_MS = 12 * 60 * 60 * 1e3;
+var SCORING_POSITIONS = ["QB", "RB", "WR", "TE"];
+function formatKey(format) {
+  return `${format.superflex ? "sf" : "1qb"}_${format.scoring}${format.tep ? "_tep" : ""}`;
+}
+async function getValueMaps(format) {
+  const key = formatKey(format);
+  const ref = adminDb.collection("valueSnapshots").doc(key);
+  const snap = await ref.get();
+  const now = Date.now();
+  if (snap.exists) {
+    const data = snap.data();
+    const updatedAt = data?.["updatedAt"];
+    const hasNewSchema = !!data?.["dynastyByPos"] && !!data?.["redraftByPos"];
+    if (updatedAt && hasNewSchema && now - new Date(updatedAt).getTime() < SNAPSHOT_TTL_MS) {
+      return deserializeSnapshot(data);
+    }
+  }
+  const fcalc = await fetchFantasyCalc(format);
+  const dynastyValues = /* @__PURE__ */ new Map();
+  const redraftValues = /* @__PURE__ */ new Map();
+  const dynastyByPos = { QB: [], RB: [], WR: [], TE: [] };
+  const redraftByPos = { QB: [], RB: [], WR: [], TE: [] };
+  for (const e of fcalc.dynasty) {
+    const k = normName(e.player?.name);
+    if (k) dynastyValues.set(k, { value: e.value, age: e.player?.age });
+    const pos = e.player?.position;
+    if (pos && SCORING_POSITIONS.includes(pos)) dynastyByPos[pos].push(e.value);
+  }
+  for (const e of fcalc.redraft) {
+    const k = normName(e.player?.name);
+    if (k) redraftValues.set(k, { value: e.value, age: e.player?.age });
+    const pos = e.player?.position;
+    if (pos && SCORING_POSITIONS.includes(pos)) redraftByPos[pos].push(e.value);
+  }
+  for (const pos of SCORING_POSITIONS) {
+    dynastyByPos[pos].sort((a, b) => b - a);
+    redraftByPos[pos].sort((a, b) => b - a);
+  }
+  const stored = {
+    dynastyValues: Object.fromEntries(dynastyValues),
+    redraftValues: Object.fromEntries(redraftValues),
+    dynastyByPos,
+    redraftByPos,
+    updatedAt: new Date(now).toISOString()
+  };
+  await ref.set(stored);
+  return { dynastyValues, redraftValues, dynastyByPos, redraftByPos };
+}
+function deserializeSnapshot(data) {
+  const empty = { QB: [], RB: [], WR: [], TE: [] };
+  return {
+    dynastyValues: new Map(Object.entries(data.dynastyValues)),
+    redraftValues: new Map(Object.entries(data.redraftValues)),
+    dynastyByPos: data.dynastyByPos ?? empty,
+    redraftByPos: data.redraftByPos ?? empty
+  };
+}
+
 // src/algo/constants.ts
 var POSITIONS = ["QB", "RB", "WR", "TE"];
 var PICK_DECAY = {
@@ -252,13 +336,13 @@ function topPlayersByPos(profile, pos, n) {
     return a.id.localeCompare(b.id);
   }).slice(0, n);
 }
-function computeLeagueAverages(profiles, format) {
+function computeLeagueAverages(profiles, format, globalPlayerPools) {
   const starter = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depth = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const starterPool = { QB: [], RB: [], WR: [], TE: [] };
   const depthPool = { QB: [], RB: [], WR: [], TE: [] };
-  const starterPlayerPool = { QB: [], RB: [], WR: [], TE: [] };
-  const depthPlayerPool = { QB: [], RB: [], WR: [], TE: [] };
+  const starterPlayerPool = globalPlayerPools ? { ...globalPlayerPools.redraftByPos } : { QB: [], RB: [], WR: [], TE: [] };
+  const depthPlayerPool = globalPlayerPools ? { ...globalPlayerPools.dynastyByPos } : { QB: [], RB: [], WR: [], TE: [] };
   const startersInUse = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depthSlotsTotal = { QB: 0, RB: 0, WR: 0, TE: 0 };
   let flex = 0;
@@ -274,9 +358,11 @@ function computeLeagueAverages(profiles, format) {
     for (const pos of POSITIONS) {
       startersInUse[pos] += starters[pos].length;
     }
-    for (const pl of p.players) {
-      starterPlayerPool[pl.position].push(pl.valueRedraft);
-      depthPlayerPool[pl.position].push(pl.valueDynasty);
+    if (!globalPlayerPools) {
+      for (const pl of p.players) {
+        starterPlayerPool[pl.position].push(pl.valueRedraft);
+        depthPlayerPool[pl.position].push(pl.valueDynasty);
+      }
     }
     flex += p.flex.value;
     cap += p.pickCapital.value;
@@ -828,9 +914,9 @@ function candidateKey(c) {
   const r = c.receive.map(assetId).sort().join("|");
   return `${g}::${r}`;
 }
-function generatePackages(mine, allProfiles, format, thisYear, limit = 5) {
+function generatePackages(mine, allProfiles, format, thisYear, limit = 5, globalPlayerPools) {
   const others = allProfiles.filter((p) => p.rosterId !== mine.rosterId);
-  const averages = computeLeagueAverages(allProfiles, format);
+  const averages = computeLeagueAverages(allProfiles, format, globalPlayerPools);
   const ctx = { mine, others, format, averages, thisYear };
   const rawCandidates = GENERATORS.flatMap((g) => g(ctx));
   const seen = /* @__PURE__ */ new Set();
@@ -961,7 +1047,11 @@ async function handler(req, res) {
     const myProfile = profiles.find((p) => p.rosterId === Number(rosterId));
     if (!myProfile) return res.status(404).json({ error: "Team not found" });
     const thisYear = (/* @__PURE__ */ new Date()).getFullYear();
-    const packages = generatePackages(myProfile, profiles, format, thisYear, 5);
+    const valueMaps = await getValueMaps(format);
+    const packages = generatePackages(myProfile, profiles, format, thisYear, 5, {
+      dynastyByPos: valueMaps.dynastyByPos,
+      redraftByPos: valueMaps.redraftByPos
+    });
     const withRationales = await Promise.all(
       packages.map((pkg) => addRationale(pkg, myProfile))
     );

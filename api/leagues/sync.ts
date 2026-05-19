@@ -49,7 +49,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       thisYear,
     });
 
-    const profiles = computeAllProfiles(teamInputs, format, thisYear);
+    const profiles = computeAllProfiles(teamInputs, format, thisYear, {
+      dynastyByPos: valueMaps.dynastyByPos,
+      redraftByPos: valueMaps.redraftByPos,
+    });
 
     // Persist league doc + profiles in a batch
     const batch = adminDb.batch();

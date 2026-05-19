@@ -129,13 +129,22 @@ function topPlayersByPos(profile: TeamProfile, pos: Position, n: number): Player
 export function computeLeagueAverages(
   profiles: TeamProfile[],
   format: LeagueFormat,
+  globalPlayerPools?: {
+    dynastyByPos: Record<Position, number[]>;
+    redraftByPos: Record<Position, number[]>;
+  },
 ): LeagueAverages {
   const starter: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depth: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const starterPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
   const depthPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
-  const starterPlayerPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
-  const depthPlayerPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
+  // Prefer FantasyCalc-global pools when available.
+  const starterPlayerPool: Record<Position, number[]> = globalPlayerPools
+    ? { ...globalPlayerPools.redraftByPos }
+    : { QB: [], RB: [], WR: [], TE: [] };
+  const depthPlayerPool: Record<Position, number[]> = globalPlayerPools
+    ? { ...globalPlayerPools.dynastyByPos }
+    : { QB: [], RB: [], WR: [], TE: [] };
   const startersInUse: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depthSlotsTotal: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   let flex = 0;
@@ -147,14 +156,17 @@ export function computeLeagueAverages(
       starterPool[pos].push(p.positionScores[pos].starterValue);
       depthPool[pos].push(p.positionScores[pos].depthValue);
     }
-    // Rebuild starting-slot usage + player pools from each profile's roster.
+    // Rebuild starting-slot usage from each profile's roster (the threshold
+    // is league-specific even when the pool is global).
     const { starters } = fillStarters(p.players, format);
     for (const pos of POSITIONS) {
       startersInUse[pos] += starters[pos].length;
     }
-    for (const pl of p.players) {
-      starterPlayerPool[pl.position].push(pl.valueRedraft);
-      depthPlayerPool[pl.position].push(pl.valueDynasty);
+    if (!globalPlayerPools) {
+      for (const pl of p.players) {
+        starterPlayerPool[pl.position].push(pl.valueRedraft);
+        depthPlayerPool[pl.position].push(pl.valueDynasty);
+      }
     }
     flex += p.flex.value;
     cap += p.pickCapital.value;
@@ -865,9 +877,13 @@ export function generatePackages(
   format: LeagueFormat,
   thisYear: number,
   limit = 5,
+  globalPlayerPools?: {
+    dynastyByPos: Record<Position, number[]>;
+    redraftByPos: Record<Position, number[]>;
+  },
 ): Omit<TradePackage, "rationale">[] {
   const others = allProfiles.filter((p) => p.rosterId !== mine.rosterId);
-  const averages = computeLeagueAverages(allProfiles, format);
+  const averages = computeLeagueAverages(allProfiles, format, globalPlayerPools);
   const ctx: GenContext = { mine, others, format, averages, thisYear };
 
   // Generate raw candidates from every applicable archetype
