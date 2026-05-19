@@ -25,8 +25,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
+    // Fetch user's stored Sleeper user_id so we can fix isMine at read time.
+    // This corrects stale profiles without needing a re-sync.
+    const userSnap = await adminDb.collection("users").doc(user.uid).get();
+    const mySleeperUserId = userSnap.data()?.["sleeperUserId"] as string | undefined;
+
     const profilesSnap = await leagueRef.collection("profiles").get();
-    const profiles = profilesSnap.docs.map((d) => d.data());
+    const profiles = profilesSnap.docs.map((d) => {
+      const data = d.data();
+      return {
+        ...data,
+        isMine: mySleeperUserId
+          ? data["ownerSleeperUserId"] === mySleeperUserId
+          : (data["isMine"] as boolean) ?? false,
+      };
+    });
 
     return res.status(200).json({
       leagueId,

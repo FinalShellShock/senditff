@@ -1093,6 +1093,476 @@ body {
   text-align: right;
 }
 
+/* ── Trade calculator ────────────────────────────────────────────────── */
+
+.calc-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.calc-panels {
+  display: grid;
+  grid-template-columns: 1fr 148px 1fr;
+  gap: 10px;
+  margin-bottom: 24px;
+  align-items: start;
+}
+
+.calc-panel {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.calc-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 2px solid transparent;
+  background: rgba(255,255,255,0.02);
+  gap: 6px;
+}
+
+/* Team selector — shown when no team is locked in */
+.calc-team-select {
+  background: none;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  padding: 0;
+  min-width: 0;
+  flex: 1;
+}
+.calc-team-select option { background: #1e293b; color: #e2e8f0; }
+
+/* Locked team display */
+.calc-team-locked {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+.calc-team-name {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.calc-team-sends {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+.calc-team-clear {
+  background: none;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.calc-team-clear:hover { color: #94a3b8; }
+
+.calc-panel-total {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.calc-panel-body {
+  padding: 6px;
+  min-height: 80px;
+}
+
+.calc-asset-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 6px;
+  border-radius: 4px;
+  gap: 6px;
+}
+.calc-asset-row:hover { background: rgba(255,255,255,0.04); }
+
+.calc-asset-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.calc-asset-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.calc-asset-age {
+  font-size: 10px;
+  color: #475569;
+  flex-shrink: 0;
+}
+.calc-asset-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.calc-asset-value {
+  font-size: 11px;
+  color: #94a3b8;
+}
+.calc-remove-btn {
+  background: none;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  font-family: inherit;
+}
+.calc-remove-btn:hover { color: #ef4444; }
+
+/* Verdict column */
+.calc-verdict {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 8px;
+  gap: 4px;
+  min-height: 120px;
+}
+.calc-verdict-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-align: center;
+}
+.calc-verdict-diff {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.calc-verdict-pct {
+  font-size: 11px;
+  font-weight: 700;
+}
+.calc-fit-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 8px;
+  width: 100%;
+}
+.calc-fit-line {
+  font-size: 9px;
+  letter-spacing: 0.3px;
+  line-height: 1.4;
+  text-align: center;
+}
+.calc-clear-btn {
+  margin-top: 8px;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #475569;
+  font-size: 8px;
+  font-family: inherit;
+  letter-spacing: 1.5px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.calc-clear-btn:hover { color: #94a3b8; border-color: rgba(255,255,255,0.2); }
+
+/* Search section */
+.calc-search-section {
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.calc-search-bar {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.02);
+}
+.calc-search-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 10px 14px;
+}
+.calc-search-input::placeholder { color: #334155; }
+
+/* Roster filter toggle */
+.calc-lock-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 14px;
+  cursor: pointer;
+  border-left: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.calc-lock-toggle input[type="checkbox"] {
+  accent-color: #f59e0b;
+  cursor: pointer;
+}
+.calc-lock-toggle span {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #475569;
+}
+.calc-lock-toggle:has(input:checked) span { color: #f59e0b; }
+
+/* Results list */
+.calc-results {
+  max-height: 340px;
+  overflow-y: auto;
+}
+.calc-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  gap: 8px;
+}
+.calc-result-row:hover { background: rgba(255,255,255,0.03); }
+.calc-result-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.calc-result-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.calc-result-meta {
+  font-size: 10px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+.calc-result-owner {
+  font-size: 9px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+.calc-result-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.calc-result-value {
+  font-size: 11px;
+  color: #64748b;
+  width: 44px;
+  text-align: right;
+}
+
+/* Side A / Side B add buttons */
+.calc-add-btn {
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid;
+  transition: background 0.1s;
+}
+.calc-add-btn.side-a {
+  background: none;
+  border-color: rgba(6,182,212,0.3);
+  color: rgba(6,182,212,0.5);
+}
+.calc-add-btn.side-a:hover,
+.calc-add-btn.side-a.natural {
+  border-color: rgba(6,182,212,0.8);
+  color: #06b6d4;
+  background: rgba(6,182,212,0.08);
+}
+.calc-add-btn.side-b {
+  background: none;
+  border-color: rgba(245,158,11,0.3);
+  color: rgba(245,158,11,0.5);
+}
+.calc-add-btn.side-b:hover,
+.calc-add-btn.side-b.natural {
+  border-color: rgba(245,158,11,0.8);
+  color: #f59e0b;
+  background: rgba(245,158,11,0.08);
+}
+
+@media (max-width: 600px) {
+  .calc-panels {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "sideA sideB" "verdict verdict";
+  }
+  .calc-panels > .calc-panel:first-child { grid-area: sideA; }
+  .calc-verdict { grid-area: verdict; flex-direction: row; flex-wrap: wrap; justify-content: center; min-height: auto; padding: 12px; }
+  .calc-panels > .calc-panel:last-child  { grid-area: sideB; }
+  .calc-lock-toggle span { display: none; }
+}
+
+/* ── Trade impact report ─────────────────────────────────────────────── */
+
+.trade-impact-report {
+  margin-top: 20px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.trade-impact-title {
+  padding: 8px 14px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #475569;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.trade-impact-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.team-impact-panel {
+  padding: 14px 16px;
+}
+.team-impact-panel:first-child {
+  border-right: 1px solid rgba(255,255,255,0.07);
+}
+.team-impact-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #e2e8f0;
+  margin-bottom: 10px;
+}
+/* Column header row: blank | STR | DEP */
+.team-impact-col-row {
+  display: grid;
+  grid-template-columns: 26px 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.team-impact-col-lbl {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #334155;
+  text-align: center;
+}
+/* Each position row */
+.team-impact-row {
+  display: grid;
+  grid-template-columns: 26px 1fr 1fr;
+  gap: 6px;
+  align-items: start;
+  margin-bottom: 7px;
+}
+.team-impact-pos {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding-top: 1px; /* nudge to align with bar top */
+}
+/* Bar + score stacked in each cell */
+.team-impact-bar-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: stretch;
+}
+.trade-bar-track {
+  display: flex;
+  height: 5px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+/* Score + delta inline below each bar */
+.team-impact-score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  margin-top: 2px;
+}
+.team-impact-score {
+  font-size: 8px;
+  color: #475569;
+}
+.team-impact-delta-inline {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+/* Picks section */
+.team-impact-picks {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.team-impact-picks-lbl {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #334155;
+  display: block;
+  margin-bottom: 4px;
+}
+.team-impact-pick-item {
+  font-size: 9px;
+  letter-spacing: 0.3px;
+  line-height: 1.7;
+}
+
+@media (max-width: 600px) {
+  .trade-impact-panels {
+    grid-template-columns: 1fr;
+  }
+  .team-impact-panel:first-child {
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+}
+
 /* ── Trade cards ─────────────────────────────────────────────────────── */
 
 .trade-list {

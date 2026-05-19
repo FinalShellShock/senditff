@@ -7,6 +7,15 @@ export type SleeperLeague = {
   roster_positions: string[];
   scoring_settings: Record<string, number>;
   status?: string;
+  settings?: { type?: number };
+  previous_league_id?: string;
+  season?: string;
+};
+
+export type SleeperNflState = {
+  league_create_season: string;
+  season: string;
+  season_type: string;
 };
 
 export type SleeperUser = {
@@ -38,6 +47,7 @@ export type SleeperPlayer = {
   position?: string;
   team?: string | null;
   age?: number;
+  birth_date?: string; // "YYYY-MM-DD" — used to compute decimal age
 };
 
 export type FantasyCalcEntry = {

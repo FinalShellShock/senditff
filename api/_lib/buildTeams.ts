@@ -6,6 +6,7 @@ import {
 import { normName } from "../../src/data/normalize";
 import type { LeagueFormat, Pick, Player, TeamInput } from "../../src/algo/types";
 import type {
+  SleeperPlayer,
   SleeperRoster,
   SleeperTradedPick,
   SleeperUser,
@@ -15,19 +16,24 @@ import type { ValueMaps } from "./snapshot";
 const POSITIONS = ["QB", "RB", "WR", "TE"] as const;
 type Position = (typeof POSITIONS)[number];
 
+/** Compute exact decimal age from "YYYY-MM-DD" birth date string. */
+function calcAge(birthDate: string): number {
+  return (Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+}
+
 // Assembles TeamInput[] from raw Sleeper data + value maps.
 // Shared by the sync endpoint and anything else that needs fresh profiles.
 export function buildTeamInputs(params: {
   rosters: SleeperRoster[];
   users: SleeperUser[];
   tradedPicks: SleeperTradedPick[];
-  sleeperPlayers: Record<string, { full_name?: string; first_name?: string; last_name?: string; position?: string; team?: string | null; age?: number }>;
+  sleeperPlayers: Record<string, SleeperPlayer>;
   valueMaps: ValueMaps;
   format: LeagueFormat;
-  myUid?: string;
+  mySleeperUserId?: string;
   thisYear: number;
 }): TeamInput[] {
-  const { rosters, users, tradedPicks, sleeperPlayers, valueMaps, format, myUid, thisYear } = params;
+  const { rosters, users, tradedPicks, sleeperPlayers, valueMaps, format, mySleeperUserId, thisYear } = params;
   const { dynastyValues, redraftValues } = valueMaps;
 
   const draftYears = [thisYear, thisYear + 1, thisYear + 2];
@@ -54,7 +60,7 @@ export function buildTeamInputs(params: {
           name: fullName,
           position: pos as Position,
           team: sp.team ?? null,
-          age: sp.age ?? dyn?.age ?? red?.age ?? null,
+          age: sp.birth_date ? calcAge(sp.birth_date) : dyn?.age ?? red?.age ?? sp.age ?? null,
           valueRedraft: red?.value ?? 0,
           valueDynasty: dyn?.value ?? 0,
         };
@@ -89,12 +95,10 @@ export function buildTeamInputs(params: {
       })
       .sort((a, b) => a.label.localeCompare(b.label));
 
-    // isMine: true if the requesting user owns this roster
-    const isMine =
-      myUid !== undefined && user?.user_id !== undefined
-        ? r.owner_id === myUid ||
-          users.find((u) => u.user_id === r.owner_id)?.user_id === myUid
-        : false;
+    // isMine: true if the requesting user's Sleeper user_id matches this roster's owner
+    const isMine = mySleeperUserId !== undefined
+      ? r.owner_id === mySleeperUserId
+      : false;
 
     return {
       rosterId: r.roster_id,

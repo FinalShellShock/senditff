@@ -17,6 +17,10 @@ var __copyProps = (to, from, except, desc) => {
   return to;
 };
 var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
@@ -32,9 +36,13 @@ module.exports = __toCommonJS(sync_exports);
 // src/algo/constants.ts
 var POSITIONS = ["QB", "RB", "WR", "TE"];
 var POSITION_CURVES = {
+  // QB: long careers, peak 27-32 for pocket / 24-27 for dual-threat. Use averaged window.
   QB: { productiveStart: 23, peakStart: 26, peakEnd: 32, declineStart: 35, done: 38 },
+  // RB: short careers, sharp decline 28-29.
   RB: { productiveStart: 21, peakStart: 23, peakEnd: 27, declineStart: 28, done: 30 },
+  // WR: peak 26-30, decline 31-32.
   WR: { productiveStart: 22, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 },
+  // TE: late breakout, peak 26-30, decline 32.
   TE: { productiveStart: 23, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 }
 };
 var PRESSURE_AT_PRODUCTIVE = 0;
@@ -101,11 +109,13 @@ function scoreArchetypes(team, averages) {
   const notWeakFactor = team.competitiveness === "STRONG" ? 1 : team.competitiveness === "AVERAGE" ? 0.6 : 0.1;
   s["age_arb_sell"] = Math.round(shortFactor * notWeakFactor * 100);
   const strongFactor = team.competitiveness === "STRONG" ? 1 : team.competitiveness === "AVERAGE" ? 0.3 : 0;
-  s["push_in"] = Math.round(shortFactor * strongFactor * 100);
+  const pushInFactor = clamp((team.windowPressure - WINDOW_SHORT_THRESHOLD) / (WINDOW_SHORT_THRESHOLD * 0.5), 0, 1);
+  s["push_in"] = Math.round(pushInFactor * strongFactor * 100);
   const minUrgency = POSITIONS.reduce((min, p) => Math.min(min, team.positionScores[p].urgency), 100);
+  const spread = maxUrgency - minUrgency;
   const urgencyFactor = clamp((maxUrgency - 40) / 60, 0, 1);
-  const surplusFactor = clamp((50 - minUrgency) / 50, 0, 1);
-  s["need_fill"] = Math.round(urgencyFactor * surplusFactor * 100);
+  const surplusFactor = clamp(spread / 50, 0, 1);
+  s["need_fill"] = Math.round((urgencyFactor * 0.6 + surplusFactor * 0.4) * 100);
   const contenderFactor = team.competitiveness === "STRONG" ? 1 : team.competitiveness === "AVERAGE" ? 0.4 : 0.1;
   const poorFactor = clamp((50 - team.pickCapital.score) / 50, 0, 1);
   s["capital_convert_picks_to_production"] = Math.round(contenderFactor * poorFactor * 100);
@@ -129,7 +139,7 @@ function byValueDesc(getValue) {
   };
 }
 function fillStarters(players, format, getValue = REDRAFT) {
-  const used = new Set();
+  const used = /* @__PURE__ */ new Set();
   const byPos = { QB: [], RB: [], WR: [], TE: [] };
   for (const p of [...players].sort(byValueDesc(getValue))) byPos[p.position].push(p);
   const starters = { QB: [], RB: [], WR: [], TE: [] };
@@ -330,7 +340,7 @@ function computeAllProfiles(teams, format, thisYear) {
     if (b.starterTotalValue !== a.starterTotalValue) return b.starterTotalValue - a.starterTotalValue;
     return a.rosterId - b.rosterId;
   });
-  const starterRank = new Map();
+  const starterRank = /* @__PURE__ */ new Map();
   sortedByStarter.forEach((t, i) => starterRank.set(t.rosterId, i + 1));
   const starterTotals = stage1.map((t) => t.starterTotalValue);
   const meanStarter = starterTotals.reduce((s, v) => s + v, 0) / starterTotals.length;
@@ -366,7 +376,7 @@ function computeAllProfiles(teams, format, thisYear) {
     if (a.windowPressure !== b.windowPressure) return a.windowPressure - b.windowPressure;
     return a.rosterId - b.rosterId;
   });
-  const windowRank = new Map();
+  const windowRank = /* @__PURE__ */ new Map();
   sortedByPressure.forEach((t, i) => windowRank.set(t.rosterId, i + 1));
   const windowTierFor = (pressure) => {
     if (pressure < WINDOW_LONG_THRESHOLD) return "LONG";
@@ -440,7 +450,7 @@ function computeAllProfiles(teams, format, thisYear) {
 // src/data/format.ts
 function detectFormat(league) {
   const slots = { QB: 0, RB: 0, WR: 0, TE: 0, FLEX: 0, SUPER_FLEX: 0 };
-  const idpSlots = new Set(["DL", "LB", "DB", "DEF", "IDP_FLEX", "DT", "DE", "CB", "S"]);
+  const idpSlots = /* @__PURE__ */ new Set(["DL", "LB", "DB", "DEF", "IDP_FLEX", "DT", "DE", "CB", "S"]);
   let idp = false;
   for (const slot of league.roster_positions) {
     if (slot === "QB") slots.QB++;
@@ -538,9 +548,9 @@ function normName(name) {
 
 // src/data/picks.ts
 function buildPicksMap(rosters, tradedPicks, draftYears, rounds = [1, 2, 3, 4]) {
-  const map = new Map();
+  const map = /* @__PURE__ */ new Map();
   for (const r of rosters) {
-    const set = new Set();
+    const set = /* @__PURE__ */ new Set();
     for (const y of draftYears) for (const rd of rounds) set.add(`${y}|${rd}|${r.roster_id}`);
     map.set(r.roster_id, set);
   }
@@ -578,15 +588,18 @@ function projectDraftSlots(rosters) {
     if (fa !== fb) return fa - fb;
     return a.roster_id - b.roster_id;
   });
-  const map = new Map();
+  const map = /* @__PURE__ */ new Map();
   ordered.forEach((r, i) => map.set(r.roster_id, i + 1));
   return map;
 }
 
 // api/_lib/buildTeams.ts
 var POSITIONS2 = ["QB", "RB", "WR", "TE"];
+function calcAge(birthDate) {
+  return (Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1e3);
+}
 function buildTeamInputs(params) {
-  const { rosters, users, tradedPicks, sleeperPlayers, valueMaps, format, myUid, thisYear } = params;
+  const { rosters, users, tradedPicks, sleeperPlayers, valueMaps, format, mySleeperUserId, thisYear } = params;
   const { dynastyValues, redraftValues } = valueMaps;
   const draftYears = [thisYear, thisYear + 1, thisYear + 2];
   const picksMap = buildPicksMap(rosters, tradedPicks, draftYears);
@@ -608,12 +621,12 @@ function buildTeamInputs(params) {
         name: fullName,
         position: pos,
         team: sp.team ?? null,
-        age: sp.age ?? dyn?.age ?? red?.age ?? null,
+        age: sp.birth_date ? calcAge(sp.birth_date) : dyn?.age ?? red?.age ?? sp.age ?? null,
         valueRedraft: red?.value ?? 0,
         valueDynasty: dyn?.value ?? 0
       };
     }).filter((p) => p !== null);
-    const ownPicks = picksMap.get(r.roster_id) ?? new Set();
+    const ownPicks = picksMap.get(r.roster_id) ?? /* @__PURE__ */ new Set();
     const picks = Array.from(ownPicks).map((key) => {
       const [yearStr, roundStr, origStr] = key.split("|");
       const year = parseInt(yearStr, 10);
@@ -635,7 +648,7 @@ function buildTeamInputs(params) {
         value
       };
     }).sort((a, b) => a.label.localeCompare(b.label));
-    const isMine = myUid !== void 0 && user?.user_id !== void 0 ? r.owner_id === myUid || users.find((u) => u.user_id === r.owner_id)?.user_id === myUid : false;
+    const isMine = mySleeperUserId !== void 0 ? r.owner_id === mySleeperUserId : false;
     return {
       rosterId: r.roster_id,
       ownerName,
@@ -682,8 +695,8 @@ async function getValueMaps(format) {
     }
   }
   const fcalc = await fetchFantasyCalc(format);
-  const dynastyValues = new Map();
-  const redraftValues = new Map();
+  const dynastyValues = /* @__PURE__ */ new Map();
+  const redraftValues = /* @__PURE__ */ new Map();
   for (const e of fcalc.dynasty) {
     const k = normName(e.player?.name);
     if (k) dynastyValues.set(k, { value: e.value, age: e.player?.age });
@@ -724,7 +737,10 @@ async function handler(req, res) {
       return res.status(422).json({ error: "IDP leagues are not supported yet." });
     }
     const valueMaps = await getValueMaps(format);
-    const thisYear = new Date().getFullYear();
+    const userRef = adminDb.collection("users").doc(user.uid);
+    const userSnap = await userRef.get();
+    const mySleeperUserId = userSnap.data()?.["sleeperUserId"];
+    const thisYear = (/* @__PURE__ */ new Date()).getFullYear();
     const teamInputs = buildTeamInputs({
       rosters,
       users,
@@ -732,7 +748,7 @@ async function handler(req, res) {
       sleeperPlayers,
       valueMaps,
       format,
-      myUid: user.uid,
+      mySleeperUserId,
       thisYear
     });
     const profiles = computeAllProfiles(teamInputs, format, thisYear);
@@ -749,20 +765,30 @@ async function handler(req, res) {
         format,
         members,
         ownerId: leagueSnap.exists ? leagueSnap.data()?.["ownerId"] : user.uid,
-        lastRefreshed: new Date().toISOString()
+        lastRefreshed: (/* @__PURE__ */ new Date()).toISOString()
       },
       { merge: true }
     );
     for (const profile of profiles) {
       const profileRef = leagueRef.collection("profiles").doc(String(profile.rosterId));
-      batch.set(profileRef, { ...profile, generatedAt: new Date().toISOString() });
+      const roster = rosters.find((r) => r.roster_id === profile.rosterId);
+      batch.set(profileRef, {
+        ...profile,
+        ownerSleeperUserId: roster?.owner_id ?? null,
+        generatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      });
     }
     await batch.commit();
-    const userRef = adminDb.collection("users").doc(user.uid);
-    const userSnap = await userRef.get();
     const existingLeagues = userSnap.data()?.["leagueIds"] ?? [];
+    const userUpdates = {};
     if (!existingLeagues.includes(leagueId)) {
-      await userRef.update({ leagueIds: [...existingLeagues, leagueId] });
+      userUpdates["leagueIds"] = [...existingLeagues, leagueId];
+    }
+    if (mySleeperUserId && !userSnap.data()?.["sleeperUserId"]) {
+      userUpdates["sleeperUserId"] = mySleeperUserId;
+    }
+    if (Object.keys(userUpdates).length > 0) {
+      await userRef.set(userUpdates, { merge: true });
     }
     return res.status(200).json({ leagueId, name: league.name, profiles });
   } catch (err) {

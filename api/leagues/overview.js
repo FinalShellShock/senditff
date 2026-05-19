@@ -90,8 +90,16 @@ async function handler(req, res) {
     if (!members.includes(user.uid)) {
       return res.status(403).json({ error: "Forbidden" });
     }
+    const userSnap = await adminDb.collection("users").doc(user.uid).get();
+    const mySleeperUserId = userSnap.data()?.["sleeperUserId"];
     const profilesSnap = await leagueRef.collection("profiles").get();
-    const profiles = profilesSnap.docs.map((d) => d.data());
+    const profiles = profilesSnap.docs.map((d) => {
+      const data = d.data();
+      return {
+        ...data,
+        isMine: mySleeperUserId ? data["ownerSleeperUserId"] === mySleeperUserId : data["isMine"] ?? false
+      };
+    });
     return res.status(200).json({
       leagueId,
       name: leagueSnap.data()?.["name"],

@@ -31,6 +31,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Lazy FantasyCalc snapshot (fetches fresh if > 12 hours old)
     const valueMaps = await getValueMaps(format);
 
+    // Resolve the user's Sleeper user_id so we can correctly identify their roster.
+    // This is set once when the user first looks up their leagues via /api/user/leagues.
+    const userRef = adminDb.collection("users").doc(user.uid);
+    const userSnap = await userRef.get();
+    const mySleeperUserId: string | undefined = userSnap.data()?.["sleeperUserId"] as string | undefined;
+
     const thisYear = new Date().getFullYear();
     const teamInputs = buildTeamInputs({
       rosters,
@@ -39,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sleeperPlayers,
       valueMaps,
       format,
-      myUid: user.uid,
+      mySleeperUserId,
       thisYear,
     });
 
@@ -74,18 +80,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const profileRef = leagueRef
         .collection("profiles")
         .doc(String(profile.rosterId));
-      batch.set(profileRef, { ...profile, generatedAt: new Date().toISOString() });
+      // ownerSleeperUserId lets overview.ts re-derive isMine at read time
+      const roster = rosters.find((r) => r.roster_id === profile.rosterId);
+      batch.set(profileRef, {
+        ...profile,
+        ownerSleeperUserId: roster?.owner_id ?? null,
+        generatedAt: new Date().toISOString(),
+      });
     }
 
     await batch.commit();
 
-    // Add leagueId to user's list if not already there
-    const userRef = adminDb.collection("users").doc(user.uid);
-    const userSnap = await userRef.get();
+    // Persist Sleeper user_id and leagueId in the user's doc
     const existingLeagues: string[] =
       (userSnap.data()?.["leagueIds"] as string[] | undefined) ?? [];
+    const userUpdates: Record<string, unknown> = {};
     if (!existingLeagues.includes(leagueId)) {
-      await userRef.update({ leagueIds: [...existingLeagues, leagueId] });
+      userUpdates["leagueIds"] = [...existingLeagues, leagueId];
+    }
+    if (mySleeperUserId && !userSnap.data()?.["sleeperUserId"]) {
+      userUpdates["sleeperUserId"] = mySleeperUserId;
+    }
+    if (Object.keys(userUpdates).length > 0) {
+      await userRef.set(userUpdates, { merge: true });
     }
 
     return res.status(200).json({ leagueId, name: league.name, profiles });

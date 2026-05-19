@@ -48,6 +48,17 @@ export class ApiError extends Error {
   }
 }
 
+export type SleeperLeagueSummary = {
+  leagueId: string;
+  name: string;
+  season: string;
+  status: string;
+  totalRosters: number;
+  superflex: boolean;
+  scoring: "ppr" | "half" | "std";
+  tep: boolean;
+};
+
 export type SyncResponse = {
   leagueId: string;
   name: string;
@@ -73,6 +84,12 @@ export function makeApiClient(getToken: GetTokenFn) {
         method: "POST",
         body: JSON.stringify({ leagueId }),
       }),
+
+    getUserLeagues: (username?: string) =>
+      apiFetch<{ leagues: SleeperLeagueSummary[] }>(
+        getToken,
+        username ? `/api/user/leagues?username=${encodeURIComponent(username)}` : "/api/user/leagues",
+      ),
 
     getOverview: (leagueId: string) =>
       apiFetch<OverviewResponse>(getToken, `/api/leagues/overview?leagueId=${leagueId}`),

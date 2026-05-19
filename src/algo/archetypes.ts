@@ -57,15 +57,21 @@ export function scoreArchetypes(
   const notWeakFactor = team.competitiveness === "STRONG" ? 1 : team.competitiveness === "AVERAGE" ? 0.6 : 0.1;
   s["age_arb_sell"] = Math.round(shortFactor * notWeakFactor * 100);
 
-  // push_in: closing window + STRONG only (AVERAGE teams aren't in contention)
+  // push_in: genuinely SHORT-window STRONG team only (pressure must exceed SHORT threshold)
+  // MID-window teams building toward contention don't need to go all-in yet
   const strongFactor = team.competitiveness === "STRONG" ? 1 : team.competitiveness === "AVERAGE" ? 0.3 : 0;
-  s["push_in"] = Math.round(shortFactor * strongFactor * 100);
+  const pushInFactor = clamp((team.windowPressure - WINDOW_SHORT_THRESHOLD) / (WINDOW_SHORT_THRESHOLD * 0.5), 0, 1);
+  s["push_in"] = Math.round(pushInFactor * strongFactor * 100);
 
-  // need_fill: biggest positional need + enough surplus elsewhere to send
+  // need_fill: critical positional gap exists + meaningful spread across positions
+  // Additive formula so that a large need (high urgency) or a large spread both count;
+  // the old multiplicative formula required both to be simultaneously near-maximum,
+  // which caused it to almost never fire on real rosters.
   const minUrgency    = POSITIONS.reduce((min, p) => Math.min(min, team.positionScores[p].urgency), 100);
+  const spread        = maxUrgency - minUrgency;
   const urgencyFactor = clamp((maxUrgency - 40) / 60, 0, 1);
-  const surplusFactor = clamp((50 - minUrgency) / 50, 0, 1);
-  s["need_fill"] = Math.round(urgencyFactor * surplusFactor * 100);
+  const surplusFactor = clamp(spread / 50, 0, 1);
+  s["need_fill"] = Math.round((urgencyFactor * 0.6 + surplusFactor * 0.4) * 100);
 
   // capital_convert_picks_to_production: contender + pick poor
   const contenderFactor = team.competitiveness === "STRONG" ? 1 : team.competitiveness === "AVERAGE" ? 0.4 : 0.1;
