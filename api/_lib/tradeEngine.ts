@@ -10,9 +10,12 @@
 import { PICK_DECAY, POSITIONS } from "../../src/algo/constants";
 import {
   depthByPosition,
+  depthSlotsFor,
   fillStarters,
   flexStrengthValue,
+  positionScoreFromPool,
   score0to100,
+  weightedSlotAverage,
 } from "../../src/algo/profile";
 import type {
   LeagueAverages,
@@ -123,15 +126,35 @@ function topPlayersByPos(profile: TeamProfile, pos: Position, n: number): Player
 
 // ── League averages (recomputed from profiles since they're not stored) ──────
 
-export function computeLeagueAverages(profiles: TeamProfile[]): LeagueAverages {
+export function computeLeagueAverages(
+  profiles: TeamProfile[],
+  format: LeagueFormat,
+): LeagueAverages {
   const starter: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depth: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const starterPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
+  const depthPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
+  const starterPlayerPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
+  const depthPlayerPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
+  const startersInUse: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const depthSlotsTotal: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   let flex = 0;
   let cap = 0;
   for (const p of profiles) {
     for (const pos of POSITIONS) {
       starter[pos] += p.positionScores[pos].starterValue;
       depth[pos] += p.positionScores[pos].depthValue;
+      starterPool[pos].push(p.positionScores[pos].starterValue);
+      depthPool[pos].push(p.positionScores[pos].depthValue);
+    }
+    // Rebuild starting-slot usage + player pools from each profile's roster.
+    const { starters } = fillStarters(p.players, format);
+    for (const pos of POSITIONS) {
+      startersInUse[pos] += starters[pos].length;
+    }
+    for (const pl of p.players) {
+      starterPlayerPool[pl.position].push(pl.valueRedraft);
+      depthPlayerPool[pl.position].push(pl.valueDynasty);
     }
     flex += p.flex.value;
     cap += p.pickCapital.value;
@@ -140,11 +163,17 @@ export function computeLeagueAverages(profiles: TeamProfile[]): LeagueAverages {
   for (const pos of POSITIONS) {
     starter[pos] /= n;
     depth[pos] /= n;
+    depthSlotsTotal[pos] = n * depthSlotsFor(pos, format);
   }
   flex /= n;
   cap /= n;
   const variance = profiles.reduce((s, p) => s + (p.pickCapital.value - cap) ** 2, 0) / n;
-  return { starter, depth, flex, pickCapital: cap, pickCapitalStd: Math.sqrt(variance) };
+  return {
+    starter, depth, flex, pickCapital: cap, pickCapitalStd: Math.sqrt(variance),
+    starterPool, depthPool,
+    starterPlayerPool, depthPlayerPool,
+    startersInUse, depthSlotsTotal,
+  };
 }
 
 // ── Impact simulation ────────────────────────────────────────────────────────
@@ -177,7 +206,8 @@ function simulateImpact(
   }
 
   const { starters } = fillStarters(newPlayers, format);
-  const depth = depthByPosition(newPlayers, format);
+  // Match profile.ts: depth uses dynasty value with format-aware slot count.
+  const depth = depthByPosition(newPlayers, format, (p) => p.valueDynasty);
   const newStarterTotal = POSITIONS.reduce(
     (s, pos) => s + starters[pos].reduce((a, p) => a + p.valueRedraft, 0),
     0,
@@ -186,10 +216,17 @@ function simulateImpact(
 
   const perPosition = {} as ImpactDelta["perPosition"];
   for (const pos of POSITIONS) {
-    const newStarterValue = starters[pos].reduce((a, p) => a + p.valueRedraft, 0);
-    const newDepthValue = depth[pos].reduce((a, p) => a + p.valueRedraft, 0);
-    const newStarterScore = score0to100(newStarterValue, averages.starter[pos] || 1);
-    const newDepthScore = score0to100(newDepthValue, averages.depth[pos] || 1);
+    // Player-level dual-zone scoring (matches profile.ts): each starting
+    // player gets a rank-based score in the league's individual player pool,
+    // then weighted-slot average across the team's slots at this position.
+    const starterPlayerScores = starters[pos].map((p) =>
+      positionScoreFromPool(p.valueRedraft, averages.starterPlayerPool[pos], averages.startersInUse[pos]),
+    );
+    const depthPlayerScores = depth[pos].map((p) =>
+      positionScoreFromPool(p.valueDynasty, averages.depthPlayerPool[pos], averages.depthSlotsTotal[pos]),
+    );
+    const newStarterScore = weightedSlotAverage(starterPlayerScores);
+    const newDepthScore = weightedSlotAverage(depthPlayerScores);
     perPosition[pos] = {
       starterScoreDelta: newStarterScore - team.positionScores[pos].starterScore,
       depthScoreDelta: newDepthScore - team.positionScores[pos].depthScore,
@@ -830,7 +867,7 @@ export function generatePackages(
   limit = 5,
 ): Omit<TradePackage, "rationale">[] {
   const others = allProfiles.filter((p) => p.rosterId !== mine.rosterId);
-  const averages = computeLeagueAverages(allProfiles);
+  const averages = computeLeagueAverages(allProfiles, format);
   const ctx: GenContext = { mine, others, format, averages, thisYear };
 
   // Generate raw candidates from every applicable archetype

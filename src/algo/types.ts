@@ -65,6 +65,10 @@ export type PickFlag = "PICK_RICH" | "PICK_POOR" | "NEUTRAL";
 export type PositionScore = {
   starterValue: number;
   starterScore: number;
+  // Score of the team's weakest starter slot at this position. For single-slot
+  // positions this equals starterScore. For multi-slot positions it's the
+  // floor — catches "Olave + trash WR3" cases that weighted averages hide.
+  minStarterSlotScore?: number;
   depthValue: number;
   depthScore: number;
   urgency: number;
@@ -105,6 +109,21 @@ export type LeagueAverages = {
   flex: number;
   pickCapital: number;
   pickCapitalStd: number;
+  // Per-team aggregates (kept for archetype thresholding and legacy consumers).
+  starterPool: Record<Position, number[]>;
+  depthPool: Record<Position, number[]>;
+  // Individual player pools at each position, drawn from every roster in the
+  // league. Used by player-level rank scoring so the question becomes "where
+  // does Dak rank among all rostered QBs" rather than "where does this team's
+  // QB aggregate rank vs other teams."
+  starterPlayerPool: Record<Position, number[]>; // redraft values
+  depthPlayerPool: Record<Position, number[]>;   // dynasty values
+  // Data-driven startable threshold: total starting slots actually filled at
+  // each position across the league after fillStarters. Captures format and
+  // FLEX usage in this specific league. Mirror for depth uses team_count ×
+  // depthSlotsFor(pos, format).
+  startersInUse: Record<Position, number>;
+  depthSlotsTotal: Record<Position, number>;
 };
 
 // Input row for `computeAllProfiles`. The pipeline owns producing the full profile.

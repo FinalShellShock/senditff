@@ -30,10 +30,23 @@ import type {
 } from "./types";
 
 // ── Value getters ────────────────────────────────────────────────────────────
-// Competitiveness math (starter / FLEX / depth) uses redraft values.
-// Window math (age / young share) uses dynasty values.
+// Starter / FLEX math uses redraft values (current-season production).
+// Depth math uses dynasty values (insurance + future starter pipeline + trade
+// fodder). Window math (age / young share) uses dynasty values.
 
 const REDRAFT = (p: Player): number => p.valueRedraft;
+const DYNASTY = (p: Player): number => p.valueDynasty;
+
+// Position-aware depth slot count. The old hard-coded "3 deep" assumption
+// punished QB and TE in formats where most teams only roster 1-2 of them.
+//   - QB: 1 backup in 1QB, 2 in SF
+//   - TE: 1 in non-TEP, 2 in TEP
+//   - RB/WR: 3 (insurance + FLEX rotation)
+export function depthSlotsFor(pos: Position, format: LeagueFormat): number {
+  if (pos === "QB") return format.superflex ? 2 : 1;
+  if (pos === "TE") return format.tep ? 2 : 1;
+  return 3;
+}
 
 function byValueDesc(getValue: (p: Player) => number) {
   return (a: Player, b: Player) => {
@@ -120,7 +133,8 @@ export function depthByPosition(
   for (const pos of POSITIONS) {
     const sorted = players.filter((p) => p.position === pos).sort(byValueDesc(getValue));
     const baseN = baseStarters[pos];
-    depth[pos] = sorted.slice(baseN, baseN + 3);
+    const depthN = depthSlotsFor(pos, format);
+    depth[pos] = sorted.slice(baseN, baseN + depthN);
   }
   return depth;
 }
@@ -226,11 +240,115 @@ export function score0to100(value: number, leagueAvg: number): number {
   return Math.max(0, Math.min(100, score));
 }
 
+// Helper: avg rank (with tie handling) for a value within a pool.
+function avgRankInPool(value: number, pool: number[]): { avgRank: number; n: number } {
+  const n = pool.length;
+  if (n <= 1) return { avgRank: 1, n };
+  const sorted = [...pool].sort((a, b) => b - a);
+  let strictlyGreater = 0;
+  let equal = 0;
+  for (const v of sorted) {
+    if (v > value) strictlyGreater++;
+    else if (v === value) equal++;
+  }
+  const firstRank = strictlyGreater + 1;
+  const lastRank = equal === 0 ? firstRank : strictlyGreater + equal;
+  return { avgRank: (firstRank + lastRank) / 2, n };
+}
+
+// Dual-zone position score within a pool, with a data-driven startable
+// threshold. Inside startable (rank ≤ threshold) the player is a real
+// starter and lives in a 50-100 band; below it the player drops linearly
+// into 0-50 (real need territory). Ties share avg rank so fungible plateaus
+// all score the same.
+//
+//   pool=35 rostered QBs, startable=16 (16-team 1QB)
+//   rank 1   → 100
+//   rank 12  → ~67  (Dak-tier, well inside startable, HEALTHY)
+//   rank 16  → 50   (edge of startable)
+//   rank 17  → ~47  (just past replacement)
+//   rank 35  → 0
+export function positionScoreFromPool(
+  value: number,
+  pool: number[],
+  startable: number,
+): number {
+  const { avgRank, n } = avgRankInPool(value, pool);
+  if (n <= 1) return 50;
+  const safeStartable = Math.max(1, Math.min(n, startable));
+  if (avgRank <= safeStartable) {
+    if (safeStartable <= 1) return 100;
+    return Math.max(50, Math.min(100, 100 - 50 * (avgRank - 1) / (safeStartable - 1)));
+  }
+  const remaining = n - safeStartable;
+  if (remaining <= 0) return 50;
+  return Math.max(0, Math.min(50, 50 * (n - avgRank) / remaining));
+}
+
+// Kept for external consumers; not used in primary scoring.
+export function rankPercentile(value: number, pool: number[]): number {
+  const { avgRank, n } = avgRankInPool(value, pool);
+  if (n <= 1) return 50;
+  return Math.max(0, Math.min(100, 100 * (1 - (avgRank - 1) / (n - 1))));
+}
+
+// Weighted slot average — favors weaker slots. For multi-slot positions a
+// team with Olave + trash WR3 ends up lower than a plain mean would suggest.
+// Single-slot positions degenerate to that slot's own score.
+//   [25, 79, 95] → (25×3 + 79×2 + 95×1) / 6 = 56.7
+//   [60, 60, 60] → 60
+export function weightedSlotAverage(scores: number[]): number {
+  if (scores.length === 0) return 0;
+  if (scores.length === 1) return scores[0] ?? 0;
+  const sorted = [...scores].sort((a, b) => a - b);
+  let weightedSum = 0;
+  let totalWeight = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    const weight = sorted.length - i; // [n, n-1, ..., 1]
+    weightedSum += (sorted[i] ?? 0) * weight;
+    totalWeight += weight;
+  }
+  return totalWeight > 0 ? weightedSum / totalWeight : 0;
+}
+
+// Legacy single-threshold classifier; preserved for any external consumers.
 export function classifyPosition(score: PositionScore["urgency"]): PositionScore["classification"] {
   if (score > 70) return "CRITICAL_NEED";
   if (score >= 50) return "NEED";
   if (score >= 30) return "HEALTHY";
   return "SURPLUS";
+}
+
+// Rules-based classifier that considers each component. Fixes:
+//   "97 starter / 13 depth = SURPLUS" (wrong — depth is awful)
+//   "70 starter / 46 depth + CLOSING pressure = NEED" (wrong — pressure was
+//   pushing healthy positions into need additively)
+// Both came from a single urgency-threshold lookup that didn't see structure.
+export function classifyPositionRich(args: {
+  starterScore: number;
+  minStarterSlotScore: number;
+  depthScore: number;
+  depthSlots: number;
+  pressure: number;
+  urgency: number;
+}): PositionScore["classification"] {
+  const { starterScore, minStarterSlotScore, depthScore, depthSlots, pressure, urgency } = args;
+  // Any starter slot below replacement is a critical hole — even if other
+  // slots are filled (Olave + trash WR3 type situations).
+  if (minStarterSlotScore < 25) return "CRITICAL_NEED";
+  if (minStarterSlotScore < 40) return "NEED";
+  // Catastrophic depth: matters most at positions where depth is real.
+  if (depthScore < 20 && depthSlots >= 2) return "NEED";
+  if (depthScore < 10) return "NEED";
+  // Urgency-driven fallbacks.
+  if (urgency > 70) return "CRITICAL_NEED";
+  if (urgency >= 50) return "NEED";
+  // SURPLUS requires both halves strong AND low pressure. A contender with
+  // elite starter + elite depth shouldn't be told to sell — they need it.
+  if (urgency < 30 && starterScore > 70 && depthScore > 55 && pressure < 50) {
+    return "SURPLUS";
+  }
+  return "HEALTHY";
 }
 
 // ── TEP applies to BOTH redraft and dynasty values ────────────────────────────
@@ -256,7 +374,9 @@ export function computePositionScores(
   averages: LeagueAverages,
 ): Record<Position, PositionScore> {
   const { starters } = fillStarters(team.players, format);
-  const depth = depthByPosition(team.players, format);
+  // Depth pool ranked by dynasty value: rewards developmental QBs, young TEs,
+  // and other "won't start this week but real long-term insurance" assets.
+  const depth = depthByPosition(team.players, format, DYNASTY);
   const out: Record<Position, PositionScore> = {} as Record<Position, PositionScore>;
 
   const compFactor: Record<Competitiveness, number> = { STRONG: 90, AVERAGE: 60, WEAK: 30 };
@@ -265,24 +385,64 @@ export function computePositionScores(
 
   for (const pos of POSITIONS) {
     const starterValue = starters[pos].reduce((s, p) => s + p.valueRedraft, 0);
-    const depthValue = depth[pos].reduce((s, p) => s + p.valueRedraft, 0);
-    const starterScore = score0to100(starterValue, averages.starter[pos] || 1);
-    const depthScore = score0to100(depthValue, averages.depth[pos] || 1);
+    const depthValue = depth[pos].reduce((s, p) => s + p.valueDynasty, 0);
+
+    // Player-level dual-zone scoring. Each starting player's value is ranked
+    // among ALL rostered players at the position; threshold = total starting
+    // slots actually filled across the league. Team's position score is a
+    // worst-slot-weighted average (so weak slots count more).
+    const starterPlayerScores = starters[pos].map((p) =>
+      positionScoreFromPool(p.valueRedraft, averages.starterPlayerPool[pos], averages.startersInUse[pos]),
+    );
+    const depthPlayerScores = depth[pos].map((p) =>
+      positionScoreFromPool(p.valueDynasty, averages.depthPlayerPool[pos], averages.depthSlotsTotal[pos]),
+    );
+    const starterScore = weightedSlotAverage(starterPlayerScores);
+    const minStarterSlotScore = starterPlayerScores.length > 0
+      ? Math.min(...starterPlayerScores)
+      : 0;
+    const depthScore = weightedSlotAverage(depthPlayerScores);
+
+    // Format-aware urgency weights. Depth carries less weight in formats
+    // where the position has only 1 depth slot (1QB QB, non-TEP TE) since
+    // backup depth there is a luxury, not a real roster need. Missing weight
+    // shifts to starter (the dominant signal).
+    const depthSlots = depthSlotsFor(pos, format);
+    const baseDepthWeight = 0.15;
+    const baseStarterWeight = 0.50;
+    const depthWeight = baseDepthWeight * (depthSlots / 3);
+    const starterWeight = baseStarterWeight + (baseDepthWeight - depthWeight);
+    const pickWeight = 0.15;
 
     const starterGap = Math.max(0, 100 - starterScore);
     const depthGap = Math.max(0, 100 - depthScore);
     const pickFactor = 50;
 
-    const urgency =
-      starterGap * 0.4 + pressure * 0.3 + depthGap * 0.15 + pickFactor * 0.15;
+    // Urgency = weighted gap, then amplified by pressure as a multiplier.
+    // Pressure no longer adds urgency by itself — a contender with no actual
+    // holes won't get classified as needy just because of competitive context.
+    const gapUrgency =
+      starterGap * starterWeight +
+      depthGap * depthWeight +
+      pickFactor * pickWeight;
+    const pressureMult = 0.6 + (pressure / 100) * 0.6; // [0.6, 1.2]
+    const urgency = gapUrgency * pressureMult;
 
     out[pos] = {
       starterValue,
       starterScore,
+      minStarterSlotScore,
       depthValue,
       depthScore,
       urgency,
-      classification: classifyPosition(urgency),
+      classification: classifyPositionRich({
+        starterScore,
+        minStarterSlotScore,
+        depthScore,
+        depthSlots,
+        pressure,
+        urgency,
+      }),
     };
   }
   return out;
@@ -308,7 +468,7 @@ export function computeAllProfiles(
   const stage1: Stage1[] = teams.map((t) => {
     const playersAdj = applyTep(t.players, format);
     const { starters } = fillStarters(playersAdj, format);
-    const depth = depthByPosition(playersAdj, format);
+    const depth = depthByPosition(playersAdj, format, DYNASTY);
     const starterTotalValue = POSITIONS.reduce(
       (s, pos) => s + starters[pos].reduce((a, p) => a + p.valueRedraft, 0),
       0,
@@ -389,20 +549,41 @@ export function computeAllProfiles(
     return "MID";
   };
 
-  // League averages
-  const avgStarter: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
-  const avgDepth: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  // League pools + thresholds + averages.
+  // - Player pools: every rostered player at each position, used by the
+  //   player-level rank scoring.
+  // - Aggregate pools (kept for archetype thresholding).
+  // - Startable thresholds: total starting slots actually filled across the
+  //   league (data-driven, captures format + actual FLEX usage).
+  const starterPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
+  const depthPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
+  const starterPlayerPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
+  const depthPlayerPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
+  const startersInUse: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const depthSlotsTotal: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   let avgFlex = 0;
   for (const t of stage2) {
     for (const pos of POSITIONS) {
-      avgStarter[pos] += t.starters[pos].reduce((s, p) => s + p.valueRedraft, 0);
-      avgDepth[pos] += t.depth[pos].reduce((s, p) => s + p.valueRedraft, 0);
+      starterPool[pos].push(t.starters[pos].reduce((s, p) => s + p.valueRedraft, 0));
+      depthPool[pos].push(t.depth[pos].reduce((s, p) => s + p.valueDynasty, 0));
+      startersInUse[pos] += t.starters[pos].length;
+    }
+    for (const p of t.players) {
+      starterPlayerPool[p.position].push(p.valueRedraft);
+      depthPlayerPool[p.position].push(p.valueDynasty);
     }
     avgFlex += t.flexValue;
   }
   for (const pos of POSITIONS) {
-    avgStarter[pos] /= stage2.length;
-    avgDepth[pos] /= stage2.length;
+    depthSlotsTotal[pos] = stage2.length * depthSlotsFor(pos, format);
+  }
+  const avgStarter: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const avgDepth: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  for (const pos of POSITIONS) {
+    const sSum = starterPool[pos].reduce((s, v) => s + v, 0);
+    const dSum = depthPool[pos].reduce((s, v) => s + v, 0);
+    avgStarter[pos] = sSum / starterPool[pos].length;
+    avgDepth[pos] = dSum / depthPool[pos].length;
   }
   avgFlex /= stage2.length;
   const averages: LeagueAverages = {
@@ -411,6 +592,12 @@ export function computeAllProfiles(
     flex: avgFlex,
     pickCapital: meanCap,
     pickCapitalStd: stdCap,
+    starterPool,
+    depthPool,
+    starterPlayerPool,
+    depthPlayerPool,
+    startersInUse,
+    depthSlotsTotal,
   };
 
   return stage2.map((t) => {

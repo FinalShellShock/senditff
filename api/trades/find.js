@@ -85,6 +85,11 @@ var PICK_DECAY = {
 
 // src/algo/profile.ts
 var REDRAFT = (p) => p.valueRedraft;
+function depthSlotsFor(pos, format) {
+  if (pos === "QB") return format.superflex ? 2 : 1;
+  if (pos === "TE") return format.tep ? 2 : 1;
+  return 3;
+}
 function byValueDesc(getValue) {
   return (a, b) => {
     const va = getValue(a);
@@ -150,7 +155,8 @@ function depthByPosition(players, format, getValue = REDRAFT) {
   for (const pos of POSITIONS) {
     const sorted = players.filter((p) => p.position === pos).sort(byValueDesc(getValue));
     const baseN = baseStarters[pos];
-    depth[pos] = sorted.slice(baseN, baseN + 3);
+    const depthN = depthSlotsFor(pos, format);
+    depth[pos] = sorted.slice(baseN, baseN + depthN);
   }
   return depth;
 }
@@ -168,6 +174,45 @@ function score0to100(value, leagueAvg) {
   if (leagueAvg <= 0) return 50;
   const score = 50 + (value - leagueAvg) / leagueAvg * 50;
   return Math.max(0, Math.min(100, score));
+}
+function avgRankInPool(value, pool) {
+  const n = pool.length;
+  if (n <= 1) return { avgRank: 1, n };
+  const sorted = [...pool].sort((a, b) => b - a);
+  let strictlyGreater = 0;
+  let equal = 0;
+  for (const v of sorted) {
+    if (v > value) strictlyGreater++;
+    else if (v === value) equal++;
+  }
+  const firstRank = strictlyGreater + 1;
+  const lastRank = equal === 0 ? firstRank : strictlyGreater + equal;
+  return { avgRank: (firstRank + lastRank) / 2, n };
+}
+function positionScoreFromPool(value, pool, startable) {
+  const { avgRank, n } = avgRankInPool(value, pool);
+  if (n <= 1) return 50;
+  const safeStartable = Math.max(1, Math.min(n, startable));
+  if (avgRank <= safeStartable) {
+    if (safeStartable <= 1) return 100;
+    return Math.max(50, Math.min(100, 100 - 50 * (avgRank - 1) / (safeStartable - 1)));
+  }
+  const remaining = n - safeStartable;
+  if (remaining <= 0) return 50;
+  return Math.max(0, Math.min(50, 50 * (n - avgRank) / remaining));
+}
+function weightedSlotAverage(scores) {
+  if (scores.length === 0) return 0;
+  if (scores.length === 1) return scores[0] ?? 0;
+  const sorted = [...scores].sort((a, b) => a - b);
+  let weightedSum = 0;
+  let totalWeight = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    const weight = sorted.length - i;
+    weightedSum += (sorted[i] ?? 0) * weight;
+    totalWeight += weight;
+  }
+  return totalWeight > 0 ? weightedSum / totalWeight : 0;
 }
 
 // api/_lib/tradeEngine.ts
@@ -207,15 +252,31 @@ function topPlayersByPos(profile, pos, n) {
     return a.id.localeCompare(b.id);
   }).slice(0, n);
 }
-function computeLeagueAverages(profiles) {
+function computeLeagueAverages(profiles, format) {
   const starter = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depth = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const starterPool = { QB: [], RB: [], WR: [], TE: [] };
+  const depthPool = { QB: [], RB: [], WR: [], TE: [] };
+  const starterPlayerPool = { QB: [], RB: [], WR: [], TE: [] };
+  const depthPlayerPool = { QB: [], RB: [], WR: [], TE: [] };
+  const startersInUse = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const depthSlotsTotal = { QB: 0, RB: 0, WR: 0, TE: 0 };
   let flex = 0;
   let cap = 0;
   for (const p of profiles) {
     for (const pos of POSITIONS) {
       starter[pos] += p.positionScores[pos].starterValue;
       depth[pos] += p.positionScores[pos].depthValue;
+      starterPool[pos].push(p.positionScores[pos].starterValue);
+      depthPool[pos].push(p.positionScores[pos].depthValue);
+    }
+    const { starters } = fillStarters(p.players, format);
+    for (const pos of POSITIONS) {
+      startersInUse[pos] += starters[pos].length;
+    }
+    for (const pl of p.players) {
+      starterPlayerPool[pl.position].push(pl.valueRedraft);
+      depthPlayerPool[pl.position].push(pl.valueDynasty);
     }
     flex += p.flex.value;
     cap += p.pickCapital.value;
@@ -224,11 +285,24 @@ function computeLeagueAverages(profiles) {
   for (const pos of POSITIONS) {
     starter[pos] /= n;
     depth[pos] /= n;
+    depthSlotsTotal[pos] = n * depthSlotsFor(pos, format);
   }
   flex /= n;
   cap /= n;
   const variance = profiles.reduce((s, p) => s + (p.pickCapital.value - cap) ** 2, 0) / n;
-  return { starter, depth, flex, pickCapital: cap, pickCapitalStd: Math.sqrt(variance) };
+  return {
+    starter,
+    depth,
+    flex,
+    pickCapital: cap,
+    pickCapitalStd: Math.sqrt(variance),
+    starterPool,
+    depthPool,
+    starterPlayerPool,
+    depthPlayerPool,
+    startersInUse,
+    depthSlotsTotal
+  };
 }
 function simulateImpact(team, give, receive, format, averages, thisYear) {
   const giveIds = new Set(give.map(assetId));
@@ -241,7 +315,7 @@ function simulateImpact(team, give, receive, format, averages, thisYear) {
     else newPicks.push(a.pick);
   }
   const { starters } = fillStarters(newPlayers, format);
-  const depth = depthByPosition(newPlayers, format);
+  const depth = depthByPosition(newPlayers, format, (p) => p.valueDynasty);
   const newStarterTotal = POSITIONS.reduce(
     (s, pos) => s + starters[pos].reduce((a, p) => a + p.valueRedraft, 0),
     0
@@ -249,10 +323,14 @@ function simulateImpact(team, give, receive, format, averages, thisYear) {
   const newFlexValue = flexStrengthValue(newPlayers, format, newStarterTotal);
   const perPosition = {};
   for (const pos of POSITIONS) {
-    const newStarterValue = starters[pos].reduce((a, p) => a + p.valueRedraft, 0);
-    const newDepthValue = depth[pos].reduce((a, p) => a + p.valueRedraft, 0);
-    const newStarterScore = score0to100(newStarterValue, averages.starter[pos] || 1);
-    const newDepthScore = score0to100(newDepthValue, averages.depth[pos] || 1);
+    const starterPlayerScores = starters[pos].map(
+      (p) => positionScoreFromPool(p.valueRedraft, averages.starterPlayerPool[pos], averages.startersInUse[pos])
+    );
+    const depthPlayerScores = depth[pos].map(
+      (p) => positionScoreFromPool(p.valueDynasty, averages.depthPlayerPool[pos], averages.depthSlotsTotal[pos])
+    );
+    const newStarterScore = weightedSlotAverage(starterPlayerScores);
+    const newDepthScore = weightedSlotAverage(depthPlayerScores);
     perPosition[pos] = {
       starterScoreDelta: newStarterScore - team.positionScores[pos].starterScore,
       depthScoreDelta: newDepthScore - team.positionScores[pos].depthScore,
@@ -752,7 +830,7 @@ function candidateKey(c) {
 }
 function generatePackages(mine, allProfiles, format, thisYear, limit = 5) {
   const others = allProfiles.filter((p) => p.rosterId !== mine.rosterId);
-  const averages = computeLeagueAverages(allProfiles);
+  const averages = computeLeagueAverages(allProfiles, format);
   const ctx = { mine, others, format, averages, thisYear };
   const rawCandidates = GENERATORS.flatMap((g) => g(ctx));
   const seen = /* @__PURE__ */ new Set();
