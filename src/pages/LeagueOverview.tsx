@@ -196,6 +196,9 @@ function LeagueTableRow({ profile, leagueId }: { profile: TeamProfile; leagueId:
             </div>
             <span className="lt-pos-class" style={{ color: POS_CLASS_COLOR[ps?.classification ?? "HEALTHY"] }}>
               {(ps?.classification ?? "—").replace("_", " ")}
+              {ps?.needKind && ps.needKind !== null && (
+                <span className="lt-pos-class-kind"> ({ps.needKind})</span>
+              )}
             </span>
           </div>
         );

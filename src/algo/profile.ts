@@ -336,7 +336,10 @@ export function classifyPositionRich(args: {
   const { starterScore, minStarterSlotScore, depthScore, depthSlots, pressure, urgency } = args;
 
   const starterWeak = minStarterSlotScore < 50;
-  const starterCritical = minStarterSlotScore < 25;
+  // Bumped from 25 → 30. A starter at exactly 25 (rank ~halfway down the
+  // below-replacement zone) is functionally just as broken as one at 21 —
+  // the old strict cliff was producing label flips for a 4-point gap.
+  const starterCritical = minStarterSlotScore < 30;
   const depthCatastrophic = depthScore < 10 || (depthScore < 20 && depthSlots >= 2);
   const depthWeak = depthScore < 35;
 

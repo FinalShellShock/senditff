@@ -320,7 +320,7 @@ function weightedSlotAverage(scores) {
 function classifyPositionRich(args) {
   const { starterScore, minStarterSlotScore, depthScore, depthSlots, pressure, urgency } = args;
   const starterWeak = minStarterSlotScore < 50;
-  const starterCritical = minStarterSlotScore < 25;
+  const starterCritical = minStarterSlotScore < 30;
   const depthCatastrophic = depthScore < 10 || depthScore < 20 && depthSlots >= 2;
   const depthWeak = depthScore < 35;
   if (starterCritical) {
