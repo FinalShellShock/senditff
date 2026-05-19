@@ -70,7 +70,39 @@ npm run build        # build frontend
 node scripts/build-api.mjs  # bundle TS api files to JS
 ```
 
-Push to `prod` → Vercel auto-deploys in ~30 seconds.
+## Deploying
+
+**Do NOT `git push origin prod`** — historically that triggered a broken
+secondary Vercel project. As of 2026-05-18 that project is disconnected
+from GitHub, but the canonical deploy flow is direct CLI:
+
+```bash
+npm run build:api                                      # rebuild API bundles
+npx vercel --prod --yes                                # deploy
+# grab the senditff-XXX-...vercel.app URL it prints, then:
+npx vercel alias set <that-url> senditff.com
+npx vercel alias set <that-url> www.senditff.com
+npx vercel inspect senditff.com                        # verify name=senditff
+```
+
+## CRITICAL: Commit before deploying or ending a session
+
+`vercel --prod` uploads the **current working tree**, not git HEAD. This means
+deployed code can be totally absent from git history. Work has been lost
+multiple times because someone treated "live on the site" as a synonym for
+"safe in git."
+
+Before any deploy:
+```bash
+git status --short    # if anything's modified, COMMIT to a branch first
+```
+
+Feature branches use dynasty football player names. One feature = one branch.
+Stashes are for 30-minute scratch work, never for multi-session storage.
+
+If you find substantial uncommitted work on a fresh session, **commit it
+immediately to a new branch before doing anything else** — including a clean
+checkpoint commit is better than risking another session resetting it.
 
 ---
 
