@@ -27,8 +27,6 @@ const POS_CLASS_COLOR: Record<string, string> = {
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 
-// MiniBar kept for any external consumers (TeamDeepDive has its own copy);
-// the league table no longer uses it — replaced by ThickBar below.
 function MiniBar({ score }: { score: number }) {
   const pct = Math.max(0, Math.min(100, score));
   const color = pct >= 70 ? "#22c55e" : pct >= 50 ? "#06b6d4" : pct >= 30 ? "#eab308" : "#ef4444";
@@ -175,6 +173,27 @@ function ThickBar({ score, kind }: { score: number; kind?: SubClassification }) 
   );
 }
 
+// Position-specific colors for the per-row position headers.
+const POS_COLOR: Record<string, string> = {
+  QB: "#f97316", // orange
+  RB: "#eab308", // yellow
+  WR: "#3b82f6", // blue
+  TE: "#a855f7", // purple
+};
+
+// Combined per-position classification label shown in the collapsed view.
+// "OK" if both starter + depth are HEALTHY/SURPLUS, otherwise the worse-side
+// label (NEED / CRITICAL).
+function combinedLabel(s?: SubClassification, d?: SubClassification): string {
+  if (s === "CRITICAL" || d === "CRITICAL") return "CRITICAL";
+  if (s === "NEED" || d === "NEED") return "NEED";
+  return "OK";
+}
+function combinedColor(s?: SubClassification, d?: SubClassification): string {
+  if (s === "CRITICAL" || d === "CRITICAL") return POS_CLASS_COLOR.CRITICAL ?? "#ef4444";
+  if (s === "NEED" || d === "NEED") return POS_CLASS_COLOR.NEED ?? "#eab308";
+  return POS_CLASS_COLOR.HEALTHY ?? "#22c55e";
+}
 
 // Compact collapsed row — self-contained mini-table per team. Each row has
 // its own QB/RB/WR/TE column headers (so you don't lose context as you
@@ -196,104 +215,79 @@ function LeagueTableRow({
   const labelColor = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
 
   return (
-    <div className={`lt-row${profile.isMine ? " mine" : ""}${expanded ? " expanded" : ""}`} onClick={onToggle}>
-      {/* Top info bar — same in collapsed AND expanded */}
-      <div className="lt-row-top">
-        <div className="lt-row-top-left">
-          <span className="lt-rank">#{profile.starterRank}</span>
-          <span className="lt-name">
-            {profile.ownerName}
-            {profile.isMine && <span className="mine-mark"> ★</span>}
-          </span>
+    <div className={`lt-row${profile.isMine ? " mine" : ""}${expanded ? " expanded" : ""}`}>
+      <div className="lt-row-main" onClick={onToggle}>
+        <div className={`lt-col-sticky lt-row-sticky${profile.isMine ? " mine-bg" : ""}`}>
+          <div className="lt-row-stack">
+            <div className="lt-row-header">
+              <span className="lt-rank">#{profile.starterRank}</span>
+              <span className="lt-name">
+                {profile.ownerName}
+                {profile.isMine && <span className="mine-mark"> ★</span>}
+              </span>
+            </div>
+            <div className="lt-row-meta">
+              <span className="window-label" style={{ background: labelColor }}>
+                {profile.windowLabel ?? "—"}
+              </span>
+              <span className="lt-row-meta-dim">{profile.record}</span>
+              <span className="lt-row-meta-dim">age {(profile.starterCalAge ?? 0).toFixed(1)}</span>
+            </div>
+          </div>
         </div>
-        <div className="lt-row-top-right">
-          <span className="window-label" style={{ background: labelColor }}>
-            {profile.windowLabel ?? "—"}
-          </span>
-          <span className="lt-row-meta-dim">{profile.record}</span>
-          <span className="lt-row-meta-dim">age {(profile.starterCalAge ?? 0).toFixed(1)}</span>
+
+        <div className="lt-pos-grid">
+          {/* Header row */}
+          <div className="lt-pos-grid-corner" />
+          {POSITIONS.map((pos) => (
+            <div key={`h-${pos}`} className="lt-pos-grid-pos-header">{pos}</div>
+          ))}
+
+          {/* Starter row */}
+          <div className="lt-pos-grid-row-label">Starter</div>
+          {POSITIONS.map((pos) => {
+            const ps = profile.positionScores?.[pos];
+            const sClass = ps?.starterClassification ?? "HEALTHY";
+            return (
+              <div key={`s-${pos}`} className="lt-pos-grid-bar-cell">
+                <ThickBar score={ps?.starterScore ?? 0} kind={sClass} />
+              </div>
+            );
+          })}
+
+          {/* Depth row */}
+          <div className="lt-pos-grid-row-label">Depth</div>
+          {POSITIONS.map((pos) => {
+            const ps = profile.positionScores?.[pos];
+            const dClass = ps?.depthClassification ?? "HEALTHY";
+            return (
+              <div key={`d-${pos}`} className="lt-pos-grid-bar-cell">
+                <ThickBar score={ps?.depthScore ?? 0} kind={dClass} />
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="lt-col-picks">
           <PicksDots picks={profile.picks ?? []} flag={profile.pickCapital?.flag ?? "NEUTRAL"} />
-          <button
-            className="lt-row-chevron"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggle();
-            }}
-            aria-label={expanded ? "collapse" : "expand"}
-          >
-            {expanded ? "▴" : "▾"}
-          </button>
         </div>
-      </div>
 
-      {/* Position grid — bars always shown, collapsed AND expanded */}
-      <div className="lt-pos-grid">
-        <div className="lt-pos-grid-corner" />
-        {POSITIONS.map((pos) => (
-          <div key={`h-${pos}`} className="lt-pos-grid-pos-header">{pos}</div>
-        ))}
-
-        <div className="lt-pos-grid-row-label">Starter</div>
-        {POSITIONS.map((pos) => {
-          const ps = profile.positionScores?.[pos];
-          const sClass = ps?.starterClassification ?? "HEALTHY";
-          return (
-            <div key={`s-${pos}`} className="lt-pos-grid-bar-cell">
-              <ThickBar score={ps?.starterScore ?? 0} kind={sClass} />
-            </div>
-          );
-        })}
-
-        <div className="lt-pos-grid-row-label">Depth</div>
-        {POSITIONS.map((pos) => {
-          const ps = profile.positionScores?.[pos];
-          const dClass = ps?.depthClassification ?? "HEALTHY";
-          return (
-            <div key={`d-${pos}`} className="lt-pos-grid-bar-cell">
-              <ThickBar score={ps?.depthScore ?? 0} kind={dClass} />
-            </div>
-          );
-        })}
+        <button
+          className="lt-row-chevron"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle();
+          }}
+          aria-label={expanded ? "collapse" : "expand"}
+        >
+          {expanded ? "▴" : "▾"}
+        </button>
       </div>
 
       {expanded && (
         <div className="lt-row-detail">
-          <div className="lt-detail-numbers-grid">
-            <div className="lt-detail-numbers-corner" />
-            {POSITIONS.map((pos) => (
-              <div key={`hn-${pos}`} className="lt-detail-numbers-header">{pos}</div>
-            ))}
-
-            <div className="lt-detail-numbers-row-label">Starter</div>
-            {POSITIONS.map((pos) => {
-              const ps = profile.positionScores?.[pos];
-              const sClass = ps?.starterClassification ?? "HEALTHY";
-              return (
-                <div key={`sn-${pos}`} className="lt-detail-numbers-cell">
-                  <span className="lt-detail-numbers-score">{(ps?.starterScore ?? 0).toFixed(0)}</span>
-                  <span className="lt-detail-numbers-class" style={{ color: POS_CLASS_COLOR[sClass] }}>
-                    {sClass}
-                  </span>
-                </div>
-              );
-            })}
-
-            <div className="lt-detail-numbers-row-label">Depth</div>
-            {POSITIONS.map((pos) => {
-              const ps = profile.positionScores?.[pos];
-              const dClass = ps?.depthClassification ?? "HEALTHY";
-              return (
-                <div key={`dn-${pos}`} className="lt-detail-numbers-cell">
-                  <span className="lt-detail-numbers-score">{(ps?.depthScore ?? 0).toFixed(0)}</span>
-                  <span className="lt-detail-numbers-class" style={{ color: POS_CLASS_COLOR[dClass] }}>
-                    {dClass}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="lt-detail-footer">
+          <div className="lt-row-detail-header">
+            <span>Per-position breakdown</span>
             <button
               className="btn-link"
               onClick={(e) => {
@@ -303,6 +297,34 @@ function LeagueTableRow({
             >
               Open full deep dive →
             </button>
+          </div>
+          <div className="lt-detail-grid">
+            {POSITIONS.map((pos) => {
+              const ps = profile.positionScores?.[pos];
+              const sClass = ps?.starterClassification ?? "HEALTHY";
+              const dClass = ps?.depthClassification ?? "HEALTHY";
+              return (
+                <div key={pos} className="lt-detail-pos">
+                  <div className="lt-detail-pos-name">{pos}</div>
+                  <div className="lt-detail-side">
+                    <span className="lt-detail-side-label">STARTERS</span>
+                    <MiniBar score={ps?.starterScore ?? 0} />
+                    <span className="lt-detail-side-score">{(ps?.starterScore ?? 0).toFixed(0)}</span>
+                    <span className="lt-detail-side-class" style={{ color: POS_CLASS_COLOR[sClass] }}>
+                      {sClass}
+                    </span>
+                  </div>
+                  <div className="lt-detail-side">
+                    <span className="lt-detail-side-label">DEPTH</span>
+                    <MiniBar score={ps?.depthScore ?? 0} />
+                    <span className="lt-detail-side-score">{(ps?.depthScore ?? 0).toFixed(0)}</span>
+                    <span className="lt-detail-side-class" style={{ color: POS_CLASS_COLOR[dClass] }}>
+                      {dClass}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

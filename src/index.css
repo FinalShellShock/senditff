@@ -816,40 +816,21 @@ body {
 .lt-row {
   background: rgba(255,255,255,0.02);
   border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 8px;
-  transition: border-color 0.12s, background 0.12s;
+  border-radius: 6px;
+  transition: border-color 0.12s;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  cursor: pointer;
-  padding: 12px 14px;
 }
 
 .lt-row:hover { border-color: rgba(255,255,255,0.12); }
 .lt-row.mine { border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.03); }
 .lt-row.expanded { border-color: rgba(245,158,11,0.5); }
 
-.lt-row-top {
+.lt-row-main {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-
-.lt-row-top-left {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-}
-
-.lt-row-top-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  align-items: stretch;
+  cursor: pointer;
 }
 
 /* Sticky-column inner stack so row labels align with the bars in cells */
@@ -1083,63 +1064,81 @@ body {
   margin-top: 1px;
 }
 
-/* Expanded detail — numbers + classification text below the bars grid,
-   using the same column layout so each number sits under its bar. */
+/* Expanded detail panel — shown when a row is clicked */
 .lt-row-detail {
-  margin-top: 10px;
-  padding-top: 10px;
+  background: rgba(255,255,255,0.02);
   border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 12px 14px;
 }
 
-.lt-detail-numbers-grid {
-  display: grid;
-  grid-template-columns: 64px repeat(4, minmax(60px, 1fr));
-  column-gap: 6px;
-  row-gap: 6px;
+.lt-row-detail-header {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 10px;
+  color: #94a3b8;
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
-.lt-detail-numbers-corner {}
+.lt-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
 
-.lt-detail-numbers-header {
+.lt-detail-pos {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 5px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lt-detail-pos-name {
   font-size: 11px;
   font-weight: 700;
-  color: #64748b;
-  text-align: center;
+  color: #e2e8f0;
   letter-spacing: 1px;
 }
 
-.lt-detail-numbers-row-label {
-  font-size: 11px;
-  color: #94a3b8;
-  font-weight: 600;
-  text-align: right;
-  padding-right: 8px;
-}
-
-.lt-detail-numbers-cell {
+.lt-detail-side {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-}
-
-.lt-detail-numbers-score {
-  font-size: 14px;
-  font-weight: 700;
-  color: #e2e8f0;
-}
-
-.lt-detail-numbers-class {
+  gap: 6px;
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
 }
 
-.lt-detail-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
+.lt-detail-side-label {
+  font-size: 8px;
+  color: #64748b;
+  letter-spacing: 1px;
+  font-weight: 700;
+  min-width: 44px;
+}
+
+.lt-detail-side-score {
+  font-size: 11px;
+  color: #cbd5e1;
+  font-weight: 700;
+  min-width: 20px;
+  text-align: right;
+}
+
+.lt-detail-side-class {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-left: auto;
+}
+
+@media (max-width: 600px) {
+  .lt-detail-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* Picks column */
