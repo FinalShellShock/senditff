@@ -874,85 +874,77 @@ body {
 }
 
 .lt-pos-grid-pos-header {
-  font-size: 10px;
-  color: #94a3b8;
+  font-size: 14px;
   letter-spacing: 2px;
-  font-weight: 700;
+  font-weight: 800;
   text-align: center;
+  padding-bottom: 4px;
 }
 
 .lt-pos-grid-row-label {
-  font-size: 10px;
-  color: #94a3b8;
-  letter-spacing: 1px;
-  font-weight: 700;
+  font-size: 11px;
+  color: #cbd5e1;
+  letter-spacing: 0.5px;
+  font-weight: 600;
   text-align: right;
-  padding-right: 4px;
+  padding-right: 8px;
 }
 
 .lt-pos-grid-row-label-empty {
   /* spacer to align the class row with the others */
 }
 
-.lt-pos-grid-cell {
+/* Bar cells — thick stubby bars (color = classification, length = score). */
+.lt-pos-grid-bar-cell {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
-  height: 18px;
+  padding: 0 4px;
+  height: 16px;
+}
+
+.lt-thick-bar-track {
+  flex: 1;
+  height: 10px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 32px;
+}
+
+.lt-thick-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.2s;
 }
 
 .lt-pos-grid-class-cell {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 16px;
-}
-
-.lt-pos-grid-score {
-  min-width: 22px;
-  text-align: right;
-}
-
-/* Starter number = bold + bright. Depth number = lighter + dimmer for
-   visual hierarchy (bold/normal weight contrast + opacity). */
-.lt-pos-grid-score-starter {
-  font-size: 13px;
-  font-weight: 700;
-  color: #e2e8f0;
-}
-
-.lt-pos-grid-score-depth {
-  font-size: 12px;
-  font-weight: 400;
-  color: #94a3b8;
-}
-
-.lt-class-glyph {
-  font-size: 12px;
-  line-height: 1;
-  width: 10px;
-  display: inline-block;
+  height: 18px;
+  padding-top: 2px;
 }
 
 .lt-pos-grid-class {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 1px;
 }
 
-/* Chevron in the top-right indicates collapsed/expanded state. */
+/* Chevron in the top-right — larger and more clickable. */
 .lt-row-chevron {
   background: none;
   border: none;
-  color: #64748b;
-  font-size: 14px;
+  color: #94a3b8;
+  font-size: 22px;
+  line-height: 1;
   cursor: pointer;
-  padding: 8px 12px;
+  padding: 8px 14px;
   align-self: flex-start;
+  flex-shrink: 0;
 }
 
-.lt-row-chevron:hover { color: #cbd5e1; }
+.lt-row-chevron:hover { color: #f59e0b; }
 .lt-row.expanded .lt-row-chevron { color: #f59e0b; }
 
 /* Sticky team column */

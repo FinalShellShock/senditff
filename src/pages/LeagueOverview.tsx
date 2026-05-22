@@ -159,18 +159,27 @@ function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
   );
 }
 
-// Classification → small indicator glyph rendered next to the score.
-// Shape + color together communicate severity; redundant on purpose so
-// colorblind users can still parse it.
-function ClassIndicator({ kind }: { kind?: SubClassification }) {
-  const k = kind ?? "HEALTHY";
-  const glyph = k === "CRITICAL" ? "×" : k === "NEED" ? "▲" : k === "SURPLUS" ? "◆" : "●";
+// Thick stubby bar — collapsed-view replacement for score number + glyph.
+// Bar color = classification (green/yellow/red), bar length = score 0-100.
+// Color does the work that text/numbers used to. Exact numbers live in
+// the expanded detail view.
+function ThickBar({ score, kind }: { score: number; kind?: SubClassification }) {
+  const color = POS_CLASS_COLOR[kind ?? "HEALTHY"] ?? "#22c55e";
+  const width = Math.max(4, Math.min(100, score));
   return (
-    <span className="lt-class-glyph" style={{ color: POS_CLASS_COLOR[k] }}>
-      {glyph}
-    </span>
+    <div className="lt-thick-bar-track">
+      <div className="lt-thick-bar-fill" style={{ width: `${width}%`, background: color }} />
+    </div>
   );
 }
+
+// Position-specific colors for the per-row position headers.
+const POS_COLOR: Record<string, string> = {
+  QB: "#f97316", // orange
+  RB: "#eab308", // yellow
+  WR: "#3b82f6", // blue
+  TE: "#a855f7", // purple
+};
 
 // Combined per-position classification label shown in the collapsed view.
 // "OK" if both starter + depth are HEALTHY/SURPLUS, otherwise the worse-side
@@ -228,10 +237,16 @@ function LeagueTableRow({
         </div>
 
         <div className="lt-pos-grid">
-          {/* Header row */}
+          {/* Header row — position labels colored to match position */}
           <div className="lt-pos-grid-corner" />
           {POSITIONS.map((pos) => (
-            <div key={`h-${pos}`} className="lt-pos-grid-pos-header">{pos}</div>
+            <div
+              key={`h-${pos}`}
+              className="lt-pos-grid-pos-header"
+              style={{ color: POS_COLOR[pos] }}
+            >
+              {pos}
+            </div>
           ))}
 
           {/* Starter row */}
@@ -240,11 +255,8 @@ function LeagueTableRow({
             const ps = profile.positionScores?.[pos];
             const sClass = ps?.starterClassification ?? "HEALTHY";
             return (
-              <div key={`s-${pos}`} className="lt-pos-grid-cell">
-                <span className="lt-pos-grid-score lt-pos-grid-score-starter">
-                  {(ps?.starterScore ?? 0).toFixed(0)}
-                </span>
-                <ClassIndicator kind={sClass} />
+              <div key={`s-${pos}`} className="lt-pos-grid-bar-cell">
+                <ThickBar score={ps?.starterScore ?? 0} kind={sClass} />
               </div>
             );
           })}
@@ -255,11 +267,8 @@ function LeagueTableRow({
             const ps = profile.positionScores?.[pos];
             const dClass = ps?.depthClassification ?? "HEALTHY";
             return (
-              <div key={`d-${pos}`} className="lt-pos-grid-cell">
-                <span className="lt-pos-grid-score lt-pos-grid-score-depth">
-                  {(ps?.depthScore ?? 0).toFixed(0)}
-                </span>
-                <ClassIndicator kind={dClass} />
+              <div key={`d-${pos}`} className="lt-pos-grid-bar-cell">
+                <ThickBar score={ps?.depthScore ?? 0} kind={dClass} />
               </div>
             );
           })}
