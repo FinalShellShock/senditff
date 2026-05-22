@@ -800,6 +800,10 @@ body {
   border-bottom: 1px solid rgba(255,255,255,0.06);
   padding-bottom: 4px;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #0a0c0f;
 }
 
 .lt-header-label {
@@ -853,15 +857,52 @@ body {
 
 .lt-row-meta-dim { font-size: 10px; color: #475569; }
 
-/* Row labels that match the height of .lt-pos-bar-row */
-.lt-row-label {
+.lt-row-expand-hint {
   font-size: 9px;
-  color: #64748b;
-  letter-spacing: 1.5px;
-  font-weight: 700;
-  height: 14px;
+  color: #475569;
+  letter-spacing: 1px;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* Compact cell — three stacked lines: starter score+glyph, depth score+
+   glyph, combined classification text. No bars in collapsed view. */
+.lt-pos-cell-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 6px;
+}
+
+.lt-cell-line {
   display: flex;
   align-items: center;
+  gap: 4px;
+  height: 16px;
+}
+
+.lt-cell-score {
+  font-size: 13px;
+  font-weight: 700;
+  color: #cbd5e1;
+  min-width: 22px;
+  text-align: right;
+}
+
+.lt-class-glyph {
+  font-size: 12px;
+  line-height: 1;
+  width: 10px;
+  display: inline-block;
+}
+
+.lt-cell-class-line { margin-top: 3px; }
+
+.lt-cell-class {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
 }
 
 /* Sticky team column */

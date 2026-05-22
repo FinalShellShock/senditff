@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useOutletContext, useParams, useNavigate } from "react-router-dom";
 import { makeApiClient } from "../api/client.ts";
-import type { TeamProfile, WindowLabel, PickFlag, Position, Pick as DraftPick } from "../algo/types.ts";
+import type { TeamProfile, WindowLabel, PickFlag, Position, Pick as DraftPick, SubClassification } from "../algo/types.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 
@@ -159,11 +159,37 @@ function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
   );
 }
 
-// Compact collapsed row. Shows bars + numbers for starter (top) and depth
-// (bottom), plus a single classification label per position cell. Clicking
-// the row toggles expansion to show full per-side classifications + window
-// context. Row labels in the leftmost column ("STARTERS" / "DEPTH") make
-// the STR/DEP suffix redundant.
+// Classification → small indicator glyph rendered next to the score.
+// Shape + color together communicate severity; redundant on purpose so
+// colorblind users can still parse it.
+function ClassIndicator({ kind }: { kind?: SubClassification }) {
+  const k = kind ?? "HEALTHY";
+  const glyph = k === "CRITICAL" ? "×" : k === "NEED" ? "▲" : k === "SURPLUS" ? "◆" : "●";
+  return (
+    <span className="lt-class-glyph" style={{ color: POS_CLASS_COLOR[k] }}>
+      {glyph}
+    </span>
+  );
+}
+
+// Combined per-position classification label shown in the collapsed view.
+// "OK" if both starter + depth are HEALTHY/SURPLUS, otherwise the worse-side
+// label (NEED / CRITICAL).
+function combinedLabel(s?: SubClassification, d?: SubClassification): string {
+  if (s === "CRITICAL" || d === "CRITICAL") return "CRITICAL";
+  if (s === "NEED" || d === "NEED") return "NEED";
+  return "OK";
+}
+function combinedColor(s?: SubClassification, d?: SubClassification): string {
+  if (s === "CRITICAL" || d === "CRITICAL") return POS_CLASS_COLOR.CRITICAL ?? "#ef4444";
+  if (s === "NEED" || d === "NEED") return POS_CLASS_COLOR.NEED ?? "#eab308";
+  return POS_CLASS_COLOR.HEALTHY ?? "#22c55e";
+}
+
+// Compact collapsed row — Option C style. Three rows of per-position data
+// (starter number+glyph, depth number+glyph, combined classification text)
+// stacked vertically, with the team info column on the left. No bars in
+// the collapsed view; bars live in the expanded detail panel only.
 function LeagueTableRow({
   profile,
   leagueId,
@@ -180,10 +206,7 @@ function LeagueTableRow({
 
   return (
     <div className={`lt-row${profile.isMine ? " mine" : ""}${expanded ? " expanded" : ""}`}>
-      <div
-        className={`lt-row-main`}
-        onClick={onToggle}
-      >
+      <div className="lt-row-main" onClick={onToggle}>
         <div className={`lt-col-sticky lt-row-sticky${profile.isMine ? " mine-bg" : ""}`}>
           <div className="lt-row-stack">
             <div className="lt-row-header">
@@ -200,29 +223,28 @@ function LeagueTableRow({
               <span className="lt-row-meta-dim">{profile.record}</span>
               <span className="lt-row-meta-dim">age {(profile.starterCalAge ?? 0).toFixed(1)}</span>
             </div>
-            <div className="lt-row-label">STARTERS</div>
-            <div className="lt-row-label">DEPTH</div>
+            <div className="lt-row-expand-hint">
+              {expanded ? "click to collapse" : "click for more"}
+            </div>
           </div>
         </div>
         {POSITIONS.map((pos) => {
           const ps = profile.positionScores?.[pos];
-          // Use the per-side classifications. The cell shows one summary
-          // chip per side; if either side is worse than HEALTHY, that side's
-          // chip color reflects the issue.
           const sClass = ps?.starterClassification ?? "HEALTHY";
           const dClass = ps?.depthClassification ?? "HEALTHY";
           return (
-            <div key={pos} className="lt-col-pos lt-pos-cell">
-              <div className="lt-pos-bar-row">
-                <MiniBar score={ps?.starterScore ?? 0} />
-                <span className="lt-pos-score" style={{ color: POS_CLASS_COLOR[sClass] }}>
-                  {(ps?.starterScore ?? 0).toFixed(0)}
-                </span>
+            <div key={pos} className="lt-col-pos lt-pos-cell-compact">
+              <div className="lt-cell-line">
+                <span className="lt-cell-score">{(ps?.starterScore ?? 0).toFixed(0)}</span>
+                <ClassIndicator kind={sClass} />
               </div>
-              <div className="lt-pos-bar-row">
-                <MiniBar score={ps?.depthScore ?? 0} />
-                <span className="lt-pos-score" style={{ color: POS_CLASS_COLOR[dClass] }}>
-                  {(ps?.depthScore ?? 0).toFixed(0)}
+              <div className="lt-cell-line">
+                <span className="lt-cell-score">{(ps?.depthScore ?? 0).toFixed(0)}</span>
+                <ClassIndicator kind={dClass} />
+              </div>
+              <div className="lt-cell-line lt-cell-class-line">
+                <span className="lt-cell-class" style={{ color: combinedColor(sClass, dClass) }}>
+                  {combinedLabel(sClass, dClass)}
                 </span>
               </div>
             </div>
