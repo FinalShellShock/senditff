@@ -27,6 +27,8 @@ const POS_CLASS_COLOR: Record<string, string> = {
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 
+// MiniBar kept for any external consumers (TeamDeepDive has its own copy);
+// the league table no longer uses it — replaced by ThickBar below.
 function MiniBar({ score }: { score: number }) {
   const pct = Math.max(0, Math.min(100, score));
   const color = pct >= 70 ? "#22c55e" : pct >= 50 ? "#06b6d4" : pct >= 30 ? "#eab308" : "#ef4444";
@@ -173,27 +175,6 @@ function ThickBar({ score, kind }: { score: number; kind?: SubClassification }) 
   );
 }
 
-// Position-specific colors for the per-row position headers.
-const POS_COLOR: Record<string, string> = {
-  QB: "#f97316", // orange
-  RB: "#eab308", // yellow
-  WR: "#3b82f6", // blue
-  TE: "#a855f7", // purple
-};
-
-// Combined per-position classification label shown in the collapsed view.
-// "OK" if both starter + depth are HEALTHY/SURPLUS, otherwise the worse-side
-// label (NEED / CRITICAL).
-function combinedLabel(s?: SubClassification, d?: SubClassification): string {
-  if (s === "CRITICAL" || d === "CRITICAL") return "CRITICAL";
-  if (s === "NEED" || d === "NEED") return "NEED";
-  return "OK";
-}
-function combinedColor(s?: SubClassification, d?: SubClassification): string {
-  if (s === "CRITICAL" || d === "CRITICAL") return POS_CLASS_COLOR.CRITICAL ?? "#ef4444";
-  if (s === "NEED" || d === "NEED") return POS_CLASS_COLOR.NEED ?? "#eab308";
-  return POS_CLASS_COLOR.HEALTHY ?? "#22c55e";
-}
 
 // Compact collapsed row — self-contained mini-table per team. Each row has
 // its own QB/RB/WR/TE column headers (so you don't lose context as you
@@ -215,38 +196,42 @@ function LeagueTableRow({
   const labelColor = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
 
   return (
-    <div className={`lt-row${profile.isMine ? " mine" : ""}${expanded ? " expanded" : ""}`}>
-      <div className="lt-row-main" onClick={onToggle}>
-        <div className={`lt-col-sticky lt-row-sticky${profile.isMine ? " mine-bg" : ""}`}>
-          <div className="lt-row-stack">
-            <div className="lt-row-header">
-              <span className="lt-rank">#{profile.starterRank}</span>
-              <span className="lt-name">
-                {profile.ownerName}
-                {profile.isMine && <span className="mine-mark"> ★</span>}
-              </span>
-            </div>
-            <div className="lt-row-meta">
-              <span className="window-label" style={{ background: labelColor }}>
-                {profile.windowLabel ?? "—"}
-              </span>
-              <span className="lt-row-meta-dim">{profile.record}</span>
-              <span className="lt-row-meta-dim">age {(profile.starterCalAge ?? 0).toFixed(1)}</span>
-            </div>
-          </div>
+    <div className={`lt-row${profile.isMine ? " mine" : ""}${expanded ? " expanded" : ""}`} onClick={onToggle}>
+      {/* Top info bar — same in collapsed AND expanded */}
+      <div className="lt-row-top">
+        <div className="lt-row-top-left">
+          <span className="lt-rank">#{profile.starterRank}</span>
+          <span className="lt-name">
+            {profile.ownerName}
+            {profile.isMine && <span className="mine-mark"> ★</span>}
+          </span>
         </div>
+        <div className="lt-row-top-right">
+          <span className="window-label" style={{ background: labelColor }}>
+            {profile.windowLabel ?? "—"}
+          </span>
+          <span className="lt-row-meta-dim">{profile.record}</span>
+          <span className="lt-row-meta-dim">age {(profile.starterCalAge ?? 0).toFixed(1)}</span>
+          <PicksDots picks={profile.picks ?? []} flag={profile.pickCapital?.flag ?? "NEUTRAL"} />
+          <button
+            className="lt-row-chevron"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
+            aria-label={expanded ? "collapse" : "expand"}
+          >
+            {expanded ? "▴" : "▾"}
+          </button>
+        </div>
+      </div>
 
+      {!expanded && (
         <div className="lt-pos-grid">
-          {/* Header row — position labels colored to match position */}
+          {/* Header row */}
           <div className="lt-pos-grid-corner" />
           {POSITIONS.map((pos) => (
-            <div
-              key={`h-${pos}`}
-              className="lt-pos-grid-pos-header"
-              style={{ color: POS_COLOR[pos] }}
-            >
-              {pos}
-            </div>
+            <div key={`h-${pos}`} className="lt-pos-grid-pos-header">{pos}</div>
           ))}
 
           {/* Starter row */}
@@ -272,43 +257,50 @@ function LeagueTableRow({
               </div>
             );
           })}
-
-          {/* Combined classification row */}
-          <div className="lt-pos-grid-row-label-empty" />
-          {POSITIONS.map((pos) => {
-            const ps = profile.positionScores?.[pos];
-            const sClass = ps?.starterClassification ?? "HEALTHY";
-            const dClass = ps?.depthClassification ?? "HEALTHY";
-            return (
-              <div key={`c-${pos}`} className="lt-pos-grid-class-cell">
-                <span className="lt-pos-grid-class" style={{ color: combinedColor(sClass, dClass) }}>
-                  {combinedLabel(sClass, dClass)}
-                </span>
-              </div>
-            );
-          })}
         </div>
-
-        <div className="lt-col-picks">
-          <PicksDots picks={profile.picks ?? []} flag={profile.pickCapital?.flag ?? "NEUTRAL"} />
-        </div>
-
-        <button
-          className="lt-row-chevron"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle();
-          }}
-          aria-label={expanded ? "collapse" : "expand"}
-        >
-          {expanded ? "▴" : "▾"}
-        </button>
-      </div>
+      )}
 
       {expanded && (
         <div className="lt-row-detail">
-          <div className="lt-row-detail-header">
-            <span>Per-position breakdown</span>
+          <div className="lt-detail-two-col">
+            <div className="lt-detail-side">
+              <div className="lt-detail-side-heading">STARTERS</div>
+              {POSITIONS.map((pos) => {
+                const ps = profile.positionScores?.[pos];
+                const sClass = ps?.starterClassification ?? "HEALTHY";
+                return (
+                  <div key={`s-${pos}`} className="lt-detail-line">
+                    <span className="lt-detail-pos">{pos}</span>
+                    <ThickBar score={ps?.starterScore ?? 0} kind={sClass} />
+                    <span className="lt-detail-num">{(ps?.starterScore ?? 0).toFixed(0)}</span>
+                    <span className="lt-detail-class" style={{ color: POS_CLASS_COLOR[sClass] }}>
+                      {sClass}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="lt-detail-side">
+              <div className="lt-detail-side-heading">DEPTH</div>
+              {POSITIONS.map((pos) => {
+                const ps = profile.positionScores?.[pos];
+                const dClass = ps?.depthClassification ?? "HEALTHY";
+                return (
+                  <div key={`d-${pos}`} className="lt-detail-line">
+                    <span className="lt-detail-pos">{pos}</span>
+                    <ThickBar score={ps?.depthScore ?? 0} kind={dClass} />
+                    <span className="lt-detail-num">{(ps?.depthScore ?? 0).toFixed(0)}</span>
+                    <span className="lt-detail-class" style={{ color: POS_CLASS_COLOR[dClass] }}>
+                      {dClass}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="lt-detail-footer">
             <button
               className="btn-link"
               onClick={(e) => {
@@ -318,34 +310,6 @@ function LeagueTableRow({
             >
               Open full deep dive →
             </button>
-          </div>
-          <div className="lt-detail-grid">
-            {POSITIONS.map((pos) => {
-              const ps = profile.positionScores?.[pos];
-              const sClass = ps?.starterClassification ?? "HEALTHY";
-              const dClass = ps?.depthClassification ?? "HEALTHY";
-              return (
-                <div key={pos} className="lt-detail-pos">
-                  <div className="lt-detail-pos-name">{pos}</div>
-                  <div className="lt-detail-side">
-                    <span className="lt-detail-side-label">STARTERS</span>
-                    <MiniBar score={ps?.starterScore ?? 0} />
-                    <span className="lt-detail-side-score">{(ps?.starterScore ?? 0).toFixed(0)}</span>
-                    <span className="lt-detail-side-class" style={{ color: POS_CLASS_COLOR[sClass] }}>
-                      {sClass}
-                    </span>
-                  </div>
-                  <div className="lt-detail-side">
-                    <span className="lt-detail-side-label">DEPTH</span>
-                    <MiniBar score={ps?.depthScore ?? 0} />
-                    <span className="lt-detail-side-score">{(ps?.depthScore ?? 0).toFixed(0)}</span>
-                    <span className="lt-detail-side-class" style={{ color: POS_CLASS_COLOR[dClass] }}>
-                      {dClass}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
       )}

@@ -816,21 +816,40 @@ body {
 .lt-row {
   background: rgba(255,255,255,0.02);
   border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 6px;
-  transition: border-color 0.12s;
+  border-radius: 8px;
+  transition: border-color 0.12s, background 0.12s;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  cursor: pointer;
+  padding: 12px 14px;
 }
 
 .lt-row:hover { border-color: rgba(255,255,255,0.12); }
 .lt-row.mine { border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.03); }
 .lt-row.expanded { border-color: rgba(245,158,11,0.5); }
 
-.lt-row-main {
+.lt-row-top {
   display: flex;
-  align-items: stretch;
-  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.lt-row-top-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lt-row-top-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 /* Sticky-column inner stack so row labels align with the bars in cells */
@@ -879,6 +898,7 @@ body {
   font-weight: 800;
   text-align: center;
   padding-bottom: 4px;
+  color: #f59e0b;
 }
 
 .lt-pos-grid-row-label {
@@ -1063,80 +1083,70 @@ body {
   margin-top: 1px;
 }
 
-/* Expanded detail panel — shown when a row is clicked */
+/* Expanded detail — two-column STARTERS | DEPTH layout with full bars,
+   exact scores, and per-side classification labels. */
 .lt-row-detail {
-  background: rgba(255,255,255,0.02);
-  border-top: 1px solid rgba(255,255,255,0.06);
-  padding: 12px 14px;
+  padding-top: 4px;
 }
 
-.lt-row-detail-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  font-size: 10px;
-  color: #94a3b8;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-.lt-detail-grid {
+.lt-detail-two-col {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 12px;
 }
 
-.lt-detail-pos {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 5px;
-  padding: 8px 10px;
+.lt-detail-side {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.lt-detail-pos-name {
-  font-size: 11px;
+.lt-detail-side-heading {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+
+.lt-detail-line {
+  display: grid;
+  grid-template-columns: 26px 1fr 28px 70px;
+  align-items: center;
+  gap: 8px;
+}
+
+.lt-detail-pos {
+  font-size: 12px;
+  font-weight: 700;
+  color: #cbd5e1;
+  letter-spacing: 1px;
+}
+
+.lt-detail-num {
+  font-size: 12px;
   font-weight: 700;
   color: #e2e8f0;
-  letter-spacing: 1px;
-}
-
-.lt-detail-side {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10px;
-}
-
-.lt-detail-side-label {
-  font-size: 8px;
-  color: #64748b;
-  letter-spacing: 1px;
-  font-weight: 700;
-  min-width: 44px;
-}
-
-.lt-detail-side-score {
-  font-size: 11px;
-  color: #cbd5e1;
-  font-weight: 700;
-  min-width: 20px;
   text-align: right;
 }
 
-.lt-detail-side-class {
-  font-size: 9px;
+.lt-detail-class {
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.3px;
-  margin-left: auto;
+  letter-spacing: 0.5px;
+}
+
+.lt-detail-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
 }
 
 @media (max-width: 600px) {
-  .lt-detail-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .lt-detail-two-col {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 
