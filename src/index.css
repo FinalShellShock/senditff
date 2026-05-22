@@ -368,9 +368,10 @@ body {
 
 /* ── Grid team cards ─────────────────────────────────────────────────── */
 /* Three responsive density modes:
-   Desktop (≥900px):  bars for Starter + Depth × 4 positions + picks
-   Medium  (500-900): 2-char number columns (POS / starter / depth stacked)
-   Mobile  (<500):    just rank + name */
+   Desktop (≥900px):  bars for Starter + Depth × 4 positions
+   Medium  (500-900): 2-char number columns (POS / starter / depth stacked),
+                      window label collapses to a colored dot
+   Mobile  (<500):    just rank + name + label dot */
 
 .grid-team-card {
   background: rgba(255,255,255,0.03);
@@ -390,8 +391,8 @@ body {
 
 .gtc-name-line {
   display: flex;
-  align-items: baseline;
-  gap: 5px;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -410,6 +411,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .grid-team-card.mine .gtc-name { color: #f59e0b; }
@@ -418,12 +420,25 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .gtc-age {
   font-size: 10px;
   color: #64748b;
+  flex-shrink: 0;
+}
+
+/* Default: show full window-label pill, hide dot. Below 900px the rule
+   below swaps them. */
+.gtc-name-line .window-label { display: inline-block; }
+.gtc-name-line .window-dot {
+  display: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 /* Desktop: vertical position blocks (one per position, starter + depth rows) */
@@ -459,17 +474,10 @@ body {
 
 .gtc-pos-line {
   display: grid;
-  grid-template-columns: 40px 1fr 18px 56px;
+  grid-template-columns: 1fr 18px 56px;
   align-items: center;
   gap: 6px;
   min-width: 0;
-}
-
-.gtc-pos-line-label {
-  font-size: 9px;
-  color: #64748b;
-  letter-spacing: 0.5px;
-  text-transform: lowercase;
 }
 
 .gtc-pos-line .lt-thick-bar-track {
@@ -525,22 +533,18 @@ body {
 .gtc-numbers-starter { font-weight: 800; }
 .gtc-numbers-depth   { opacity: 0.85; }
 
-.gtc-picks {
-  margin-top: 2px;
-}
-
-/* Medium: drop bars, show stacked numbers */
+/* Medium: drop bars, show stacked numbers, collapse window-label to dot */
 @media (max-width: 900px) {
   .gtc-bars { display: none; }
   .gtc-numbers { display: grid; }
+  .gtc-name-line .window-label { display: none; }
+  .gtc-name-line .window-dot { display: inline-block; }
   .gtc-meta .gtc-age { display: none; }
 }
 
-/* Mobile: just rank + name */
+/* Mobile: rank + name + window-label dot only */
 @media (max-width: 500px) {
-  .gtc-meta { display: none; }
   .gtc-numbers { display: none; }
-  .gtc-picks { display: none; }
   .grid-team-card { padding: 6px; }
   .gtc-name { font-size: 11px; }
 }

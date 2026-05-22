@@ -50,13 +50,22 @@ function GridTeamCard({ profile, onClick }: { profile: TeamProfile; onClick: () 
       <div className="gtc-name-line">
         <span className="gtc-rank">#{profile.starterRank}</span>
         <span className="gtc-name">{profile.ownerName}{profile.isMine && " ★"}</span>
-      </div>
-
-      <div className="gtc-meta">
-        <span className="window-label" style={{ background: labelColor }}>
-          {profile.windowLabel ?? "—"}
+        <span className="gtc-meta">
+          <span
+            className="window-label"
+            style={{ background: labelColor }}
+            title={profile.windowLabel ?? "—"}
+          >
+            {profile.windowLabel ?? "—"}
+          </span>
+          <span
+            className="window-dot"
+            style={{ background: labelColor }}
+            title={profile.windowLabel ?? "—"}
+            aria-label={profile.windowLabel ?? ""}
+          />
+          <span className="gtc-age">{(profile.starterCalAge ?? 0).toFixed(1)}y</span>
         </span>
-        <span className="gtc-age">{(profile.starterCalAge ?? 0).toFixed(1)}y</span>
       </div>
 
       {/* Desktop: vertical position blocks (one per position, starter + depth
@@ -71,7 +80,6 @@ function GridTeamCard({ profile, onClick }: { profile: TeamProfile; onClick: () 
               <div className="gtc-pos-label">{pos}</div>
               <div className="gtc-pos-lines">
                 <div className="gtc-pos-line">
-                  <span className="gtc-pos-line-label">starter</span>
                   <ThickBar score={ps?.starterScore ?? 0} kind={sClass} />
                   <span className="gtc-pos-num">{(ps?.starterScore ?? 0).toFixed(0)}</span>
                   <span className="gtc-pos-class" style={{ color: POS_CLASS_COLOR[sClass] }}>
@@ -79,7 +87,6 @@ function GridTeamCard({ profile, onClick }: { profile: TeamProfile; onClick: () 
                   </span>
                 </div>
                 <div className="gtc-pos-line">
-                  <span className="gtc-pos-line-label">depth</span>
                   <ThickBar score={ps?.depthScore ?? 0} kind={dClass} />
                   <span className="gtc-pos-num">{(ps?.depthScore ?? 0).toFixed(0)}</span>
                   <span className="gtc-pos-class" style={{ color: POS_CLASS_COLOR[dClass] }}>
@@ -110,10 +117,6 @@ function GridTeamCard({ profile, onClick }: { profile: TeamProfile; onClick: () 
             </div>
           );
         })}
-      </div>
-
-      <div className="gtc-picks">
-        <PicksDots picks={profile.picks ?? []} flag={profile.pickCapital?.flag ?? "NEUTRAL"} />
       </div>
     </div>
   );
