@@ -25,6 +25,7 @@ import type {
   Player,
   Position,
   PositionScore,
+  SubClassification,
   TeamInput,
   TeamProfile,
   WindowTier,
@@ -333,56 +334,79 @@ export function classifyPosition(score: PositionScore["urgency"]): PositionScore
   return "SURPLUS";
 }
 
-// Z-score-based classifier + needKind output. Thresholds are statistical
-// (standard deviations from the mean of the top-N starter/depth pool at the
-// position), not hardcoded score cliffs. The reference distribution adapts
-// to whatever the actual FantasyCalc market values look like for this
-// position in this format — bimodal TEs naturally produce wider std, flat
-// QB scoring naturally produces tighter clusters, all without hand-tuning.
+// Per-side z-score classifier with absolute floor. Replaces the previous
+// blended classifyPositionRich.
 //
-//   z > +0.75         → eligible for SURPLUS (well above typical starter)
-//   z >= -0.5         → HEALTHY (at or near typical)
-//   z >= -1.5         → NEED (below typical, but on the spectrum)
-//   z < -1.5          → CRITICAL (more than 1.5 std dev below typical)
+// Thresholds (tightened from the previous z < -0.5 / -1.5 pair to reduce
+// noise — half the league shouldn't be NEED at depth just because half is
+// below mean by definition):
+//   z >= -1.0          → HEALTHY
+//   z >= -2.0          → NEED
+//   z <  -2.0          → CRITICAL
 //
-// The minStarter z-score (worst slot) carries the same thresholds — a single
-// catastrophic slot in a multi-slot position trips classification even when
-// the weighted average looks OK.
-export function classifyPositionRich(args: {
-  starterWeightedZ: number;
-  minStarterZ: number;
-  depthZ: number;
-  depthSlots: number;
+// Absolute floor (handles bimodal positions where wide std hides
+// catastrophic absolute values):
+//   value < worst_top_N × 0.15  → CRITICAL (severely below replacement)
+//   value < worst_top_N × 0.35  → NEED minimum
+// where worst_top_N is the lowest value in the reference top-N pool.
+//
+// For SURPLUS, both halves need to be solid (positive z) AND pressure low.
+export function classifySide(args: {
+  weightedZ: number;
+  minSlotZ: number;
+  weightedValue: number;
+  minSlotValue: number;
+  worstTopN: number;
+}): SubClassification {
+  const { weightedZ, minSlotZ, weightedValue, minSlotValue, worstTopN } = args;
+  const criticalFloor = worstTopN * 0.15;
+  const needFloor = worstTopN * 0.35;
+
+  // CRITICAL: very far below typical OR absolute floor breach
+  if (minSlotZ < -2.0 || weightedZ < -2.0 || minSlotValue < criticalFloor) {
+    return "CRITICAL";
+  }
+  // NEED: below typical OR below VOLS-floor proxy
+  if (minSlotZ < -1.0 || weightedZ < -1.0 || minSlotValue < needFloor) {
+    return "NEED";
+  }
+  // SURPLUS: comfortably above typical
+  if (weightedZ > 0.75 && minSlotZ > 0.0) {
+    return "SURPLUS";
+  }
+  return "HEALTHY";
+}
+
+// Combine the two sub-classifications into the overall label + needKind.
+// "Worst of the two halves" — if either side is CRITICAL, the position is
+// CRITICAL_NEED. If one is NEED and the other is HEALTHY, it's NEED.
+// SURPLUS only fires if both halves are SURPLUS-eligible AND pressure is low.
+export function combineClassifications(args: {
+  starterSub: SubClassification;
+  depthSub: SubClassification;
   pressure: number;
 }): { classification: PositionScore["classification"]; needKind: NeedKind } {
-  const { starterWeightedZ, minStarterZ, depthZ, depthSlots, pressure } = args;
+  const { starterSub, depthSub, pressure } = args;
+  const sIsBad = starterSub === "CRITICAL" || starterSub === "NEED";
+  const dIsBad = depthSub === "CRITICAL" || depthSub === "NEED";
 
-  const starterWeak = minStarterZ < -0.5 || starterWeightedZ < -0.5;
-  const starterCritical = minStarterZ < -1.5 || starterWeightedZ < -1.5;
-  const depthCatastrophic = depthZ < -1.5;
-  const depthWeak = depthZ < -0.5;
-
-  // Catastrophic starter slot is critical regardless of depth.
-  if (starterCritical) {
-    return { classification: "CRITICAL_NEED", needKind: depthWeak ? "both" : "starter" };
+  if (starterSub === "CRITICAL" || depthSub === "CRITICAL") {
+    return {
+      classification: "CRITICAL_NEED",
+      needKind: sIsBad && dIsBad ? "both" : (starterSub === "CRITICAL" ? "starter" : "depth"),
+    };
   }
-  // Catastrophic depth (very rare — bottom 7% of depth values) is also CRITICAL
-  // if multi-slot, since you have nothing playable behind your starter.
-  if (depthCatastrophic && depthSlots >= 2) {
-    return { classification: "CRITICAL_NEED", needKind: "depth" };
+  if (sIsBad && dIsBad) {
+    return { classification: "NEED", needKind: "both" };
   }
-  // Starter below typical (z < -0.5) is NEED.
-  if (starterWeak) {
-    return { classification: "NEED", needKind: depthWeak ? "both" : "starter" };
+  if (sIsBad) {
+    return { classification: "NEED", needKind: "starter" };
   }
-  // Starter is fine; check depth alone.
-  if (depthCatastrophic || (depthWeak && depthSlots >= 2)) {
+  if (dIsBad) {
     return { classification: "NEED", needKind: "depth" };
   }
-  // SURPLUS: both halves above typical AND low pressure. Contenders are
-  // never SURPLUS — even an elite tier-down candidate is something they
-  // still want to hold while competing.
-  if (starterWeightedZ > 0.75 && depthZ > 0.0 && pressure < 50) {
+  // Both at least HEALTHY. SURPLUS requires both SURPLUS-tier AND low pressure.
+  if (starterSub === "SURPLUS" && depthSub === "SURPLUS" && pressure < 50) {
     return { classification: "SURPLUS", needKind: null };
   }
   return { classification: "HEALTHY", needKind: null };
@@ -481,24 +505,45 @@ export function computePositionScores(
     const importance = positionImportance(pos, format);
     const urgency = gapUrgency * pressureMult * importance;
 
-    // Z-scores against the top-N starter/depth distributions. These drive
-    // classification (whether the team has a real NEED here), separate from
-    // the rank-score values used for urgency/display. Z-scoring against the
-    // market-derived distribution means thresholds are statistical, not
-    // hand-calibrated to a specific league snapshot.
+    // Z-scores against the top-N starter/depth distributions, plus absolute
+    // value tracking for the absolute-floor check that catches catastrophic
+    // values in wide distributions (bimodal TE, etc.).
     const sStats = averages.starterStats[pos];
     const dStats = averages.depthStats[pos];
+    const sortedStarterPool = [...averages.starterPlayerPool[pos]].sort((a, b) => b - a);
+    const sortedDepthPool = [...averages.depthPlayerPool[pos]].sort((a, b) => b - a);
+    const sWorstTopN = sortedStarterPool[Math.max(0, averages.startersInUse[pos] - 1)] ?? 1;
+    const dWorstTopN = sortedDepthPool[Math.max(0, averages.depthSlotsTotal[pos] - 1)] ?? 1;
+
     const starterPlayerZs = starters[pos].map((p) => (p.valueRedraft - sStats.mean) / sStats.std);
     const depthPlayerZs = depth[pos].map((p) => (p.valueDynasty - dStats.mean) / dStats.std);
-    const starterWeightedZ = starterPlayerZs.length > 0 ? weightedSlotAverage(starterPlayerZs) : -2;
-    const minStarterZ = starterPlayerZs.length > 0 ? Math.min(...starterPlayerZs) : -2;
-    const depthZ = depthPlayerZs.length > 0 ? weightedSlotAverage(depthPlayerZs) : -2;
+    const starterWeightedZ = starterPlayerZs.length > 0 ? weightedSlotAverage(starterPlayerZs) : -3;
+    const minStarterZ = starterPlayerZs.length > 0 ? Math.min(...starterPlayerZs) : -3;
+    const depthWeightedZ = depthPlayerZs.length > 0 ? weightedSlotAverage(depthPlayerZs) : -3;
+    const minDepthZ = depthPlayerZs.length > 0 ? Math.min(...depthPlayerZs) : -3;
 
-    const { classification, needKind } = classifyPositionRich({
-      starterWeightedZ,
-      minStarterZ,
-      depthZ,
-      depthSlots,
+    const starterValues = starters[pos].map((p) => p.valueRedraft);
+    const depthValues = depth[pos].map((p) => p.valueDynasty);
+    const starterMinValue = starterValues.length > 0 ? Math.min(...starterValues) : 0;
+    const depthMinValue = depthValues.length > 0 ? Math.min(...depthValues) : 0;
+
+    const starterSub = classifySide({
+      weightedZ: starterWeightedZ,
+      minSlotZ: minStarterZ,
+      weightedValue: starterValue,
+      minSlotValue: starterMinValue,
+      worstTopN: sWorstTopN,
+    });
+    const depthSub = classifySide({
+      weightedZ: depthWeightedZ,
+      minSlotZ: minDepthZ,
+      weightedValue: depthValue,
+      minSlotValue: depthMinValue,
+      worstTopN: dWorstTopN,
+    });
+    const { classification, needKind } = combineClassifications({
+      starterSub,
+      depthSub,
       pressure,
     });
 
@@ -509,6 +554,8 @@ export function computePositionScores(
       depthValue,
       depthScore,
       urgency,
+      starterClassification: starterSub,
+      depthClassification: depthSub,
       classification,
       needKind,
     };

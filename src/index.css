@@ -927,6 +927,14 @@ body {
   letter-spacing: 0;
 }
 
+.lt-pos-sub-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  display: block;
+  margin-top: 1px;
+}
+
 /* Picks column */
 .lt-col-picks {
   width: 80px;

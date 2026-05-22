@@ -325,25 +325,41 @@ function weightedSlotAverage(scores) {
   }
   return totalWeight > 0 ? weightedSum / totalWeight : 0;
 }
-function classifyPositionRich(args) {
-  const { starterWeightedZ, minStarterZ, depthZ, depthSlots, pressure } = args;
-  const starterWeak = minStarterZ < -0.5 || starterWeightedZ < -0.5;
-  const starterCritical = minStarterZ < -1.5 || starterWeightedZ < -1.5;
-  const depthCatastrophic = depthZ < -1.5;
-  const depthWeak = depthZ < -0.5;
-  if (starterCritical) {
-    return { classification: "CRITICAL_NEED", needKind: depthWeak ? "both" : "starter" };
+function classifySide(args) {
+  const { weightedZ, minSlotZ, weightedValue, minSlotValue, worstTopN } = args;
+  const criticalFloor = worstTopN * 0.15;
+  const needFloor = worstTopN * 0.35;
+  if (minSlotZ < -2 || weightedZ < -2 || minSlotValue < criticalFloor) {
+    return "CRITICAL";
   }
-  if (depthCatastrophic && depthSlots >= 2) {
-    return { classification: "CRITICAL_NEED", needKind: "depth" };
+  if (minSlotZ < -1 || weightedZ < -1 || minSlotValue < needFloor) {
+    return "NEED";
   }
-  if (starterWeak) {
-    return { classification: "NEED", needKind: depthWeak ? "both" : "starter" };
+  if (weightedZ > 0.75 && minSlotZ > 0) {
+    return "SURPLUS";
   }
-  if (depthCatastrophic || depthWeak && depthSlots >= 2) {
+  return "HEALTHY";
+}
+function combineClassifications(args) {
+  const { starterSub, depthSub, pressure } = args;
+  const sIsBad = starterSub === "CRITICAL" || starterSub === "NEED";
+  const dIsBad = depthSub === "CRITICAL" || depthSub === "NEED";
+  if (starterSub === "CRITICAL" || depthSub === "CRITICAL") {
+    return {
+      classification: "CRITICAL_NEED",
+      needKind: sIsBad && dIsBad ? "both" : starterSub === "CRITICAL" ? "starter" : "depth"
+    };
+  }
+  if (sIsBad && dIsBad) {
+    return { classification: "NEED", needKind: "both" };
+  }
+  if (sIsBad) {
+    return { classification: "NEED", needKind: "starter" };
+  }
+  if (dIsBad) {
     return { classification: "NEED", needKind: "depth" };
   }
-  if (starterWeightedZ > 0.75 && depthZ > 0 && pressure < 50) {
+  if (starterSub === "SURPLUS" && depthSub === "SURPLUS" && pressure < 50) {
     return { classification: "SURPLUS", needKind: null };
   }
   return { classification: "HEALTHY", needKind: null };
@@ -396,16 +412,37 @@ function computePositionScores(team, format, averages) {
     const urgency = gapUrgency * pressureMult * importance;
     const sStats = averages.starterStats[pos];
     const dStats = averages.depthStats[pos];
+    const sortedStarterPool = [...averages.starterPlayerPool[pos]].sort((a, b) => b - a);
+    const sortedDepthPool = [...averages.depthPlayerPool[pos]].sort((a, b) => b - a);
+    const sWorstTopN = sortedStarterPool[Math.max(0, averages.startersInUse[pos] - 1)] ?? 1;
+    const dWorstTopN = sortedDepthPool[Math.max(0, averages.depthSlotsTotal[pos] - 1)] ?? 1;
     const starterPlayerZs = starters[pos].map((p) => (p.valueRedraft - sStats.mean) / sStats.std);
     const depthPlayerZs = depth[pos].map((p) => (p.valueDynasty - dStats.mean) / dStats.std);
-    const starterWeightedZ = starterPlayerZs.length > 0 ? weightedSlotAverage(starterPlayerZs) : -2;
-    const minStarterZ = starterPlayerZs.length > 0 ? Math.min(...starterPlayerZs) : -2;
-    const depthZ = depthPlayerZs.length > 0 ? weightedSlotAverage(depthPlayerZs) : -2;
-    const { classification, needKind } = classifyPositionRich({
-      starterWeightedZ,
-      minStarterZ,
-      depthZ,
-      depthSlots,
+    const starterWeightedZ = starterPlayerZs.length > 0 ? weightedSlotAverage(starterPlayerZs) : -3;
+    const minStarterZ = starterPlayerZs.length > 0 ? Math.min(...starterPlayerZs) : -3;
+    const depthWeightedZ = depthPlayerZs.length > 0 ? weightedSlotAverage(depthPlayerZs) : -3;
+    const minDepthZ = depthPlayerZs.length > 0 ? Math.min(...depthPlayerZs) : -3;
+    const starterValues = starters[pos].map((p) => p.valueRedraft);
+    const depthValues = depth[pos].map((p) => p.valueDynasty);
+    const starterMinValue = starterValues.length > 0 ? Math.min(...starterValues) : 0;
+    const depthMinValue = depthValues.length > 0 ? Math.min(...depthValues) : 0;
+    const starterSub = classifySide({
+      weightedZ: starterWeightedZ,
+      minSlotZ: minStarterZ,
+      weightedValue: starterValue,
+      minSlotValue: starterMinValue,
+      worstTopN: sWorstTopN
+    });
+    const depthSub = classifySide({
+      weightedZ: depthWeightedZ,
+      minSlotZ: minDepthZ,
+      weightedValue: depthValue,
+      minSlotValue: depthMinValue,
+      worstTopN: dWorstTopN
+    });
+    const { classification, needKind } = combineClassifications({
+      starterSub,
+      depthSub,
       pressure
     });
     out[pos] = {
@@ -415,6 +452,8 @@ function computePositionScores(team, format, averages) {
       depthValue,
       depthScore,
       urgency,
+      starterClassification: starterSub,
+      depthClassification: depthSub,
       classification,
       needKind
     };

@@ -64,6 +64,8 @@ export type PickFlag = "PICK_RICH" | "PICK_POOR" | "NEUTRAL";
 
 export type NeedKind = "starter" | "depth" | "both" | null;
 
+export type SubClassification = "CRITICAL" | "NEED" | "HEALTHY" | "SURPLUS";
+
 export type PositionScore = {
   starterValue: number;
   starterScore: number;
@@ -74,10 +76,17 @@ export type PositionScore = {
   depthValue: number;
   depthScore: number;
   urgency: number;
+  // Per-side classifications. starterClassification answers "do you have a
+  // real starter here?" and depthClassification answers "do you have real
+  // insurance / future production here?" — independent signals that drive
+  // different trade strategies.
+  starterClassification?: SubClassification;
+  depthClassification?: SubClassification;
+  // Overall classification = worst of the two sub-classifications. Kept for
+  // backward compat with consumers that haven't switched to sub-fields yet.
   classification: "CRITICAL_NEED" | "NEED" | "HEALTHY" | "SURPLUS";
-  // When classification is NEED or CRITICAL_NEED, indicates whether the issue
-  // is the starter, the depth, or both. Drives UI labelling and influences
-  // which trade archetypes the engine prioritises for this position.
+  // When overall classification is NEED or CRITICAL_NEED, indicates whether
+  // the issue is the starter, the depth, or both.
   needKind?: NeedKind;
 };
 

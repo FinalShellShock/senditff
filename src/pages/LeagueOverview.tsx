@@ -19,6 +19,7 @@ const LABEL_COLOR: Record<WindowLabel, string> = {
 
 const POS_CLASS_COLOR: Record<string, string> = {
   CRITICAL_NEED: "#ef4444",
+  CRITICAL:      "#ef4444",
   NEED:          "#eab308",
   HEALTHY:       "#22c55e",
   SURPLUS:       "#06b6d4",
@@ -191,15 +192,19 @@ function LeagueTableRow({ profile, leagueId }: { profile: TeamProfile; leagueId:
               <span className="lt-pos-score">{(ps?.starterScore ?? 0).toFixed(0)}</span>
             </div>
             <div className="lt-pos-bar-row">
+              <span className="lt-pos-sub-label" style={{ color: POS_CLASS_COLOR[ps?.starterClassification ?? "HEALTHY"] }}>
+                STR {(ps?.starterClassification ?? "—")}
+              </span>
+            </div>
+            <div className="lt-pos-bar-row">
               <MiniBar score={ps?.depthScore ?? 0} />
               <span className="lt-pos-score">{(ps?.depthScore ?? 0).toFixed(0)}</span>
             </div>
-            <span className="lt-pos-class" style={{ color: POS_CLASS_COLOR[ps?.classification ?? "HEALTHY"] }}>
-              {(ps?.classification ?? "—").replace("_", " ")}
-              {ps?.needKind && ps.needKind !== null && (
-                <span className="lt-pos-class-kind"> ({ps.needKind})</span>
-              )}
-            </span>
+            <div className="lt-pos-bar-row">
+              <span className="lt-pos-sub-label" style={{ color: POS_CLASS_COLOR[ps?.depthClassification ?? "HEALTHY"] }}>
+                DEP {(ps?.depthClassification ?? "—")}
+              </span>
+            </div>
           </div>
         );
       })}
