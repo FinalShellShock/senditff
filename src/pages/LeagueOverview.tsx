@@ -159,58 +159,124 @@ function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
   );
 }
 
-function LeagueTableRow({ profile, leagueId }: { profile: TeamProfile; leagueId: string }) {
+// Compact collapsed row. Shows bars + numbers for starter (top) and depth
+// (bottom), plus a single classification label per position cell. Clicking
+// the row toggles expansion to show full per-side classifications + window
+// context. Row labels in the leftmost column ("STARTERS" / "DEPTH") make
+// the STR/DEP suffix redundant.
+function LeagueTableRow({
+  profile,
+  leagueId,
+  expanded,
+  onToggle,
+}: {
+  profile: TeamProfile;
+  leagueId: string;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
   const navigate = useNavigate();
   const labelColor = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
+
   return (
-    <div
-      className={`lt-row${profile.isMine ? " mine" : ""}`}
-      onClick={() => navigate(`/league/${leagueId}/team/${profile.rosterId}`)}
-    >
-      <div className={`lt-col-sticky lt-row-sticky${profile.isMine ? " mine-bg" : ""}`}>
-        <span className="lt-rank">#{profile.starterRank}</span>
-        <div className="lt-owner">
-          <span className="lt-name">
-            {profile.ownerName}
-            {profile.isMine && <span className="mine-mark"> ★</span>}
-          </span>
-          <div style={{ display: "flex", gap: 5, alignItems: "center", marginTop: 2, flexWrap: "wrap" }}>
-            <span className="window-label" style={{ background: labelColor, fontSize: 9, padding: "1px 5px" }}>
-              {profile.windowLabel ?? "—"}
-            </span>
-            <span style={{ fontSize: 10, color: "#475569" }}>{profile.record}</span>
-            <span style={{ fontSize: 10, color: "#475569" }}>age {(profile.starterCalAge ?? 0).toFixed(1)}</span>
+    <div className={`lt-row${profile.isMine ? " mine" : ""}${expanded ? " expanded" : ""}`}>
+      <div
+        className={`lt-row-main`}
+        onClick={onToggle}
+      >
+        <div className={`lt-col-sticky lt-row-sticky${profile.isMine ? " mine-bg" : ""}`}>
+          <div className="lt-row-stack">
+            <div className="lt-row-header">
+              <span className="lt-rank">#{profile.starterRank}</span>
+              <span className="lt-name">
+                {profile.ownerName}
+                {profile.isMine && <span className="mine-mark"> ★</span>}
+              </span>
+            </div>
+            <div className="lt-row-meta">
+              <span className="window-label" style={{ background: labelColor }}>
+                {profile.windowLabel ?? "—"}
+              </span>
+              <span className="lt-row-meta-dim">{profile.record}</span>
+              <span className="lt-row-meta-dim">age {(profile.starterCalAge ?? 0).toFixed(1)}</span>
+            </div>
+            <div className="lt-row-label">STARTERS</div>
+            <div className="lt-row-label">DEPTH</div>
           </div>
         </div>
+        {POSITIONS.map((pos) => {
+          const ps = profile.positionScores?.[pos];
+          // Use the per-side classifications. The cell shows one summary
+          // chip per side; if either side is worse than HEALTHY, that side's
+          // chip color reflects the issue.
+          const sClass = ps?.starterClassification ?? "HEALTHY";
+          const dClass = ps?.depthClassification ?? "HEALTHY";
+          return (
+            <div key={pos} className="lt-col-pos lt-pos-cell">
+              <div className="lt-pos-bar-row">
+                <MiniBar score={ps?.starterScore ?? 0} />
+                <span className="lt-pos-score" style={{ color: POS_CLASS_COLOR[sClass] }}>
+                  {(ps?.starterScore ?? 0).toFixed(0)}
+                </span>
+              </div>
+              <div className="lt-pos-bar-row">
+                <MiniBar score={ps?.depthScore ?? 0} />
+                <span className="lt-pos-score" style={{ color: POS_CLASS_COLOR[dClass] }}>
+                  {(ps?.depthScore ?? 0).toFixed(0)}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+        <div className="lt-col-picks">
+          <PicksDots picks={profile.picks ?? []} flag={profile.pickCapital?.flag ?? "NEUTRAL"} />
+        </div>
       </div>
-      {POSITIONS.map((pos) => {
-        const ps = profile.positionScores?.[pos];
-        return (
-          <div key={pos} className="lt-col-pos lt-pos-cell">
-            <div className="lt-pos-bar-row">
-              <MiniBar score={ps?.starterScore ?? 0} />
-              <span className="lt-pos-score">{(ps?.starterScore ?? 0).toFixed(0)}</span>
-            </div>
-            <div className="lt-pos-bar-row">
-              <span className="lt-pos-sub-label" style={{ color: POS_CLASS_COLOR[ps?.starterClassification ?? "HEALTHY"] }}>
-                STR {(ps?.starterClassification ?? "—")}
-              </span>
-            </div>
-            <div className="lt-pos-bar-row">
-              <MiniBar score={ps?.depthScore ?? 0} />
-              <span className="lt-pos-score">{(ps?.depthScore ?? 0).toFixed(0)}</span>
-            </div>
-            <div className="lt-pos-bar-row">
-              <span className="lt-pos-sub-label" style={{ color: POS_CLASS_COLOR[ps?.depthClassification ?? "HEALTHY"] }}>
-                DEP {(ps?.depthClassification ?? "—")}
-              </span>
-            </div>
+
+      {expanded && (
+        <div className="lt-row-detail">
+          <div className="lt-row-detail-header">
+            <span>Per-position breakdown</span>
+            <button
+              className="btn-link"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/league/${leagueId}/team/${profile.rosterId}`);
+              }}
+            >
+              Open full deep dive →
+            </button>
           </div>
-        );
-      })}
-      <div className="lt-col-picks">
-        <PicksDots picks={profile.picks ?? []} flag={profile.pickCapital?.flag ?? "NEUTRAL"} />
-      </div>
+          <div className="lt-detail-grid">
+            {POSITIONS.map((pos) => {
+              const ps = profile.positionScores?.[pos];
+              const sClass = ps?.starterClassification ?? "HEALTHY";
+              const dClass = ps?.depthClassification ?? "HEALTHY";
+              return (
+                <div key={pos} className="lt-detail-pos">
+                  <div className="lt-detail-pos-name">{pos}</div>
+                  <div className="lt-detail-side">
+                    <span className="lt-detail-side-label">STARTERS</span>
+                    <MiniBar score={ps?.starterScore ?? 0} />
+                    <span className="lt-detail-side-score">{(ps?.starterScore ?? 0).toFixed(0)}</span>
+                    <span className="lt-detail-side-class" style={{ color: POS_CLASS_COLOR[sClass] }}>
+                      {sClass}
+                    </span>
+                  </div>
+                  <div className="lt-detail-side">
+                    <span className="lt-detail-side-label">DEPTH</span>
+                    <MiniBar score={ps?.depthScore ?? 0} />
+                    <span className="lt-detail-side-score">{(ps?.depthScore ?? 0).toFixed(0)}</span>
+                    <span className="lt-detail-side-class" style={{ color: POS_CLASS_COLOR[dClass] }}>
+                      {dClass}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -221,6 +287,7 @@ export default function LeagueOverview() {
   const { overview, reload } = useOutletContext<LeagueOutletContext>();
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedRoster, setExpandedRoster] = useState<number | null>(null);
 
   async function handleRefresh() {
     if (!id) return;
@@ -268,10 +335,6 @@ export default function LeagueOverview() {
               {POSITIONS.map((pos) => (
                 <div key={pos} className="lt-col-pos lt-pos-header-cell">
                   <span className="lt-header-label">{pos}</span>
-                  <div className="lt-pos-sub-labels">
-                    <span>STR</span>
-                    <span>DEP</span>
-                  </div>
                 </div>
               ))}
               <div className="lt-col-picks">
@@ -279,7 +342,13 @@ export default function LeagueOverview() {
               </div>
             </div>
             {sorted.map((p) => (
-              <LeagueTableRow key={p.rosterId} profile={p} leagueId={id!} />
+              <LeagueTableRow
+                key={p.rosterId}
+                profile={p}
+                leagueId={id!}
+                expanded={expandedRoster === p.rosterId}
+                onToggle={() => setExpandedRoster(expandedRoster === p.rosterId ? null : p.rosterId)}
+              />
             ))}
           </div>
         </section>
