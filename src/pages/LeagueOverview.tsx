@@ -226,78 +226,71 @@ function LeagueTableRow({
         </div>
       </div>
 
-      {!expanded && (
-        <div className="lt-pos-grid">
-          {/* Header row */}
-          <div className="lt-pos-grid-corner" />
-          {POSITIONS.map((pos) => (
-            <div key={`h-${pos}`} className="lt-pos-grid-pos-header">{pos}</div>
-          ))}
+      {/* Position grid — bars always shown, collapsed AND expanded */}
+      <div className="lt-pos-grid">
+        <div className="lt-pos-grid-corner" />
+        {POSITIONS.map((pos) => (
+          <div key={`h-${pos}`} className="lt-pos-grid-pos-header">{pos}</div>
+        ))}
 
-          {/* Starter row */}
-          <div className="lt-pos-grid-row-label">Starter</div>
-          {POSITIONS.map((pos) => {
-            const ps = profile.positionScores?.[pos];
-            const sClass = ps?.starterClassification ?? "HEALTHY";
-            return (
-              <div key={`s-${pos}`} className="lt-pos-grid-bar-cell">
-                <ThickBar score={ps?.starterScore ?? 0} kind={sClass} />
-              </div>
-            );
-          })}
+        <div className="lt-pos-grid-row-label">Starter</div>
+        {POSITIONS.map((pos) => {
+          const ps = profile.positionScores?.[pos];
+          const sClass = ps?.starterClassification ?? "HEALTHY";
+          return (
+            <div key={`s-${pos}`} className="lt-pos-grid-bar-cell">
+              <ThickBar score={ps?.starterScore ?? 0} kind={sClass} />
+            </div>
+          );
+        })}
 
-          {/* Depth row */}
-          <div className="lt-pos-grid-row-label">Depth</div>
-          {POSITIONS.map((pos) => {
-            const ps = profile.positionScores?.[pos];
-            const dClass = ps?.depthClassification ?? "HEALTHY";
-            return (
-              <div key={`d-${pos}`} className="lt-pos-grid-bar-cell">
-                <ThickBar score={ps?.depthScore ?? 0} kind={dClass} />
-              </div>
-            );
-          })}
-        </div>
-      )}
+        <div className="lt-pos-grid-row-label">Depth</div>
+        {POSITIONS.map((pos) => {
+          const ps = profile.positionScores?.[pos];
+          const dClass = ps?.depthClassification ?? "HEALTHY";
+          return (
+            <div key={`d-${pos}`} className="lt-pos-grid-bar-cell">
+              <ThickBar score={ps?.depthScore ?? 0} kind={dClass} />
+            </div>
+          );
+        })}
+      </div>
 
       {expanded && (
         <div className="lt-row-detail">
-          <div className="lt-detail-two-col">
-            <div className="lt-detail-side">
-              <div className="lt-detail-side-heading">STARTERS</div>
-              {POSITIONS.map((pos) => {
-                const ps = profile.positionScores?.[pos];
-                const sClass = ps?.starterClassification ?? "HEALTHY";
-                return (
-                  <div key={`s-${pos}`} className="lt-detail-line">
-                    <span className="lt-detail-pos">{pos}</span>
-                    <ThickBar score={ps?.starterScore ?? 0} kind={sClass} />
-                    <span className="lt-detail-num">{(ps?.starterScore ?? 0).toFixed(0)}</span>
-                    <span className="lt-detail-class" style={{ color: POS_CLASS_COLOR[sClass] }}>
-                      {sClass}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="lt-detail-numbers-grid">
+            <div className="lt-detail-numbers-corner" />
+            {POSITIONS.map((pos) => (
+              <div key={`hn-${pos}`} className="lt-detail-numbers-header">{pos}</div>
+            ))}
 
-            <div className="lt-detail-side">
-              <div className="lt-detail-side-heading">DEPTH</div>
-              {POSITIONS.map((pos) => {
-                const ps = profile.positionScores?.[pos];
-                const dClass = ps?.depthClassification ?? "HEALTHY";
-                return (
-                  <div key={`d-${pos}`} className="lt-detail-line">
-                    <span className="lt-detail-pos">{pos}</span>
-                    <ThickBar score={ps?.depthScore ?? 0} kind={dClass} />
-                    <span className="lt-detail-num">{(ps?.depthScore ?? 0).toFixed(0)}</span>
-                    <span className="lt-detail-class" style={{ color: POS_CLASS_COLOR[dClass] }}>
-                      {dClass}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            <div className="lt-detail-numbers-row-label">Starter</div>
+            {POSITIONS.map((pos) => {
+              const ps = profile.positionScores?.[pos];
+              const sClass = ps?.starterClassification ?? "HEALTHY";
+              return (
+                <div key={`sn-${pos}`} className="lt-detail-numbers-cell">
+                  <span className="lt-detail-numbers-score">{(ps?.starterScore ?? 0).toFixed(0)}</span>
+                  <span className="lt-detail-numbers-class" style={{ color: POS_CLASS_COLOR[sClass] }}>
+                    {sClass}
+                  </span>
+                </div>
+              );
+            })}
+
+            <div className="lt-detail-numbers-row-label">Depth</div>
+            {POSITIONS.map((pos) => {
+              const ps = profile.positionScores?.[pos];
+              const dClass = ps?.depthClassification ?? "HEALTHY";
+              return (
+                <div key={`dn-${pos}`} className="lt-detail-numbers-cell">
+                  <span className="lt-detail-numbers-score">{(ps?.depthScore ?? 0).toFixed(0)}</span>
+                  <span className="lt-detail-numbers-class" style={{ color: POS_CLASS_COLOR[dClass] }}>
+                    {dClass}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           <div className="lt-detail-footer">
