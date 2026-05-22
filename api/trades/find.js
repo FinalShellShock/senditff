@@ -259,6 +259,14 @@ function score0to100(value, leagueAvg) {
   const score = 50 + (value - leagueAvg) / leagueAvg * 50;
   return Math.max(0, Math.min(100, score));
 }
+function topNStats(pool, n) {
+  const safeN = Math.max(1, Math.min(pool.length, n));
+  const sorted = [...pool].sort((a, b) => b - a).slice(0, safeN);
+  if (sorted.length === 0) return { mean: 0, std: 1 };
+  const mean = sorted.reduce((s, v) => s + v, 0) / sorted.length;
+  const variance = sorted.reduce((s, v) => s + (v - mean) ** 2, 0) / sorted.length;
+  return { mean, std: Math.max(1, Math.sqrt(variance)) };
+}
 function avgRankInPool(value, pool) {
   const n = pool.length;
   if (n <= 1) return { avgRank: 1, n };
@@ -375,6 +383,12 @@ function computeLeagueAverages(profiles, format, globalPlayerPools) {
   }
   flex /= n;
   cap /= n;
+  const starterStats = {};
+  const depthStats = {};
+  for (const pos of POSITIONS) {
+    starterStats[pos] = topNStats(starterPlayerPool[pos], startersInUse[pos]);
+    depthStats[pos] = topNStats(depthPlayerPool[pos], depthSlotsTotal[pos]);
+  }
   const variance = profiles.reduce((s, p) => s + (p.pickCapital.value - cap) ** 2, 0) / n;
   return {
     starter,
@@ -386,6 +400,8 @@ function computeLeagueAverages(profiles, format, globalPlayerPools) {
     depthPool,
     starterPlayerPool,
     depthPlayerPool,
+    starterStats,
+    depthStats,
     startersInUse,
     depthSlotsTotal
   };

@@ -124,6 +124,13 @@ export type LeagueAverages = {
   // QB aggregate rank vs other teams."
   starterPlayerPool: Record<Position, number[]>; // redraft values
   depthPlayerPool: Record<Position, number[]>;   // dynasty values
+  // Statistical reference distribution for classification. Mean + std of the
+  // top-N values at each position in the FantasyCalc pool (N = startersInUse
+  // for starters, N = depthSlotsTotal for depth). Used by classifyPositionRich
+  // to z-score players against the actual market distribution instead of
+  // against hardcoded score thresholds.
+  starterStats: Record<Position, { mean: number; std: number }>;
+  depthStats: Record<Position, { mean: number; std: number }>;
   // Data-driven startable threshold: total starting slots actually filled at
   // each position across the league after fillStarters. Captures format and
   // FLEX usage in this specific league. Mirror for depth uses team_count ×

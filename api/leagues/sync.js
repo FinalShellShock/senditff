@@ -278,6 +278,14 @@ function score0to100(value, leagueAvg) {
   const score = 50 + (value - leagueAvg) / leagueAvg * 50;
   return Math.max(0, Math.min(100, score));
 }
+function topNStats(pool, n) {
+  const safeN = Math.max(1, Math.min(pool.length, n));
+  const sorted = [...pool].sort((a, b) => b - a).slice(0, safeN);
+  if (sorted.length === 0) return { mean: 0, std: 1 };
+  const mean = sorted.reduce((s, v) => s + v, 0) / sorted.length;
+  const variance = sorted.reduce((s, v) => s + (v - mean) ** 2, 0) / sorted.length;
+  return { mean, std: Math.max(1, Math.sqrt(variance)) };
+}
 function avgRankInPool(value, pool) {
   const n = pool.length;
   if (n <= 1) return { avgRank: 1, n };
@@ -318,26 +326,24 @@ function weightedSlotAverage(scores) {
   return totalWeight > 0 ? weightedSum / totalWeight : 0;
 }
 function classifyPositionRich(args) {
-  const { starterScore, minStarterSlotScore, depthScore, depthSlots, pressure, urgency } = args;
-  const starterWeak = minStarterSlotScore < 50;
-  const starterCritical = minStarterSlotScore < 30;
-  const depthCatastrophic = depthScore < 10 || depthScore < 20 && depthSlots >= 2;
-  const depthWeak = depthScore < 35;
+  const { starterWeightedZ, minStarterZ, depthZ, depthSlots, pressure } = args;
+  const starterWeak = minStarterZ < -0.5 || starterWeightedZ < -0.5;
+  const starterCritical = minStarterZ < -1.5 || starterWeightedZ < -1.5;
+  const depthCatastrophic = depthZ < -1.5;
+  const depthWeak = depthZ < -0.5;
   if (starterCritical) {
     return { classification: "CRITICAL_NEED", needKind: depthWeak ? "both" : "starter" };
+  }
+  if (depthCatastrophic && depthSlots >= 2) {
+    return { classification: "CRITICAL_NEED", needKind: "depth" };
   }
   if (starterWeak) {
     return { classification: "NEED", needKind: depthWeak ? "both" : "starter" };
   }
-  if (depthCatastrophic) {
+  if (depthCatastrophic || depthWeak && depthSlots >= 2) {
     return { classification: "NEED", needKind: "depth" };
   }
-  if (urgency > 70) return { classification: "CRITICAL_NEED", needKind: "both" };
-  if (urgency >= 50) {
-    const kind = starterScore - 50 < depthScore - 50 ? "starter" : "depth";
-    return { classification: "NEED", needKind: kind };
-  }
-  if (urgency < 30 && starterScore > 70 && depthScore > 55 && pressure < 50) {
+  if (starterWeightedZ > 0.75 && depthZ > 0 && pressure < 50) {
     return { classification: "SURPLUS", needKind: null };
   }
   return { classification: "HEALTHY", needKind: null };
@@ -388,13 +394,19 @@ function computePositionScores(team, format, averages) {
     const pressureMult = 0.6 + pressure / 100 * 0.6;
     const importance = positionImportance(pos, format);
     const urgency = gapUrgency * pressureMult * importance;
+    const sStats = averages.starterStats[pos];
+    const dStats = averages.depthStats[pos];
+    const starterPlayerZs = starters[pos].map((p) => (p.valueRedraft - sStats.mean) / sStats.std);
+    const depthPlayerZs = depth[pos].map((p) => (p.valueDynasty - dStats.mean) / dStats.std);
+    const starterWeightedZ = starterPlayerZs.length > 0 ? weightedSlotAverage(starterPlayerZs) : -2;
+    const minStarterZ = starterPlayerZs.length > 0 ? Math.min(...starterPlayerZs) : -2;
+    const depthZ = depthPlayerZs.length > 0 ? weightedSlotAverage(depthPlayerZs) : -2;
     const { classification, needKind } = classifyPositionRich({
-      starterScore,
-      minStarterSlotScore,
-      depthScore,
+      starterWeightedZ,
+      minStarterZ,
+      depthZ,
       depthSlots,
-      pressure,
-      urgency
+      pressure
     });
     out[pos] = {
       starterValue,
@@ -502,6 +514,12 @@ function computeAllProfiles(teams, format, thisYear, globalPlayerPools) {
   for (const pos of POSITIONS) {
     depthSlotsTotal[pos] = stage2.length * depthSlotsFor(pos, format);
   }
+  const starterStats = {};
+  const depthStats = {};
+  for (const pos of POSITIONS) {
+    starterStats[pos] = topNStats(starterPlayerPool[pos], startersInUse[pos]);
+    depthStats[pos] = topNStats(depthPlayerPool[pos], depthSlotsTotal[pos]);
+  }
   const avgStarter = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const avgDepth = { QB: 0, RB: 0, WR: 0, TE: 0 };
   for (const pos of POSITIONS) {
@@ -521,6 +539,8 @@ function computeAllProfiles(teams, format, thisYear, globalPlayerPools) {
     depthPool,
     starterPlayerPool,
     depthPlayerPool,
+    starterStats,
+    depthStats,
     startersInUse,
     depthSlotsTotal
   };

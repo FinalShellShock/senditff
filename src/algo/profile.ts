@@ -241,6 +241,19 @@ export function score0to100(value: number, leagueAvg: number): number {
   return Math.max(0, Math.min(100, score));
 }
 
+// Helper: mean + std of the top-N values in a value-sorted pool. Used to
+// build the reference distribution that z-score classification compares
+// against. N comes from league context (startersInUse for starters,
+// depthSlotsTotal for depth).
+export function topNStats(pool: number[], n: number): { mean: number; std: number } {
+  const safeN = Math.max(1, Math.min(pool.length, n));
+  const sorted = [...pool].sort((a, b) => b - a).slice(0, safeN);
+  if (sorted.length === 0) return { mean: 0, std: 1 };
+  const mean = sorted.reduce((s, v) => s + v, 0) / sorted.length;
+  const variance = sorted.reduce((s, v) => s + (v - mean) ** 2, 0) / sorted.length;
+  return { mean, std: Math.max(1, Math.sqrt(variance)) }; // floor std to avoid /0
+}
+
 // Helper: avg rank (with tie handling) for a value within a pool.
 function avgRankInPool(value: number, pool: number[]): { avgRank: number; n: number } {
   const n = pool.length;
@@ -320,52 +333,56 @@ export function classifyPosition(score: PositionScore["urgency"]): PositionScore
   return "SURPLUS";
 }
 
-// Rules-based classifier + need-kind output. The score < 50 rule comes from
-// the dual-zone definition: 50 is the boundary between "real starter" and
-// "below replacement." If your starter scores below that, you don't have a
-// real starter at this position, period — regardless of how the urgency
-// math averages out.
+// Z-score-based classifier + needKind output. Thresholds are statistical
+// (standard deviations from the mean of the top-N starter/depth pool at the
+// position), not hardcoded score cliffs. The reference distribution adapts
+// to whatever the actual FantasyCalc market values look like for this
+// position in this format — bimodal TEs naturally produce wider std, flat
+// QB scoring naturally produces tighter clusters, all without hand-tuning.
+//
+//   z > +0.75         → eligible for SURPLUS (well above typical starter)
+//   z >= -0.5         → HEALTHY (at or near typical)
+//   z >= -1.5         → NEED (below typical, but on the spectrum)
+//   z < -1.5          → CRITICAL (more than 1.5 std dev below typical)
+//
+// The minStarter z-score (worst slot) carries the same thresholds — a single
+// catastrophic slot in a multi-slot position trips classification even when
+// the weighted average looks OK.
 export function classifyPositionRich(args: {
-  starterScore: number;
-  minStarterSlotScore: number;
-  depthScore: number;
+  starterWeightedZ: number;
+  minStarterZ: number;
+  depthZ: number;
   depthSlots: number;
   pressure: number;
-  urgency: number;
 }): { classification: PositionScore["classification"]; needKind: NeedKind } {
-  const { starterScore, minStarterSlotScore, depthScore, depthSlots, pressure, urgency } = args;
+  const { starterWeightedZ, minStarterZ, depthZ, depthSlots, pressure } = args;
 
-  const starterWeak = minStarterSlotScore < 50;
-  // Bumped from 25 → 30. A starter at exactly 25 (rank ~halfway down the
-  // below-replacement zone) is functionally just as broken as one at 21 —
-  // the old strict cliff was producing label flips for a 4-point gap.
-  const starterCritical = minStarterSlotScore < 30;
-  const depthCatastrophic = depthScore < 10 || (depthScore < 20 && depthSlots >= 2);
-  const depthWeak = depthScore < 35;
+  const starterWeak = minStarterZ < -0.5 || starterWeightedZ < -0.5;
+  const starterCritical = minStarterZ < -1.5 || starterWeightedZ < -1.5;
+  const depthCatastrophic = depthZ < -1.5;
+  const depthWeak = depthZ < -0.5;
 
   // Catastrophic starter slot is critical regardless of depth.
   if (starterCritical) {
     return { classification: "CRITICAL_NEED", needKind: depthWeak ? "both" : "starter" };
   }
-  // Starter below replacement (< 50 = bottom dual-zone) is NEED. If depth is
-  // also bad, it's "both" — drives stronger trade pressure.
+  // Catastrophic depth (very rare — bottom 7% of depth values) is also CRITICAL
+  // if multi-slot, since you have nothing playable behind your starter.
+  if (depthCatastrophic && depthSlots >= 2) {
+    return { classification: "CRITICAL_NEED", needKind: "depth" };
+  }
+  // Starter below typical (z < -0.5) is NEED.
   if (starterWeak) {
     return { classification: "NEED", needKind: depthWeak ? "both" : "starter" };
   }
   // Starter is fine; check depth alone.
-  if (depthCatastrophic) {
+  if (depthCatastrophic || (depthWeak && depthSlots >= 2)) {
     return { classification: "NEED", needKind: "depth" };
   }
-  // Urgency-driven fallback for borderline cases (e.g., decent starter but
-  // multiple lukewarm signals piling up).
-  if (urgency > 70) return { classification: "CRITICAL_NEED", needKind: "both" };
-  if (urgency >= 50) {
-    // Pick the side that's worse to label needKind.
-    const kind: NeedKind = starterScore - 50 < depthScore - 50 ? "starter" : "depth";
-    return { classification: "NEED", needKind: kind };
-  }
-  // SURPLUS requires both halves strong AND low pressure.
-  if (urgency < 30 && starterScore > 70 && depthScore > 55 && pressure < 50) {
+  // SURPLUS: both halves above typical AND low pressure. Contenders are
+  // never SURPLUS — even an elite tier-down candidate is something they
+  // still want to hold while competing.
+  if (starterWeightedZ > 0.75 && depthZ > 0.0 && pressure < 50) {
     return { classification: "SURPLUS", needKind: null };
   }
   return { classification: "HEALTHY", needKind: null };
@@ -464,13 +481,25 @@ export function computePositionScores(
     const importance = positionImportance(pos, format);
     const urgency = gapUrgency * pressureMult * importance;
 
+    // Z-scores against the top-N starter/depth distributions. These drive
+    // classification (whether the team has a real NEED here), separate from
+    // the rank-score values used for urgency/display. Z-scoring against the
+    // market-derived distribution means thresholds are statistical, not
+    // hand-calibrated to a specific league snapshot.
+    const sStats = averages.starterStats[pos];
+    const dStats = averages.depthStats[pos];
+    const starterPlayerZs = starters[pos].map((p) => (p.valueRedraft - sStats.mean) / sStats.std);
+    const depthPlayerZs = depth[pos].map((p) => (p.valueDynasty - dStats.mean) / dStats.std);
+    const starterWeightedZ = starterPlayerZs.length > 0 ? weightedSlotAverage(starterPlayerZs) : -2;
+    const minStarterZ = starterPlayerZs.length > 0 ? Math.min(...starterPlayerZs) : -2;
+    const depthZ = depthPlayerZs.length > 0 ? weightedSlotAverage(depthPlayerZs) : -2;
+
     const { classification, needKind } = classifyPositionRich({
-      starterScore,
-      minStarterSlotScore,
-      depthScore,
+      starterWeightedZ,
+      minStarterZ,
+      depthZ,
       depthSlots,
       pressure,
-      urgency,
     });
 
     out[pos] = {
@@ -635,6 +664,14 @@ export function computeAllProfiles(
   for (const pos of POSITIONS) {
     depthSlotsTotal[pos] = stage2.length * depthSlotsFor(pos, format);
   }
+  // Reference distributions for z-score classification. The "top N" is the
+  // league-aware startable count for starters and depth-slot count for depth.
+  const starterStats = {} as Record<Position, { mean: number; std: number }>;
+  const depthStats = {} as Record<Position, { mean: number; std: number }>;
+  for (const pos of POSITIONS) {
+    starterStats[pos] = topNStats(starterPlayerPool[pos], startersInUse[pos]);
+    depthStats[pos] = topNStats(depthPlayerPool[pos], depthSlotsTotal[pos]);
+  }
   const avgStarter: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const avgDepth: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   for (const pos of POSITIONS) {
@@ -654,6 +691,8 @@ export function computeAllProfiles(
     depthPool,
     starterPlayerPool,
     depthPlayerPool,
+    starterStats,
+    depthStats,
     startersInUse,
     depthSlotsTotal,
   };

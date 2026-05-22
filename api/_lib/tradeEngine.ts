@@ -15,6 +15,7 @@ import {
   flexStrengthValue,
   positionScoreFromPool,
   score0to100,
+  topNStats,
   weightedSlotAverage,
 } from "../../src/algo/profile";
 import type {
@@ -179,11 +180,19 @@ export function computeLeagueAverages(
   }
   flex /= n;
   cap /= n;
+  // Reference distributions for z-score classification (matches profile.ts).
+  const starterStats = {} as Record<Position, { mean: number; std: number }>;
+  const depthStats = {} as Record<Position, { mean: number; std: number }>;
+  for (const pos of POSITIONS) {
+    starterStats[pos] = topNStats(starterPlayerPool[pos], startersInUse[pos]);
+    depthStats[pos] = topNStats(depthPlayerPool[pos], depthSlotsTotal[pos]);
+  }
   const variance = profiles.reduce((s, p) => s + (p.pickCapital.value - cap) ** 2, 0) / n;
   return {
     starter, depth, flex, pickCapital: cap, pickCapitalStd: Math.sqrt(variance),
     starterPool, depthPool,
     starterPlayerPool, depthPlayerPool,
+    starterStats, depthStats,
     startersInUse, depthSlotsTotal,
   };
 }
