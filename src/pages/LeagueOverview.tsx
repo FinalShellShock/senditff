@@ -186,10 +186,11 @@ function combinedColor(s?: SubClassification, d?: SubClassification): string {
   return POS_CLASS_COLOR.HEALTHY ?? "#22c55e";
 }
 
-// Compact collapsed row — Option C style. Three rows of per-position data
-// (starter number+glyph, depth number+glyph, combined classification text)
-// stacked vertically, with the team info column on the left. No bars in
-// the collapsed view; bars live in the expanded detail panel only.
+// Compact collapsed row — self-contained mini-table per team. Each row has
+// its own QB/RB/WR/TE column headers (so you don't lose context as you
+// scroll), plus row labels "Starter" / "Depth" on each data line. Depth
+// numbers are dimmed to visually distinguish from bold starter numbers.
+// Chevron in the top-right indicates collapse state.
 function LeagueTableRow({
   profile,
   leagueId,
@@ -223,36 +224,76 @@ function LeagueTableRow({
               <span className="lt-row-meta-dim">{profile.record}</span>
               <span className="lt-row-meta-dim">age {(profile.starterCalAge ?? 0).toFixed(1)}</span>
             </div>
-            <div className="lt-row-expand-hint">
-              {expanded ? "click to collapse" : "click for more"}
-            </div>
           </div>
         </div>
-        {POSITIONS.map((pos) => {
-          const ps = profile.positionScores?.[pos];
-          const sClass = ps?.starterClassification ?? "HEALTHY";
-          const dClass = ps?.depthClassification ?? "HEALTHY";
-          return (
-            <div key={pos} className="lt-col-pos lt-pos-cell-compact">
-              <div className="lt-cell-line">
-                <span className="lt-cell-score">{(ps?.starterScore ?? 0).toFixed(0)}</span>
+
+        <div className="lt-pos-grid">
+          {/* Header row */}
+          <div className="lt-pos-grid-corner" />
+          {POSITIONS.map((pos) => (
+            <div key={`h-${pos}`} className="lt-pos-grid-pos-header">{pos}</div>
+          ))}
+
+          {/* Starter row */}
+          <div className="lt-pos-grid-row-label">Starter</div>
+          {POSITIONS.map((pos) => {
+            const ps = profile.positionScores?.[pos];
+            const sClass = ps?.starterClassification ?? "HEALTHY";
+            return (
+              <div key={`s-${pos}`} className="lt-pos-grid-cell">
+                <span className="lt-pos-grid-score lt-pos-grid-score-starter">
+                  {(ps?.starterScore ?? 0).toFixed(0)}
+                </span>
                 <ClassIndicator kind={sClass} />
               </div>
-              <div className="lt-cell-line">
-                <span className="lt-cell-score">{(ps?.depthScore ?? 0).toFixed(0)}</span>
+            );
+          })}
+
+          {/* Depth row */}
+          <div className="lt-pos-grid-row-label">Depth</div>
+          {POSITIONS.map((pos) => {
+            const ps = profile.positionScores?.[pos];
+            const dClass = ps?.depthClassification ?? "HEALTHY";
+            return (
+              <div key={`d-${pos}`} className="lt-pos-grid-cell">
+                <span className="lt-pos-grid-score lt-pos-grid-score-depth">
+                  {(ps?.depthScore ?? 0).toFixed(0)}
+                </span>
                 <ClassIndicator kind={dClass} />
               </div>
-              <div className="lt-cell-line lt-cell-class-line">
-                <span className="lt-cell-class" style={{ color: combinedColor(sClass, dClass) }}>
+            );
+          })}
+
+          {/* Combined classification row */}
+          <div className="lt-pos-grid-row-label-empty" />
+          {POSITIONS.map((pos) => {
+            const ps = profile.positionScores?.[pos];
+            const sClass = ps?.starterClassification ?? "HEALTHY";
+            const dClass = ps?.depthClassification ?? "HEALTHY";
+            return (
+              <div key={`c-${pos}`} className="lt-pos-grid-class-cell">
+                <span className="lt-pos-grid-class" style={{ color: combinedColor(sClass, dClass) }}>
                   {combinedLabel(sClass, dClass)}
                 </span>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+
         <div className="lt-col-picks">
           <PicksDots picks={profile.picks ?? []} flag={profile.pickCapital?.flag ?? "NEUTRAL"} />
         </div>
+
+        <button
+          className="lt-row-chevron"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle();
+          }}
+          aria-label={expanded ? "collapse" : "expand"}
+        >
+          {expanded ? "▴" : "▾"}
+        </button>
       </div>
 
       {expanded && (
@@ -350,19 +391,6 @@ export default function LeagueOverview() {
         <section className="overview-section">
           <h2 className="section-title">Teams</h2>
           <div className="league-table">
-            <div className="lt-header">
-              <div className="lt-col-sticky lt-header-sticky">
-                <span className="lt-header-label"># TEAM</span>
-              </div>
-              {POSITIONS.map((pos) => (
-                <div key={pos} className="lt-col-pos lt-pos-header-cell">
-                  <span className="lt-header-label">{pos}</span>
-                </div>
-              ))}
-              <div className="lt-col-picks">
-                <span className="lt-header-label">PICKS</span>
-              </div>
-            </div>
             {sorted.map((p) => (
               <LeagueTableRow
                 key={p.rosterId}

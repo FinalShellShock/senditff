@@ -857,37 +857,75 @@ body {
 
 .lt-row-meta-dim { font-size: 10px; color: #475569; }
 
-.lt-row-expand-hint {
-  font-size: 9px;
-  color: #475569;
+/* Per-team mini-table. Each team row has its own position headers + row
+   labels, so context never gets lost while scrolling. */
+.lt-pos-grid {
+  display: grid;
+  grid-template-columns: 64px repeat(4, minmax(60px, 1fr));
+  align-items: center;
+  flex: 1;
+  padding: 10px 8px;
+  column-gap: 6px;
+  row-gap: 2px;
+}
+
+.lt-pos-grid-corner {
+  /* empty top-left cell */
+}
+
+.lt-pos-grid-pos-header {
+  font-size: 10px;
+  color: #94a3b8;
+  letter-spacing: 2px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.lt-pos-grid-row-label {
+  font-size: 10px;
+  color: #94a3b8;
   letter-spacing: 1px;
-  font-style: italic;
-  margin-top: 4px;
+  font-weight: 700;
+  text-align: right;
+  padding-right: 4px;
 }
 
-/* Compact cell — three stacked lines: starter score+glyph, depth score+
-   glyph, combined classification text. No bars in collapsed view. */
-.lt-pos-cell-compact {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 10px 6px;
+.lt-pos-grid-row-label-empty {
+  /* spacer to align the class row with the others */
 }
 
-.lt-cell-line {
+.lt-pos-grid-cell {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
+  height: 18px;
+}
+
+.lt-pos-grid-class-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 16px;
 }
 
-.lt-cell-score {
-  font-size: 13px;
-  font-weight: 700;
-  color: #cbd5e1;
+.lt-pos-grid-score {
   min-width: 22px;
   text-align: right;
+}
+
+/* Starter number = bold + bright. Depth number = lighter + dimmer for
+   visual hierarchy (bold/normal weight contrast + opacity). */
+.lt-pos-grid-score-starter {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.lt-pos-grid-score-depth {
+  font-size: 12px;
+  font-weight: 400;
+  color: #94a3b8;
 }
 
 .lt-class-glyph {
@@ -897,13 +935,25 @@ body {
   display: inline-block;
 }
 
-.lt-cell-class-line { margin-top: 3px; }
-
-.lt-cell-class {
+.lt-pos-grid-class {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 1px;
 }
+
+/* Chevron in the top-right indicates collapsed/expanded state. */
+.lt-row-chevron {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 12px;
+  align-self: flex-start;
+}
+
+.lt-row-chevron:hover { color: #cbd5e1; }
+.lt-row.expanded .lt-row-chevron { color: #f59e0b; }
 
 /* Sticky team column */
 .lt-col-sticky {
