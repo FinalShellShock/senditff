@@ -318,7 +318,6 @@ body {
   display: grid;
   grid-template-columns: 52px repeat(3, 1fr);
   gap: 5px;
-  min-width: 630px;
   margin-bottom: 8px;
 }
 
@@ -368,6 +367,10 @@ body {
 }
 
 /* ── Grid team cards ─────────────────────────────────────────────────── */
+/* Three responsive density modes:
+   Desktop (≥900px):  bars for Starter + Depth × 4 positions + picks
+   Medium  (500-900): 2-char number columns (POS / starter / depth stacked)
+   Mobile  (<500):    just rank + name */
 
 .grid-team-card {
   background: rgba(255,255,255,0.03);
@@ -376,16 +379,20 @@ body {
   padding: 8px;
   cursor: pointer;
   transition: border-color 0.12s;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
 }
 
 .grid-team-card:hover { border-color: rgba(255,255,255,0.16); }
 .grid-team-card.mine { border-color: rgba(245,158,11,0.4); }
 
-.gtc-header {
+.gtc-name-line {
   display: flex;
   align-items: baseline;
   gap: 5px;
-  margin-bottom: 5px;
+  min-width: 0;
 }
 
 .gtc-rank {
@@ -396,44 +403,105 @@ body {
 }
 
 .gtc-name {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: #e2e8f0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .grid-team-card.mine .gtc-name { color: #f59e0b; }
 
-.gtc-needs {
+.gtc-meta {
   display: flex;
-  gap: 3px;
-  flex-wrap: wrap;
   align-items: center;
-  margin-bottom: 5px;
-}
-
-.gtc-needs-label {
-  font-size: 8px;
-  color: #64748b;
-  letter-spacing: 1px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.gtc-need-tag {
-  font-size: 9px;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .gtc-age {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
+  font-size: 10px;
+  color: #64748b;
 }
 
-.gtc-age-label { font-size: 9px; color: #475569; }
-.gtc-age-val { font-size: 10px; color: #64748b; font-weight: 700; }
+/* Desktop bar grid */
+.gtc-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gtc-bars-headers,
+.gtc-bars-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.gtc-bars-pos-label {
+  font-size: 9px;
+  color: #94a3b8;
+  letter-spacing: 1px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.gtc-bars-row .lt-thick-bar-track {
+  height: 6px;
+  min-width: 0;
+}
+
+/* Medium-size numeric stack (hidden by default; shown via media query) */
+.gtc-numbers {
+  display: none;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.gtc-numbers-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.gtc-numbers-pos {
+  font-size: 10px;
+  color: #94a3b8;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.gtc-numbers-val {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.gtc-numbers-starter { font-weight: 800; }
+.gtc-numbers-depth   { opacity: 0.85; }
+
+.gtc-picks {
+  margin-top: 2px;
+}
+
+/* Medium: drop bars, show stacked numbers */
+@media (max-width: 900px) {
+  .gtc-bars { display: none; }
+  .gtc-numbers { display: grid; }
+  .gtc-meta .gtc-age { display: none; }
+}
+
+/* Mobile: just rank + name */
+@media (max-width: 500px) {
+  .gtc-meta { display: none; }
+  .gtc-numbers { display: none; }
+  .gtc-picks { display: none; }
+  .grid-team-card { padding: 6px; }
+  .gtc-name { font-size: 11px; }
+}
 
 .team-list {
   display: flex;
@@ -1332,13 +1400,20 @@ body {
   }
 
   .league-grid {
-    grid-template-columns: 40px repeat(3, 1fr);
+    grid-template-columns: 32px repeat(3, 1fr);
+    gap: 3px;
   }
 
   .grid-col-label, .grid-row-label {
     font-size: 8px;
-    letter-spacing: 1px;
-    padding: 3px 4px;
+    letter-spacing: 0.5px;
+    padding: 2px 2px;
+  }
+
+  .grid-cell {
+    padding: 5px;
+    min-height: 0;
+    gap: 4px;
   }
 }
 

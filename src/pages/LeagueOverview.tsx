@@ -37,47 +37,83 @@ function MiniBar({ score }: { score: number }) {
   );
 }
 
-function getTeamNeeds(profile: TeamProfile): { pos: Position; classification: string }[] {
-  const scored = POSITIONS.map((pos) => ({
-    pos,
-    classification: profile.positionScores?.[pos]?.classification ?? "HEALTHY",
-    urgency: profile.positionScores?.[pos]?.urgency ?? 0,
-  }));
-  const needs = scored
-    .filter((p) => p.classification === "CRITICAL_NEED" || p.classification === "NEED")
-    .sort((a, b) => b.urgency - a.urgency)
-    .slice(0, 3);
-  if (needs.length > 0) return needs;
-  const fallback = [...scored].sort((a, b) => b.urgency - a.urgency)[0];
-  return fallback ? [fallback] : [];
-}
-
+// Rich grid team card. Three responsive density modes (controlled entirely
+// via CSS media queries — same markup):
+//   Desktop:    bars for Starter + Depth × 4 positions + picks
+//   Medium:     POS / Starter / Depth stacked vertically per column (2-char
+//               numbers, no bars)
+//   Mobile:     rank + name only, no positional info, no picks
 function GridTeamCard({ profile, onClick }: { profile: TeamProfile; onClick: () => void }) {
-  const needs = getTeamNeeds(profile);
-  const needsText = needs.map(n => n.pos).join(" · ");
+  const labelColor = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
   return (
     <div className={`grid-team-card${profile.isMine ? " mine" : ""}`} onClick={onClick}>
-      <div className="gtc-header">
+      <div className="gtc-name-line">
         <span className="gtc-rank">#{profile.starterRank}</span>
-        <span className="gtc-name">{profile.ownerName}</span>
+        <span className="gtc-name">{profile.ownerName}{profile.isMine && " ★"}</span>
       </div>
-      {needs.length > 0 && (
-        <div className="gtc-needs">
-          <span className="gtc-needs-label">NEEDS</span>
-          {needs.map(({ pos, classification }) => (
-            <span
-              key={pos}
-              className={`gtc-need-tag pos-tag pos-${pos}`}
-              style={{ opacity: classification === "CRITICAL_NEED" ? 1 : 0.6 }}
-            >
-              {pos}
-            </span>
+
+      <div className="gtc-meta">
+        <span className="window-label" style={{ background: labelColor }}>
+          {profile.windowLabel ?? "—"}
+        </span>
+        <span className="gtc-age">{(profile.starterCalAge ?? 0).toFixed(1)}y</span>
+      </div>
+
+      {/* Desktop: full bar grid */}
+      <div className="gtc-bars">
+        <div className="gtc-bars-headers">
+          {POSITIONS.map((pos) => (
+            <div key={pos} className="gtc-bars-pos-label">{pos}</div>
           ))}
         </div>
-      )}
-      <div className="gtc-age">
-        <span className="gtc-age-label">age </span>
-        <span className="gtc-age-val">{(profile.starterCalAge ?? 0).toFixed(1)}</span>
+        <div className="gtc-bars-row">
+          {POSITIONS.map((pos) => {
+            const ps = profile.positionScores?.[pos];
+            return (
+              <ThickBar
+                key={pos}
+                score={ps?.starterScore ?? 0}
+                kind={ps?.starterClassification ?? "HEALTHY"}
+              />
+            );
+          })}
+        </div>
+        <div className="gtc-bars-row">
+          {POSITIONS.map((pos) => {
+            const ps = profile.positionScores?.[pos];
+            return (
+              <ThickBar
+                key={pos}
+                score={ps?.depthScore ?? 0}
+                kind={ps?.depthClassification ?? "HEALTHY"}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Medium: 2-char number columns (POS / starter / depth stacked) */}
+      <div className="gtc-numbers">
+        {POSITIONS.map((pos) => {
+          const ps = profile.positionScores?.[pos];
+          const sClass = ps?.starterClassification ?? "HEALTHY";
+          const dClass = ps?.depthClassification ?? "HEALTHY";
+          return (
+            <div key={pos} className="gtc-numbers-col">
+              <span className="gtc-numbers-pos">{pos}</span>
+              <span className="gtc-numbers-val gtc-numbers-starter" style={{ color: POS_CLASS_COLOR[sClass] }}>
+                {(ps?.starterScore ?? 0).toFixed(0)}
+              </span>
+              <span className="gtc-numbers-val gtc-numbers-depth" style={{ color: POS_CLASS_COLOR[dClass] }}>
+                {(ps?.depthScore ?? 0).toFixed(0)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="gtc-picks">
+        <PicksDots picks={profile.picks ?? []} flag={profile.pickCapital?.flag ?? "NEUTRAL"} />
       </div>
     </div>
   );
