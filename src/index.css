@@ -426,31 +426,73 @@ body {
   color: #64748b;
 }
 
-/* Desktop bar grid */
+/* Desktop: vertical position blocks (one per position, starter + depth rows) */
 .gtc-bars {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 6px;
+  margin-top: 2px;
 }
 
-.gtc-bars-headers,
-.gtc-bars-row {
+.gtc-pos-block {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  grid-template-columns: 22px 1fr;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
-.gtc-bars-pos-label {
+.gtc-pos-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #cbd5e1;
+  letter-spacing: 0.5px;
+  text-align: left;
+}
+
+.gtc-pos-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.gtc-pos-line {
+  display: grid;
+  grid-template-columns: 40px 1fr 18px 56px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.gtc-pos-line-label {
   font-size: 9px;
-  color: #94a3b8;
-  letter-spacing: 1px;
-  text-align: center;
-  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  text-transform: lowercase;
 }
 
-.gtc-bars-row .lt-thick-bar-track {
+.gtc-pos-line .lt-thick-bar-track {
   height: 6px;
   min-width: 0;
+}
+
+.gtc-pos-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2e8f0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.gtc-pos-class {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Medium-size numeric stack (hidden by default; shown via media query) */

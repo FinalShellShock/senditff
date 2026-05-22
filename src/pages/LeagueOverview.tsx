@@ -59,37 +59,37 @@ function GridTeamCard({ profile, onClick }: { profile: TeamProfile; onClick: () 
         <span className="gtc-age">{(profile.starterCalAge ?? 0).toFixed(1)}y</span>
       </div>
 
-      {/* Desktop: full bar grid */}
+      {/* Desktop: vertical position blocks (one per position, starter + depth
+          rows inside each with bar + number + classification text) */}
       <div className="gtc-bars">
-        <div className="gtc-bars-headers">
-          {POSITIONS.map((pos) => (
-            <div key={pos} className="gtc-bars-pos-label">{pos}</div>
-          ))}
-        </div>
-        <div className="gtc-bars-row">
-          {POSITIONS.map((pos) => {
-            const ps = profile.positionScores?.[pos];
-            return (
-              <ThickBar
-                key={pos}
-                score={ps?.starterScore ?? 0}
-                kind={ps?.starterClassification ?? "HEALTHY"}
-              />
-            );
-          })}
-        </div>
-        <div className="gtc-bars-row">
-          {POSITIONS.map((pos) => {
-            const ps = profile.positionScores?.[pos];
-            return (
-              <ThickBar
-                key={pos}
-                score={ps?.depthScore ?? 0}
-                kind={ps?.depthClassification ?? "HEALTHY"}
-              />
-            );
-          })}
-        </div>
+        {POSITIONS.map((pos) => {
+          const ps = profile.positionScores?.[pos];
+          const sClass = ps?.starterClassification ?? "HEALTHY";
+          const dClass = ps?.depthClassification ?? "HEALTHY";
+          return (
+            <div key={pos} className="gtc-pos-block">
+              <div className="gtc-pos-label">{pos}</div>
+              <div className="gtc-pos-lines">
+                <div className="gtc-pos-line">
+                  <span className="gtc-pos-line-label">starter</span>
+                  <ThickBar score={ps?.starterScore ?? 0} kind={sClass} />
+                  <span className="gtc-pos-num">{(ps?.starterScore ?? 0).toFixed(0)}</span>
+                  <span className="gtc-pos-class" style={{ color: POS_CLASS_COLOR[sClass] }}>
+                    {sClass}
+                  </span>
+                </div>
+                <div className="gtc-pos-line">
+                  <span className="gtc-pos-line-label">depth</span>
+                  <ThickBar score={ps?.depthScore ?? 0} kind={dClass} />
+                  <span className="gtc-pos-num">{(ps?.depthScore ?? 0).toFixed(0)}</span>
+                  <span className="gtc-pos-class" style={{ color: POS_CLASS_COLOR[dClass] }}>
+                    {dClass}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Medium: 2-char number columns (POS / starter / depth stacked) */}
