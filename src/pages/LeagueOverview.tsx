@@ -195,6 +195,181 @@ function combinedColor(s?: SubClassification, d?: SubClassification): string {
   return POS_CLASS_COLOR.HEALTHY ?? "#22c55e";
 }
 
+// Radar chart showing team dynasty value across 5 asset classes, normalized
+// against the league max for each axis. Always a pentagon; values are 0-1
+// of "best team at this axis in the league".
+type RadarAxis = "QB" | "RB" | "WR" | "TE" | "PICKS";
+const RADAR_AXES: RadarAxis[] = ["QB", "RB", "WR", "TE", "PICKS"];
+
+function teamAxisValue(profile: TeamProfile, axis: RadarAxis): number {
+  if (axis === "PICKS") {
+    return (profile.picks ?? []).reduce((s, p) => s + p.value, 0);
+  }
+  return (profile.players ?? [])
+    .filter((p) => p.position === axis)
+    .reduce((s, p) => s + p.valueDynasty, 0);
+}
+
+function RadarChart({ profile, allProfiles }: { profile: TeamProfile; allProfiles: TeamProfile[] }) {
+  const size = 200;
+  const cx = size / 2;
+  const cy = size / 2;
+  const maxR = 78;
+
+  // Normalize each axis against league max for that axis
+  const axisData = RADAR_AXES.map((axis) => {
+    const teamVal = teamAxisValue(profile, axis);
+    const leagueMax = Math.max(1, ...allProfiles.map((p) => teamAxisValue(p, axis)));
+    return { axis, value: teamVal, normalized: Math.max(0, Math.min(1, teamVal / leagueMax)) };
+  });
+
+  // Vertex positions (start at top, clockwise)
+  const angle = (i: number) => -Math.PI / 2 + i * ((2 * Math.PI) / RADAR_AXES.length);
+  const point = (i: number, r: number) => ({
+    x: cx + r * Math.cos(angle(i)),
+    y: cy + r * Math.sin(angle(i)),
+  });
+
+  // Grid rings at 25/50/75/100%
+  const rings = [0.25, 0.5, 0.75, 1.0];
+
+  // Data polygon points
+  const dataPoints = axisData.map((d, i) => point(i, maxR * d.normalized));
+  const dataPath = dataPoints.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+
+  // Axis-end labels
+  const labelOffset = 14;
+  const axisLabels = axisData.map((d, i) => {
+    const p = point(i, maxR + labelOffset);
+    return { ...p, label: d.axis };
+  });
+
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} className="radar-svg">
+      {/* Grid rings */}
+      {rings.map((ratio) => (
+        <polygon
+          key={ratio}
+          points={RADAR_AXES.map((_, i) => {
+            const p = point(i, maxR * ratio);
+            return `${p.x},${p.y}`;
+          }).join(" ")}
+          fill="none"
+          stroke="rgba(255,255,255,0.06)"
+          strokeWidth={1}
+        />
+      ))}
+      {/* Axis lines */}
+      {RADAR_AXES.map((_, i) => {
+        const p = point(i, maxR);
+        return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.06)" />;
+      })}
+      {/* Data polygon */}
+      <polygon
+        points={dataPath}
+        fill="rgba(245,158,11,0.22)"
+        stroke="#f59e0b"
+        strokeWidth={1.5}
+      />
+      {/* Vertex dots */}
+      {dataPoints.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={2.5} fill="#f59e0b" />
+      ))}
+      {/* Axis labels */}
+      {axisLabels.map((l, i) => (
+        <text
+          key={i}
+          x={l.x}
+          y={l.y}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="radar-axis-label"
+        >
+          {l.label}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+// Per-position roster column shown in the expanded view. Players sorted by
+// dynasty value desc; star next to starters (top N by redraft, where N =
+// format starter slots at that position, capturing typical FLEX usage).
+function PositionColumn({
+  pos,
+  profile,
+  allProfiles,
+}: {
+  pos: Position;
+  profile: TeamProfile;
+  allProfiles: TeamProfile[];
+}) {
+  const players = (profile.players ?? [])
+    .filter((p) => p.position === pos)
+    .sort((a, b) => b.valueDynasty - a.valueDynasty);
+
+  const totalDynasty = players.reduce((s, p) => s + p.valueDynasty, 0);
+  const weightedAge =
+    totalDynasty > 0
+      ? players.reduce((s, p) => s + (p.age ?? 0) * p.valueDynasty, 0) / totalDynasty
+      : 0;
+
+  // Position rank: where this team's starter value at pos ranks across league
+  const myStarter = profile.positionScores?.[pos]?.starterValue ?? 0;
+  const ranks = allProfiles
+    .map((p) => p.positionScores?.[pos]?.starterValue ?? 0)
+    .sort((a, b) => b - a);
+  const posRank = ranks.indexOf(myStarter) + 1;
+
+  // Starters: top N by REDRAFT value at this position. N from format starter
+  // slot counts. For multi-flex positions (RB/WR), we estimate +1 typical flex
+  // usage. Approximate but good enough for "is this a starter or not" badge.
+  const starterIds = new Set<string>(
+    [...players].sort((a, b) => b.valueRedraft - a.valueRedraft)
+      .slice(0, startersAtPos(pos))
+      .map((p) => p.id),
+  );
+
+  return (
+    <div className="pos-column">
+      <div className="pos-column-header">
+        <div className="pos-column-header-row">
+          <span className="pos-column-pos">{pos}</span>
+          <span className="pos-column-meta-bold">#{posRank}</span>
+        </div>
+        <div className="pos-column-header-row pos-column-meta-dim">
+          <span>{totalDynasty.toLocaleString()}</span>
+          <span>{weightedAge > 0 ? `${weightedAge.toFixed(1)}y` : "—"}</span>
+        </div>
+      </div>
+      <div className="pos-column-players">
+        {players.map((p) => (
+          <div key={p.id} className="pos-column-player">
+            <span className="pos-column-player-name">
+              {starterIds.has(p.id) && <span className="pos-column-star">★ </span>}
+              {p.name}
+            </span>
+            <span className="pos-column-player-val">{p.valueDynasty.toLocaleString()}</span>
+          </div>
+        ))}
+        {players.length === 0 && (
+          <div className="pos-column-empty">no players</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Rough starter-slot estimate per position, including typical flex usage.
+// Used only for the ★ marker in the position column players list.
+function startersAtPos(pos: Position): number {
+  if (pos === "QB") return 1;     // SF leagues: 2 (we don't see format here, approximation)
+  if (pos === "RB") return 3;     // 2 base + ~1 flex'd
+  if (pos === "WR") return 3;     // 2 base + ~1 flex'd
+  if (pos === "TE") return 1;     // 1 base
+  return 1;
+}
+
 // Compact collapsed row — self-contained mini-table per team. Each row has
 // its own QB/RB/WR/TE column headers (so you don't lose context as you
 // scroll), plus row labels "Starter" / "Depth" on each data line. Depth
@@ -203,11 +378,13 @@ function combinedColor(s?: SubClassification, d?: SubClassification): string {
 function LeagueTableRow({
   profile,
   leagueId,
+  allProfiles,
   expanded,
   onToggle,
 }: {
   profile: TeamProfile;
   leagueId: string;
+  allProfiles: TeamProfile[];
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -286,8 +463,20 @@ function LeagueTableRow({
 
       {expanded && (
         <div className="lt-row-detail">
-          <div className="lt-row-detail-header">
-            <span>Per-position breakdown</span>
+          <div className="lt-detail-radar">
+            <RadarChart profile={profile} allProfiles={allProfiles} />
+          </div>
+          <div className="lt-detail-positions">
+            {POSITIONS.map((pos) => (
+              <PositionColumn
+                key={pos}
+                pos={pos}
+                profile={profile}
+                allProfiles={allProfiles}
+              />
+            ))}
+          </div>
+          <div className="lt-detail-footer-row">
             <button
               className="btn-link"
               onClick={(e) => {
@@ -297,34 +486,6 @@ function LeagueTableRow({
             >
               Open full deep dive →
             </button>
-          </div>
-          <div className="lt-detail-grid">
-            {POSITIONS.map((pos) => {
-              const ps = profile.positionScores?.[pos];
-              const sClass = ps?.starterClassification ?? "HEALTHY";
-              const dClass = ps?.depthClassification ?? "HEALTHY";
-              return (
-                <div key={pos} className="lt-detail-pos">
-                  <div className="lt-detail-pos-name">{pos}</div>
-                  <div className="lt-detail-side">
-                    <span className="lt-detail-side-label">STARTERS</span>
-                    <MiniBar score={ps?.starterScore ?? 0} />
-                    <span className="lt-detail-side-score">{(ps?.starterScore ?? 0).toFixed(0)}</span>
-                    <span className="lt-detail-side-class" style={{ color: POS_CLASS_COLOR[sClass] }}>
-                      {sClass}
-                    </span>
-                  </div>
-                  <div className="lt-detail-side">
-                    <span className="lt-detail-side-label">DEPTH</span>
-                    <MiniBar score={ps?.depthScore ?? 0} />
-                    <span className="lt-detail-side-score">{(ps?.depthScore ?? 0).toFixed(0)}</span>
-                    <span className="lt-detail-side-class" style={{ color: POS_CLASS_COLOR[dClass] }}>
-                      {dClass}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
       )}
@@ -384,6 +545,7 @@ export default function LeagueOverview() {
                 key={p.rosterId}
                 profile={p}
                 leagueId={id!}
+                allProfiles={overview.profiles}
                 expanded={expandedRoster === p.rosterId}
                 onToggle={() => setExpandedRoster(expandedRoster === p.rosterId ? null : p.rosterId)}
               />
