@@ -1067,11 +1067,15 @@ body {
 /* Expanded detail panel — shown when a row is clicked */
 .lt-row-detail {
   display: grid;
+  /* Left grid column == sticky team-info column width above, so radar
+     aligns with team name area and doesn't bleed into the bars region. */
   grid-template-columns: 165px 1fr;
   grid-template-rows: auto auto;
   background: rgba(255,255,255,0.02);
   border-top: 1px solid rgba(255,255,255,0.06);
-  padding: 14px 16px;
+  /* No left padding — radar's grid column starts at row's x=0, same as
+     sticky team-info column above. Right padding stays. */
+  padding: 14px 16px 14px 0;
   gap: 16px;
 }
 
@@ -1194,12 +1198,13 @@ body {
 }
 
 /* Mobile: keep the 2-column layout (radar | positions), but shrink radar
-   further and stack position columns vertically on the right side. */
+   further and stack position columns vertically on the right side. Bars
+   in the collapsed grid above also shrink to stay legible. */
 @media (max-width: 800px) {
   .lt-row-detail {
     grid-template-columns: 90px 1fr;
     gap: 10px;
-    padding: 10px 12px;
+    padding: 10px 10px 10px 0;
   }
   .radar-svg {
     max-width: 90px;
@@ -1210,6 +1215,27 @@ body {
   .lt-detail-positions {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+
+  /* Collapsed-view bars: shrink to a thinner pill on mobile so the
+     position cells stay readable in the narrow grid columns. */
+  .lt-thick-bar-track {
+    height: 6px;
+    min-width: 24px;
+    border-radius: 2px;
+  }
+  .lt-thick-bar-fill {
+    border-radius: 2px;
+  }
+  .lt-pos-grid-bar-cell {
+    height: 10px;
+  }
+  .lt-pos-grid-pos-header {
+    font-size: 12px;
+  }
+  .lt-pos-grid-row-label {
+    font-size: 10px;
+    padding-right: 4px;
   }
 }
 
