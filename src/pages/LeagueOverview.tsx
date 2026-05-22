@@ -344,11 +344,8 @@ function PositionColumn({
       </div>
       <div className="pos-column-players">
         {players.map((p) => (
-          <div key={p.id} className="pos-column-player">
-            <span className="pos-column-player-name">
-              {starterIds.has(p.id) && <span className="pos-column-star">★ </span>}
-              {p.name}
-            </span>
+          <div key={p.id} className={`pos-column-player${starterIds.has(p.id) ? " is-starter" : ""}`}>
+            <span className="pos-column-player-name">{p.name}</span>
             <span className="pos-column-player-val">{p.valueDynasty.toLocaleString()}</span>
           </div>
         ))}

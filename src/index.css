@@ -1067,7 +1067,7 @@ body {
 /* Expanded detail panel — shown when a row is clicked */
 .lt-row-detail {
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 165px 1fr;
   grid-template-rows: auto auto;
   background: rgba(255,255,255,0.02);
   border-top: 1px solid rgba(255,255,255,0.06);
@@ -1083,7 +1083,7 @@ body {
 
 .radar-svg {
   width: 100%;
-  max-width: 220px;
+  max-width: 160px;
   height: auto;
 }
 
@@ -1172,8 +1172,13 @@ body {
   flex: 1;
 }
 
-.pos-column-star {
-  color: #f59e0b;
+/* Starters get a gold underline on their name — keeps text alignment
+   identical to non-starters (no prefix shift). */
+.pos-column-player.is-starter .pos-column-player-name {
+  text-decoration: underline;
+  text-decoration-color: #f59e0b;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
 }
 
 .pos-column-player-val {
@@ -1188,12 +1193,23 @@ body {
   font-style: italic;
 }
 
+/* Mobile: keep the 2-column layout (radar | positions), but shrink radar
+   further and stack position columns vertically on the right side. */
 @media (max-width: 800px) {
   .lt-row-detail {
-    grid-template-columns: 1fr;
+    grid-template-columns: 90px 1fr;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .radar-svg {
+    max-width: 90px;
+  }
+  .radar-axis-label {
+    font-size: 8px;
   }
   .lt-detail-positions {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }
 
