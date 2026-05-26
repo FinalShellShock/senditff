@@ -730,31 +730,30 @@ function slotToTier(slot, teamCount) {
   const third = Math.ceil(teamCount / 3);
   return slot <= third ? "early" : slot <= 2 * third ? "mid" : "late";
 }
-function projectDraftSlots(rosters) {
-  const ordered = [...rosters].sort((a, b) => {
-    const wa = a.settings?.wins ?? 0;
-    const wb = b.settings?.wins ?? 0;
-    if (wa !== wb) return wa - wb;
-    const fa = parseFloat(String(a.settings?.fpts ?? 0));
-    const fb = parseFloat(String(b.settings?.fpts ?? 0));
-    if (fa !== fb) return fa - fb;
-    return a.roster_id - b.roster_id;
-  });
-  const map = /* @__PURE__ */ new Map();
-  ordered.forEach((r, i) => map.set(r.roster_id, i + 1));
-  return map;
-}
-function findUpcomingDraft(drafts) {
+function findUpcomingDraft(drafts, rosters) {
   const upcoming = drafts.filter((d) => d.status !== "complete").sort((a, b) => parseInt(a.season, 10) - parseInt(b.season, 10))[0];
   if (!upcoming) return null;
   const season = parseInt(upcoming.season, 10);
   if (!Number.isFinite(season)) return null;
   const slotByRoster = /* @__PURE__ */ new Map();
-  const s2r = upcoming.slot_to_roster_id ?? {};
-  for (const [slotStr, rosterId] of Object.entries(s2r)) {
-    const slot = parseInt(slotStr, 10);
-    if (Number.isFinite(slot) && typeof rosterId === "number") {
-      slotByRoster.set(rosterId, slot);
+  const s2r = upcoming.slot_to_roster_id;
+  if (s2r && Object.keys(s2r).length > 0) {
+    for (const [slotStr, rosterId] of Object.entries(s2r)) {
+      const slot = parseInt(slotStr, 10);
+      if (Number.isFinite(slot) && typeof rosterId === "number") {
+        slotByRoster.set(rosterId, slot);
+      }
+    }
+  } else if (upcoming.draft_order) {
+    const rosterByOwner = /* @__PURE__ */ new Map();
+    for (const r of rosters) {
+      if (r.owner_id) rosterByOwner.set(r.owner_id, r.roster_id);
+    }
+    for (const [userId, slot] of Object.entries(upcoming.draft_order)) {
+      const rosterId = rosterByOwner.get(userId);
+      if (rosterId !== void 0 && Number.isFinite(slot)) {
+        slotByRoster.set(rosterId, slot);
+      }
     }
   }
   return {
@@ -823,17 +822,16 @@ function buildTeamInputs(params) {
     thisYear
   } = params;
   const { dynastyValues, redraftValues } = valueMaps;
-  const upcoming = findUpcomingDraft(drafts);
+  const upcoming = findUpcomingDraft(drafts, rosters);
   const upcomingYear = upcoming?.season ?? thisYear;
   const upcomingSlots = upcoming?.slotByRoster ?? /* @__PURE__ */ new Map();
   const draftRounds = upcoming?.rounds ?? league.settings?.draft_rounds ?? 4;
   const draftYears = [upcomingYear, upcomingYear + 1, upcomingYear + 2];
   const picksMap = buildPicksMap(rosters, tradedPicks, draftYears, draftRounds);
-  const projectedSlots = projectDraftSlots(rosters);
   const teamCount = rosters.length;
-  return rosters.map((r) => {
-    const user = users.find((u) => u.user_id === r.owner_id);
-    const ownerName = user?.display_name ?? `Team ${r.roster_id}`;
+  const rosterPlayers = /* @__PURE__ */ new Map();
+  const rosterStarterTotal = /* @__PURE__ */ new Map();
+  for (const r of rosters) {
     const players = (r.players ?? []).map((id) => {
       const sp = sleeperPlayers[id];
       if (!sp) return null;
@@ -853,6 +851,34 @@ function buildTeamInputs(params) {
         valueDynasty: dyn?.value ?? 0
       };
     }).filter((p) => p !== null);
+    rosterPlayers.set(r.roster_id, players);
+    const adj = applyTep(players, format);
+    const { starters } = fillStarters(adj, format);
+    const starterTotal = POSITIONS2.reduce(
+      (s, pos) => s + starters[pos].reduce((a, p) => a + p.valueRedraft, 0),
+      0
+    );
+    rosterStarterTotal.set(r.roster_id, starterTotal);
+  }
+  const starterTotals = Array.from(rosterStarterTotal.values());
+  const meanStarter = starterTotals.reduce((s, v) => s + v, 0) / starterTotals.length;
+  const stdStarter = Math.sqrt(
+    starterTotals.reduce((s, v) => s + (v - meanStarter) ** 2, 0) / starterTotals.length
+  );
+  const tierForRoster = (rosterId) => {
+    const total = rosterStarterTotal.get(rosterId) ?? meanStarter;
+    if (total > meanStarter + STD_THRESHOLD * stdStarter) return "late";
+    if (total < meanStarter - STD_THRESHOLD * stdStarter) return "early";
+    return "mid";
+  };
+  const slotRankByRoster = /* @__PURE__ */ new Map();
+  [...rosters].sort(
+    (a, b) => (rosterStarterTotal.get(a.roster_id) ?? 0) - (rosterStarterTotal.get(b.roster_id) ?? 0)
+  ).forEach((r, i) => slotRankByRoster.set(r.roster_id, i + 1));
+  return rosters.map((r) => {
+    const user = users.find((u) => u.user_id === r.owner_id);
+    const ownerName = user?.display_name ?? `Team ${r.roster_id}`;
+    const players = rosterPlayers.get(r.roster_id) ?? [];
     const ownPicks = picksMap.get(r.roster_id) ?? /* @__PURE__ */ new Set();
     const picks = Array.from(ownPicks).map((key) => {
       const [yearStr, roundStr, origStr] = key.split("|");
@@ -861,15 +887,14 @@ function buildTeamInputs(params) {
       const origRosterId = parseInt(origStr, 10);
       const knownSlot = year === upcomingYear ? upcomingSlots.get(origRosterId) : void 0;
       const slotKnown = knownSlot !== void 0;
-      const projectedSlot = projectedSlots.get(origRosterId) ?? teamCount;
-      const slot = slotKnown ? knownSlot : projectedSlot;
-      const tier = round === 1 && !slotKnown ? slotToTier(projectedSlot, teamCount) : null;
+      const slot = slotKnown ? knownSlot : slotRankByRoster.get(origRosterId) ?? teamCount;
+      const tier = round === 1 && !slotKnown ? tierForRoster(origRosterId) : null;
       const value = resolvePickValue(
         dynastyValues,
         teamCount,
         year,
         round,
-        slotKnown ? slot : tier ?? slotToTier(projectedSlot, teamCount)
+        slotKnown ? slot : tier ?? tierForRoster(origRosterId)
       );
       const ordinal = ordinalRound(round);
       const baseLabel = slotKnown ? `${year} ${round}.${String(slot).padStart(2, "0")}` : round === 1 ? `${year} ${tier} ${ordinal}` : `${year} ${ordinal}`;
@@ -887,7 +912,11 @@ function buildTeamInputs(params) {
         label: `${baseLabel}${viaSuffix}`,
         value
       };
-    }).sort((a, b) => a.label.localeCompare(b.label));
+    }).sort((a, b) => {
+      if (a.year !== b.year) return a.year - b.year;
+      if (a.round !== b.round) return a.round - b.round;
+      return a.slot - b.slot;
+    });
     const isMine = mySleeperUserId !== void 0 ? r.owner_id === mySleeperUserId : false;
     return {
       rosterId: r.roster_id,
@@ -1003,7 +1032,7 @@ async function handler(req, res) {
     const userRef = adminDb.collection("users").doc(user.uid);
     const userSnap = await userRef.get();
     const mySleeperUserId = userSnap.data()?.["sleeperUserId"];
-    const upcoming = findUpcomingDraft(drafts);
+    const upcoming = findUpcomingDraft(drafts, rosters);
     const thisYear = upcoming?.season ?? (nflState.league_season ? parseInt(nflState.league_season, 10) : (/* @__PURE__ */ new Date()).getFullYear());
     const teamInputs = buildTeamInputs({
       rosters,

@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // "This year" for pick math = the season of the next scheduled draft if
     // Sleeper has one, else nflState.league_season (Sleeper's authoritative
     // fantasy season), else wall-clock year as a last resort.
-    const upcoming = findUpcomingDraft(drafts);
+    const upcoming = findUpcomingDraft(drafts, rosters);
     const thisYear =
       upcoming?.season
       ?? (nflState.league_season ? parseInt(nflState.league_season, 10) : new Date().getFullYear());

@@ -83,13 +83,20 @@ export function projectDraftSlots(rosters: SleeperRoster[]): Map<number, number>
 }
 
 // Find the upcoming draft (next pre_draft / drafting / paused) and return
-// its season + actual slot_to_roster_id mapping. Returns null if every draft
+// its season + actual slot-by-roster mapping. Returns null if every draft
 // is complete (next year's order isn't published yet) or no drafts exist.
 //
-// Sleeper's draft endpoint gives us truth for the next draft: any locked-in
-// slot swaps, third-round reversal, etc. — none of which projectDraftSlots
-// can know about.
-export function findUpcomingDraft(drafts: SleeperDraft[]): {
+// Sleeper publishes the slot truth in two different fields depending on
+// status:
+//   pre_draft               -> draft_order keyed by user_id (string -> slot)
+//   drafting / complete     -> slot_to_roster_id keyed by slot string -> roster_id
+//
+// We try slot_to_roster_id first (it's denormalized for us when present),
+// then fall back to draft_order resolved through rosters.owner_id.
+export function findUpcomingDraft(
+  drafts: SleeperDraft[],
+  rosters: SleeperRoster[],
+): {
   season: number;
   slotByRoster: Map<number, number>;
   rounds: number;
@@ -102,13 +109,30 @@ export function findUpcomingDraft(drafts: SleeperDraft[]): {
   if (!Number.isFinite(season)) return null;
 
   const slotByRoster = new Map<number, number>();
-  const s2r = upcoming.slot_to_roster_id ?? {};
-  for (const [slotStr, rosterId] of Object.entries(s2r)) {
-    const slot = parseInt(slotStr, 10);
-    if (Number.isFinite(slot) && typeof rosterId === "number") {
-      slotByRoster.set(rosterId, slot);
+
+  const s2r = upcoming.slot_to_roster_id;
+  if (s2r && Object.keys(s2r).length > 0) {
+    for (const [slotStr, rosterId] of Object.entries(s2r)) {
+      const slot = parseInt(slotStr, 10);
+      if (Number.isFinite(slot) && typeof rosterId === "number") {
+        slotByRoster.set(rosterId, slot);
+      }
+    }
+  } else if (upcoming.draft_order) {
+    // pre_draft case: draft_order is user_id -> slot. Resolve user_id back
+    // to roster_id via rosters.owner_id.
+    const rosterByOwner = new Map<string, number>();
+    for (const r of rosters) {
+      if (r.owner_id) rosterByOwner.set(r.owner_id, r.roster_id);
+    }
+    for (const [userId, slot] of Object.entries(upcoming.draft_order)) {
+      const rosterId = rosterByOwner.get(userId);
+      if (rosterId !== undefined && Number.isFinite(slot)) {
+        slotByRoster.set(rosterId, slot);
+      }
     }
   }
+
   return {
     season,
     slotByRoster,

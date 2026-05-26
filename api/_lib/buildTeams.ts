@@ -1,10 +1,10 @@
 import {
   buildPicksMap,
   findUpcomingDraft,
-  projectDraftSlots,
   resolvePickValue,
-  slotToTier,
 } from "../../src/data/picks";
+import { applyTep, fillStarters } from "../../src/algo/profile";
+import { STD_THRESHOLD } from "../../src/algo/constants";
 import { normName } from "../../src/data/normalize";
 import type { LeagueFormat, Pick, PickTier, Player, TeamInput } from "../../src/algo/types";
 import type {
@@ -48,7 +48,7 @@ export function buildTeamInputs(params: {
 
   // Sleeper truth for the next draft. If every league draft is complete (or
   // none exist yet), `upcoming` is null and we fall back to projection-only.
-  const upcoming = findUpcomingDraft(drafts);
+  const upcoming = findUpcomingDraft(drafts, rosters);
   const upcomingYear = upcoming?.season ?? thisYear;
   const upcomingSlots = upcoming?.slotByRoster ?? new Map<number, number>();
 
@@ -58,14 +58,16 @@ export function buildTeamInputs(params: {
   const draftYears = [upcomingYear, upcomingYear + 1, upcomingYear + 2];
 
   const picksMap = buildPicksMap(rosters, tradedPicks, draftYears, draftRounds);
-  // Standings projection — only used for years beyond the upcoming draft.
-  const projectedSlots = projectDraftSlots(rosters);
   const teamCount = rosters.length;
 
-  return rosters.map((r) => {
-    const user = users.find((u) => u.user_id === r.owner_id);
-    const ownerName = user?.display_name ?? `Team ${r.roster_id}`;
+  // ── Pass 1: build the players list per roster + starter strength ──
+  // Future-year picks are bucketed by the ORIGINAL team's competitiveness
+  // (WEAK/AVERAGE/STRONG), which mirrors what computeAllProfiles will compute
+  // downstream. Bad teams get projected early picks; good teams get late.
+  const rosterPlayers = new Map<number, Player[]>();
+  const rosterStarterTotal = new Map<number, number>();
 
+  for (const r of rosters) {
     const players: Player[] = (r.players ?? [])
       .map((id): Player | null => {
         const sp = sleeperPlayers[id];
@@ -88,6 +90,48 @@ export function buildTeamInputs(params: {
         };
       })
       .filter((p): p is Player => p !== null);
+    rosterPlayers.set(r.roster_id, players);
+
+    // Sum starter REDRAFT value the same way computeAllProfiles does, so the
+    // tier we assign here will match the competitiveness label downstream.
+    const adj = applyTep(players, format);
+    const { starters } = fillStarters(adj, format);
+    const starterTotal = POSITIONS.reduce(
+      (s, pos) => s + starters[pos].reduce((a, p) => a + p.valueRedraft, 0),
+      0,
+    );
+    rosterStarterTotal.set(r.roster_id, starterTotal);
+  }
+
+  // Mean + std of starter totals. Same ±0.5*std cuts as profile.ts.
+  const starterTotals = Array.from(rosterStarterTotal.values());
+  const meanStarter = starterTotals.reduce((s, v) => s + v, 0) / starterTotals.length;
+  const stdStarter = Math.sqrt(
+    starterTotals.reduce((s, v) => s + (v - meanStarter) ** 2, 0) / starterTotals.length,
+  );
+
+  const tierForRoster = (rosterId: number): PickTier => {
+    const total = rosterStarterTotal.get(rosterId) ?? meanStarter;
+    if (total > meanStarter + STD_THRESHOLD * stdStarter) return "late";  // STRONG
+    if (total < meanStarter - STD_THRESHOLD * stdStarter) return "early"; // WEAK
+    return "mid"; // AVERAGE
+  };
+
+  // Slot rank for sortability (1 = weakest team, N = strongest). Picks with
+  // a known Sleeper slot override this; projected picks just use it as a
+  // stable secondary sort key.
+  const slotRankByRoster = new Map<number, number>();
+  [...rosters]
+    .sort((a, b) =>
+      (rosterStarterTotal.get(a.roster_id) ?? 0) - (rosterStarterTotal.get(b.roster_id) ?? 0)
+    )
+    .forEach((r, i) => slotRankByRoster.set(r.roster_id, i + 1));
+
+  // ── Pass 2: build picks per roster ──
+  return rosters.map((r) => {
+    const user = users.find((u) => u.user_id === r.owner_id);
+    const ownerName = user?.display_name ?? `Team ${r.roster_id}`;
+    const players = rosterPlayers.get(r.roster_id) ?? [];
 
     const ownPicks = picksMap.get(r.roster_id) ?? new Set<string>();
     const picks: Pick[] = Array.from(ownPicks)
@@ -97,16 +141,17 @@ export function buildTeamInputs(params: {
         const round = parseInt(roundStr!, 10);
         const origRosterId = parseInt(origStr!, 10);
 
-        // Slot resolution. Two cases:
-        //   1. Upcoming draft: Sleeper has the real slot — use it.
-        //   2. Future year: project from current standings, bucket into a
-        //      tier. Don't claim a specific slot number to the user.
+        // Slot resolution:
+        //   - Upcoming draft + Sleeper published the slot order: use it.
+        //   - Otherwise: project the tier from the ORIGINAL roster's starter
+        //     strength (matches their competitiveness label).
         const knownSlot = year === upcomingYear ? upcomingSlots.get(origRosterId) : undefined;
         const slotKnown = knownSlot !== undefined;
-        const projectedSlot = projectedSlots.get(origRosterId) ?? teamCount;
-        const slot = slotKnown ? knownSlot! : projectedSlot;
+        const slot = slotKnown
+          ? knownSlot!
+          : (slotRankByRoster.get(origRosterId) ?? teamCount);
         const tier: PickTier | null = round === 1 && !slotKnown
-          ? slotToTier(projectedSlot, teamCount)
+          ? tierForRoster(origRosterId)
           : null;
 
         const value = resolvePickValue(
@@ -114,11 +159,11 @@ export function buildTeamInputs(params: {
           teamCount,
           year,
           round,
-          slotKnown ? slot : (tier ?? slotToTier(projectedSlot, teamCount)),
+          slotKnown ? slot : (tier ?? tierForRoster(origRosterId)),
         );
 
-        // Label format depends on what we actually know.
-        //   known slot:        "2026 1.07"
+        // Label format depends on what we actually know:
+        //   known slot:         "2026 1.07"
         //   projected, round 1: "2027 mid 1st"
         //   projected, round 2+: "2027 2nd"   (FantasyCalc doesn't tier these)
         const ordinal = ordinalRound(round);
@@ -147,7 +192,11 @@ export function buildTeamInputs(params: {
           value,
         };
       })
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .sort((a, b) => {
+        if (a.year !== b.year) return a.year - b.year;
+        if (a.round !== b.round) return a.round - b.round;
+        return a.slot - b.slot;
+      });
 
     // isMine: true if the requesting user's Sleeper user_id matches this roster's owner
     const isMine = mySleeperUserId !== undefined
