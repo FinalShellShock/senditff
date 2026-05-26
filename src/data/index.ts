@@ -11,4 +11,10 @@ export { normName } from "./normalize";
 export { detectFormat } from "./format";
 export { fetchLeague, fetchPlayers } from "./sleeper";
 export { fetchFantasyCalc } from "./fantasycalc";
-export { buildPicksMap, projectDraftSlots, resolvePickValue } from "./picks";
+export {
+  buildPicksMap,
+  projectDraftSlots,
+  resolvePickValue,
+  slotToTier,
+  findUpcomingDraft,
+} from "./picks";

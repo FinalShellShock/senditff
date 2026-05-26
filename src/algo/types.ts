@@ -30,12 +30,22 @@ export type Player = {
   valueDynasty: number;
 };
 
+export type PickTier = "early" | "mid" | "late";
+
 export type Pick = {
   year: number;
   round: number;
   origRosterId: number;
   ownerRosterId: number;
+  // Numeric slot. Only meaningful when slotKnown=true (from Sleeper's
+  // draft_order for an upcoming or in-progress draft). For projected picks
+  // this is a sortable proxy derived from current standings; don't display it.
   slot: number;
+  slotKnown: boolean;
+  // For round-1 projected picks, which tier the original team falls into based
+  // on current standings. Drives FantasyCalc value lookup. Null for known slots
+  // (use slot directly) and for rounds 2+ (FantasyCalc doesn't tier those).
+  tier: PickTier | null;
   label: string;
   value: number;
 };

@@ -1,11 +1,15 @@
 import {
   buildPicksMap,
+  findUpcomingDraft,
   projectDraftSlots,
   resolvePickValue,
+  slotToTier,
 } from "../../src/data/picks";
 import { normName } from "../../src/data/normalize";
-import type { LeagueFormat, Pick, Player, TeamInput } from "../../src/algo/types";
+import type { LeagueFormat, Pick, PickTier, Player, TeamInput } from "../../src/algo/types";
 import type {
+  SleeperDraft,
+  SleeperLeague,
   SleeperPlayer,
   SleeperRoster,
   SleeperTradedPick,
@@ -27,18 +31,36 @@ export function buildTeamInputs(params: {
   rosters: SleeperRoster[];
   users: SleeperUser[];
   tradedPicks: SleeperTradedPick[];
+  drafts: SleeperDraft[];
+  league: SleeperLeague;
   sleeperPlayers: Record<string, SleeperPlayer>;
   valueMaps: ValueMaps;
   format: LeagueFormat;
   mySleeperUserId?: string;
+  // Fallback "current" season. Only used if no upcoming draft is published.
   thisYear: number;
 }): TeamInput[] {
-  const { rosters, users, tradedPicks, sleeperPlayers, valueMaps, format, mySleeperUserId, thisYear } = params;
+  const {
+    rosters, users, tradedPicks, drafts, league, sleeperPlayers,
+    valueMaps, format, mySleeperUserId, thisYear,
+  } = params;
   const { dynastyValues, redraftValues } = valueMaps;
 
-  const draftYears = [thisYear, thisYear + 1, thisYear + 2];
-  const picksMap = buildPicksMap(rosters, tradedPicks, draftYears);
-  const draftSlots = projectDraftSlots(rosters);
+  // Sleeper truth for the next draft. If every league draft is complete (or
+  // none exist yet), `upcoming` is null and we fall back to projection-only.
+  const upcoming = findUpcomingDraft(drafts);
+  const upcomingYear = upcoming?.season ?? thisYear;
+  const upcomingSlots = upcoming?.slotByRoster ?? new Map<number, number>();
+
+  const draftRounds = upcoming?.rounds
+    ?? league.settings?.draft_rounds
+    ?? 4;
+  const draftYears = [upcomingYear, upcomingYear + 1, upcomingYear + 2];
+
+  const picksMap = buildPicksMap(rosters, tradedPicks, draftYears, draftRounds);
+  // Standings projection — only used for years beyond the upcoming draft.
+  const projectedSlots = projectDraftSlots(rosters);
+  const teamCount = rosters.length;
 
   return rosters.map((r) => {
     const user = users.find((u) => u.user_id === r.owner_id);
@@ -74,22 +96,54 @@ export function buildTeamInputs(params: {
         const year = parseInt(yearStr!, 10);
         const round = parseInt(roundStr!, 10);
         const origRosterId = parseInt(origStr!, 10);
-        const slot = draftSlots.get(origRosterId) ?? rosters.length;
-        const value = resolvePickValue(dynastyValues, rosters.length, year, round, slot);
-        const slotStr = `${round}.${String(slot).padStart(2, "0")}`;
+
+        // Slot resolution. Two cases:
+        //   1. Upcoming draft: Sleeper has the real slot — use it.
+        //   2. Future year: project from current standings, bucket into a
+        //      tier. Don't claim a specific slot number to the user.
+        const knownSlot = year === upcomingYear ? upcomingSlots.get(origRosterId) : undefined;
+        const slotKnown = knownSlot !== undefined;
+        const projectedSlot = projectedSlots.get(origRosterId) ?? teamCount;
+        const slot = slotKnown ? knownSlot! : projectedSlot;
+        const tier: PickTier | null = round === 1 && !slotKnown
+          ? slotToTier(projectedSlot, teamCount)
+          : null;
+
+        const value = resolvePickValue(
+          dynastyValues,
+          teamCount,
+          year,
+          round,
+          slotKnown ? slot : (tier ?? slotToTier(projectedSlot, teamCount)),
+        );
+
+        // Label format depends on what we actually know.
+        //   known slot:        "2026 1.07"
+        //   projected, round 1: "2027 mid 1st"
+        //   projected, round 2+: "2027 2nd"   (FantasyCalc doesn't tier these)
+        const ordinal = ordinalRound(round);
+        const baseLabel = slotKnown
+          ? `${year} ${round}.${String(slot).padStart(2, "0")}`
+          : round === 1
+            ? `${year} ${tier} ${ordinal}`
+            : `${year} ${ordinal}`;
+
         const origRoster = rosters.find((rr) => rr.roster_id === origRosterId);
         const origUser = users.find((u) => u.user_id === origRoster?.owner_id);
         const viaSuffix =
           origRosterId !== r.roster_id
             ? ` (via ${origUser?.display_name ?? "?"})`
             : "";
+
         return {
           year,
           round,
           origRosterId,
           ownerRosterId: r.roster_id,
           slot,
-          label: `${year} ${slotStr}${viaSuffix}`,
+          slotKnown,
+          tier,
+          label: `${baseLabel}${viaSuffix}`,
           value,
         };
       })
@@ -109,4 +163,9 @@ export function buildTeamInputs(params: {
       picks,
     };
   });
+}
+
+function ordinalRound(round: number): string {
+  const labels = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"];
+  return labels[round - 1] ?? `${round}th`;
 }

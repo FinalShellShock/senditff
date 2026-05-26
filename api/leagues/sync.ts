@@ -1,7 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { computeAllProfiles } from "../../src/algo/profile";
 import { detectFormat } from "../../src/data/format";
-import { fetchLeague, fetchPlayers } from "../../src/data/sleeper";
+import { fetchLeague, fetchNflState, fetchPlayers } from "../../src/data/sleeper";
+import { findUpcomingDraft } from "../../src/data/picks";
 import { adminDb } from "../_lib/admin";
 import { requireApprovedUser } from "../_lib/auth";
 import { buildTeamInputs } from "../_lib/buildTeams";
@@ -18,9 +19,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Pull everything from Sleeper in parallel with player DB
-    const [{ league, users, rosters, tradedPicks }, sleeperPlayers] = await Promise.all([
+    const [{ league, users, rosters, tradedPicks, drafts }, sleeperPlayers, nflState] = await Promise.all([
       fetchLeague(leagueId),
       fetchPlayers(),
+      fetchNflState(),
     ]);
 
     const format = detectFormat(league);
@@ -37,11 +39,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const userSnap = await userRef.get();
     const mySleeperUserId: string | undefined = userSnap.data()?.["sleeperUserId"] as string | undefined;
 
-    const thisYear = new Date().getFullYear();
+    // "This year" for pick math = the season of the next scheduled draft if
+    // Sleeper has one, else nflState.league_season (Sleeper's authoritative
+    // fantasy season), else wall-clock year as a last resort.
+    const upcoming = findUpcomingDraft(drafts);
+    const thisYear =
+      upcoming?.season
+      ?? (nflState.league_season ? parseInt(nflState.league_season, 10) : new Date().getFullYear());
+
     const teamInputs = buildTeamInputs({
       rosters,
       users,
       tradedPicks,
+      drafts,
+      league,
       sleeperPlayers,
       valueMaps,
       format,
@@ -74,6 +85,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         format,
         members,
         ownerId: leagueSnap.exists ? leagueSnap.data()?.["ownerId"] : user.uid,
+        upcomingDraftYear: thisYear,
         lastRefreshed: new Date().toISOString(),
       },
       { merge: true },

@@ -108,7 +108,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const myProfile = profiles.find((p) => p.rosterId === Number(rosterId));
     if (!myProfile) return res.status(404).json({ error: "Team not found" });
 
-    const thisYear = new Date().getFullYear();
+    // Use the upcoming-draft year persisted by sync (matches the year used to
+    // build the cached profiles). Fall back to wall-clock only for legacy
+    // league docs written before this field existed.
+    const thisYear =
+      (leagueData?.["upcomingDraftYear"] as number | undefined)
+      ?? new Date().getFullYear();
     const valueMaps = await getValueMaps(format);
     const packages = generatePackages(myProfile, profiles, format, thisYear, 5, {
       dynastyByPos: valueMaps.dynastyByPos,

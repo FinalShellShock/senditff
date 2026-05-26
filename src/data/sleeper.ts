@@ -1,4 +1,5 @@
 import type {
+  SleeperDraft,
   SleeperLeague,
   SleeperNflState,
   SleeperPlayer,
@@ -14,21 +15,29 @@ export async function fetchLeague(leagueId: string): Promise<{
   users: SleeperUser[];
   rosters: SleeperRoster[];
   tradedPicks: SleeperTradedPick[];
+  drafts: SleeperDraft[];
 }> {
-  const [lR, uR, rR, pR] = await Promise.all([
+  const [lR, uR, rR, pR, dR] = await Promise.all([
     fetch(`${SLEEPER}/league/${leagueId}`),
     fetch(`${SLEEPER}/league/${leagueId}/users`),
     fetch(`${SLEEPER}/league/${leagueId}/rosters`),
     fetch(`${SLEEPER}/league/${leagueId}/traded_picks`),
+    fetch(`${SLEEPER}/league/${leagueId}/drafts`),
   ]);
   if (!lR.ok) throw new Error(`Sleeper league fetch failed: HTTP ${lR.status}`);
   if (!uR.ok) throw new Error(`Sleeper users fetch failed: HTTP ${uR.status}`);
   if (!rR.ok) throw new Error(`Sleeper rosters fetch failed: HTTP ${rR.status}`);
+  if (!pR.ok) {
+    // Don't silently default to []. An empty result means EVERY team has its
+    // original picks, which is almost always wrong for an established league.
+    console.warn(`Sleeper traded_picks failed for ${leagueId}: HTTP ${pR.status} - all picks will appear untraded`);
+  }
   return {
     league: (await lR.json()) as SleeperLeague,
     users: (await uR.json()) as SleeperUser[],
     rosters: (await rR.json()) as SleeperRoster[],
     tradedPicks: pR.ok ? ((await pR.json()) as SleeperTradedPick[]) : [],
+    drafts: dR.ok ? ((await dR.json()) as SleeperDraft[]) : [],
   };
 }
 

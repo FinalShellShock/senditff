@@ -51,7 +51,7 @@ async function main(): Promise<void> {
   // Build pick ownership
   const thisYear = new Date().getFullYear();
   const draftYears = [thisYear, thisYear + 1, thisYear + 2];
-  const picksMap = buildPicksMap(rosters, tradedPicks, draftYears);
+  const picksMap = buildPicksMap(rosters, tradedPicks, draftYears, 4);
   const draftSlots = projectDraftSlots(rosters);
 
   // Pick values are dynasty (redraft has no picks). Used only by the window axis.
@@ -110,6 +110,13 @@ async function main(): Promise<void> {
           origRosterId,
           ownerRosterId: r.roster_id,
           slot,
+          // Validate script: no Sleeper draft endpoint pulled, so all slots
+          // are projections. slotKnown=false everywhere; tier inferred.
+          slotKnown: false,
+          tier: round === 1
+            ? (slot <= Math.ceil(rosters.length / 3) ? "early"
+              : slot <= 2 * Math.ceil(rosters.length / 3) ? "mid" : "late")
+            : null,
           label: `${year} ${slotStr}${viaSuffix}`,
           value,
         };

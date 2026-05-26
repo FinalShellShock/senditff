@@ -1062,7 +1062,7 @@ async function handler(req, res) {
     const profiles = profilesSnap.docs.map((d) => d.data());
     const myProfile = profiles.find((p) => p.rosterId === Number(rosterId));
     if (!myProfile) return res.status(404).json({ error: "Team not found" });
-    const thisYear = (/* @__PURE__ */ new Date()).getFullYear();
+    const thisYear = leagueData?.["upcomingDraftYear"] ?? (/* @__PURE__ */ new Date()).getFullYear();
     const valueMaps = await getValueMaps(format);
     const packages = generatePackages(myProfile, profiles, format, thisYear, 5, {
       dynastyByPos: valueMaps.dynastyByPos,

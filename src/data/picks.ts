@@ -1,13 +1,15 @@
 import { normName } from "./normalize";
-import type { SleeperRoster, SleeperTradedPick } from "./types";
+import type { PickTier } from "../algo/types";
+import type { SleeperDraft, SleeperRoster, SleeperTradedPick } from "./types";
 
 // Build pick ownership map: rosterId -> Set of "year|round|origRosterId" keys.
 export function buildPicksMap(
   rosters: SleeperRoster[],
   tradedPicks: SleeperTradedPick[],
   draftYears: number[],
-  rounds = [1, 2, 3, 4],
+  draftRounds: number,
 ): Map<number, Set<string>> {
+  const rounds = Array.from({ length: draftRounds }, (_, i) => i + 1);
   const map = new Map<number, Set<string>>();
   for (const r of rosters) {
     const set = new Set<string>();
@@ -27,33 +29,44 @@ export function buildPicksMap(
   return map;
 }
 
-// Resolve a pick's dynasty value from the FantasyCalc dynasty map.
-// Round 1 uses tiered labels (early/mid/late 1st) when available.
-// Falls back to hardcoded defaults when FantasyCalc has no entry.
+// Resolve a pick's dynasty value from FantasyCalc.
+//
+// `slotOrTier` is either a concrete slot number (1..teamCount) for picks
+// belonging to the upcoming draft where Sleeper publishes the real slot, or
+// a tier string ("early" | "mid" | "late") for projected future-year picks.
+// Rounds 2+ ignore the tier (FantasyCalc doesn't distinguish) and just use
+// the generic "YYYY 2nd" / "3rd" / "4th" label.
 export function resolvePickValue(
   dynastyValues: Map<string, { value: number; age?: number }>,
   teamCount: number,
   year: number,
   round: number,
-  slot: number,
+  slotOrTier: number | PickTier,
 ): number {
-  const third = Math.ceil(teamCount / 3);
   if (round === 1) {
-    const tier = slot <= third ? "early" : slot <= 2 * third ? "mid" : "late";
+    const tier =
+      typeof slotOrTier === "number" ? slotToTier(slotOrTier, teamCount) : slotOrTier;
     const v =
       dynastyValues.get(normName(`${year} ${tier} 1st`))?.value ??
       dynastyValues.get(normName(`${year} 1st`))?.value;
     if (v) return v;
-    return slot <= third ? 2500 : slot <= 2 * third ? 2000 : 1500;
+    return tier === "early" ? 2500 : tier === "mid" ? 2000 : 1500;
   }
-  const labels = ["1st", "2nd", "3rd", "4th"] as const;
+  const labels = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"] as const;
   const v = dynastyValues.get(normName(`${year} ${labels[round - 1]}`))?.value;
   if (v) return v;
   return round === 2 ? 900 : round === 3 ? 450 : 200;
 }
 
-// Project draft slot per roster: 1 = earliest pick (worst record).
-// Tiebreaker: lower fpts ahead. Final tiebreaker: roster_id ascending (deterministic).
+// Convert a concrete slot to its tier (early/mid/late thirds of the round).
+export function slotToTier(slot: number, teamCount: number): PickTier {
+  const third = Math.ceil(teamCount / 3);
+  return slot <= third ? "early" : slot <= 2 * third ? "mid" : "late";
+}
+
+// Project draft slot per roster from current standings (worst record = slot 1).
+// Used as the fallback when Sleeper hasn't published a real slot order yet
+// (i.e. for future-year picks beyond the upcoming draft).
 export function projectDraftSlots(rosters: SleeperRoster[]): Map<number, number> {
   const ordered = [...rosters].sort((a, b) => {
     const wa = a.settings?.wins ?? 0;
@@ -67,4 +80,38 @@ export function projectDraftSlots(rosters: SleeperRoster[]): Map<number, number>
   const map = new Map<number, number>();
   ordered.forEach((r, i) => map.set(r.roster_id, i + 1));
   return map;
+}
+
+// Find the upcoming draft (next pre_draft / drafting / paused) and return
+// its season + actual slot_to_roster_id mapping. Returns null if every draft
+// is complete (next year's order isn't published yet) or no drafts exist.
+//
+// Sleeper's draft endpoint gives us truth for the next draft: any locked-in
+// slot swaps, third-round reversal, etc. — none of which projectDraftSlots
+// can know about.
+export function findUpcomingDraft(drafts: SleeperDraft[]): {
+  season: number;
+  slotByRoster: Map<number, number>;
+  rounds: number;
+} | null {
+  const upcoming = drafts
+    .filter((d) => d.status !== "complete")
+    .sort((a, b) => parseInt(a.season, 10) - parseInt(b.season, 10))[0];
+  if (!upcoming) return null;
+  const season = parseInt(upcoming.season, 10);
+  if (!Number.isFinite(season)) return null;
+
+  const slotByRoster = new Map<number, number>();
+  const s2r = upcoming.slot_to_roster_id ?? {};
+  for (const [slotStr, rosterId] of Object.entries(s2r)) {
+    const slot = parseInt(slotStr, 10);
+    if (Number.isFinite(slot) && typeof rosterId === "number") {
+      slotByRoster.set(rosterId, slot);
+    }
+  }
+  return {
+    season,
+    slotByRoster,
+    rounds: upcoming.settings?.rounds ?? 4,
+  };
 }
