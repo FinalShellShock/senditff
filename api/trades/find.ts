@@ -1,12 +1,15 @@
 import { createHash } from "crypto";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import type { LeagueFormat, TeamProfile } from "../../src/algo/types";
+import { ARCHETYPE_FAMILIES, type ArchetypeFamily } from "../../src/algo/archetypes";
+import { POSITIONS } from "../../src/algo/constants";
+import { fairnessText } from "../../src/algo/fairness";
+import type { LeagueFormat, Position, TeamProfile } from "../../src/algo/types";
 import { adminDb } from "../_lib/admin";
 import { requireApprovedUser } from "../_lib/auth";
 import { getValueMaps } from "../_lib/snapshot";
 import { generatePackages, type TradePackage } from "../_lib/tradeEngine";
 
-export type { TradePackage } from "../_lib/tradeEngine";
+export type { GenerateDiagnostics, TradePackage } from "../_lib/tradeEngine";
 
 const MODEL_HAIKU = "claude-haiku-4-5-20251001";
 
@@ -18,6 +21,7 @@ function rationaleHash(pkg: Omit<TradePackage, "rationale">, myProfile: TeamProf
     receive: pkg.receive.map((a) => a.id).sort(),
     archetype: pkg.archetype,
     myWindow: myProfile.windowLabel,
+    fairness: pkg.fairness,
   });
   return createHash("sha256").update(key).digest("hex");
 }
@@ -34,10 +38,15 @@ async function generateRationale(
   const receiveNames = pkg.receive.map(describeAsset).join(", ");
   const archetypeLabel = pkg.archetype.replace(/_/g, " ");
 
+  const fairnessNote =
+    pkg.fairness === "FAIR"
+      ? "The value is even."
+      : `On raw value this is a ${fairnessText(pkg.fairness).toLowerCase()} for this team. Acknowledge that lean and why the deal can still make sense (or what it costs).`;
+
   const prompt = `You are analyzing a dynasty fantasy football trade for a team classified as ${myProfile.windowLabel} (${myProfile.competitiveness} competitiveness, ${myProfile.windowTier} window).
 
 Trade: Send ${giveNames} and receive ${receiveNames} from ${pkg.counterTeam}.
-Trade type: ${archetypeLabel}.
+Trade type: ${archetypeLabel}. ${fairnessNote}
 
 Write 2-3 sentences explaining why this trade makes sense for this team right now. Be specific about the players, picks, and the team's situation. Do not use em dashes.`;
 
@@ -85,9 +94,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await requireApprovedUser(req, res);
   if (!user) return;
 
-  const { leagueId, rosterId } = req.body as { leagueId?: string; rosterId?: number };
+  const { leagueId, rosterId, archetype, position, targetRosterId } = req.body as {
+    leagueId?: string;
+    rosterId?: number;
+    archetype?: string;
+    position?: string;
+    targetRosterId?: number;
+  };
   if (!leagueId || rosterId == null) {
     return res.status(400).json({ error: "leagueId and rosterId required" });
+  }
+  if (archetype != null && !ARCHETYPE_FAMILIES.includes(archetype as ArchetypeFamily)) {
+    return res.status(400).json({ error: `Unknown archetype: ${archetype}` });
+  }
+  if (position != null && !POSITIONS.includes(position as Position)) {
+    return res.status(400).json({ error: `Unknown position: ${position}` });
+  }
+  if (targetRosterId != null && Number(targetRosterId) === Number(rosterId)) {
+    return res.status(400).json({ error: "Target team must differ from perspective team" });
   }
 
   try {
@@ -107,6 +131,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const profiles = profilesSnap.docs.map((d) => d.data() as TeamProfile);
     const myProfile = profiles.find((p) => p.rosterId === Number(rosterId));
     if (!myProfile) return res.status(404).json({ error: "Team not found" });
+    if (
+      targetRosterId != null &&
+      !profiles.some((p) => p.rosterId === Number(targetRosterId))
+    ) {
+      return res.status(400).json({ error: "Target team not found in league" });
+    }
 
     // Use the upcoming-draft year persisted by sync (matches the year used to
     // build the cached profiles). Fall back to wall-clock only for legacy
@@ -115,16 +145,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       (leagueData?.["upcomingDraftYear"] as number | undefined)
       ?? new Date().getFullYear();
     const valueMaps = await getValueMaps(format);
-    const packages = generatePackages(myProfile, profiles, format, thisYear, 5, {
-      dynastyByPos: valueMaps.dynastyByPos,
-      redraftByPos: valueMaps.redraftByPos,
+    const { packages, diagnostics } = generatePackages(myProfile, profiles, format, thisYear, {
+      limit: 5,
+      pools: {
+        dynastyByPos: valueMaps.dynastyByPos,
+        redraftByPos: valueMaps.redraftByPos,
+      },
+      ...(archetype
+        ? {
+            forceArchetype: {
+              family: archetype as ArchetypeFamily,
+              ...(position ? { position: position as Position } : {}),
+            },
+          }
+        : {}),
+      ...(targetRosterId != null ? { targetRosterId: Number(targetRosterId) } : {}),
     });
 
     const withRationales = await Promise.all(
       packages.map((pkg) => addRationale(pkg, myProfile)),
     );
 
-    return res.status(200).json({ packages: withRationales });
+    return res.status(200).json({ packages: withRationales, diagnostics });
   } catch (err) {
     console.error("trades/find error", err);
     return res.status(500).json({ error: "Internal server error" });

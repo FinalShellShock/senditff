@@ -3,6 +3,30 @@ import type { LeagueAverages, LeagueFormat, TeamProfile } from "./types";
 
 export const ARCHETYPE_THRESHOLD = 50;
 
+// Generator families in the trade engine. Users can force one as an "intent"
+// on the Send It tab; positional families accept an optional position filter.
+export const ARCHETYPE_FAMILIES = [
+  "need_fill",
+  "tier_down",
+  "consolidate",
+  "consolidate_flex",
+  "age_arb_buy",
+  "age_arb_sell",
+  "push_in",
+  "capital_convert_picks_to_production",
+  "capital_convert_production_to_picks",
+] as const;
+
+export type ArchetypeFamily = (typeof ARCHETYPE_FAMILIES)[number];
+
+// Families where the UI offers a position filter (engine honors position on
+// any generator with a position loop, but these are the intuitive ones).
+export const POSITIONAL_FAMILIES: ArchetypeFamily[] = [
+  "need_fill",
+  "tier_down",
+  "consolidate",
+];
+
 function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }

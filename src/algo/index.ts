@@ -42,7 +42,8 @@ export {
   starterCalendarAge,
 } from "./profile";
 
-export { detectArchetypes } from "./archetypes";
+export type { ArchetypeFamily } from "./archetypes";
+export { ARCHETYPE_FAMILIES, POSITIONAL_FAMILIES, detectArchetypes } from "./archetypes";
 
 export type { FairnessLabel } from "./fairness";
 export {

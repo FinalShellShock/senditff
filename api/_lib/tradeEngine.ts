@@ -7,7 +7,9 @@
 //   3. Archetype match (does the shape line up with archetypes both teams have)
 //   4. Value balance (is the dynasty-value gap acceptable)
 
+import type { ArchetypeFamily } from "../../src/algo/archetypes";
 import { PICK_DECAY, POSITIONS } from "../../src/algo/constants";
+import { fairnessLabel, type FairnessLabel } from "../../src/algo/fairness";
 import {
   depthByPosition,
   depthSlotsFor,
@@ -45,7 +47,47 @@ export type TradePackage = {
   valueGive: number;
   valueReceive: number;
   archetype: string;
+  fairness: FairnessLabel;
+  scores: {
+    total: number;
+    myFit: number;
+    theirFit: number;
+    balance: number;
+    archMatch: number;
+  };
   rationale: string;
+};
+
+export type GenerateOptions = {
+  limit?: number; // default 5
+  // Force one generator family (user-selected intent). Skips the archetype
+  // score gates inside that generator and relaxes the hard reject gates —
+  // mediocre results get labeled instead of hidden.
+  forceArchetype?: { family: ArchetypeFamily; position?: Position };
+  // Only consider this counter-team.
+  targetRosterId?: number;
+  pools?: {
+    dynastyByPos: Record<Position, number[]>;
+    redraftByPos: Record<Position, number[]>;
+  };
+};
+
+// Deterministic explanation material for thin/empty results. The client
+// composes the "here's why" copy from these counts — no Claude involved.
+export type GenerateDiagnostics = {
+  rawCandidates: number;
+  afterDedup: number;
+  rejected: { myFit: number; theirFit: number; balance: number };
+  forced: boolean;
+  // mine.archetypeScores for the forced family (0-100), when forced.
+  myArchetypeScore?: number;
+  // One deterministic sentence about the target team, when one was set.
+  counterNote?: string;
+};
+
+export type GenerateResult = {
+  packages: Omit<TradePackage, "rationale">[];
+  diagnostics: GenerateDiagnostics;
 };
 
 // ── Internal types ───────────────────────────────────────────────────────────
@@ -77,7 +119,15 @@ type GenContext = {
   format: LeagueFormat;
   averages: LeagueAverages;
   thisYear: number;
+  // Set when the user forced this generator's family. Generators skip their
+  // archetype-score early-returns and honor the position restriction.
+  forced?: { family: ArchetypeFamily; position?: Position };
 };
+
+// Positions a generator should loop over, honoring a forced position filter.
+function genPositions(ctx: GenContext): Position[] {
+  return ctx.forced?.position ? [ctx.forced.position] : POSITIONS;
+}
 
 // ── Asset helpers ────────────────────────────────────────────────────────────
 
@@ -511,11 +561,14 @@ function buildGiveSides(
 function genNeedFill(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  // Top 2 most-urgent positions where urgency clears 40
-  const needPositions = [...POSITIONS]
-    .sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency)
-    .filter((pos) => mine.positionScores[pos].urgency >= 40)
-    .slice(0, 2);
+  // Top 2 most-urgent positions where urgency clears 40.
+  // Forced: use the requested position, or top 2 by urgency with no floor.
+  const needPositions = ctx.forced?.position
+    ? [ctx.forced.position]
+    : [...POSITIONS]
+        .sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency)
+        .filter((pos) => ctx.forced ? true : mine.positionScores[pos].urgency >= 40)
+        .slice(0, 2);
   if (needPositions.length === 0) return out;
 
   for (const needPos of needPositions) {
@@ -546,10 +599,12 @@ function genNeedFill(ctx: GenContext): Candidate[] {
 function genTierDown(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  for (const pos of POSITIONS) {
-    if ((mine.archetypeScores?.[`tier_down_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
+  for (const pos of genPositions(ctx)) {
+    if (!ctx.forced && (mine.archetypeScores?.[`tier_down_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
     const myElite = topPlayersByPos(mine, pos, 1)[0];
-    if (!myElite || myElite.valueDynasty < 2500) continue;
+    // Forced mode still needs a real top-tier piece to tier down from, just a
+    // softer bar (their best at the position, not necessarily league-elite).
+    if (!myElite || myElite.valueDynasty < (ctx.forced ? 1500 : 2500)) continue;
 
     for (const them of others) {
       const theirAtPos = topPlayersByPos(them, pos, 4);
@@ -617,8 +672,8 @@ function genTierDown(ctx: GenContext): Candidate[] {
 function genConsolidate(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  for (const pos of POSITIONS) {
-    if ((mine.archetypeScores?.[`consolidate_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
+  for (const pos of genPositions(ctx)) {
+    if (!ctx.forced && (mine.archetypeScores?.[`consolidate_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
     const myAtPos = topPlayersByPos(mine, pos, 4);
     const myPair = myAtPos.slice(1, 3); // my #2 + #3
     if (myPair.length < 2) continue;
@@ -666,7 +721,7 @@ function genConsolidate(ctx: GenContext): Candidate[] {
 function genConsolidateFlex(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  if ((mine.archetypeScores?.["consolidate_flex"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+  if (!ctx.forced && (mine.archetypeScores?.["consolidate_flex"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
 
   // Pick the position with highest urgency to upgrade INTO
   const upgradePos = [...POSITIONS].sort(
@@ -702,11 +757,11 @@ function genConsolidateFlex(ctx: GenContext): Candidate[] {
 function genAgeArbBuy(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  if ((mine.archetypeScores?.["age_arb_buy"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+  if (!ctx.forced && (mine.archetypeScores?.["age_arb_buy"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
 
   for (const them of others) {
     if (them.windowTier === "LONG") continue; // they're young too, not a seller
-    for (const pos of POSITIONS) {
+    for (const pos of genPositions(ctx)) {
       // Aging high-value player on their roster
       const aging = them.players
         .filter((p) => p.position === pos && (p.age ?? 0) >= 27 && p.valueDynasty >= 1500)
@@ -733,9 +788,9 @@ function genAgeArbBuy(ctx: GenContext): Candidate[] {
 function genAgeArbSell(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  if ((mine.archetypeScores?.["age_arb_sell"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+  if (!ctx.forced && (mine.archetypeScores?.["age_arb_sell"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
 
-  for (const pos of POSITIONS) {
+  for (const pos of genPositions(ctx)) {
     const myAging = mine.players
       .filter((p) => p.position === pos && (p.age ?? 0) >= 28 && p.valueDynasty >= 1500)
       .sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
@@ -778,12 +833,13 @@ function genAgeArbSell(ctx: GenContext): Candidate[] {
 function genPushIn(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  if ((mine.archetypeScores?.["push_in"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+  if (!ctx.forced && (mine.archetypeScores?.["push_in"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
 
   // Convert future capital + a depth piece into proven production at a need spot.
-  const needPos = [...POSITIONS].sort(
-    (a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency,
-  )[0]!;
+  const needPos = ctx.forced?.position
+    ?? [...POSITIONS].sort(
+      (a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency,
+    )[0]!;
 
   for (const them of others) {
     if (them.competitiveness === "STRONG" && them.windowTier === "SHORT") continue; // they need now too
@@ -808,11 +864,11 @@ function genPushIn(ctx: GenContext): Candidate[] {
 function genCapitalConvertPicksToProduction(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  if ((mine.archetypeScores?.["capital_convert_picks_to_production"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+  if (!ctx.forced && (mine.archetypeScores?.["capital_convert_picks_to_production"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
   if (mine.picks.length === 0) return out;
 
   for (const them of others) {
-    for (const pos of POSITIONS) {
+    for (const pos of genPositions(ctx)) {
       const target = topPlayersByPos(them, pos, 2)[0];
       if (!target || target.valueDynasty < 1200) continue;
       const pickSet = bestPickSet(mine.picks, target.valueDynasty, 3);
@@ -833,10 +889,11 @@ function genCapitalConvertPicksToProduction(ctx: GenContext): Candidate[] {
 function genCapitalConvertProductionToPicks(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  if ((mine.archetypeScores?.["capital_convert_production_to_picks"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+  if (!ctx.forced && (mine.archetypeScores?.["capital_convert_production_to_picks"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
 
   // Sell aging or low-urgency-position players for picks.
   const sellable = mine.players
+    .filter((p) => !ctx.forced?.position || p.position === ctx.forced.position)
     .filter((p) => p.valueDynasty >= 1500)
     .filter((p) => mine.positionScores[p.position].classification !== "CRITICAL_NEED")
     .sort((a, b) => b.valueDynasty - a.valueDynasty)
@@ -860,17 +917,24 @@ function genCapitalConvertProductionToPicks(ctx: GenContext): Candidate[] {
   return out;
 }
 
-const GENERATORS = [
-  genNeedFill,
-  genTierDown,
-  genConsolidate,
-  genConsolidateFlex,
-  genAgeArbBuy,
-  genAgeArbSell,
-  genPushIn,
-  genCapitalConvertPicksToProduction,
-  genCapitalConvertProductionToPicks,
-];
+// Keyed by family; insertion order matters (dedup keeps first occurrence, so
+// this must match the historical generator order).
+const GENERATORS: Record<ArchetypeFamily, (ctx: GenContext) => Candidate[]> = {
+  need_fill: genNeedFill,
+  tier_down: genTierDown,
+  consolidate: genConsolidate,
+  consolidate_flex: genConsolidateFlex,
+  age_arb_buy: genAgeArbBuy,
+  age_arb_sell: genAgeArbSell,
+  push_in: genPushIn,
+  capital_convert_picks_to_production: genCapitalConvertPicksToProduction,
+  capital_convert_production_to_picks: genCapitalConvertProductionToPicks,
+};
+
+// Hard reject gates. Forced mode is looser: the user asked for this shape,
+// so mediocre results get surfaced with honest labels instead of hidden.
+const DEFAULT_GATES = { myFit: -0.10, theirFit: -0.40, balance: 0.55 };
+const FORCED_GATES = { myFit: -0.30, theirFit: -0.60, balance: 0.40 };
 
 // ── Top-level orchestration ──────────────────────────────────────────────────
 
@@ -880,23 +944,55 @@ function candidateKey(c: Candidate): string {
   return `${g}::${r}`;
 }
 
+// mine.archetypeScores lookup for a forced family, mirroring how the
+// generators key their scores (positional families store per-position keys).
+function forcedArchetypeScore(
+  mine: TeamProfile,
+  forced: { family: ArchetypeFamily; position?: Position },
+): number {
+  const scores = mine.archetypeScores ?? {};
+  if (forced.family === "tier_down" || forced.family === "consolidate") {
+    const positions = forced.position ? [forced.position] : POSITIONS;
+    return Math.max(...positions.map((pos) => scores[`${forced.family}_${pos}`] ?? 0));
+  }
+  return scores[forced.family] ?? 0;
+}
+
+function buildCounterNote(
+  target: TeamProfile | undefined,
+  forced?: { family: ArchetypeFamily; position?: Position },
+): string | undefined {
+  if (!target) return undefined;
+  if (forced?.position) {
+    const cl = target.positionScores[forced.position]?.classification;
+    return `${target.ownerName} is ${cl} at ${forced.position}`;
+  }
+  return `${target.ownerName} profiles as ${target.windowLabel}`;
+}
+
 export function generatePackages(
   mine: TeamProfile,
   allProfiles: TeamProfile[],
   format: LeagueFormat,
   thisYear: number,
-  limit = 5,
-  globalPlayerPools?: {
-    dynastyByPos: Record<Position, number[]>;
-    redraftByPos: Record<Position, number[]>;
-  },
-): Omit<TradePackage, "rationale">[] {
-  const others = allProfiles.filter((p) => p.rosterId !== mine.rosterId);
-  const averages = computeLeagueAverages(allProfiles, format, globalPlayerPools);
-  const ctx: GenContext = { mine, others, format, averages, thisYear };
+  opts: GenerateOptions = {},
+): GenerateResult {
+  const limit = opts.limit ?? 5;
+  const forced = opts.forceArchetype;
+  let others = allProfiles.filter((p) => p.rosterId !== mine.rosterId);
+  const target =
+    opts.targetRosterId != null
+      ? others.find((p) => p.rosterId === opts.targetRosterId)
+      : undefined;
+  if (opts.targetRosterId != null) {
+    others = others.filter((p) => p.rosterId === opts.targetRosterId);
+  }
+  const averages = computeLeagueAverages(allProfiles, format, opts.pools);
+  const ctx: GenContext = { mine, others, format, averages, thisYear, forced };
 
-  // Generate raw candidates from every applicable archetype
-  const rawCandidates = GENERATORS.flatMap((g) => g(ctx));
+  // Generate raw candidates: every archetype by default, one family when forced
+  const generators = forced ? [GENERATORS[forced.family]] : Object.values(GENERATORS);
+  const rawCandidates = generators.flatMap((g) => g(ctx));
 
   // Dedup identical packages, keep first occurrence
   const seen = new Set<string>();
@@ -911,10 +1007,17 @@ export function generatePackages(
   // Score everything
   const scored = unique.map((c) => scoreCandidate(c, mine, others, ctx));
 
-  // Hard rejects: severely lopsided fits
-  const filtered = scored.filter(
-    (s) => s.myFit > -0.10 && s.theirFit > -0.40 && s.balance > 0.55,
-  );
+  // Hard rejects: severely lopsided fits. Tally each failing gate so empty
+  // results can be explained.
+  const gates = forced ? FORCED_GATES : DEFAULT_GATES;
+  const rejected = { myFit: 0, theirFit: 0, balance: 0 };
+  const filtered = scored.filter((s) => {
+    let ok = true;
+    if (!(s.myFit > gates.myFit)) { rejected.myFit++; ok = false; }
+    if (!(s.theirFit > gates.theirFit)) { rejected.theirFit++; ok = false; }
+    if (!(s.balance > gates.balance)) { rejected.balance++; ok = false; }
+    return ok;
+  });
 
   // Sort by score; deterministic tiebreak by candidate key
   filtered.sort((a, b) => {
@@ -922,16 +1025,19 @@ export function generatePackages(
     return candidateKey(a).localeCompare(candidateKey(b));
   });
 
-  // Diversity: max 2 per counter-team, prefer spanning archetype families
+  // Diversity: max 2 per counter-team (uncapped when a target team was
+  // requested), prefer spanning archetype families (skipped when forced —
+  // everything is one family).
+  const perCounterCap = opts.targetRosterId != null ? Infinity : 2;
   const perCounter = new Map<number, number>();
   const archFamiliesUsed = new Set<string>();
   const top: ScoredCandidate[] = [];
   for (const s of filtered) {
     const cnt = perCounter.get(s.counterRosterId) ?? 0;
-    if (cnt >= 2) continue;
+    if (cnt >= perCounterCap) continue;
     const family = s.archetype.replace(/_(QB|RB|WR|TE)$/, "");
     // First pass: only add if archetype family is new (boosts diversity)
-    if (top.length < limit / 2 && archFamiliesUsed.has(family)) continue;
+    if (!forced && top.length < limit / 2 && archFamiliesUsed.has(family)) continue;
     top.push(s);
     perCounter.set(s.counterRosterId, cnt + 1);
     archFamiliesUsed.add(family);
@@ -942,14 +1048,14 @@ export function generatePackages(
     for (const s of filtered) {
       if (top.includes(s)) continue;
       const cnt = perCounter.get(s.counterRosterId) ?? 0;
-      if (cnt >= 2) continue;
+      if (cnt >= perCounterCap) continue;
       top.push(s);
       perCounter.set(s.counterRosterId, cnt + 1);
       if (top.length >= limit) break;
     }
   }
 
-  return top.map((s) => {
+  const packages = top.map((s) => {
     const counter = others.find((p) => p.rosterId === s.counterRosterId);
     return {
       counterTeam: counter?.ownerName ?? "?",
@@ -959,6 +1065,25 @@ export function generatePackages(
       valueGive: s.valueGive,
       valueReceive: s.valueReceive,
       archetype: s.archetype,
+      fairness: fairnessLabel(s.valueGive, s.valueReceive),
+      scores: {
+        total: s.total,
+        myFit: s.myFit,
+        theirFit: s.theirFit,
+        balance: s.balance,
+        archMatch: s.archMatch,
+      },
     };
   });
+
+  const diagnostics: GenerateDiagnostics = {
+    rawCandidates: rawCandidates.length,
+    afterDedup: unique.length,
+    rejected,
+    forced: !!forced,
+    ...(forced ? { myArchetypeScore: forcedArchetypeScore(mine, forced) } : {}),
+    ...(target ? { counterNote: buildCounterNote(target, forced) } : {}),
+  };
+
+  return { packages, diagnostics };
 }

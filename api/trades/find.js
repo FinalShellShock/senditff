@@ -34,6 +34,48 @@ __export(find_exports, {
 module.exports = __toCommonJS(find_exports);
 var import_crypto = require("crypto");
 
+// src/algo/constants.ts
+var POSITIONS = ["QB", "RB", "WR", "TE"];
+var PICK_DECAY = {
+  0: 1,
+  1: 0.85,
+  2: 0.7,
+  3: 0.55
+};
+
+// src/algo/archetypes.ts
+var ARCHETYPE_FAMILIES = [
+  "need_fill",
+  "tier_down",
+  "consolidate",
+  "consolidate_flex",
+  "age_arb_buy",
+  "age_arb_sell",
+  "push_in",
+  "capital_convert_picks_to_production",
+  "capital_convert_production_to_picks"
+];
+
+// src/algo/fairness.ts
+var FAIRNESS_FAIR_PCT = 0.05;
+var FAIRNESS_FAIR_ABS = 150;
+var FAIRNESS_SLIGHT_PCT = 0.12;
+function fairnessDelta(valueGive, valueReceive) {
+  return (valueReceive - valueGive) / Math.max(valueGive, valueReceive, 1);
+}
+function fairnessLabel(valueGive, valueReceive) {
+  const delta = fairnessDelta(valueGive, valueReceive);
+  const absGap = Math.abs(valueReceive - valueGive);
+  if (Math.abs(delta) <= FAIRNESS_FAIR_PCT || absGap <= FAIRNESS_FAIR_ABS) return "FAIR";
+  if (delta < 0) {
+    return -delta <= FAIRNESS_SLIGHT_PCT ? "SLIGHT_OVERPAY" : "OVERPAY";
+  }
+  return delta <= FAIRNESS_SLIGHT_PCT ? "SLIGHT_UNDERPAY" : "UNDERPAY";
+}
+function fairnessText(label) {
+  return label.replace(/_/g, " ");
+}
+
 // api/_lib/admin.ts
 var admin = __toESM(require("firebase-admin"));
 if (!admin.apps.length) {
@@ -157,15 +199,6 @@ function deserializeSnapshot(data) {
     redraftByPos: data.redraftByPos ?? empty
   };
 }
-
-// src/algo/constants.ts
-var POSITIONS = ["QB", "RB", "WR", "TE"];
-var PICK_DECAY = {
-  0: 1,
-  1: 0.85,
-  2: 0.7,
-  3: 0.55
-};
 
 // src/algo/profile.ts
 var REDRAFT = (p) => p.valueRedraft;
@@ -308,6 +341,9 @@ function weightedSlotAverage(scores) {
 }
 
 // api/_lib/tradeEngine.ts
+function genPositions(ctx) {
+  return ctx.forced?.position ? [ctx.forced.position] : POSITIONS;
+}
 var ARCHETYPE_THRESHOLD = 30;
 function playerAsset(p, ownerRosterId) {
   return { kind: "player", player: p, ownerRosterId };
@@ -620,7 +656,7 @@ function buildGiveSides(mine, targetValue, opts = {}) {
 function genNeedFill(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  const needPositions = [...POSITIONS].sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency).filter((pos) => mine.positionScores[pos].urgency >= 40).slice(0, 2);
+  const needPositions = ctx.forced?.position ? [ctx.forced.position] : [...POSITIONS].sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency).filter((pos) => ctx.forced ? true : mine.positionScores[pos].urgency >= 40).slice(0, 2);
   if (needPositions.length === 0) return out;
   for (const needPos of needPositions) {
     for (const them of others) {
@@ -648,10 +684,10 @@ function genNeedFill(ctx) {
 function genTierDown(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  for (const pos of POSITIONS) {
-    if ((mine.archetypeScores?.[`tier_down_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
+  for (const pos of genPositions(ctx)) {
+    if (!ctx.forced && (mine.archetypeScores?.[`tier_down_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
     const myElite = topPlayersByPos(mine, pos, 1)[0];
-    if (!myElite || myElite.valueDynasty < 2500) continue;
+    if (!myElite || myElite.valueDynasty < (ctx.forced ? 1500 : 2500)) continue;
     for (const them of others) {
       const theirAtPos = topPlayersByPos(them, pos, 4);
       const pair = theirAtPos.slice(1, 3);
@@ -712,8 +748,8 @@ function genTierDown(ctx) {
 function genConsolidate(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  for (const pos of POSITIONS) {
-    if ((mine.archetypeScores?.[`consolidate_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
+  for (const pos of genPositions(ctx)) {
+    if (!ctx.forced && (mine.archetypeScores?.[`consolidate_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
     const myAtPos = topPlayersByPos(mine, pos, 4);
     const myPair = myAtPos.slice(1, 3);
     if (myPair.length < 2) continue;
@@ -756,7 +792,7 @@ function genConsolidate(ctx) {
 function genConsolidateFlex(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  if ((mine.archetypeScores?.["consolidate_flex"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+  if (!ctx.forced && (mine.archetypeScores?.["consolidate_flex"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
   const upgradePos = [...POSITIONS].sort(
     (a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency
   )[0];
@@ -785,10 +821,10 @@ function genConsolidateFlex(ctx) {
 function genAgeArbBuy(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  if ((mine.archetypeScores?.["age_arb_buy"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+  if (!ctx.forced && (mine.archetypeScores?.["age_arb_buy"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
   for (const them of others) {
     if (them.windowTier === "LONG") continue;
-    for (const pos of POSITIONS) {
+    for (const pos of genPositions(ctx)) {
       const aging = them.players.filter((p) => p.position === pos && (p.age ?? 0) >= 27 && p.valueDynasty >= 1500).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
       if (!aging) continue;
       const giveSides = buildGiveSides(mine, aging.valueDynasty * 1.05, {
@@ -810,8 +846,8 @@ function genAgeArbBuy(ctx) {
 function genAgeArbSell(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  if ((mine.archetypeScores?.["age_arb_sell"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
-  for (const pos of POSITIONS) {
+  if (!ctx.forced && (mine.archetypeScores?.["age_arb_sell"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+  for (const pos of genPositions(ctx)) {
     const myAging = mine.players.filter((p) => p.position === pos && (p.age ?? 0) >= 28 && p.valueDynasty >= 1500).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
     if (!myAging) continue;
     for (const them of others) {
@@ -846,8 +882,8 @@ function genAgeArbSell(ctx) {
 function genPushIn(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  if ((mine.archetypeScores?.["push_in"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
-  const needPos = [...POSITIONS].sort(
+  if (!ctx.forced && (mine.archetypeScores?.["push_in"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+  const needPos = ctx.forced?.position ?? [...POSITIONS].sort(
     (a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency
   )[0];
   for (const them of others) {
@@ -872,10 +908,10 @@ function genPushIn(ctx) {
 function genCapitalConvertPicksToProduction(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  if ((mine.archetypeScores?.["capital_convert_picks_to_production"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+  if (!ctx.forced && (mine.archetypeScores?.["capital_convert_picks_to_production"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
   if (mine.picks.length === 0) return out;
   for (const them of others) {
-    for (const pos of POSITIONS) {
+    for (const pos of genPositions(ctx)) {
       const target = topPlayersByPos(them, pos, 2)[0];
       if (!target || target.valueDynasty < 1200) continue;
       const pickSet = bestPickSet(mine.picks, target.valueDynasty, 3);
@@ -895,8 +931,8 @@ function genCapitalConvertPicksToProduction(ctx) {
 function genCapitalConvertProductionToPicks(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  if ((mine.archetypeScores?.["capital_convert_production_to_picks"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
-  const sellable = mine.players.filter((p) => p.valueDynasty >= 1500).filter((p) => mine.positionScores[p.position].classification !== "CRITICAL_NEED").sort((a, b) => b.valueDynasty - a.valueDynasty).slice(0, 6);
+  if (!ctx.forced && (mine.archetypeScores?.["capital_convert_production_to_picks"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
+  const sellable = mine.players.filter((p) => !ctx.forced?.position || p.position === ctx.forced.position).filter((p) => p.valueDynasty >= 1500).filter((p) => mine.positionScores[p.position].classification !== "CRITICAL_NEED").sort((a, b) => b.valueDynasty - a.valueDynasty).slice(0, 6);
   for (const seller of sellable) {
     for (const them of others) {
       if (them.picks.length === 0) continue;
@@ -914,27 +950,52 @@ function genCapitalConvertProductionToPicks(ctx) {
   }
   return out;
 }
-var GENERATORS = [
-  genNeedFill,
-  genTierDown,
-  genConsolidate,
-  genConsolidateFlex,
-  genAgeArbBuy,
-  genAgeArbSell,
-  genPushIn,
-  genCapitalConvertPicksToProduction,
-  genCapitalConvertProductionToPicks
-];
+var GENERATORS = {
+  need_fill: genNeedFill,
+  tier_down: genTierDown,
+  consolidate: genConsolidate,
+  consolidate_flex: genConsolidateFlex,
+  age_arb_buy: genAgeArbBuy,
+  age_arb_sell: genAgeArbSell,
+  push_in: genPushIn,
+  capital_convert_picks_to_production: genCapitalConvertPicksToProduction,
+  capital_convert_production_to_picks: genCapitalConvertProductionToPicks
+};
+var DEFAULT_GATES = { myFit: -0.1, theirFit: -0.4, balance: 0.55 };
+var FORCED_GATES = { myFit: -0.3, theirFit: -0.6, balance: 0.4 };
 function candidateKey(c) {
   const g = c.give.map(assetId).sort().join("|");
   const r = c.receive.map(assetId).sort().join("|");
   return `${g}::${r}`;
 }
-function generatePackages(mine, allProfiles, format, thisYear, limit = 5, globalPlayerPools) {
-  const others = allProfiles.filter((p) => p.rosterId !== mine.rosterId);
-  const averages = computeLeagueAverages(allProfiles, format, globalPlayerPools);
-  const ctx = { mine, others, format, averages, thisYear };
-  const rawCandidates = GENERATORS.flatMap((g) => g(ctx));
+function forcedArchetypeScore(mine, forced) {
+  const scores = mine.archetypeScores ?? {};
+  if (forced.family === "tier_down" || forced.family === "consolidate") {
+    const positions = forced.position ? [forced.position] : POSITIONS;
+    return Math.max(...positions.map((pos) => scores[`${forced.family}_${pos}`] ?? 0));
+  }
+  return scores[forced.family] ?? 0;
+}
+function buildCounterNote(target, forced) {
+  if (!target) return void 0;
+  if (forced?.position) {
+    const cl = target.positionScores[forced.position]?.classification;
+    return `${target.ownerName} is ${cl} at ${forced.position}`;
+  }
+  return `${target.ownerName} profiles as ${target.windowLabel}`;
+}
+function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
+  const limit = opts.limit ?? 5;
+  const forced = opts.forceArchetype;
+  let others = allProfiles.filter((p) => p.rosterId !== mine.rosterId);
+  const target = opts.targetRosterId != null ? others.find((p) => p.rosterId === opts.targetRosterId) : void 0;
+  if (opts.targetRosterId != null) {
+    others = others.filter((p) => p.rosterId === opts.targetRosterId);
+  }
+  const averages = computeLeagueAverages(allProfiles, format, opts.pools);
+  const ctx = { mine, others, format, averages, thisYear, forced };
+  const generators = forced ? [GENERATORS[forced.family]] : Object.values(GENERATORS);
+  const rawCandidates = generators.flatMap((g) => g(ctx));
   const seen = /* @__PURE__ */ new Set();
   const unique = [];
   for (const c of rawCandidates) {
@@ -944,21 +1005,37 @@ function generatePackages(mine, allProfiles, format, thisYear, limit = 5, global
     unique.push(c);
   }
   const scored = unique.map((c) => scoreCandidate(c, mine, others, ctx));
-  const filtered = scored.filter(
-    (s) => s.myFit > -0.1 && s.theirFit > -0.4 && s.balance > 0.55
-  );
+  const gates = forced ? FORCED_GATES : DEFAULT_GATES;
+  const rejected = { myFit: 0, theirFit: 0, balance: 0 };
+  const filtered = scored.filter((s) => {
+    let ok = true;
+    if (!(s.myFit > gates.myFit)) {
+      rejected.myFit++;
+      ok = false;
+    }
+    if (!(s.theirFit > gates.theirFit)) {
+      rejected.theirFit++;
+      ok = false;
+    }
+    if (!(s.balance > gates.balance)) {
+      rejected.balance++;
+      ok = false;
+    }
+    return ok;
+  });
   filtered.sort((a, b) => {
     if (b.total !== a.total) return b.total - a.total;
     return candidateKey(a).localeCompare(candidateKey(b));
   });
+  const perCounterCap = opts.targetRosterId != null ? Infinity : 2;
   const perCounter = /* @__PURE__ */ new Map();
   const archFamiliesUsed = /* @__PURE__ */ new Set();
   const top = [];
   for (const s of filtered) {
     const cnt = perCounter.get(s.counterRosterId) ?? 0;
-    if (cnt >= 2) continue;
+    if (cnt >= perCounterCap) continue;
     const family = s.archetype.replace(/_(QB|RB|WR|TE)$/, "");
-    if (top.length < limit / 2 && archFamiliesUsed.has(family)) continue;
+    if (!forced && top.length < limit / 2 && archFamiliesUsed.has(family)) continue;
     top.push(s);
     perCounter.set(s.counterRosterId, cnt + 1);
     archFamiliesUsed.add(family);
@@ -968,13 +1045,13 @@ function generatePackages(mine, allProfiles, format, thisYear, limit = 5, global
     for (const s of filtered) {
       if (top.includes(s)) continue;
       const cnt = perCounter.get(s.counterRosterId) ?? 0;
-      if (cnt >= 2) continue;
+      if (cnt >= perCounterCap) continue;
       top.push(s);
       perCounter.set(s.counterRosterId, cnt + 1);
       if (top.length >= limit) break;
     }
   }
-  return top.map((s) => {
+  const packages = top.map((s) => {
     const counter = others.find((p) => p.rosterId === s.counterRosterId);
     return {
       counterTeam: counter?.ownerName ?? "?",
@@ -983,9 +1060,26 @@ function generatePackages(mine, allProfiles, format, thisYear, limit = 5, global
       receive: s.receive.map(toWire),
       valueGive: s.valueGive,
       valueReceive: s.valueReceive,
-      archetype: s.archetype
+      archetype: s.archetype,
+      fairness: fairnessLabel(s.valueGive, s.valueReceive),
+      scores: {
+        total: s.total,
+        myFit: s.myFit,
+        theirFit: s.theirFit,
+        balance: s.balance,
+        archMatch: s.archMatch
+      }
     };
   });
+  const diagnostics = {
+    rawCandidates: rawCandidates.length,
+    afterDedup: unique.length,
+    rejected,
+    forced: !!forced,
+    ...forced ? { myArchetypeScore: forcedArchetypeScore(mine, forced) } : {},
+    ...target ? { counterNote: buildCounterNote(target, forced) } : {}
+  };
+  return { packages, diagnostics };
 }
 
 // api/trades/find.ts
@@ -995,7 +1089,8 @@ function rationaleHash(pkg, myProfile) {
     give: pkg.give.map((a) => a.id).sort(),
     receive: pkg.receive.map((a) => a.id).sort(),
     archetype: pkg.archetype,
-    myWindow: myProfile.windowLabel
+    myWindow: myProfile.windowLabel,
+    fairness: pkg.fairness
   });
   return (0, import_crypto.createHash)("sha256").update(key).digest("hex");
 }
@@ -1006,10 +1101,11 @@ async function generateRationale(pkg, myProfile) {
   const giveNames = pkg.give.map(describeAsset).join(", ");
   const receiveNames = pkg.receive.map(describeAsset).join(", ");
   const archetypeLabel = pkg.archetype.replace(/_/g, " ");
+  const fairnessNote = pkg.fairness === "FAIR" ? "The value is even." : `On raw value this is a ${fairnessText(pkg.fairness).toLowerCase()} for this team. Acknowledge that lean and why the deal can still make sense (or what it costs).`;
   const prompt = `You are analyzing a dynasty fantasy football trade for a team classified as ${myProfile.windowLabel} (${myProfile.competitiveness} competitiveness, ${myProfile.windowTier} window).
 
 Trade: Send ${giveNames} and receive ${receiveNames} from ${pkg.counterTeam}.
-Trade type: ${archetypeLabel}.
+Trade type: ${archetypeLabel}. ${fairnessNote}
 
 Write 2-3 sentences explaining why this trade makes sense for this team right now. Be specific about the players, picks, and the team's situation. Do not use em dashes.`;
   const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -1044,9 +1140,18 @@ async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   const user = await requireApprovedUser(req, res);
   if (!user) return;
-  const { leagueId, rosterId } = req.body;
+  const { leagueId, rosterId, archetype, position, targetRosterId } = req.body;
   if (!leagueId || rosterId == null) {
     return res.status(400).json({ error: "leagueId and rosterId required" });
+  }
+  if (archetype != null && !ARCHETYPE_FAMILIES.includes(archetype)) {
+    return res.status(400).json({ error: `Unknown archetype: ${archetype}` });
+  }
+  if (position != null && !POSITIONS.includes(position)) {
+    return res.status(400).json({ error: `Unknown position: ${position}` });
+  }
+  if (targetRosterId != null && Number(targetRosterId) === Number(rosterId)) {
+    return res.status(400).json({ error: "Target team must differ from perspective team" });
   }
   try {
     const leagueRef = adminDb.collection("leagues").doc(leagueId);
@@ -1062,16 +1167,29 @@ async function handler(req, res) {
     const profiles = profilesSnap.docs.map((d) => d.data());
     const myProfile = profiles.find((p) => p.rosterId === Number(rosterId));
     if (!myProfile) return res.status(404).json({ error: "Team not found" });
+    if (targetRosterId != null && !profiles.some((p) => p.rosterId === Number(targetRosterId))) {
+      return res.status(400).json({ error: "Target team not found in league" });
+    }
     const thisYear = leagueData?.["upcomingDraftYear"] ?? (/* @__PURE__ */ new Date()).getFullYear();
     const valueMaps = await getValueMaps(format);
-    const packages = generatePackages(myProfile, profiles, format, thisYear, 5, {
-      dynastyByPos: valueMaps.dynastyByPos,
-      redraftByPos: valueMaps.redraftByPos
+    const { packages, diagnostics } = generatePackages(myProfile, profiles, format, thisYear, {
+      limit: 5,
+      pools: {
+        dynastyByPos: valueMaps.dynastyByPos,
+        redraftByPos: valueMaps.redraftByPos
+      },
+      ...archetype ? {
+        forceArchetype: {
+          family: archetype,
+          ...position ? { position } : {}
+        }
+      } : {},
+      ...targetRosterId != null ? { targetRosterId: Number(targetRosterId) } : {}
     });
     const withRationales = await Promise.all(
       packages.map((pkg) => addRationale(pkg, myProfile))
     );
-    return res.status(200).json({ packages: withRationales });
+    return res.status(200).json({ packages: withRationales, diagnostics });
   } catch (err) {
     console.error("trades/find error", err);
     return res.status(500).json({ error: "Internal server error" });
