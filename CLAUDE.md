@@ -51,15 +51,16 @@ senditff/
 
 ## Environment Variables
 
-Never committed to git. Set in Vercel dashboard for production. For local dev, create `.env`:
+Never committed to git. **The only env file on disk is `.env.local`** with the
+three public `VITE_FIREBASE_*` web keys (safe by design, protected by referrer
+restriction + Firestore rules). The server secrets
+(`FIREBASE_SERVICE_ACCOUNT_JSON`, `ANTHROPIC_API_KEY`) exist ONLY in the
+Vercel dashboard — there is no server-secret `.env` locally and there never
+was; don't go hunting for one.
 
-```
-FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
-ANTHROPIC_API_KEY=sk-ant-...
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-VITE_FIREBASE_PROJECT_ID=...
-```
+Local dev doesn't need them: `npm run dev` proxies `/api` to the live
+deployment. Only `vercel dev` would need pulled secrets (`vercel env pull`),
+which also requires a valid `vercel login`.
 
 ## Development Workflow
 
