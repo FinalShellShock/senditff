@@ -746,6 +746,73 @@ body {
 .team-switcher-select:focus { border-color: #f59e0b; }
 .team-switcher-select option { background: #0f1318; }
 
+/* ── Send It controls ────────────────────────────────────────────────── */
+
+.sendit-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 14px 0 18px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+}
+.sendit-control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sendit-control-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: #64748b;
+  font-weight: 700;
+}
+.sendit-find-btn {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  border-radius: 5px;
+  color: #f59e0b;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 7px 16px;
+  cursor: pointer;
+}
+.sendit-find-btn:hover:not(:disabled) { background: rgba(245, 158, 11, 0.22); }
+.sendit-find-btn:disabled { opacity: 0.4; cursor: default; }
+.sendit-empty {
+  padding: 20px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 560px;
+}
+.sendit-empty p { font-size: 12px; line-height: 1.6; }
+.sendit-reset-btn {
+  align-self: flex-start;
+  margin-top: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 5px;
+  color: #94a3b8;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.sendit-reset-btn:hover { color: #e2e8f0; border-color: rgba(255,255,255,0.3); }
+.trade-score-strip {
+  font-size: 10px;
+  color: #475569;
+  letter-spacing: 0.4px;
+  margin-top: 8px;
+}
+
 /* ── Trades loading ──────────────────────────────────────────────────── */
 
 .trades-loading {

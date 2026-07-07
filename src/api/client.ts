@@ -1,4 +1,6 @@
-import type { TeamProfile } from "../algo/types.ts";
+import type { ArchetypeFamily } from "../algo/archetypes.ts";
+import type { FairnessLabel } from "../algo/fairness.ts";
+import type { Position, TeamProfile } from "../algo/types.ts";
 
 export type TradeAssetWire = {
   id: string;
@@ -16,7 +18,35 @@ export type TradePackage = {
   valueGive: number;
   valueReceive: number;
   archetype: string;
+  fairness: FairnessLabel;
+  scores: {
+    total: number;
+    myFit: number;
+    theirFit: number;
+    balance: number;
+    archMatch: number;
+  };
   rationale: string;
+};
+
+export type TradeDiagnostics = {
+  rawCandidates: number;
+  afterDedup: number;
+  rejected: { myFit: number; theirFit: number; balance: number };
+  forced: boolean;
+  myArchetypeScore?: number;
+  counterNote?: string;
+};
+
+export type FindTradesOptions = {
+  archetype?: ArchetypeFamily;
+  position?: Position;
+  targetRosterId?: number;
+};
+
+export type FindTradesResponse = {
+  packages: TradePackage[];
+  diagnostics: TradeDiagnostics;
 };
 
 type GetTokenFn = () => Promise<string>;
@@ -94,10 +124,10 @@ export function makeApiClient(getToken: GetTokenFn) {
     getOverview: (leagueId: string) =>
       apiFetch<OverviewResponse>(getToken, `/api/leagues/overview?leagueId=${leagueId}`),
 
-    findTrades: (leagueId: string, rosterId: number) =>
-      apiFetch<{ packages: TradePackage[] }>(getToken, "/api/trades/find", {
+    findTrades: (leagueId: string, rosterId: number, opts: FindTradesOptions = {}) =>
+      apiFetch<FindTradesResponse>(getToken, "/api/trades/find", {
         method: "POST",
-        body: JSON.stringify({ leagueId, rosterId }),
+        body: JSON.stringify({ leagueId, rosterId, ...opts }),
       }),
   };
 }
