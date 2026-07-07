@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "validate": "tsx scripts/validate/index.ts",
+    "validate:trades": "tsx scripts/validate/trades.ts",
     "build:api": "node scripts/build-api.mjs"
   },
   "dependencies": {
