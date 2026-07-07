@@ -1,10 +1,12 @@
 import type {
   SleeperDraft,
+  SleeperDraftSelection,
   SleeperLeague,
   SleeperNflState,
   SleeperPlayer,
   SleeperRoster,
   SleeperTradedPick,
+  SleeperTransaction,
   SleeperUser,
 } from "./types";
 
@@ -39,6 +41,52 @@ export async function fetchLeague(leagueId: string): Promise<{
     tradedPicks: pR.ok ? ((await pR.json()) as SleeperTradedPick[]) : [],
     drafts: dR.ok ? ((await dR.json()) as SleeperDraft[]) : [],
   };
+}
+
+// Just the league object — used for walking previous_league_id chains
+// without paying for users/rosters/picks/drafts on every hop.
+export async function fetchLeagueOnly(leagueId: string): Promise<SleeperLeague> {
+  const r = await fetch(`${SLEEPER}/league/${leagueId}`);
+  if (!r.ok) throw new Error(`Sleeper league fetch failed: HTTP ${r.status}`);
+  return (await r.json()) as SleeperLeague;
+}
+
+export async function fetchLeagueUsersRosters(leagueId: string): Promise<{
+  users: SleeperUser[];
+  rosters: SleeperRoster[];
+}> {
+  const [uR, rR] = await Promise.all([
+    fetch(`${SLEEPER}/league/${leagueId}/users`),
+    fetch(`${SLEEPER}/league/${leagueId}/rosters`),
+  ]);
+  if (!uR.ok) throw new Error(`Sleeper users fetch failed: HTTP ${uR.status}`);
+  if (!rR.ok) throw new Error(`Sleeper rosters fetch failed: HTTP ${rR.status}`);
+  return {
+    users: (await uR.json()) as SleeperUser[],
+    rosters: (await rR.json()) as SleeperRoster[],
+  };
+}
+
+export async function fetchTransactions(
+  leagueId: string,
+  week: number,
+): Promise<SleeperTransaction[]> {
+  const r = await fetch(`${SLEEPER}/league/${leagueId}/transactions/${week}`);
+  if (!r.ok) throw new Error(`Sleeper transactions fetch failed: HTTP ${r.status} (week ${week})`);
+  const data = (await r.json()) as SleeperTransaction[] | null;
+  return data ?? [];
+}
+
+export async function fetchLeagueDrafts(leagueId: string): Promise<SleeperDraft[]> {
+  const r = await fetch(`${SLEEPER}/league/${leagueId}/drafts`);
+  if (!r.ok) throw new Error(`Sleeper drafts fetch failed: HTTP ${r.status}`);
+  return ((await r.json()) as SleeperDraft[] | null) ?? [];
+}
+
+export async function fetchDraftSelections(draftId: string): Promise<SleeperDraftSelection[]> {
+  const r = await fetch(`${SLEEPER}/draft/${draftId}/picks`);
+  if (!r.ok) throw new Error(`Sleeper draft picks fetch failed: HTTP ${r.status}`);
+  return ((await r.json()) as SleeperDraftSelection[] | null) ?? [];
 }
 
 export async function fetchPlayers(): Promise<Record<string, SleeperPlayer>> {

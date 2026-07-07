@@ -67,6 +67,40 @@ export type SleeperPlayer = {
   birth_date?: string; // "YYYY-MM-DD" — used to compute decimal age
 };
 
+// League transactions endpoint (/league/{id}/transactions/{week}).
+// For trades: `adds` maps playerId -> receiving rosterId, `drops` maps
+// playerId -> the roster the player left. draft_picks entries: roster_id is
+// the pick's ORIGINAL owner (whose future slot it is), owner_id the roster
+// receiving it, previous_owner_id the roster giving it up.
+export type SleeperTransaction = {
+  transaction_id: string;
+  type: string; // "trade" | "waiver" | "free_agent" | ...
+  status: string; // keep only "complete"
+  status_updated: number; // ms epoch
+  leg: number; // week (offseason trades bucket into leg 1)
+  roster_ids: number[] | null;
+  adds: Record<string, number> | null;
+  drops: Record<string, number> | null;
+  draft_picks: Array<{
+    season: string;
+    round: number;
+    roster_id: number;
+    owner_id: number;
+    previous_owner_id: number;
+  }> | null;
+  waiver_budget: Array<{ sender: number; receiver: number; amount: number }> | null;
+};
+
+// One selection from the draft picks endpoint (/draft/{draft_id}/picks).
+export type SleeperDraftSelection = {
+  round: number;
+  draft_slot: number;
+  pick_no: number;
+  roster_id: number;
+  player_id: string;
+  metadata?: { first_name?: string; last_name?: string; position?: string };
+};
+
 export type FantasyCalcEntry = {
   value: number;
   player: { name?: string; age?: number; position?: string };

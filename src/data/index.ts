@@ -1,15 +1,26 @@
 export type {
   FantasyCalcEntry,
+  SleeperDraft,
+  SleeperDraftSelection,
   SleeperLeague,
   SleeperPlayer,
   SleeperRoster,
   SleeperTradedPick,
+  SleeperTransaction,
   SleeperUser,
 } from "./types";
 
 export { normName } from "./normalize";
 export { detectFormat } from "./format";
-export { fetchLeague, fetchPlayers } from "./sleeper";
+export {
+  fetchDraftSelections,
+  fetchLeague,
+  fetchLeagueDrafts,
+  fetchLeagueOnly,
+  fetchLeagueUsersRosters,
+  fetchPlayers,
+  fetchTransactions,
+} from "./sleeper";
 export { fetchFantasyCalc } from "./fantasycalc";
 export {
   buildPicksMap,

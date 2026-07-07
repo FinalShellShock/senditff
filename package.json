@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "validate": "tsx scripts/validate/index.ts",
     "validate:trades": "tsx scripts/validate/trades.ts",
+    "validate:history": "tsx scripts/validate/history.ts",
     "build:api": "node scripts/build-api.mjs"
   },
   "dependencies": {

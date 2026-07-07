@@ -25,6 +25,8 @@ export type LeagueInputs = {
   format: LeagueFormat;
   teams: TeamInput[];
   thisYear: number;
+  teamCount: number;
+  dynastyValues: Map<string, { value: number; age?: number }>;
   pools: {
     dynastyByPos: Record<Position, number[]>;
     redraftByPos: Record<Position, number[]>;
@@ -181,6 +183,8 @@ export async function loadLeagueInputs(
     format,
     teams,
     thisYear,
+    teamCount: rosters.length,
+    dynastyValues: dynastyMap,
     pools: { dynastyByPos, redraftByPos },
   };
 }
