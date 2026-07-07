@@ -7,6 +7,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const entries = [
   "api/leagues/sync.ts",
   "api/leagues/overview.ts",
+  "api/leagues/trades.ts",
   "api/trades/find.ts",
   "api/user/leagues.ts",
 ];

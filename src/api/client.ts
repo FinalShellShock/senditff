@@ -49,6 +49,55 @@ export type FindTradesResponse = {
   diagnostics: TradeDiagnostics;
 };
 
+// ── Trade Grades (league trade history, graded at today's values) ───────────
+
+export type GradedAsset = {
+  kind: "player" | "pick" | "faab";
+  name: string;
+  position?: string;
+  todayValue: number;
+  note?: string; // "off_board" | "drafted:<name>" | "unresolved_pick"
+};
+
+export type GradedSide = {
+  rosterId: number;
+  managerName: string;
+  assets: GradedAsset[];
+  received: number;
+  sent: number;
+  net: number;
+  label: FairnessLabel;
+};
+
+export type GradedTrade = {
+  transactionId: string;
+  season: number;
+  week: number;
+  date: string;
+  sides: GradedSide[];
+  delta: number;
+  winnerRosterId: number | null;
+  fairness: FairnessLabel;
+};
+
+export type LedgerRow = {
+  rosterId: number;
+  managerName: string;
+  trades: number;
+  wins: number;
+  losses: number;
+  ties: number;
+  netValue: number;
+};
+
+export type TradesResponse = {
+  needsBackfill: boolean;
+  trades: GradedTrade[];
+  ledger: LedgerRow[];
+  valuesAsOf: string;
+  seasons: number[];
+};
+
 type GetTokenFn = () => Promise<string>;
 
 async function apiFetch<T>(
@@ -128,6 +177,15 @@ export function makeApiClient(getToken: GetTokenFn) {
       apiFetch<FindTradesResponse>(getToken, "/api/trades/find", {
         method: "POST",
         body: JSON.stringify({ leagueId, rosterId, ...opts }),
+      }),
+
+    getTrades: (leagueId: string) =>
+      apiFetch<TradesResponse>(getToken, `/api/leagues/trades?leagueId=${leagueId}`),
+
+    refreshTrades: (leagueId: string) =>
+      apiFetch<TradesResponse>(getToken, "/api/leagues/trades", {
+        method: "POST",
+        body: JSON.stringify({ leagueId }),
       }),
   };
 }

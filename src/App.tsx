@@ -7,6 +7,7 @@ import LeagueOverview from "./pages/LeagueOverview.tsx";
 import TeamDeepDive from "./pages/TeamDeepDive.tsx";
 import SendIt from "./pages/SendIt.tsx";
 import Calc from "./pages/Calc.tsx";
+import TradeGrades from "./pages/TradeGrades.tsx";
 
 class AppErrorBoundary extends Component<{ children: ReactNode }, { caught: Error | null }> {
   state: { caught: Error | null } = { caught: null };
@@ -69,6 +70,7 @@ function AuthGate() {
         <Route path="team/:rosterId" element={<TeamDeepDive />} />
         <Route path="sendit/:rosterId" element={<SendIt />} />
         <Route path="calc" element={<Calc />} />
+        <Route path="trades" element={<TradeGrades />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
