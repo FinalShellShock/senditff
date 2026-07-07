@@ -27,15 +27,16 @@ senditff/
 │   ├── api/            # frontend API client
 │   ├── data/           # Sleeper, FantasyCalc, picks, normalization
 │   ├── hooks/          # React hooks (useAuth, useLeagues)
-│   ├── pages/          # LeagueOverview, TeamDeepDive, SendIt, MyLeagues, Calc
+│   ├── pages/          # LeagueOverview, TeamDeepDive, SendIt, MyLeagues, Calc, TradeGrades
+│   │   └── overview/   # WindowMap (scatter + trajectories), LeverageBoard
 │   └── lib/            # Firebase init
 ├── api/
-│   ├── _lib/           # shared server utils (admin, auth, buildTeams, snapshot)
-│   ├── leagues/        # overview.ts, sync.ts
+│   ├── _lib/           # shared server utils (admin, auth, buildTeams, snapshot, tradeEngine, tradeHistory)
+│   ├── leagues/        # overview.ts, sync.ts, trades.ts (graded trade history)
 │   └── trades/         # find.ts
 ├── scripts/
-│   ├── build-api.mjs   # bundles TS api files to JS
-│   └── validate/       # one-off tuning script (runs algo against real league data)
+│   ├── build-api.mjs   # bundles TS api files to JS (add new endpoints to its entries list!)
+│   └── validate/       # tuning harnesses against real league data (see npm run validate:*)
 ├── _legacy/            # v1 single-file app preserved for reference
 ├── package.json
 └── vercel.json
@@ -64,10 +65,19 @@ VITE_FIREBASE_PROJECT_ID=...
 
 ```bash
 npm install          # install deps
-npm run dev          # start Vite dev server (frontend only)
-vercel dev           # start full stack locally (frontend + API functions)
-npm run build        # build frontend
-node scripts/build-api.mjs  # bundle TS api files to JS
+npm run dev          # Vite dev server; /api proxies to live www.senditff.com
+                     # (fully usable without server secrets; override target
+                     #  with SENDIT_API_PROXY)
+vercel dev           # full stack locally (needs Vercel login + server env)
+npm run build        # typecheck + build frontend
+npm run build:api    # bundle TS api files to JS (required before deploy)
+
+# Validation harnesses (all run against Johnny's real league by default;
+# --cache-dir <dir> caches raw Sleeper/FantasyCalc responses for stable diffs)
+npm run validate             # team profiles + HTML report
+npm run validate:trades      # engine sweep: default mode + every forced archetype, determinism check
+npm run validate:history     # trade history chain walk + hindsight grading + ledger
+npm run validate:projection  # Shotgun projection table + invariants
 ```
 
 ## Deploying
@@ -180,6 +190,29 @@ MIDDLING:   bottom 50% starter strength + weighted_age >= 26  (stuck, worst spot
 | Need fill | Positional deficit (urgency > 70) + surplus elsewhere | Swap surplus for need |
 | Capital play | PICK_POOR contender or PICK_RICH rebuilder | Picks ↔ production |
 
+**Two modes (July 2026 pivot):** default (auto) mode stays menu-free — the
+engine runs every applicable archetype and surfaces the best packages. Users
+can ALSO force one archetype as an "intent" on the Send It tab ("what would a
+tier-down look like?"), optionally scoped to a position and/or target team.
+Forced mode skips that generator's archetype-score gates and uses relaxed
+hard-reject gates (`FORCED_GATES` in tradeEngine.ts); mediocre results get
+honest fairness labels instead of being hidden, and empty results return
+deterministic diagnostics the UI turns into "here's why" copy.
+
+**Fairness labels** (`src/algo/fairness.ts`): shared by Send It packages, the
+Calc verdict, and Trade Grades. FAIR within 5% (or 150 pts absolute), SLIGHT_*
+to 12%, OVERPAY/UNDERPAY beyond. `balance = 1 - |fairnessDelta|`.
+
+### Shotgun projection (`src/algo/projection.ts`)
+
+Deterministic multi-year projection on the West Coast age curves, powering the
+Window Map trajectory arrows: player dynasty value scales by remaining
+age-curve runway; future picks re-decay toward their draft year (they
+appreciate); past picks mature into neutral rookie assets. Dynasty values are
+the strength proxy — trajectory arrows, not a standings predictor.
+
+Formation lineage: Pro Set → Spread → Audible → West Coast → Shotgun.
+
 ### Needs Urgency Formula
 
 ```
@@ -210,16 +243,20 @@ leagues/{leagueId}/profiles/{rosterId}
                              applicableArchetypes[], aiSummary, generatedAt
 leagues/{leagueId}/snapshots/{timestamp}
                              playerValues{}, pickValues{}, leagueAverages{}
+leagues/{leagueId}/tradeHistory/{season}
+                             raw immutable trades (per-asset fromRosterId),
+                             managers{}, draftSelections{} — values applied at
+                             READ time against today's snapshot, never stored
 rationaleCache/{hash}        rationale, archetype, generatedAt
 ```
 
 ## API Endpoints
 
 - `POST /api/leagues/sync` — add/join a league, verify via Sleeper
-- `GET /api/leagues/:id/overview` — all team profiles for league overview
-- `GET /api/leagues/:id/teams/:rosterId` — full team deep dive
-- `POST /api/trades/find` — body: `{ leagueId, forRosterId, playerId, direction }` → top 5 packages with rationales
-- `POST /api/cron/refresh-leagues` — cron-only, runs twice daily
+- `GET /api/leagues/overview?leagueId=` — all team profiles (+ upcomingDraftYear)
+- `POST /api/trades/find` — body: `{ leagueId, rosterId, archetype?, position?, targetRosterId? }` → `{ packages (fairness + scores), diagnostics }` with rationales
+- `GET /api/leagues/trades?leagueId=` — graded trade history + power-rankings ledger (`{ needsBackfill: true }` before first backfill)
+- `POST /api/leagues/trades` — backfill full league chain / refresh current season (maxDuration 60s in vercel.json)
 
 ---
 
