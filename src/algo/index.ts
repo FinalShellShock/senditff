@@ -45,6 +45,9 @@ export {
 export type { ArchetypeFamily } from "./archetypes";
 export { ARCHETYPE_FAMILIES, POSITIONAL_FAMILIES, detectArchetypes } from "./archetypes";
 
+export type { TeamProjection } from "./projection";
+export { projectPicks, projectPlayer, projectTeam, valueRetention } from "./projection";
+
 export type { FairnessLabel } from "./fairness";
 export {
   FAIRNESS_FAIR_ABS,

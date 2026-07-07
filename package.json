@@ -10,6 +10,7 @@
     "validate": "tsx scripts/validate/index.ts",
     "validate:trades": "tsx scripts/validate/trades.ts",
     "validate:history": "tsx scripts/validate/history.ts",
+    "validate:projection": "tsx scripts/validate/projection.ts",
     "build:api": "node scripts/build-api.mjs"
   },
   "dependencies": {
