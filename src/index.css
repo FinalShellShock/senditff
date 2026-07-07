@@ -883,9 +883,10 @@ body {
 }
 .lb-columns {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
 }
+.lb-col { min-width: 0; }
 @media (max-width: 900px) {
   .lb-columns { grid-template-columns: repeat(2, 1fr); }
 }
@@ -900,10 +901,10 @@ body {
 }
 .lb-row {
   display: grid;
-  grid-template-columns: 18px minmax(60px, 1fr) 52px 62px;
+  grid-template-columns: 16px minmax(0, 1fr) 40px 56px;
   align-items: center;
-  gap: 6px;
-  padding: 3px 6px;
+  gap: 5px;
+  padding: 3px 5px;
   border-radius: 4px;
   font-size: 10px;
   cursor: pointer;

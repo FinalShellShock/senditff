@@ -38,7 +38,10 @@ export default function LeverageBoard({ profiles }: { profiles: TeamProfile[] })
   if (mine) {
     for (const pos of POSITIONS) {
       const myPs = mine.positionScores?.[pos];
-      const iHaveSpare = myPs?.depthClassification === "SURPLUS" || myPs?.classification === "SURPLUS";
+      const iHaveSpare =
+        myPs?.depthClassification === "SURPLUS" ||
+        myPs?.starterClassification === "SURPLUS" ||
+        myPs?.classification === "SURPLUS";
       if (!iHaveSpare) continue;
       const desperate = profiles
         .filter((p) => !p.isMine && classOf(p, pos) === "CRITICAL")

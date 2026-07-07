@@ -11,9 +11,10 @@ export default defineConfig({
     // deployment so the app is fully usable without vercel dev + server
     // secrets. Auth still works: the Bearer token verifies server-side
     // regardless of origin. Override with SENDIT_API_PROXY if needed.
+    // Target www (the apex 307-redirects there, which breaks fetch CORS).
     proxy: {
       "/api": {
-        target: process.env["SENDIT_API_PROXY"] ?? "https://senditff.com",
+        target: process.env["SENDIT_API_PROXY"] ?? "https://www.senditff.com",
         changeOrigin: true,
       },
     },

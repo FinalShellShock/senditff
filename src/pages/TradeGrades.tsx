@@ -140,7 +140,16 @@ export default function TradeGrades() {
     return <p className="dim-text" style={{ marginTop: 48, textAlign: "center" }}>Loading trade history...</p>;
   }
 
-  if (data?.needsBackfill) {
+  if (!data) {
+    return (
+      <div className="tg-backfill">
+        <h2 className="tg-title">TRADE GRADES</h2>
+        {error && <div className="error-banner">{error}</div>}
+      </div>
+    );
+  }
+
+  if (data.needsBackfill) {
     return (
       <div className="tg-backfill">
         <h2 className="tg-title">TRADE GRADES</h2>
