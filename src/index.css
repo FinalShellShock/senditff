@@ -1735,6 +1735,17 @@ body {
   font-size: 11px;
   font-weight: 700;
 }
+/* Shared fairness badge (Calc verdict, Send It cards, Trade Grades) */
+.fairness-badge {
+  display: inline-block;
+  border: 1px solid;
+  border-radius: 2px;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
 .calc-fit-lines {
   display: flex;
   flex-direction: column;

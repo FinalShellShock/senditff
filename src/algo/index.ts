@@ -43,3 +43,14 @@ export {
 } from "./profile";
 
 export { detectArchetypes } from "./archetypes";
+
+export type { FairnessLabel } from "./fairness";
+export {
+  FAIRNESS_FAIR_ABS,
+  FAIRNESS_FAIR_PCT,
+  FAIRNESS_SLIGHT_PCT,
+  fairnessColor,
+  fairnessDelta,
+  fairnessLabel,
+  fairnessText,
+} from "./fairness";

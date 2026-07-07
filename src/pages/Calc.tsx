@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
+import { fairnessColor, fairnessLabel, fairnessText } from "../algo/fairness.ts";
 import type { Position } from "../algo/types.ts";
 import type { TeamProfile } from "../algo/types.ts";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
@@ -407,6 +408,20 @@ export default function Calc() {
   }
   const verdict = getVerdict();
 
+  // Shared engine fairness label (same math as Send It packages and trade
+  // grades). Computed from A's perspective, displayed against the overpayer.
+  const engineFairness = fairnessLabel(totalA, totalB);
+  const overpayerName =
+    engineFairness === "SLIGHT_OVERPAY" || engineFairness === "OVERPAY"
+      ? profileA?.ownerName
+      : engineFairness === "SLIGHT_UNDERPAY" || engineFairness === "UNDERPAY"
+      ? profileB?.ownerName
+      : null;
+  const engineFairnessDisplay =
+    engineFairness === "FAIR"
+      ? "FAIR"
+      : `${fairnessText(engineFairness).replace("UNDERPAY", "OVERPAY")}${overpayerName ? ` · ${overpayerName.split(" ")[0]?.toUpperCase()}` : ""}`;
+
   // ── Fit analysis — only shown when the user's own team is one of the sides ──
   const myProfile = profiles.find((p) => p.isMine);
   const fitLines: { text: string; good: boolean | null }[] = [];
@@ -470,6 +485,9 @@ export default function Calc() {
                   {diffPct}%
                 </div>
               )}
+              <div className="fairness-badge" style={{ borderColor: fairnessColor(engineFairness), color: fairnessColor(engineFairness) }}>
+                {engineFairnessDisplay}
+              </div>
               {fitLines.length > 0 && (
                 <div className="calc-fit-lines">
                   {fitLines.map((fl, i) => (
