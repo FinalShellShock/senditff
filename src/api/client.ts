@@ -18,8 +18,10 @@ export type TradePackage = {
   valueGive: number;
   valueReceive: number;
   archetype: string;
-  fairness: FairnessLabel;
-  scores: {
+  // Optional so responses from an older API deploy don't break the UI; the
+  // page computes fairness from the values when absent.
+  fairness?: FairnessLabel;
+  scores?: {
     total: number;
     myFit: number;
     theirFit: number;
@@ -46,7 +48,7 @@ export type FindTradesOptions = {
 
 export type FindTradesResponse = {
   packages: TradePackage[];
-  diagnostics: TradeDiagnostics;
+  diagnostics?: TradeDiagnostics;
 };
 
 // ── Trade Grades (league trade history, graded at today's values) ───────────

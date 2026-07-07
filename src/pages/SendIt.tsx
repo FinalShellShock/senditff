@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useOutletContext, useParams, useSearchParams } from "react-router-dom";
 import { ARCHETYPE_FAMILIES, POSITIONAL_FAMILIES, type ArchetypeFamily } from "../algo/archetypes.ts";
-import { fairnessColor, fairnessText } from "../algo/fairness.ts";
+import { fairnessColor, fairnessLabel, fairnessText } from "../algo/fairness.ts";
 import type { Position } from "../algo/types.ts";
 import {
   makeApiClient,
@@ -55,6 +55,8 @@ function AssetList({ assets }: { assets: TradeAssetWire[] }) {
 function TradeCard({ pkg }: { pkg: TradePackage }) {
   const delta = pkg.valueReceive - pkg.valueGive;
   const deltaColor = delta > 200 ? "#22c55e" : delta < -200 ? "#ef4444" : "#94a3b8";
+  // Older API responses don't carry fairness; the label is derivable.
+  const fairness = pkg.fairness ?? fairnessLabel(pkg.valueGive, pkg.valueReceive);
 
   return (
     <div className="trade-card">
@@ -63,9 +65,9 @@ function TradeCard({ pkg }: { pkg: TradePackage }) {
           <span className="trade-arch-tag">{pkg.archetype.replace(/_/g, " ")}</span>
           <span
             className="fairness-badge"
-            style={{ borderColor: fairnessColor(pkg.fairness), color: fairnessColor(pkg.fairness), marginTop: 0 }}
+            style={{ borderColor: fairnessColor(fairness), color: fairnessColor(fairness), marginTop: 0 }}
           >
-            {fairnessText(pkg.fairness)}
+            {fairnessText(fairness)}
           </span>
         </span>
         <span className="trade-counter-team">{pkg.counterTeam}</span>
@@ -83,11 +85,13 @@ function TradeCard({ pkg }: { pkg: TradePackage }) {
           <span className="trade-val" style={{ color: deltaColor }}>{pkg.valueReceive.toLocaleString()}</span>
         </div>
       </div>
-      <div className="trade-score-strip">
-        fit {pkg.scores.myFit >= 0 ? "+" : ""}{pkg.scores.myFit.toFixed(2)}
-        {" · "}their fit {pkg.scores.theirFit >= 0 ? "+" : ""}{pkg.scores.theirFit.toFixed(2)}
-        {" · "}balance {Math.round(pkg.scores.balance * 100)}%
-      </div>
+      {pkg.scores && (
+        <div className="trade-score-strip">
+          fit {pkg.scores.myFit >= 0 ? "+" : ""}{pkg.scores.myFit.toFixed(2)}
+          {" · "}their fit {pkg.scores.theirFit >= 0 ? "+" : ""}{pkg.scores.theirFit.toFixed(2)}
+          {" · "}balance {Math.round(pkg.scores.balance * 100)}%
+        </div>
+      )}
       {pkg.rationale && <p className="trade-rationale">{pkg.rationale}</p>}
     </div>
   );
@@ -302,12 +306,16 @@ export default function SendIt() {
       )}
 
       {result && result.packages.length === 0 && (
-        <EmptyState
-          diagnostics={result.diagnostics}
-          intent={intent}
-          targetName={targetName}
-          onReset={resetControls}
-        />
+        result.diagnostics ? (
+          <EmptyState
+            diagnostics={result.diagnostics}
+            intent={intent}
+            targetName={targetName}
+            onReset={resetControls}
+          />
+        ) : (
+          <p className="dim-text">No trade packages found for this team.</p>
+        )
       )}
 
       {result && result.packages.length > 0 && (
