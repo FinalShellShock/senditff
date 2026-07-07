@@ -4,6 +4,8 @@ import { makeApiClient } from "../api/client.ts";
 import type { TeamProfile, WindowLabel, PickFlag, Position, Pick as DraftPick, SubClassification } from "../algo/types.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
+import LeverageBoard from "./overview/LeverageBoard.tsx";
+import WindowMap from "./overview/WindowMap.tsx";
 
 const LABEL_COLOR: Record<WindowLabel, string> = {
   JUGGERNAUT: "#16a34a",
@@ -536,6 +538,9 @@ export default function LeagueOverview() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedRoster, setExpandedRoster] = useState<number | null>(null);
+  // "map" is the new default; the classic 3x3 grid stays behind a toggle for
+  // one release.
+  const [shapeView, setShapeView] = useState<"map" | "grid">("map");
 
   async function handleRefresh() {
     if (!id) return;
@@ -569,8 +574,35 @@ export default function LeagueOverview() {
 
       <div className="table-scroll-wrapper">
         <section className="overview-section">
-          <h2 className="section-title">League Shape</h2>
-          <LeagueGrid profiles={overview.profiles} />
+          <div className="shape-header">
+            <h2 className="section-title">League Shape</h2>
+            <button
+              className="btn-link shape-toggle"
+              onClick={() => setShapeView(shapeView === "map" ? "grid" : "map")}
+            >
+              {shapeView === "map" ? "grid view" : "map view"}
+            </button>
+          </div>
+          {shapeView === "map" ? (
+            <WindowMap
+              profiles={overview.profiles}
+              format={overview.format}
+              thisYear={
+                overview.upcomingDraftYear
+                ?? Math.min(
+                  ...overview.profiles.flatMap((p) => p.picks.map((pk) => pk.year)),
+                  new Date().getFullYear() + 1,
+                )
+              }
+            />
+          ) : (
+            <LeagueGrid profiles={overview.profiles} />
+          )}
+        </section>
+
+        <section className="overview-section">
+          <h2 className="section-title">Positional Leverage</h2>
+          <LeverageBoard profiles={overview.profiles} />
         </section>
 
         <section className="overview-section">

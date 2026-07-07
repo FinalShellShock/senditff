@@ -813,6 +813,127 @@ body {
   margin-top: 8px;
 }
 
+/* ── Window Map ──────────────────────────────────────────────────────── */
+
+.shape-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.shape-toggle { font-size: 11px; }
+.wm-wrap { width: 100%; }
+.window-map { width: 100%; height: auto; display: block; }
+.wm-region-label {
+  fill: rgba(255,255,255,0.07);
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 22px;
+  letter-spacing: 3px;
+  pointer-events: none;
+  user-select: none;
+}
+.wm-axis-label {
+  fill: #475569;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+}
+.wm-axis-hint { font-weight: 400; letter-spacing: 0.5px; fill: #3b4657; }
+.wm-dot { cursor: pointer; }
+.wm-dot:hover circle { filter: brightness(1.25); }
+.wm-dot-text {
+  fill: #0a0c0f;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+  user-select: none;
+}
+.wm-mine-star { fill: #f59e0b; font-size: 11px; pointer-events: none; }
+
+/* ── Positional Leverage ─────────────────────────────────────────────── */
+
+.lb-callouts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.lb-callout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #e2e8f0;
+  text-decoration: none;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.06);
+  border-radius: 6px;
+  padding: 8px 12px;
+  width: fit-content;
+}
+.lb-callout:hover { background: rgba(245, 158, 11, 0.12); }
+.lb-callout-pos {
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.lb-columns {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+@media (max-width: 900px) {
+  .lb-columns { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+  .lb-columns { grid-template-columns: 1fr; }
+}
+.lb-col-header {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  margin-bottom: 6px;
+}
+.lb-row {
+  display: grid;
+  grid-template-columns: 18px minmax(60px, 1fr) 52px 62px;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+}
+.lb-row:hover { background: rgba(255,255,255,0.04); }
+.lb-desperate { background: rgba(239, 68, 68, 0.08); }
+.lb-seller { background: rgba(6, 182, 212, 0.06); }
+.lb-mine { outline: 1px solid rgba(245, 158, 11, 0.4); }
+.lb-rank { color: #475569; }
+.lb-name {
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lb-bar-track {
+  display: block;
+  height: 5px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.lb-bar-fill { display: block; height: 100%; border-radius: 2px; }
+.lb-tag {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-align: right;
+}
+
 /* ── Trade Grades ────────────────────────────────────────────────────── */
 
 .tg-header {

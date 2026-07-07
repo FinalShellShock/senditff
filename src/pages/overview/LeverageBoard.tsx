@@ -1,0 +1,111 @@
+// Positional Leverage: every team ranked at every position, framed as trade
+// leverage. DESPERATE teams (critical starter hole) should be sold into;
+// SELLER teams (surplus) are where you go shopping. Pure UI over the
+// positionScores already on each profile.
+
+import { Link, useNavigate, useParams } from "react-router-dom";
+import type { Position, SubClassification, TeamProfile } from "../../algo/types.ts";
+
+const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
+
+const POS_COLOR: Record<Position, string> = {
+  QB: "#c2410c",
+  RB: "#ca8a04",
+  WR: "#3b82f6",
+  TE: "#a855f7",
+};
+
+const CLASS_COLOR: Record<string, string> = {
+  CRITICAL: "#ef4444",
+  NEED: "#eab308",
+  HEALTHY: "#22c55e",
+  SURPLUS: "#06b6d4",
+};
+
+function classOf(p: TeamProfile, pos: Position): SubClassification {
+  const ps = p.positionScores?.[pos];
+  return ps?.starterClassification
+    ?? (ps?.classification === "CRITICAL_NEED" ? "CRITICAL" : (ps?.classification as SubClassification) ?? "HEALTHY");
+}
+
+export default function LeverageBoard({ profiles }: { profiles: TeamProfile[] }) {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const mine = profiles.find((p) => p.isMine) ?? null;
+
+  // Leverage callouts: where my depth is a surplus and someone is desperate.
+  const callouts: Array<{ pos: Position; target: TeamProfile }> = [];
+  if (mine) {
+    for (const pos of POSITIONS) {
+      const myPs = mine.positionScores?.[pos];
+      const iHaveSpare = myPs?.depthClassification === "SURPLUS" || myPs?.classification === "SURPLUS";
+      if (!iHaveSpare) continue;
+      const desperate = profiles
+        .filter((p) => !p.isMine && classOf(p, pos) === "CRITICAL")
+        .sort((a, b) => (a.positionScores?.[pos]?.starterValue ?? 0) - (b.positionScores?.[pos]?.starterValue ?? 0));
+      for (const target of desperate.slice(0, 2)) callouts.push({ pos, target });
+    }
+  }
+
+  return (
+    <div>
+      {callouts.length > 0 && (
+        <div className="lb-callouts">
+          {callouts.map(({ pos, target }) => (
+            <Link
+              key={`${pos}-${target.rosterId}`}
+              className="lb-callout"
+              to={`/league/${id}/sendit/${mine!.rosterId}?target=${target.rosterId}`}
+            >
+              <span className="lb-callout-pos" style={{ background: POS_COLOR[pos] }}>{pos}</span>
+              Sell {pos} depth into {target.ownerName}'s desperation →
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <div className="lb-columns">
+        {POSITIONS.map((pos) => {
+          const ranked = [...profiles].sort(
+            (a, b) =>
+              (b.positionScores?.[pos]?.starterValue ?? 0) - (a.positionScores?.[pos]?.starterValue ?? 0),
+          );
+          const maxValue = Math.max(1, ranked[0]?.positionScores?.[pos]?.starterValue ?? 1);
+          return (
+            <div key={pos} className="lb-col">
+              <div className="lb-col-header" style={{ color: POS_COLOR[pos] }}>{pos}</div>
+              {ranked.map((p, i) => {
+                const ps = p.positionScores?.[pos];
+                const cl = classOf(p, pos);
+                const desperate = cl === "CRITICAL";
+                const seller = cl === "SURPLUS" || ps?.depthClassification === "SURPLUS";
+                return (
+                  <div
+                    key={p.rosterId}
+                    className={`lb-row${desperate ? " lb-desperate" : ""}${seller ? " lb-seller" : ""}${p.isMine ? " lb-mine" : ""}`}
+                    onClick={() => navigate(`/league/${id}/team/${p.rosterId}`)}
+                  >
+                    <span className="lb-rank">{i + 1}</span>
+                    <span className="lb-name">{p.ownerName}{p.isMine ? " ★" : ""}</span>
+                    <span className="lb-bar-track">
+                      <span
+                        className="lb-bar-fill"
+                        style={{
+                          width: `${Math.max(3, ((ps?.starterValue ?? 0) / maxValue) * 100)}%`,
+                          background: CLASS_COLOR[cl] ?? "#475569",
+                        }}
+                      />
+                    </span>
+                    <span className="lb-tag" style={{ color: CLASS_COLOR[cl] ?? "#64748b" }}>
+                      {desperate ? "DESPERATE" : seller ? "SELLER" : ""}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

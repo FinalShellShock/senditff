@@ -46,6 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       name: leagueSnap.data()?.["name"],
       format: leagueSnap.data()?.["format"],
       lastRefreshed: leagueSnap.data()?.["lastRefreshed"],
+      upcomingDraftYear: leagueSnap.data()?.["upcomingDraftYear"] ?? null,
       profiles,
     });
   } catch (err) {

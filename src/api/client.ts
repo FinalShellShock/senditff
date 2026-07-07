@@ -1,6 +1,6 @@
 import type { ArchetypeFamily } from "../algo/archetypes.ts";
 import type { FairnessLabel } from "../algo/fairness.ts";
-import type { Position, TeamProfile } from "../algo/types.ts";
+import type { LeagueFormat, Position, TeamProfile } from "../algo/types.ts";
 
 export type TradeAssetWire = {
   id: string;
@@ -147,12 +147,10 @@ export type SyncResponse = {
 export type OverviewResponse = {
   leagueId: string;
   name: string;
-  format: {
-    superflex: boolean;
-    scoring: "ppr" | "half" | "std";
-    tep: boolean;
-  };
+  // Sync stores the complete detected format (starter slots included).
+  format: LeagueFormat;
   lastRefreshed: string;
+  upcomingDraftYear: number | null;
   profiles: TeamProfile[];
 };
 
