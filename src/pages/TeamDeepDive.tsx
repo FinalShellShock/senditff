@@ -19,6 +19,7 @@ const LABEL_COLOR: Record<WindowLabel, string> = {
 
 const POS_CLASS_COLOR: Record<string, string> = {
   CRITICAL_NEED: "#ef4444",
+  CRITICAL:      "#ef4444",
   NEED:          "#eab308",
   HEALTHY:       "#22c55e",
   SURPLUS:       "#06b6d4",
@@ -203,8 +204,14 @@ export default function TeamDeepDive() {
                   {pos}
                 </span>
                 <div className="pos-dash-class">
-                  <span style={{ color: POS_CLASS_COLOR[ps.classification], fontWeight: 700, fontSize: 11 }}>
-                    {ps.classification.replace("_", " ")}
+                  {/* Dual-zone: starter and depth judged separately (a SURPLUS
+                      starter room shouldn't hide behind merely-healthy depth) */}
+                  <span style={{ color: POS_CLASS_COLOR[ps.starterClassification ?? "HEALTHY"], fontWeight: 700, fontSize: 11 }}>
+                    {ps.starterClassification ?? ps.classification.replace("_", " ")}
+                  </span>
+                  <span style={{ color: "#475569", fontSize: 10 }}> / </span>
+                  <span style={{ color: POS_CLASS_COLOR[ps.depthClassification ?? "HEALTHY"], fontWeight: 700, fontSize: 10 }}>
+                    {ps.depthClassification ?? "—"}
                   </span>
                   <span style={{ color: "#475569", fontSize: 10 }}> · {ps.urgency.toFixed(0)}</span>
                 </div>
