@@ -1,10 +1,19 @@
 // Positional Leverage: every team ranked at every position, framed as trade
-// leverage. DESPERATE teams (critical starter hole) should be sold into;
-// SELLER teams (surplus) are where you go shopping. Pure UI over the
-// positionScores already on each profile.
+// leverage. DESPERATE = a critical hole on a team whose window makes them a
+// live buyer (sell into them). A rebuilder with the same hole is PUNTING it
+// on purpose (they want picks and youth, not your veteran depth) — shown dim
+// and never suggested as a sell-into target. SELLER teams (surplus) are
+// where you go shopping. Pure UI over positionScores + windowLabel.
 
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type { Position, SubClassification, TeamProfile } from "../../algo/types.ts";
+import type { Position, SubClassification, TeamProfile, WindowLabel } from "../../algo/types.ts";
+
+// Windows that deliberately don't buy veteran production.
+const PUNTING_WINDOWS: WindowLabel[] = ["REBUILD", "TRANSITION"];
+
+function isBuyer(p: TeamProfile): boolean {
+  return !PUNTING_WINDOWS.includes(p.windowLabel);
+}
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 
@@ -44,7 +53,7 @@ export default function LeverageBoard({ profiles }: { profiles: TeamProfile[] })
         myPs?.classification === "SURPLUS";
       if (!iHaveSpare) continue;
       const desperate = profiles
-        .filter((p) => !p.isMine && classOf(p, pos) === "CRITICAL")
+        .filter((p) => !p.isMine && classOf(p, pos) === "CRITICAL" && isBuyer(p))
         .sort((a, b) => (a.positionScores?.[pos]?.starterValue ?? 0) - (b.positionScores?.[pos]?.starterValue ?? 0));
       for (const target of desperate.slice(0, 2)) callouts.push({ pos, target });
     }
@@ -80,12 +89,14 @@ export default function LeverageBoard({ profiles }: { profiles: TeamProfile[] })
               {ranked.map((p, i) => {
                 const ps = p.positionScores?.[pos];
                 const cl = classOf(p, pos);
-                const desperate = cl === "CRITICAL";
-                const seller = cl === "SURPLUS" || ps?.depthClassification === "SURPLUS";
+                const hasHole = cl === "CRITICAL";
+                const desperate = hasHole && isBuyer(p);
+                const punting = hasHole && !isBuyer(p);
+                const seller = !hasHole && (cl === "SURPLUS" || ps?.depthClassification === "SURPLUS");
                 return (
                   <div
                     key={p.rosterId}
-                    className={`lb-row${desperate ? " lb-desperate" : ""}${seller ? " lb-seller" : ""}${p.isMine ? " lb-mine" : ""}`}
+                    className={`lb-row${desperate ? " lb-desperate" : ""}${punting ? " lb-punting" : ""}${seller ? " lb-seller" : ""}${p.isMine ? " lb-mine" : ""}`}
                     onClick={() => navigate(`/league/${id}/team/${p.rosterId}`)}
                   >
                     <span className="lb-rank">{i + 1}</span>
@@ -99,8 +110,8 @@ export default function LeverageBoard({ profiles }: { profiles: TeamProfile[] })
                         }}
                       />
                     </span>
-                    <span className="lb-tag" style={{ color: CLASS_COLOR[cl] ?? "#64748b" }}>
-                      {desperate ? "DESPERATE" : seller ? "SELLER" : ""}
+                    <span className="lb-tag" style={{ color: punting ? "#64748b" : CLASS_COLOR[cl] ?? "#64748b" }}>
+                      {desperate ? "DESPERATE" : punting ? "PUNTING" : seller ? "SELLER" : ""}
                     </span>
                   </div>
                 );

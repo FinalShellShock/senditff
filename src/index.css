@@ -911,6 +911,7 @@ body {
 }
 .lb-row:hover { background: rgba(255,255,255,0.04); }
 .lb-desperate { background: rgba(239, 68, 68, 0.08); }
+.lb-punting { opacity: 0.55; }
 .lb-seller { background: rgba(6, 182, 212, 0.06); }
 .lb-mine { outline: 1px solid rgba(245, 158, 11, 0.4); }
 .lb-rank { color: #475569; }

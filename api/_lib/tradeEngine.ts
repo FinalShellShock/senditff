@@ -797,7 +797,9 @@ function genAgeArbSell(ctx: GenContext): Candidate[] {
     if (!myAging) continue;
 
     for (const them of others) {
-      if (them.windowTier === "SHORT") continue; // they're old too, won't take vets
+      // Rebuilders (LONG window) punt veteran holes, they don't buy vets.
+      // Win-now teams (MID/SHORT) are the ones who pay for production.
+      if (them.windowTier === "LONG") continue;
       // Receive: their younger high-value player at same pos (or any pos), or picks
       const theirYouth = them.players
         .filter((p) => (p.age ?? 99) <= 25 && p.valueDynasty >= 1000)
