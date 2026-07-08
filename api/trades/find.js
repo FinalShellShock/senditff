@@ -1098,7 +1098,7 @@ function describeAsset(a) {
   return a.kind === "player" ? `${a.name} (${a.position})` : a.name;
 }
 function sanitizeRationale(text) {
-  return text.replace(/\s*[—–]\s*/g, ", ");
+  return text.replace(/^#{1,6}[^\n]*$/gm, "").replace(/\*\*/g, "").replace(/\s*[—–]\s*/g, ", ").trim();
 }
 async function generateRationale(pkg, myProfile) {
   const giveNames = pkg.give.map(describeAsset).join(", ");
@@ -1110,7 +1110,7 @@ async function generateRationale(pkg, myProfile) {
 Trade: Send ${giveNames} and receive ${receiveNames} from ${pkg.counterTeam}.
 Trade type: ${archetypeLabel}. ${fairnessNote}
 
-Write 2-3 sentences explaining why this trade makes sense for this team right now. Be specific about the players, picks, and the team's situation. Do not use em dashes.`;
+Write 2-3 sentences explaining why this trade makes sense for this team right now. Be specific about the players, picks, and the team's situation. Plain prose only: no markdown, no headings, no bullet points, no em dashes.`;
   const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
