@@ -217,7 +217,7 @@ export default function TeamDeepDive() {
                   <span className="pos-dash-num">{ps.depthScore.toFixed(0)}</span>
                 </div>
                 <span className="pos-dash-player">
-                  {top ? `${top.name}${top.age != null ? ` (${top.age})` : ""}` : "—"}
+                  {top ? `${top.name}${top.age != null ? ` (${Number(top.age).toFixed(1)})` : ""}` : "—"}
                 </span>
               </div>
             );
