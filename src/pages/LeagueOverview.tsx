@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useOutletContext, useParams, useNavigate } from "react-router-dom";
 import { makeApiClient } from "../api/client.ts";
-import type { TeamProfile, WindowLabel, PickFlag, Position, Pick as DraftPick, SubClassification } from "../algo/types.ts";
+import { fillStarters } from "../algo/profile.ts";
+import type { LeagueFormat, TeamProfile, WindowLabel, PickFlag, Position, Pick as DraftPick, SubClassification } from "../algo/types.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 import LeverageBoard from "./overview/LeverageBoard.tsx";
@@ -334,15 +335,17 @@ function RadarChart({ profile, allProfiles }: { profile: TeamProfile; allProfile
 }
 
 // Per-position roster column shown in the expanded view. Players sorted by
-// dynasty value desc; star next to starters (top N by redraft, where N =
-// format starter slots at that position, capturing typical FLEX usage).
+// dynasty value desc; star next to the players the real lineup fill puts in
+// starting slots (base + flex/superflex), same math the algorithm scores.
 function PositionColumn({
   pos,
   profile,
+  starterIds,
   allProfiles,
 }: {
   pos: Position;
   profile: TeamProfile;
+  starterIds: Set<string>;
   allProfiles: TeamProfile[];
 }) {
   const players = (profile.players ?? [])
@@ -361,15 +364,6 @@ function PositionColumn({
     .map((p) => p.positionScores?.[pos]?.starterValue ?? 0)
     .sort((a, b) => b - a);
   const posRank = ranks.indexOf(myStarter) + 1;
-
-  // Starters: top N by REDRAFT value at this position. N from format starter
-  // slot counts. For multi-flex positions (RB/WR), we estimate +1 typical flex
-  // usage. Approximate but good enough for "is this a starter or not" badge.
-  const starterIds = new Set<string>(
-    [...players].sort((a, b) => b.valueRedraft - a.valueRedraft)
-      .slice(0, startersAtPos(pos))
-      .map((p) => p.id),
-  );
 
   return (
     <div className="pos-column">
@@ -398,16 +392,6 @@ function PositionColumn({
   );
 }
 
-// Rough starter-slot estimate per position, including typical flex usage.
-// Used only for the ★ marker in the position column players list.
-function startersAtPos(pos: Position): number {
-  if (pos === "QB") return 1;     // SF leagues: 2 (we don't see format here, approximation)
-  if (pos === "RB") return 3;     // 2 base + ~1 flex'd
-  if (pos === "WR") return 3;     // 2 base + ~1 flex'd
-  if (pos === "TE") return 1;     // 1 base
-  return 1;
-}
-
 // Compact collapsed row — self-contained mini-table per team. Each row has
 // its own QB/RB/WR/TE column headers (so you don't lose context as you
 // scroll), plus row labels "Starter" / "Depth" on each data line. Depth
@@ -416,18 +400,27 @@ function startersAtPos(pos: Position): number {
 function LeagueTableRow({
   profile,
   leagueId,
+  format,
   allProfiles,
   expanded,
   onToggle,
 }: {
   profile: TeamProfile;
   leagueId: string;
+  format: LeagueFormat;
   allProfiles: TeamProfile[];
   expanded: boolean;
   onToggle: () => void;
 }) {
   const navigate = useNavigate();
   const labelColor = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
+
+  // Real lineup fill (same math the algorithm scores): base slots + flex.
+  const starterIds = useMemo(() => {
+    if (!expanded) return new Set<string>();
+    const { starters } = fillStarters(profile.players ?? [], format);
+    return new Set<string>(Object.values(starters).flat().map((p) => p.id));
+  }, [expanded, profile, format]);
 
   return (
     <div className={`lt-row${profile.isMine ? " mine" : ""}${expanded ? " expanded" : ""}`}>
@@ -510,6 +503,7 @@ function LeagueTableRow({
                 key={pos}
                 pos={pos}
                 profile={profile}
+                starterIds={starterIds}
                 allProfiles={allProfiles}
               />
             ))}
@@ -608,6 +602,7 @@ export default function LeagueOverview() {
                 key={p.rosterId}
                 profile={p}
                 leagueId={id!}
+                format={overview.format}
                 allProfiles={overview.profiles}
                 expanded={expandedRoster === p.rosterId}
                 onToggle={() => setExpandedRoster(expandedRoster === p.rosterId ? null : p.rosterId)}
