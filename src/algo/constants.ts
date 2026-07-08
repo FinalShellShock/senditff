@@ -62,9 +62,12 @@ export const STD_THRESHOLD = 0.5;
 
 // West Coast: absolute thresholds on window pressure, calibrated against the
 // position curves. Tunable.
-//   < 5   = LONG  (mostly pre-peak rosters, picks-rich rebuilds)
+//   < 6   = LONG  (mostly pre-peak rosters, picks-rich rebuilds)
 //   > 14  = SHORT (significant aging starters or PICK_POOR mid-tier teams)
-export const WINDOW_LONG_THRESHOLD = 5;
+// Shotgun: LONG cut raised 5 -> 6. At 5, one 30yo starter on an otherwise
+// pre-peak roster (Mahomes on a young SF juggernaut) pushed teams that are
+// obviously long-window into MID.
+export const WINDOW_LONG_THRESHOLD = 6;
 export const WINDOW_SHORT_THRESHOLD = 14;
 
 // In-season COMPETITIVENESS weights (parked here so we don't lose the formula).

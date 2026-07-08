@@ -524,14 +524,26 @@ export function computePositionScores(
 
     const starterValues = starters[pos].map((p) => p.valueRedraft);
     const depthValues = depth[pos].map((p) => p.valueDynasty);
-    const starterMinValue = starterValues.length > 0 ? Math.min(...starterValues) : 0;
     const depthMinValue = depthValues.length > 0 ? Math.min(...depthValues) : 0;
 
+    // Shotgun: starter CLASSIFICATION judges base slots only (the slots the
+    // league forces you to fill at this position). fillStarters appends flex
+    // spillover after the base slots, and a fifth startable WR is a luxury,
+    // not a hole — the old all-slots minSlotZ made deep rooms grade WORSE
+    // (a team flexing 3 extra WRs could never read SURPLUS because its worst
+    // flex sat below the starter-pool mean). starterScore/urgency still use
+    // the whole lineup.
+    const baseSlotCount =
+      pos === "QB" && format.starterSlots.SUPER_FLEX > 0
+        ? format.starterSlots.QB + 1
+        : format.starterSlots[pos];
+    const baseZs = starterPlayerZs.slice(0, baseSlotCount);
+    const baseValues = starterValues.slice(0, baseSlotCount);
     const starterSub = classifySide({
-      weightedZ: starterWeightedZ,
-      minSlotZ: minStarterZ,
-      weightedValue: starterValue,
-      minSlotValue: starterMinValue,
+      weightedZ: baseZs.length > 0 ? weightedSlotAverage(baseZs) : -3,
+      minSlotZ: baseZs.length > 0 ? Math.min(...baseZs) : -3,
+      weightedValue: baseValues.reduce((s, v) => s + v, 0),
+      minSlotValue: baseValues.length > 0 ? Math.min(...baseValues) : 0,
       worstTopN: sWorstTopN,
     });
     const depthSub = classifySide({
