@@ -73,6 +73,18 @@ async function requireApprovedUser(req, res) {
   return { uid, email };
 }
 
+// api/_lib/membership.ts
+async function ensureLeagueAccess(uid, leagueRef, members) {
+  if (members.includes(uid)) return true;
+  const userSnap = await adminDb.collection("users").doc(uid).get();
+  const sleeperUserId = userSnap.data()?.["sleeperUserId"];
+  if (!sleeperUserId) return false;
+  const match = await leagueRef.collection("profiles").where("ownerSleeperUserId", "==", sleeperUserId).limit(1).get();
+  if (match.empty) return false;
+  await leagueRef.set({ members: [...members, uid] }, { merge: true });
+  return true;
+}
+
 // api/leagues/overview.ts
 async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
@@ -87,7 +99,7 @@ async function handler(req, res) {
       return res.status(404).json({ error: "League not found. Sync it first." });
     }
     const members = leagueSnap.data()?.["members"] ?? [];
-    if (!members.includes(user.uid)) {
+    if (!await ensureLeagueAccess(user.uid, leagueRef, members)) {
       return res.status(403).json({ error: "Forbidden" });
     }
     const userSnap = await adminDb.collection("users").doc(user.uid).get();

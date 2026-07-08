@@ -6,6 +6,7 @@ import { fairnessText } from "../../src/algo/fairness";
 import type { LeagueFormat, Position, TeamProfile } from "../../src/algo/types";
 import { adminDb } from "../_lib/admin";
 import { requireApprovedUser } from "../_lib/auth";
+import { ensureLeagueAccess } from "../_lib/membership";
 import { getValueMaps } from "../_lib/snapshot";
 import { generatePackages, type TradePackage } from "../_lib/tradeEngine";
 
@@ -134,7 +135,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const leagueData = leagueSnap.data();
     const members: string[] = (leagueData?.["members"] as string[] | undefined) ?? [];
-    if (!members.includes(user.uid)) return res.status(403).json({ error: "Forbidden" });
+    if (!(await ensureLeagueAccess(user.uid, leagueRef, members))) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
     const format = leagueData?.["format"] as LeagueFormat | undefined;
     if (!format) return res.status(500).json({ error: "League format missing" });

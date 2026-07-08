@@ -114,6 +114,18 @@ async function requireApprovedUser(req, res) {
   return { uid, email };
 }
 
+// api/_lib/membership.ts
+async function ensureLeagueAccess(uid, leagueRef, members) {
+  if (members.includes(uid)) return true;
+  const userSnap = await adminDb.collection("users").doc(uid).get();
+  const sleeperUserId = userSnap.data()?.["sleeperUserId"];
+  if (!sleeperUserId) return false;
+  const match = await leagueRef.collection("profiles").where("ownerSleeperUserId", "==", sleeperUserId).limit(1).get();
+  if (match.empty) return false;
+  await leagueRef.set({ members: [...members, uid] }, { merge: true });
+  return true;
+}
+
 // src/data/fantasycalc.ts
 var FCALC = "https://api.fantasycalc.com/values/current";
 async function fetchFantasyCalcOne(format, isDynasty) {
@@ -533,7 +545,9 @@ async function handler(req, res) {
     }
     const leagueData = leagueSnap.data();
     const members = leagueData?.["members"] ?? [];
-    if (!members.includes(user.uid)) return res.status(403).json({ error: "Forbidden" });
+    if (!await ensureLeagueAccess(user.uid, leagueRef, members)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
     const format = leagueData?.["format"];
     if (!format) return res.status(500).json({ error: "League format missing" });
     const currentYear = leagueData?.["upcomingDraftYear"] ?? (/* @__PURE__ */ new Date()).getFullYear();

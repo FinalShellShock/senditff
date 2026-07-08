@@ -64,7 +64,7 @@ var PICK_ADJUSTMENT_BY_FLAG = {
 };
 var FLEX_CONSOLIDATE_THRESHOLD = 55;
 var STD_THRESHOLD = 0.5;
-var WINDOW_LONG_THRESHOLD = 5;
+var WINDOW_LONG_THRESHOLD = 6;
 var WINDOW_SHORT_THRESHOLD = 14;
 var COMPETITIVENESS_GRID = {
   STRONG: { LONG: "JUGGERNAUT", MID: "CONTEND", SHORT: "CLOSING" },
@@ -424,13 +424,15 @@ function computePositionScores(team, format, averages) {
     const minDepthZ = depthPlayerZs.length > 0 ? Math.min(...depthPlayerZs) : -3;
     const starterValues = starters[pos].map((p) => p.valueRedraft);
     const depthValues = depth[pos].map((p) => p.valueDynasty);
-    const starterMinValue = starterValues.length > 0 ? Math.min(...starterValues) : 0;
     const depthMinValue = depthValues.length > 0 ? Math.min(...depthValues) : 0;
+    const baseSlotCount = pos === "QB" && format.starterSlots.SUPER_FLEX > 0 ? format.starterSlots.QB + 1 : format.starterSlots[pos];
+    const baseZs = starterPlayerZs.slice(0, baseSlotCount);
+    const baseValues = starterValues.slice(0, baseSlotCount);
     const starterSub = classifySide({
-      weightedZ: starterWeightedZ,
-      minSlotZ: minStarterZ,
-      weightedValue: starterValue,
-      minSlotValue: starterMinValue,
+      weightedZ: baseZs.length > 0 ? weightedSlotAverage(baseZs) : -3,
+      minSlotZ: baseZs.length > 0 ? Math.min(...baseZs) : -3,
+      weightedValue: baseValues.reduce((s, v) => s + v, 0),
+      minSlotValue: baseValues.length > 0 ? Math.min(...baseValues) : 0,
       worstTopN: sWorstTopN
     });
     const depthSub = classifySide({

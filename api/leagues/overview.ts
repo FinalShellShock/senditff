@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { adminDb } from "../_lib/admin";
 import { requireApprovedUser } from "../_lib/auth";
+import { ensureLeagueAccess } from "../_lib/membership";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
@@ -21,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const members: string[] =
       (leagueSnap.data()?.["members"] as string[] | undefined) ?? [];
-    if (!members.includes(user.uid)) {
+    if (!(await ensureLeagueAccess(user.uid, leagueRef, members))) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
