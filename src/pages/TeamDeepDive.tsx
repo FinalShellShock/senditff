@@ -1,6 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import type { Pick as DraftPick, TeamProfile, WindowLabel } from "../algo/types.ts";
+import { makeApiClient, type LedgerRow } from "../api/client.ts";
+import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 
 const LABEL_COLOR: Record<WindowLabel, string> = {
@@ -70,9 +72,25 @@ export default function TeamDeepDive() {
   const { id: leagueId, rosterId: rosterIdStr } = useParams<{ id: string; rosterId: string }>();
   const rosterId = Number(rosterIdStr);
   const navigate = useNavigate();
+  const { getToken } = useAuth();
   const { overview } = useOutletContext<LeagueOutletContext>();
 
-  useEffect(() => {}, [leagueId, rosterId]);
+  // Trade ledger (cached Firestore read; never triggers a backfill). One
+  // fetch per league visit, shared across team switches.
+  const [ledger, setLedger] = useState<LedgerRow[] | null>(null);
+  useEffect(() => {
+    if (!leagueId) return;
+    let cancelled = false;
+    makeApiClient(getToken)
+      .getTrades(leagueId)
+      .then((d) => {
+        if (!cancelled && !d.needsBackfill) setLedger(d.ledger);
+      })
+      .catch(() => {}); // stats chip is optional garnish
+    return () => { cancelled = true; };
+  }, [leagueId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const tradeRow = ledger?.find((r) => r.rosterId === rosterId) ?? null;
 
   const profile = overview.profiles.find((p) => p.rosterId === rosterId) as TeamProfile | undefined;
   const sortedTeams = [...overview.profiles].sort((a, b) => a.starterRank - b.starterRank);
@@ -116,6 +134,20 @@ export default function TeamDeepDive() {
               <span style={{ color: "#475569" }}> · {profile.pickCapital.score.toFixed(0)}</span>
             </span>
             <span className="meta-pill">{profile.record}</span>
+            {tradeRow && (
+              <span
+                className="meta-pill"
+                style={{ cursor: "pointer" }}
+                title="Open trade grades"
+                onClick={() => navigate(`/league/${leagueId}/trades?manager=${rosterId}`)}
+              >
+                trades <strong>{tradeRow.trades}</strong>
+                <span style={{ color: "#475569" }}> · {tradeRow.wins}-{tradeRow.losses}-{tradeRow.ties} · </span>
+                <strong style={{ color: tradeRow.netValue > 0 ? "#22c55e" : tradeRow.netValue < 0 ? "#ef4444" : "#94a3b8" }}>
+                  {tradeRow.netValue >= 0 ? "+" : "−"}{(Math.abs(tradeRow.netValue) / 1000).toFixed(1)}k
+                </strong>
+              </span>
+            )}
           </div>
           <div className="team-switcher">
             <span className="dim-text" style={{ fontSize: 10, letterSpacing: 1 }}>TEAM</span>
@@ -193,6 +225,26 @@ export default function TeamDeepDive() {
         </div>
       </section>
 
+      {/* Roster — compact, deprioritized */}
+      <section className="dive-pos-section">
+        <h2 className="section-title">ROSTER</h2>
+        <div className="roster-compact">
+          {sortedRoster.map((p) => (
+            <div key={p.id} className="roster-row">
+              <span
+                className="pos-tag"
+                style={{ background: posColor(p.position), color: "#fff", padding: "1px 4px", borderRadius: 2, fontSize: 8, fontWeight: 700, letterSpacing: 0.5, flexShrink: 0 }}
+              >
+                {p.position}
+              </span>
+              <span className="roster-name">{p.name}</span>
+              {p.age != null && <span className="roster-age">{p.age}</span>}
+              <span className="roster-val">{p.valueDynasty.toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Picks */}
       {sortedPicks.length > 0 && (
         <section className="dive-pos-section">
@@ -213,26 +265,6 @@ export default function TeamDeepDive() {
           </div>
         </section>
       )}
-
-      {/* Roster — compact, deprioritized */}
-      <section className="dive-pos-section">
-        <h2 className="section-title">ROSTER</h2>
-        <div className="roster-compact">
-          {sortedRoster.map((p) => (
-            <div key={p.id} className="roster-row">
-              <span
-                className="pos-tag"
-                style={{ background: posColor(p.position), color: "#fff", padding: "1px 4px", borderRadius: 2, fontSize: 8, fontWeight: 700, letterSpacing: 0.5, flexShrink: 0 }}
-              >
-                {p.position}
-              </span>
-              <span className="roster-name">{p.name}</span>
-              {p.age != null && <span className="roster-age">{p.age}</span>}
-              <span className="roster-val">{p.valueDynasty.toLocaleString()}</span>
-            </div>
-          ))}
-        </div>
-      </section>
     </>
   );
 }

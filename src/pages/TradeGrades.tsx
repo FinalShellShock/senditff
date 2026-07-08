@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useOutletContext, useParams } from "react-router-dom";
+import { useOutletContext, useParams, useSearchParams } from "react-router-dom";
 import { fairnessColor } from "../algo/fairness.ts";
 import {
   makeApiClient,
@@ -96,8 +96,26 @@ export default function TradeGrades() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openSeasons, setOpenSeasons] = useState<Set<number>>(new Set());
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const myRosterId = overview.profiles.find((p) => p.isMine)?.rosterId ?? null;
+
+  // Manager filter, deep-linkable (?manager=<rosterId> from team pages).
+  const urlManager = searchParams.get("manager");
+  const [managerFilter, setManagerFilter] = useState<number | "">(
+    urlManager != null && urlManager !== "" ? Number(urlManager) : "",
+  );
+
+  function applyManagerFilter(value: number | "", seasons: number[]) {
+    setManagerFilter(value);
+    const next = new URLSearchParams(searchParams);
+    if (value === "") next.delete("manager");
+    else next.set("manager", String(value));
+    setSearchParams(next, { replace: true });
+    // Filtering to one manager: open every season so their history reads
+    // as one continuous list.
+    if (value !== "") setOpenSeasons(new Set(seasons));
+  }
 
   useEffect(() => {
     if (!leagueId) return;
@@ -105,7 +123,13 @@ export default function TradeGrades() {
     api.getTrades(leagueId)
       .then((d) => {
         setData(d);
-        if (d.seasons.length > 0) setOpenSeasons(new Set([Math.max(...d.seasons)]));
+        if (d.seasons.length > 0) {
+          // A deep-linked manager filter opens everything; default opens
+          // just the newest season.
+          setOpenSeasons(
+            managerFilter !== "" ? new Set(d.seasons) : new Set([Math.max(...d.seasons)]),
+          );
+        }
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load trades"))
       .finally(() => setLoading(false));
@@ -129,12 +153,13 @@ export default function TradeGrades() {
   const bySeason = useMemo(() => {
     const map = new Map<number, GradedTrade[]>();
     for (const t of data?.trades ?? []) {
+      if (managerFilter !== "" && !t.sides.some((s) => s.rosterId === managerFilter)) continue;
       const arr = map.get(t.season) ?? [];
       arr.push(t);
       map.set(t.season, arr);
     }
     return [...map.entries()].sort((a, b) => b[0] - a[0]);
-  }, [data]);
+  }, [data, managerFilter]);
 
   if (loading) {
     return <p className="dim-text" style={{ marginTop: 48, textAlign: "center" }}>Loading trade history...</p>;
@@ -175,9 +200,30 @@ export default function TradeGrades() {
             drafted with them where known.
           </p>
         </div>
-        <button className="sendit-reset-btn" disabled={refreshing} onClick={refresh}>
-          {refreshing ? "CHECKING..." : "CHECK FOR NEW TRADES"}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          <select
+            className="team-switcher-select"
+            value={managerFilter}
+            onChange={(e) =>
+              applyManagerFilter(
+                e.target.value === "" ? "" : Number(e.target.value),
+                data?.seasons ?? [],
+              )
+            }
+          >
+            <option value="">All managers</option>
+            {[...(data?.ledger ?? [])]
+              .sort((a, b) => a.managerName.localeCompare(b.managerName))
+              .map((row) => (
+                <option key={row.rosterId} value={row.rosterId}>
+                  {row.managerName}{row.rosterId === myRosterId ? " ★" : ""}
+                </option>
+              ))}
+          </select>
+          <button className="sendit-reset-btn" disabled={refreshing} onClick={refresh}>
+            {refreshing ? "CHECKING..." : "CHECK FOR NEW TRADES"}
+          </button>
+        </div>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
@@ -189,7 +235,17 @@ export default function TradeGrades() {
             <span>#</span><span>MANAGER</span><span>TRADES</span><span>W-L-T</span><span>NET VALUE</span>
           </div>
           {(data?.ledger ?? []).map((row: LedgerRow, i: number) => (
-            <div key={row.rosterId} className={`tg-ledger-row${row.rosterId === myRosterId ? " tg-ledger-mine" : ""}`}>
+            <div
+              key={row.rosterId}
+              className={`tg-ledger-row tg-ledger-clickable${row.rosterId === myRosterId ? " tg-ledger-mine" : ""}${row.rosterId === managerFilter ? " tg-ledger-filtered" : ""}`}
+              title="Filter trades to this manager"
+              onClick={() =>
+                applyManagerFilter(
+                  managerFilter === row.rosterId ? "" : row.rosterId,
+                  data?.seasons ?? [],
+                )
+              }
+            >
               <span className="dim-text">{i + 1}</span>
               <span>{row.managerName}{row.rosterId === myRosterId ? " ★" : ""}</span>
               <span>{row.trades}</span>

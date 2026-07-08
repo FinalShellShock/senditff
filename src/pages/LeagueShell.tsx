@@ -68,10 +68,14 @@ export default function LeagueShell() {
 
   const rosterMatch = location.pathname.match(/\/(?:team|sendit)\/(\d+)/);
   const currentRosterId = rosterMatch ? Number(rosterMatch[1]) : null;
-  const rankedFirst = overview?.profiles.slice().sort((a, b) => a.starterRank - b.starterRank)[0];
+  // Tab default: your own team, falling back to the #1 team for leagues
+  // you're viewing without a roster.
+  const defaultTeam =
+    overview?.profiles.find((p) => p.isMine)
+    ?? overview?.profiles.slice().sort((a, b) => a.starterRank - b.starterRank)[0];
   const navTeam = currentRosterId
     ? overview?.profiles.find((p) => p.rosterId === currentRosterId)
-    : rankedFirst;
+    : defaultTeam;
 
   return (
     <div className="shell">

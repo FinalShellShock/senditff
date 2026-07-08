@@ -224,26 +224,25 @@ export default function SendIt() {
   return (
     <>
       <div className="dive-header">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h1 className="dive-owner">{profile?.ownerName ?? "—"}</h1>
-          <div className="team-switcher">
-            <span className="dim-text" style={{ fontSize: 10, letterSpacing: 1 }}>TEAM</span>
-            <select
-              className="team-switcher-select"
-              value={rosterId}
-              onChange={(e) => navigate(`/league/${leagueId}/sendit/${e.target.value}?${searchParams.toString()}`)}
-            >
-              {sortedTeams.map((t) => (
-                <option key={t.rosterId} value={t.rosterId}>
-                  #{t.starterRank} {t.ownerName}{t.isMine ? " ★" : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <h1 className="dive-owner">{profile?.ownerName ?? "—"}</h1>
       </div>
 
       <div className="sendit-controls">
+        <label className="sendit-control">
+          <span className="sendit-control-label">FOR</span>
+          <select
+            className="team-switcher-select"
+            value={rosterId}
+            onChange={(e) => navigate(`/league/${leagueId}/sendit/${e.target.value}?${searchParams.toString()}`)}
+          >
+            {sortedTeams.map((t) => (
+              <option key={t.rosterId} value={t.rosterId}>
+                #{t.starterRank} {t.ownerName}{t.isMine ? " ★" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <label className="sendit-control">
           <span className="sendit-control-label">INTENT</span>
           <select

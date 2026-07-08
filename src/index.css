@@ -1006,6 +1006,9 @@ body {
   background: rgba(255,255,255,0.02);
 }
 .tg-ledger-mine { background: rgba(245, 158, 11, 0.06); }
+.tg-ledger-clickable { cursor: pointer; }
+.tg-ledger-clickable:hover { background: rgba(255,255,255,0.04); }
+.tg-ledger-filtered { outline: 1px solid rgba(245, 158, 11, 0.5); }
 .tg-season { margin-bottom: 14px; }
 .tg-season-toggle {
   width: 100%;
