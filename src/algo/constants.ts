@@ -60,14 +60,17 @@ export const FLEX_CONSOLIDATE_THRESHOLD = 55;
 // competitiveness axis. 0.5σ = "noticeably above/below average for this league."
 export const STD_THRESHOLD = 0.5;
 
-// West Coast: absolute thresholds on window pressure, calibrated against the
-// position curves. Tunable.
-//   < 6   = LONG  (mostly pre-peak rosters, picks-rich rebuilds)
+// Absolute thresholds on window pressure, calibrated against the position
+// curves ON DECIMAL AGES (production computes exact ages from birth dates;
+// the original 5/14 cuts were tuned on a harness that used Sleeper's floored
+// integer ages, which read 2-8 points younger).
+//   < 9   = LONG  (mostly pre-peak rosters, picks-rich rebuilds)
 //   > 14  = SHORT (significant aging starters or PICK_POOR mid-tier teams)
-// Shotgun: LONG cut raised 5 -> 6. At 5, one 30yo starter on an otherwise
-// pre-peak roster (Mahomes on a young SF juggernaut) pushed teams that are
-// obviously long-window into MID.
-export const WINDOW_LONG_THRESHOLD = 6;
+// Shotgun: LONG cut recalibrated after harness/prod age parity. At the old
+// cut, one just-past-peak starter (Mahomes on a young SF juggernaut) pushed
+// obviously long-window teams into MID. Both test leagues separate cleanly
+// around 9 (nearest teams 8.1/8.6 below, 9.9/11.4 above).
+export const WINDOW_LONG_THRESHOLD = 9;
 export const WINDOW_SHORT_THRESHOLD = 14;
 
 // In-season COMPETITIVENESS weights (parked here so we don't lose the formula).

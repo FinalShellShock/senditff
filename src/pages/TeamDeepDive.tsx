@@ -238,7 +238,7 @@ export default function TeamDeepDive() {
                 {p.position}
               </span>
               <span className="roster-name">{p.name}</span>
-              {p.age != null && <span className="roster-age">{p.age}</span>}
+              {p.age != null && <span className="roster-age">{Number(p.age).toFixed(1)}</span>}
               <span className="roster-val">{p.valueDynasty.toLocaleString()}</span>
             </div>
           ))}

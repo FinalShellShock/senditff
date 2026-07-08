@@ -1,22 +1,30 @@
 // Shared league-input loader for the validate scripts. Fetches Sleeper +
-// FantasyCalc and assembles TeamInput rows the same way api/leagues/sync.ts
-// does, with an optional disk cache so algo changes can be diffed against
-// identical inputs (values move throughout the day otherwise).
+// FantasyCalc, then delegates team assembly to api/_lib/buildTeams — the
+// exact code the sync endpoint runs — so offline calibration can never
+// drift from production again. (It did once: the harness used Sleeper's
+// floored integer ages while prod computed decimal ages from birth dates,
+// shifting every window pressure by 2-3 points.)
+//
+// Optional disk cache keeps raw API responses stable across runs so algo
+// changes can be diffed against identical inputs.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { join } from "node:path";
-import type { LeagueFormat, Pick, Player, Position, TeamInput } from "../../src/algo/index.ts";
+import type { LeagueFormat, Position, TeamInput } from "../../src/algo/index.ts";
 import {
-  buildPicksMap,
   detectFormat,
   fetchFantasyCalc,
   fetchLeague,
   fetchPlayers,
+  findUpcomingDraft,
   normName,
-  projectDraftSlots,
-  resolvePickValue,
 } from "../../src/data/index.ts";
-import type { SleeperPlayer } from "../../src/data/index.ts";
+
+// api/ is a CommonJS tree (api/package.json sets type: commonjs for Vercel).
+const require = createRequire(import.meta.url);
+const { buildTeamInputs } =
+  require("../../api/_lib/buildTeams.ts") as typeof import("../../api/_lib/buildTeams.ts");
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 
@@ -52,8 +60,10 @@ export async function loadLeagueInputs(
   cacheDir: string | null = null,
 ): Promise<LeagueInputs> {
   console.log(`Fetching league ${leagueId}...`);
-  const { league, users, rosters, tradedPicks } = await cached(cacheDir, `league-${leagueId}`, () =>
-    fetchLeague(leagueId),
+  const { league, users, rosters, tradedPicks, drafts } = await cached(
+    cacheDir,
+    `league-${leagueId}`,
+    () => fetchLeague(leagueId),
   );
 
   const format = detectFormat(league);
@@ -72,21 +82,20 @@ export async function loadLeagueInputs(
     ),
   ]);
 
-  // Two value maps. Dynasty also seeds pick values (redraft has no picks).
-  const dynastyMap = new Map<string, { value: number; age?: number }>();
-  const redraftMap = new Map<string, { value: number; age?: number }>();
-  // Global player pools by position (mirrors api/_lib/snapshot.ts).
+  // Value maps + global pools, mirroring api/_lib/snapshot.ts.
+  const dynastyValues = new Map<string, { value: number; age?: number }>();
+  const redraftValues = new Map<string, { value: number; age?: number }>();
   const dynastyByPos: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
   const redraftByPos: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
   for (const e of fcalc.dynasty) {
     const k = normName(e.player?.name);
-    if (k) dynastyMap.set(k, { value: e.value, age: e.player?.age });
+    if (k) dynastyValues.set(k, { value: e.value, age: e.player?.age });
     const pos = e.player?.position as Position | undefined;
     if (pos && POSITIONS.includes(pos)) dynastyByPos[pos].push(e.value);
   }
   for (const e of fcalc.redraft) {
     const k = normName(e.player?.name);
-    if (k) redraftMap.set(k, { value: e.value, age: e.player?.age });
+    if (k) redraftValues.set(k, { value: e.value, age: e.player?.age });
     const pos = e.player?.position as Position | undefined;
     if (pos && POSITIONS.includes(pos)) redraftByPos[pos].push(e.value);
   }
@@ -95,11 +104,8 @@ export async function loadLeagueInputs(
     redraftByPos[pos].sort((a, b) => b - a);
   }
 
-  // Build pick ownership
-  const thisYear = new Date().getFullYear();
-  const draftYears = [thisYear, thisYear + 1, thisYear + 2];
-  const picksMap = buildPicksMap(rosters, tradedPicks, draftYears, 4);
-  const draftSlots = projectDraftSlots(rosters);
+  // Same "this year" the sync endpoint derives.
+  const thisYear = findUpcomingDraft(drafts, rosters)?.season ?? new Date().getFullYear();
 
   const myUser = users.find(
     (u) =>
@@ -107,75 +113,17 @@ export async function loadLeagueInputs(
       u.display_name?.toLowerCase() === myUsername.toLowerCase(),
   );
 
-  const teams: TeamInput[] = rosters.map((r) => {
-    const user = users.find((u) => u.user_id === r.owner_id);
-    const ownerName = user?.display_name ?? `Team ${r.roster_id}`;
-
-    // Players
-    const players: Player[] = (r.players ?? [])
-      .map((id): Player | null => {
-        const sp: SleeperPlayer | undefined = sleeperPlayers[id];
-        if (!sp) return null;
-        const fullName = sp.full_name ?? `${sp.first_name ?? ""} ${sp.last_name ?? ""}`.trim();
-        const pos = sp.position;
-        if (!pos || !POSITIONS.includes(pos as Position)) return null;
-        const k = normName(fullName);
-        const dyn = dynastyMap.get(k);
-        const red = redraftMap.get(k);
-        return {
-          id,
-          name: fullName,
-          position: pos as Position,
-          team: sp.team ?? null,
-          age: sp.age ?? dyn?.age ?? red?.age ?? null,
-          valueRedraft: red?.value ?? 0,
-          valueDynasty: dyn?.value ?? 0,
-        };
-      })
-      .filter((p): p is Player => p !== null);
-
-    // Picks
-    const ownPicks = picksMap.get(r.roster_id) ?? new Set<string>();
-    const picks: Pick[] = Array.from(ownPicks)
-      .map((key): Pick => {
-        const [yearStr, roundStr, origStr] = key.split("|");
-        const year = parseInt(yearStr!, 10);
-        const round = parseInt(roundStr!, 10);
-        const origRosterId = parseInt(origStr!, 10);
-        const slot = draftSlots.get(origRosterId) ?? rosters.length;
-        const value = resolvePickValue(dynastyMap, rosters.length, year, round, slot);
-        const slotStr = `${round}.${String(slot).padStart(2, "0")}`;
-        const origRoster = rosters.find((rr) => rr.roster_id === origRosterId);
-        const origUser = users.find((u) => u.user_id === origRoster?.owner_id);
-        const viaSuffix =
-          origRosterId !== r.roster_id ? ` (via ${origUser?.display_name ?? "?"})` : "";
-        return {
-          year,
-          round,
-          origRosterId,
-          ownerRosterId: r.roster_id,
-          slot,
-          // Validate scripts: no Sleeper draft endpoint pulled, so all slots
-          // are projections. slotKnown=false everywhere; tier inferred.
-          slotKnown: false,
-          tier: round === 1
-            ? (slot <= Math.ceil(rosters.length / 3) ? "early"
-              : slot <= 2 * Math.ceil(rosters.length / 3) ? "mid" : "late")
-            : null,
-          label: `${year} ${slotStr}${viaSuffix}`,
-          value,
-        };
-      })
-      .sort((a, b) => a.label.localeCompare(b.label));
-
-    return {
-      rosterId: r.roster_id,
-      ownerName,
-      isMine: !!myUser && r.owner_id === myUser.user_id,
-      record: `${r.settings?.wins ?? 0}-${r.settings?.losses ?? 0}`,
-      players,
-      picks,
-    };
+  const teams = buildTeamInputs({
+    rosters,
+    users,
+    tradedPicks,
+    drafts,
+    league,
+    sleeperPlayers,
+    valueMaps: { dynastyValues, redraftValues, dynastyByPos, redraftByPos },
+    format,
+    ...(myUser ? { mySleeperUserId: myUser.user_id } : {}),
+    thisYear,
   });
 
   return {
@@ -184,7 +132,7 @@ export async function loadLeagueInputs(
     teams,
     thisYear,
     teamCount: rosters.length,
-    dynastyValues: dynastyMap,
+    dynastyValues,
     pools: { dynastyByPos, redraftByPos },
   };
 }
