@@ -1097,6 +1097,9 @@ function rationaleHash(pkg, myProfile) {
 function describeAsset(a) {
   return a.kind === "player" ? `${a.name} (${a.position})` : a.name;
 }
+function sanitizeRationale(text) {
+  return text.replace(/\s*[—–]\s*/g, ", ");
+}
 async function generateRationale(pkg, myProfile) {
   const giveNames = pkg.give.map(describeAsset).join(", ");
   const receiveNames = pkg.receive.map(describeAsset).join(", ");
@@ -1130,9 +1133,9 @@ async function addRationale(pkg, myProfile) {
   const cacheRef = adminDb.collection("rationaleCache").doc(hash);
   const cached = await cacheRef.get();
   if (cached.exists) {
-    return { ...pkg, rationale: cached.data()?.["rationale"] };
+    return { ...pkg, rationale: sanitizeRationale(cached.data()?.["rationale"]) };
   }
-  const rationale = await generateRationale(pkg, myProfile);
+  const rationale = sanitizeRationale(await generateRationale(pkg, myProfile));
   await cacheRef.set({ hash, rationale, archetype: pkg.archetype, generatedAt: (/* @__PURE__ */ new Date()).toISOString() });
   return { ...pkg, rationale };
 }

@@ -30,6 +30,12 @@ function describeAsset(a: { kind: "player" | "pick"; name: string; position?: st
   return a.kind === "player" ? `${a.name} (${a.position})` : a.name;
 }
 
+// Haiku ignores the no-em-dash instruction often enough that we enforce it
+// here, on cached entries too (they were stored unsanitized).
+function sanitizeRationale(text: string): string {
+  return text.replace(/\s*[—–]\s*/g, ", ");
+}
+
 async function generateRationale(
   pkg: Omit<TradePackage, "rationale">,
   myProfile: TeamProfile,
@@ -78,10 +84,10 @@ async function addRationale(
   const cached = await cacheRef.get();
 
   if (cached.exists) {
-    return { ...pkg, rationale: cached.data()?.["rationale"] as string };
+    return { ...pkg, rationale: sanitizeRationale(cached.data()?.["rationale"] as string) };
   }
 
-  const rationale = await generateRationale(pkg, myProfile);
+  const rationale = sanitizeRationale(await generateRationale(pkg, myProfile));
   await cacheRef.set({ hash, rationale, archetype: pkg.archetype, generatedAt: new Date().toISOString() });
   return { ...pkg, rationale };
 }
