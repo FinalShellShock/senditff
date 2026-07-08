@@ -3,6 +3,12 @@
 // top). The 3x3 band boundaries reproduce the classic grid cells; dots land
 // in the region matching their windowLabel because both derive from the same
 // numbers. Dashed trails project each team 1-2 years out (Shotgun).
+//
+// Readability rules (dataviz): identity comes from an ink-colored name label
+// beside each dot, never text inside the mark; the dot's color carries the
+// windowLabel (the region names double as the legend); dots wear a 2px
+// surface ring; band boundaries are solid hairlines; hover targets are
+// bigger than the marks.
 
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -26,10 +32,12 @@ const LABEL_COLOR: Record<WindowLabel, string> = {
   STUCK:      "#dc2626",
 };
 
+const SURFACE = "#0a0c0f";
+
 // Field geometry (viewBox units)
-const W = 720;
-const H = 440;
-const PAD = { top: 26, right: 14, bottom: 30, left: 66 };
+const W = 760;
+const H = 480;
+const PAD = { top: 30, right: 18, bottom: 34, left: 70 };
 const FW = W - PAD.left - PAD.right;
 const FH = H - PAD.top - PAD.bottom;
 
@@ -37,6 +45,11 @@ const FH = H - PAD.top - PAD.bottom;
 const PRESSURE_MAX = 45;
 // z beyond ±this pins to the top/bottom edge.
 const Z_MAX = 2.0;
+
+const DOT_R = 7;
+const HIT_R = 15;
+const NAME_MAX = 13;
+const LABEL_GAP = DOT_R + 5;
 
 // Piecewise x: each window band (LONG / MID / SHORT) gets a third of the
 // width so band boundaries line up with the visual grid.
@@ -74,17 +87,15 @@ function meanStd(values: number[]): { mean: number; std: number } {
   return { mean, std: Math.sqrt(variance) };
 }
 
-function initials(name: string): string {
-  const clean = name.replace(/[^a-zA-Z0-9 ]/g, "");
-  const words = clean.split(" ").filter(Boolean);
-  if (words.length >= 2) return (words[0]![0]! + words[1]![0]!).toUpperCase();
-  return clean.slice(0, 2).toUpperCase();
+function displayName(name: string): string {
+  return name.length > NAME_MAX ? `${name.slice(0, NAME_MAX - 1)}…` : name;
 }
 
 type Placed = {
   profile: TeamProfile;
   x: number;
   y: number;
+  labelSide: "right" | "left";
   trail: Array<{ x: number; y: number }>;
 };
 
@@ -130,7 +141,7 @@ export default function WindowMap({
       return dist.std > 0 ? (proj[idx]!.starterDynastyValue - dist.mean) / dist.std : 0;
     };
 
-    const result = sorted.map((p, idx) => {
+    const result: Placed[] = sorted.map((p, idx) => {
       const baseX = p.windowPressure;
       const baseY = zNow(p);
       const trail = [1, 2].map((h) => {
@@ -138,20 +149,30 @@ export default function WindowMap({
         const dz = zAt(idx, h) - zAt(idx, 0);
         return { x: xScale(baseX + dPressure), y: yScale(baseY + dz) };
       });
-      return { profile: p, x: xScale(baseX), y: yScale(baseY), trail };
+      const x = xScale(baseX);
+      return {
+        profile: p,
+        x,
+        y: yScale(baseY),
+        labelSide: x > PAD.left + FW - 110 ? ("left" as const) : ("right" as const),
+        trail,
+      };
     });
 
-    // Deterministic collision nudging: rosterId order, push the later dot down.
-    for (let pass = 0; pass < 3; pass++) {
+    // Deterministic label decollision: dot + name occupy a horizontal strip
+    // (~90 units of text beside the dot), so any two teams whose strips can
+    // overlap need vertical separation. Facing labels (right-label followed
+    // by a left-label) reach toward each other, hence the generous window.
+    // rosterId order, later one pushed down; a few passes settle it.
+    for (let pass = 0; pass < 4; pass++) {
       for (let i = 0; i < result.length; i++) {
         for (let j = i + 1; j < result.length; j++) {
           const a = result[i]!;
           const b = result[j]!;
-          const dx = b.x - a.x;
+          if (Math.abs(b.x - a.x) >= 160) continue;
           const dy = b.y - a.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 28) {
-            b.y = Math.min(PAD.top + FH - 6, b.y + (28 - dist));
+          if (Math.abs(dy) < 17) {
+            b.y = Math.min(PAD.top + FH - DOT_R, a.y + 17);
           }
         }
       }
@@ -165,13 +186,13 @@ export default function WindowMap({
   return (
     <div className="wm-wrap">
       <svg viewBox={`0 0 ${W} ${H}`} className="window-map" role="img" aria-label="League window map">
-        {/* Band boundaries */}
+        {/* Band boundaries: solid hairlines, one step off the surface */}
         {[1, 2].map((i) => (
           <line
             key={`v${i}`}
             x1={PAD.left + (i * FW) / 3} y1={PAD.top}
             x2={PAD.left + (i * FW) / 3} y2={PAD.top + FH}
-            stroke="rgba(255,255,255,0.08)" strokeDasharray="2 4"
+            stroke="rgba(255,255,255,0.07)" strokeWidth={1}
           />
         ))}
         {[1, 2].map((i) => (
@@ -179,7 +200,7 @@ export default function WindowMap({
             key={`h${i}`}
             x1={PAD.left} y1={PAD.top + (i * FH) / 3}
             x2={PAD.left + FW} y2={PAD.top + (i * FH) / 3}
-            stroke="rgba(255,255,255,0.08)" strokeDasharray="2 4"
+            stroke="rgba(255,255,255,0.07)" strokeWidth={1}
           />
         ))}
         <rect
@@ -187,7 +208,7 @@ export default function WindowMap({
           fill="none" stroke="rgba(255,255,255,0.06)"
         />
 
-        {/* Region labels */}
+        {/* Region labels (double as the color legend) */}
         {REGION_LABELS.map((r) => (
           <text
             key={r.label}
@@ -200,15 +221,15 @@ export default function WindowMap({
         ))}
 
         {/* Axis labels */}
-        <text x={PAD.left} y={H - 8} className="wm-axis-label" textAnchor="start">◀ LONG WINDOW</text>
-        <text x={PAD.left + FW} y={H - 8} className="wm-axis-label" textAnchor="end">SHORT WINDOW ▶</text>
-        <text x={14} y={PAD.top + 8} className="wm-axis-label" textAnchor="start">STRONG ▲</text>
-        <text x={14} y={PAD.top + FH} className="wm-axis-label" textAnchor="start">WEAK ▼</text>
-        <text x={PAD.left + FW} y={16} className="wm-axis-label wm-axis-hint" textAnchor="end">
+        <text x={PAD.left} y={H - 10} className="wm-axis-label" textAnchor="start">◀ LONG WINDOW</text>
+        <text x={PAD.left + FW} y={H - 10} className="wm-axis-label" textAnchor="end">SHORT WINDOW ▶</text>
+        <text x={16} y={PAD.top + 10} className="wm-axis-label" textAnchor="start">STRONG ▲</text>
+        <text x={16} y={PAD.top + FH} className="wm-axis-label" textAnchor="start">WEAK ▼</text>
+        <text x={PAD.left + FW} y={18} className="wm-axis-label wm-axis-hint" textAnchor="end">
           dashed trail = projected drift (+1y, +2y)
         </text>
 
-        {/* Trajectory trails under the dots */}
+        {/* Trajectory trails under the dots (dashed = projection) */}
         {placed.map(({ profile, x, y, trail }) => {
           const color = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
           const pts = [{ x, y }, ...trail];
@@ -217,7 +238,7 @@ export default function WindowMap({
           const angle = Math.atan2(last.y - prev.y, last.x - prev.x);
           const arrow = 6;
           return (
-            <g key={`trail-${profile.rosterId}`} opacity={0.55}>
+            <g key={`trail-${profile.rosterId}`} opacity={0.45}>
               <polyline
                 points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
                 fill="none" stroke={color} strokeWidth={1.5} strokeDasharray="4 3"
@@ -232,9 +253,10 @@ export default function WindowMap({
           );
         })}
 
-        {/* Team dots */}
-        {placed.map(({ profile, x, y }) => {
+        {/* Team dots + ink name labels */}
+        {placed.map(({ profile, x, y, labelSide }) => {
           const color = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
+          const name = displayName(profile.ownerName);
           return (
             <g
               key={profile.rosterId}
@@ -244,18 +266,23 @@ export default function WindowMap({
               <title>
                 {`${profile.ownerName} — ${profile.windowLabel}\nstarter rank #${profile.starterRank} · window pressure ${profile.windowPressure.toFixed(0)}`}
               </title>
+              {/* hover/click target, larger than the mark */}
+              <circle cx={x} cy={y} r={HIT_R} fill="transparent" />
               <circle
-                cx={x} cy={y} r={13}
+                cx={x} cy={y} r={DOT_R}
                 fill={color}
-                stroke={profile.isMine ? "#f59e0b" : "rgba(0,0,0,0.4)"}
-                strokeWidth={profile.isMine ? 2.5 : 1}
+                stroke={profile.isMine ? "#f59e0b" : SURFACE}
+                strokeWidth={2}
               />
-              <text x={x} y={y} textAnchor="middle" dominantBaseline="central" className="wm-dot-text">
-                {initials(profile.ownerName)}
+              <text
+                x={labelSide === "right" ? x + LABEL_GAP : x - LABEL_GAP}
+                y={y}
+                textAnchor={labelSide === "right" ? "start" : "end"}
+                dominantBaseline="central"
+                className={`wm-name${profile.isMine ? " wm-name-mine" : ""}`}
+              >
+                {profile.isMine ? `★ ${name}` : name}
               </text>
-              {profile.isMine && (
-                <text x={x} y={y - 19} textAnchor="middle" className="wm-mine-star">★</text>
-              )}
             </g>
           );
         })}

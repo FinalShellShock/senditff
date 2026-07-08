@@ -851,7 +851,7 @@ function genAgeArbSell(ctx) {
     const myAging = mine.players.filter((p) => p.position === pos && (p.age ?? 0) >= 28 && p.valueDynasty >= 1500).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
     if (!myAging) continue;
     for (const them of others) {
-      if (them.windowTier === "SHORT") continue;
+      if (them.windowTier === "LONG") continue;
       const theirYouth = them.players.filter((p) => (p.age ?? 99) <= 25 && p.valueDynasty >= 1e3).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
       if (theirYouth) {
         out.push({

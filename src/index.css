@@ -163,10 +163,23 @@ body {
 }
 
 .section-title {
-  font-size: 11px;
-  color: #f59e0b;
-  letter-spacing: 3px;
-  margin-bottom: 16px;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: #e2e8f0;
+  letter-spacing: 2.5px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-title::before {
+  content: "";
+  width: 4px;
+  height: 17px;
+  background: #f59e0b;
+  border-radius: 1px;
+  flex-shrink: 0;
 }
 
 .overview-section {
@@ -822,12 +835,13 @@ body {
   gap: 12px;
 }
 .shape-toggle { font-size: 11px; }
-.wm-wrap { width: 100%; }
-.window-map { width: 100%; height: auto; display: block; }
+/* Horizontal scroll on narrow screens so labels stay readable */
+.wm-wrap { width: 100%; overflow-x: auto; }
+.window-map { width: 100%; min-width: 640px; height: auto; display: block; }
 .wm-region-label {
-  fill: rgba(255,255,255,0.07);
+  fill: rgba(255,255,255,0.09);
   font-family: "Bebas Neue", sans-serif;
-  font-size: 22px;
+  font-size: 24px;
   letter-spacing: 3px;
   pointer-events: none;
   user-select: none;
@@ -841,15 +855,19 @@ body {
 .wm-axis-hint { font-weight: 400; letter-spacing: 0.5px; fill: #3b4657; }
 .wm-dot { cursor: pointer; }
 .wm-dot:hover circle { filter: brightness(1.25); }
-.wm-dot-text {
-  fill: #0a0c0f;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+.wm-dot:hover .wm-name { fill: #f8fafc; }
+.wm-name {
+  fill: #cbd5e1;
+  font-size: 11px;
+  letter-spacing: 0.2px;
   pointer-events: none;
   user-select: none;
+  paint-order: stroke;
+  stroke: #0a0c0f;
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
-.wm-mine-star { fill: #f59e0b; font-size: 11px; pointer-events: none; }
+.wm-name-mine { fill: #f59e0b; font-weight: 700; }
 
 /* ── Positional Leverage ─────────────────────────────────────────────── */
 

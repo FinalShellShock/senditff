@@ -105,6 +105,7 @@ async function handler(req, res) {
       name: leagueSnap.data()?.["name"],
       format: leagueSnap.data()?.["format"],
       lastRefreshed: leagueSnap.data()?.["lastRefreshed"],
+      upcomingDraftYear: leagueSnap.data()?.["upcomingDraftYear"] ?? null,
       profiles
     });
   } catch (err) {

@@ -183,7 +183,7 @@ export default function TradeGrades() {
       {error && <div className="error-banner">{error}</div>}
 
       <div className="tg-ledger">
-        <div className="tg-section-title">TRADE POWER RANKINGS</div>
+        <h2 className="section-title">Trade Power Rankings</h2>
         <div className="tg-ledger-table">
           <div className="tg-ledger-row tg-ledger-head">
             <span>#</span><span>MANAGER</span><span>TRADES</span><span>W-L-T</span><span>NET VALUE</span>

@@ -601,11 +601,6 @@ export default function LeagueOverview() {
         </section>
 
         <section className="overview-section">
-          <h2 className="section-title">Positional Leverage</h2>
-          <LeverageBoard profiles={overview.profiles} />
-        </section>
-
-        <section className="overview-section">
           <h2 className="section-title">Teams</h2>
           <div className="league-table">
             {sorted.map((p) => (
@@ -619,6 +614,11 @@ export default function LeagueOverview() {
               />
             ))}
           </div>
+        </section>
+
+        <section className="overview-section">
+          <h2 className="section-title">Positional Leverage</h2>
+          <LeverageBoard profiles={overview.profiles} />
         </section>
       </div>
     </>
