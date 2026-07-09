@@ -734,6 +734,22 @@ body {
 .league-nav-tab.active { color: #f59e0b; border-bottom-color: #f59e0b; }
 .league-nav-tab.disabled { pointer-events: none; opacity: 0.3; }
 
+.league-nav-sendit {
+  margin-left: auto;
+  align-self: center;
+  padding: 6px 14px;
+  border: 1px solid rgba(245,158,11,0.55);
+  border-radius: 6px;
+  background: rgba(245,158,11,0.10);
+  color: #f59e0b;
+}
+.league-nav-sendit:hover { background: rgba(245,158,11,0.2); color: #f59e0b; }
+.league-nav-sendit.active {
+  background: #f59e0b;
+  color: #0a0c0f;
+  border-bottom: 1px solid #f59e0b;
+}
+
 /* ── Team switcher ───────────────────────────────────────────────────── */
 
 .team-switcher {
@@ -824,6 +840,22 @@ body {
   color: #475569;
   letter-spacing: 0.4px;
   margin-top: 8px;
+}
+.sendit-header {
+  margin-top: 18px;
+  margin-bottom: 4px;
+}
+.sendit-tagline {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 400;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+.sendit-degraded-note {
+  font-size: 11px;
+  color: #eab308;
+  margin-bottom: 10px;
 }
 
 /* ── Window Map ──────────────────────────────────────────────────────── */

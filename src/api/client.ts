@@ -38,6 +38,7 @@ export type TradeDiagnostics = {
   forced: boolean;
   myArchetypeScore?: number;
   counterNote?: string;
+  degraded?: "no_archetype" | "gates";
 };
 
 export type FindTradesOptions = {

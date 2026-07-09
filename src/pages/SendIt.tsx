@@ -18,15 +18,21 @@ const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 // Friendly intent names for the archetype families. "" = auto (all families).
 const INTENT_LABELS: Record<ArchetypeFamily, string> = {
   need_fill: "Fill a need",
-  tier_down: "Tier down (1 into 2)",
-  consolidate: "Consolidate (2 into 1)",
-  consolidate_flex: "Consolidate flex depth",
+  tier_down: "Tier down (1 stud into 2 pieces)",
+  consolidate: "Consolidate (2 same-position into 1 stud)",
+  consolidate_flex: "Bundle flex spares into a starter",
   age_arb_buy: "Buy an aging stud",
   age_arb_sell: "Sell an aging stud",
   push_in: "Push all-in",
   capital_convert_picks_to_production: "Picks to players",
   capital_convert_production_to_picks: "Players to picks",
 };
+
+// Fit scores can run negative internally; users should only ever see a
+// percentage where 50% is neutral.
+function fitPct(fit: number) {
+  return Math.min(100, Math.max(0, Math.round((fit + 1) * 50)));
+}
 
 function posColor(pos?: string) {
   const map: Record<string, string> = { QB: "#c2410c", RB: "#ca8a04", WR: "#3b82f6", TE: "#a855f7" };
@@ -87,9 +93,9 @@ function TradeCard({ pkg }: { pkg: TradePackage }) {
       </div>
       {pkg.scores && (
         <div className="trade-score-strip">
-          fit {pkg.scores.myFit >= 0 ? "+" : ""}{pkg.scores.myFit.toFixed(2)}
-          {" · "}their fit {pkg.scores.theirFit >= 0 ? "+" : ""}{pkg.scores.theirFit.toFixed(2)}
-          {" · "}balance {Math.round(pkg.scores.balance * 100)}%
+          fit for you {fitPct(pkg.scores.myFit)}%
+          {" · "}fit for them {fitPct(pkg.scores.theirFit)}%
+          {" · "}value balance {Math.round(pkg.scores.balance * 100)}%
         </div>
       )}
       {pkg.rationale && <p className="trade-rationale">{pkg.rationale}</p>}
@@ -209,7 +215,6 @@ export default function SendIt() {
     runSearch({ intent, position, target: effectiveTarget });
   }, [leagueId, rosterId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const profile = overview.profiles.find((p) => p.rosterId === rosterId);
   const sortedTeams = [...overview.profiles].sort((a, b) => a.starterRank - b.starterRank);
   const targetName =
     target !== "" ? overview.profiles.find((p) => p.rosterId === target)?.ownerName ?? null : null;
@@ -223,8 +228,9 @@ export default function SendIt() {
 
   return (
     <>
-      <div className="dive-header">
-        <h1 className="dive-owner">{profile?.ownerName ?? "—"}</h1>
+      <div className="sendit-header">
+        <h2 className="section-title">Send It Trade Finder</h2>
+        <h3 className="sendit-tagline">Pick your angle, scan the league, and when you find a trade you like: send it.</h3>
       </div>
 
       <div className="sendit-controls">
@@ -315,6 +321,10 @@ export default function SendIt() {
         ) : (
           <p className="dim-text">No trade packages found for this team.</p>
         )
+      )}
+
+      {result && result.packages.length > 0 && result.diagnostics?.degraded && (
+        <p className="sendit-degraded-note">No clean fits for this roster right now, so these are the closest options. Check the badges before you send.</p>
       )}
 
       {result && result.packages.length > 0 && (

@@ -83,6 +83,11 @@ export type GenerateDiagnostics = {
   myArchetypeScore?: number;
   // One deterministic sentence about the target team, when one was set.
   counterNote?: string;
+  // Auto mode only: the strict path produced nothing, so results came from a
+  // relaxed pass. "no_archetype" = generators reran with score gates skipped
+  // (nothing fired for this roster); "gates" = candidates existed but none
+  // cleared the strict quality gates.
+  degraded?: "no_archetype" | "gates";
 };
 
 export type GenerateResult = {
@@ -119,9 +124,11 @@ type GenContext = {
   format: LeagueFormat;
   averages: LeagueAverages;
   thisYear: number;
-  // Set when the user forced this generator's family. Generators skip their
-  // archetype-score early-returns and honor the position restriction.
-  forced?: { family: ArchetypeFamily; position?: Position };
+  // Truthy when generators should skip their archetype-score early-returns
+  // and honor the position restriction. Set with a family when the user
+  // forced an intent; set to {} for the auto-mode fallback pass (a team
+  // with no applicable archetype still deserves ideas).
+  forced?: { family?: ArchetypeFamily; position?: Position };
 };
 
 // Positions a generator should loop over, honoring a forced position filter.
@@ -664,6 +671,35 @@ function genTierDown(ctx: GenContext): Candidate[] {
           }
         }
       }
+
+      // Cross-position pairs: quality-for-quantity doesn't have to stay at
+      // one position. Pair their #2/#3 at my elite's position with their
+      // #2/#3 at one of my two most urgent OTHER positions (WR1 for an RB
+      // plus a WR, etc.). Their #1s stay off the table, same as above.
+      const crossPositions = [...POSITIONS]
+        .filter((q) => q !== pos)
+        .sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency)
+        .slice(0, 2);
+      for (const q of crossPositions) {
+        const theirAtQ = topPlayersByPos(them, q, 3).slice(1, 3);
+        for (const pieceAtPos of theirAtPos.slice(1, 3)) {
+          for (const pieceAtQ of theirAtQ) {
+            const v = pieceAtPos.valueDynasty + pieceAtQ.valueDynasty;
+            const ratio = v / myElite.valueDynasty;
+            if (ratio >= 0.75 && ratio <= 1.30) {
+              out.push({
+                give: [playerAsset(myElite, mine.rosterId)],
+                receive: [
+                  playerAsset(pieceAtPos, them.rosterId),
+                  playerAsset(pieceAtQ, them.rosterId),
+                ],
+                counterRosterId: them.rosterId,
+                archetype: `tier_down_${pos}`,
+              });
+            }
+          }
+        }
+      }
     }
   }
   return out;
@@ -992,9 +1028,19 @@ export function generatePackages(
   const averages = computeLeagueAverages(allProfiles, format, opts.pools);
   const ctx: GenContext = { mine, others, format, averages, thisYear, forced };
 
-  // Generate raw candidates: every archetype by default, one family when forced
-  const generators = forced ? [GENERATORS[forced.family]] : Object.values(GENERATORS);
-  const rawCandidates = generators.flatMap((g) => g(ctx));
+  // Generate raw candidates: every archetype by default, one family when
+  // forced. Auto mode never goes silent: a roster where no archetype fires
+  // (well-balanced juggernauts score below every generation threshold)
+  // reruns all generators with the score gates skipped.
+  const generators = forced
+    ? [GENERATORS[forced.family as ArchetypeFamily]]
+    : Object.values(GENERATORS);
+  let degraded: GenerateDiagnostics["degraded"];
+  let rawCandidates = generators.flatMap((g) => g(ctx));
+  if (!forced && rawCandidates.length === 0) {
+    degraded = "no_archetype";
+    rawCandidates = Object.values(GENERATORS).flatMap((g) => g({ ...ctx, forced: {} }));
+  }
 
   // Dedup identical packages, keep first occurrence
   const seen = new Set<string>();
@@ -1011,15 +1057,33 @@ export function generatePackages(
 
   // Hard rejects: severely lopsided fits. Tally each failing gate so empty
   // results can be explained.
-  const gates = forced ? FORCED_GATES : DEFAULT_GATES;
-  const rejected = { myFit: 0, theirFit: 0, balance: 0 };
-  const filtered = scored.filter((s) => {
-    let ok = true;
-    if (!(s.myFit > gates.myFit)) { rejected.myFit++; ok = false; }
-    if (!(s.theirFit > gates.theirFit)) { rejected.theirFit++; ok = false; }
-    if (!(s.balance > gates.balance)) { rejected.balance++; ok = false; }
-    return ok;
-  });
+  const applyGates = (gates: typeof DEFAULT_GATES) => {
+    const rej = { myFit: 0, theirFit: 0, balance: 0 };
+    const passed = scored.filter((s) => {
+      let ok = true;
+      if (!(s.myFit > gates.myFit)) { rej.myFit++; ok = false; }
+      if (!(s.theirFit > gates.theirFit)) { rej.theirFit++; ok = false; }
+      if (!(s.balance > gates.balance)) { rej.balance++; ok = false; }
+      return ok;
+    });
+    return { passed, rej };
+  };
+
+  let gatePass = applyGates(forced || degraded ? FORCED_GATES : DEFAULT_GATES);
+  // Auto mode second chance: strict gates rejected everything, so relax to
+  // the labeled gates; if even those reject everything, surface the
+  // top-scored candidates as-is. Fairness badges keep it honest either way.
+  if (!forced && gatePass.passed.length === 0 && scored.length > 0) {
+    if (!degraded) {
+      degraded = "gates";
+      gatePass = applyGates(FORCED_GATES);
+    }
+    if (gatePass.passed.length === 0) {
+      gatePass = { passed: [...scored], rej: gatePass.rej };
+    }
+  }
+  const filtered = gatePass.passed;
+  const rejected = gatePass.rej;
 
   // Sort by score; deterministic tiebreak by candidate key
   filtered.sort((a, b) => {
@@ -1083,6 +1147,7 @@ export function generatePackages(
     afterDedup: unique.length,
     rejected,
     forced: !!forced,
+    ...(degraded ? { degraded } : {}),
     ...(forced ? { myArchetypeScore: forcedArchetypeScore(mine, forced) } : {}),
     ...(target ? { counterNote: buildCounterNote(target, forced) } : {}),
   };

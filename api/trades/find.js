@@ -753,6 +753,27 @@ function genTierDown(ctx) {
           }
         }
       }
+      const crossPositions = [...POSITIONS].filter((q) => q !== pos).sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency).slice(0, 2);
+      for (const q of crossPositions) {
+        const theirAtQ = topPlayersByPos(them, q, 3).slice(1, 3);
+        for (const pieceAtPos of theirAtPos.slice(1, 3)) {
+          for (const pieceAtQ of theirAtQ) {
+            const v = pieceAtPos.valueDynasty + pieceAtQ.valueDynasty;
+            const ratio2 = v / myElite.valueDynasty;
+            if (ratio2 >= 0.75 && ratio2 <= 1.3) {
+              out.push({
+                give: [playerAsset(myElite, mine.rosterId)],
+                receive: [
+                  playerAsset(pieceAtPos, them.rosterId),
+                  playerAsset(pieceAtQ, them.rosterId)
+                ],
+                counterRosterId: them.rosterId,
+                archetype: `tier_down_${pos}`
+              });
+            }
+          }
+        }
+      }
     }
   }
   return out;
@@ -1007,7 +1028,12 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
   const averages = computeLeagueAverages(allProfiles, format, opts.pools);
   const ctx = { mine, others, format, averages, thisYear, forced };
   const generators = forced ? [GENERATORS[forced.family]] : Object.values(GENERATORS);
-  const rawCandidates = generators.flatMap((g) => g(ctx));
+  let degraded;
+  let rawCandidates = generators.flatMap((g) => g(ctx));
+  if (!forced && rawCandidates.length === 0) {
+    degraded = "no_archetype";
+    rawCandidates = Object.values(GENERATORS).flatMap((g) => g({ ...ctx, forced: {} }));
+  }
   const seen = /* @__PURE__ */ new Set();
   const unique = [];
   for (const c of rawCandidates) {
@@ -1017,24 +1043,38 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
     unique.push(c);
   }
   const scored = unique.map((c) => scoreCandidate(c, mine, others, ctx));
-  const gates = forced ? FORCED_GATES : DEFAULT_GATES;
-  const rejected = { myFit: 0, theirFit: 0, balance: 0 };
-  const filtered = scored.filter((s) => {
-    let ok = true;
-    if (!(s.myFit > gates.myFit)) {
-      rejected.myFit++;
-      ok = false;
+  const applyGates = (gates) => {
+    const rej = { myFit: 0, theirFit: 0, balance: 0 };
+    const passed = scored.filter((s) => {
+      let ok = true;
+      if (!(s.myFit > gates.myFit)) {
+        rej.myFit++;
+        ok = false;
+      }
+      if (!(s.theirFit > gates.theirFit)) {
+        rej.theirFit++;
+        ok = false;
+      }
+      if (!(s.balance > gates.balance)) {
+        rej.balance++;
+        ok = false;
+      }
+      return ok;
+    });
+    return { passed, rej };
+  };
+  let gatePass = applyGates(forced || degraded ? FORCED_GATES : DEFAULT_GATES);
+  if (!forced && gatePass.passed.length === 0 && scored.length > 0) {
+    if (!degraded) {
+      degraded = "gates";
+      gatePass = applyGates(FORCED_GATES);
     }
-    if (!(s.theirFit > gates.theirFit)) {
-      rejected.theirFit++;
-      ok = false;
+    if (gatePass.passed.length === 0) {
+      gatePass = { passed: [...scored], rej: gatePass.rej };
     }
-    if (!(s.balance > gates.balance)) {
-      rejected.balance++;
-      ok = false;
-    }
-    return ok;
-  });
+  }
+  const filtered = gatePass.passed;
+  const rejected = gatePass.rej;
   filtered.sort((a, b) => {
     if (b.total !== a.total) return b.total - a.total;
     return candidateKey(a).localeCompare(candidateKey(b));
@@ -1088,6 +1128,7 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
     afterDedup: unique.length,
     rejected,
     forced: !!forced,
+    ...degraded ? { degraded } : {},
     ...forced ? { myArchetypeScore: forcedArchetypeScore(mine, forced) } : {},
     ...target ? { counterNote: buildCounterNote(target, forced) } : {}
   };

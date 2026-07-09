@@ -117,7 +117,7 @@ export default function LeagueShell() {
         </NavLink>
         <NavLink
           to={navTeam ? `/league/${id}/sendit/${navTeam.rosterId}` : "#"}
-          className={`league-nav-tab${isSendItRoute ? " active" : ""}${!navTeam ? " disabled" : ""}`}
+          className={`league-nav-tab league-nav-sendit${isSendItRoute ? " active" : ""}${!navTeam ? " disabled" : ""}`}
         >
           SEND IT
         </NavLink>
