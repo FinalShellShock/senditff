@@ -228,16 +228,57 @@ function fairnessLabel(valueGive, valueReceive) {
 }
 
 // src/data/picks.ts
-function resolvePickValue(dynastyValues, teamCount, year, round, slotOrTier) {
-  if (round === 1) {
-    const tier = typeof slotOrTier === "number" ? slotToTier(slotOrTier, teamCount) : slotOrTier;
-    const v2 = dynastyValues.get(normName(`${year} ${tier} 1st`))?.value ?? dynastyValues.get(normName(`${year} 1st`))?.value;
-    if (v2) return v2;
-    return tier === "early" ? 2500 : tier === "mid" ? 2e3 : 1500;
+var ROUND_LABELS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"];
+var curveCache = /* @__PURE__ */ new WeakMap();
+function slotCurves(dynastyValues) {
+  const cached = curveCache.get(dynastyValues);
+  if (cached) return cached;
+  const byYearRound = /* @__PURE__ */ new Map();
+  for (const [key, entry] of dynastyValues) {
+    const m = /^(\d{4})pick(\d)(\d{2})$/.exec(key);
+    if (!m) continue;
+    const yearRound = `${m[1]}|${m[2]}`;
+    const slots = byYearRound.get(yearRound) ?? /* @__PURE__ */ new Map();
+    slots.set(parseInt(m[3], 10), entry.value);
+    byYearRound.set(yearRound, slots);
   }
-  const labels = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"];
-  const v = dynastyValues.get(normName(`${year} ${labels[round - 1]}`))?.value;
-  if (v) return v;
+  const curves = /* @__PURE__ */ new Map();
+  const chosenSize = /* @__PURE__ */ new Map();
+  for (const [yearRound, slots] of byYearRound) {
+    const round = parseInt(yearRound.split("|")[1], 10);
+    if (slots.size < 3) continue;
+    if (slots.size <= (chosenSize.get(round) ?? 0)) continue;
+    chosenSize.set(round, slots.size);
+    const mean = [...slots.values()].reduce((s, v) => s + v, 0) / slots.size;
+    curves.set(round, { slots, mean });
+  }
+  curveCache.set(dynastyValues, curves);
+  return curves;
+}
+function tierMultiplier(dynastyValues, round, tier) {
+  const curve = slotCurves(dynastyValues).get(round);
+  if (!curve || curve.mean <= 0) return 1;
+  const slotNums = [...curve.slots.keys()].sort((a, b) => a - b);
+  const third = Math.ceil(slotNums.length / 3);
+  const bucket = tier === "early" ? slotNums.slice(0, third) : tier === "mid" ? slotNums.slice(third, 2 * third) : slotNums.slice(2 * third);
+  if (bucket.length === 0) return 1;
+  const bucketMean = bucket.reduce((s, n) => s + (curve.slots.get(n) ?? 0), 0) / bucket.length;
+  return bucketMean / curve.mean;
+}
+function resolvePickValue(dynastyValues, teamCount, year, round, slotOrTier) {
+  if (typeof slotOrTier === "number") {
+    const exact = dynastyValues.get(
+      normName(`${year} Pick ${round}.${String(slotOrTier).padStart(2, "0")}`)
+    );
+    if (exact) return exact.value;
+  }
+  const tier = typeof slotOrTier === "number" ? slotToTier(slotOrTier, teamCount) : slotOrTier;
+  const label = ROUND_LABELS[round - 1];
+  const generic = label ? dynastyValues.get(normName(`${year} ${label}`))?.value : void 0;
+  if (generic) {
+    return Math.round(generic * tierMultiplier(dynastyValues, round, tier));
+  }
+  if (round === 1) return tier === "early" ? 2500 : tier === "mid" ? 2e3 : 1500;
   return round === 2 ? 900 : round === 3 ? 450 : 200;
 }
 function slotToTier(slot, teamCount) {

@@ -29,13 +29,79 @@ export function buildPicksMap(
   return map;
 }
 
+const ROUND_LABELS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"] as const;
+
+// Per-round slot curves parsed from the value map ("YYYY Pick R.SS" entries,
+// which FantasyCalc publishes for the upcoming draft, rounds 1-4, slots up
+// to 12 regardless of league size). Cached per value map — parsing scans
+// every key once.
+type SlotCurves = Map<number, { slots: Map<number, number>; mean: number }>;
+const curveCache = new WeakMap<Map<string, { value: number; age?: number }>, SlotCurves>();
+
+function slotCurves(
+  dynastyValues: Map<string, { value: number; age?: number }>,
+): SlotCurves {
+  const cached = curveCache.get(dynastyValues);
+  if (cached) return cached;
+  // normName("2026 Pick 1.01") -> "2026pick101"
+  const byYearRound = new Map<string, Map<number, number>>();
+  for (const [key, entry] of dynastyValues) {
+    const m = /^(\d{4})pick(\d)(\d{2})$/.exec(key);
+    if (!m) continue;
+    const yearRound = `${m[1]}|${m[2]}`;
+    const slots = byYearRound.get(yearRound) ?? new Map<number, number>();
+    slots.set(parseInt(m[3]!, 10), entry.value);
+    byYearRound.set(yearRound, slots);
+  }
+  // Keep one curve per round: the year with the most slots (the upcoming draft).
+  const curves: SlotCurves = new Map();
+  const chosenSize = new Map<number, number>();
+  for (const [yearRound, slots] of byYearRound) {
+    const round = parseInt(yearRound.split("|")[1]!, 10);
+    if (slots.size < 3) continue; // not a usable curve
+    if (slots.size <= (chosenSize.get(round) ?? 0)) continue;
+    chosenSize.set(round, slots.size);
+    const mean = [...slots.values()].reduce((s, v) => s + v, 0) / slots.size;
+    curves.set(round, { slots, mean });
+  }
+  curveCache.set(dynastyValues, curves);
+  return curves;
+}
+
+// How a tier's slots compare to the round's average, from the published
+// curve shape. 1.0 when no curve exists for the round.
+function tierMultiplier(
+  dynastyValues: Map<string, { value: number; age?: number }>,
+  round: number,
+  tier: PickTier,
+): number {
+  const curve = slotCurves(dynastyValues).get(round);
+  if (!curve || curve.mean <= 0) return 1;
+  const slotNums = [...curve.slots.keys()].sort((a, b) => a - b);
+  const third = Math.ceil(slotNums.length / 3);
+  const bucket =
+    tier === "early" ? slotNums.slice(0, third)
+    : tier === "mid" ? slotNums.slice(third, 2 * third)
+    : slotNums.slice(2 * third);
+  if (bucket.length === 0) return 1;
+  const bucketMean = bucket.reduce((s, n) => s + (curve.slots.get(n) ?? 0), 0) / bucket.length;
+  return bucketMean / curve.mean;
+}
+
 // Resolve a pick's dynasty value from FantasyCalc.
 //
 // `slotOrTier` is either a concrete slot number (1..teamCount) for picks
 // belonging to the upcoming draft where Sleeper publishes the real slot, or
 // a tier string ("early" | "mid" | "late") for projected future-year picks.
-// Rounds 2+ ignore the tier (FantasyCalc doesn't distinguish) and just use
-// the generic "YYYY 2nd" / "3rd" / "4th" label.
+//
+// Resolution order:
+//   1. Exact slot entry ("2026 Pick 1.01") — published for the upcoming
+//      draft. A 1.01 is worth ~3x a 1.12; treating them alike was flattening
+//      every pick valuation in the app.
+//   2. Generic round value for the year ("2027 1st") scaled by a tier
+//      multiplier derived from the published slot-curve shape, so a
+//      projected-early future 1st beats a projected-late one.
+//   3. Hardcoded fallbacks.
 export function resolvePickValue(
   dynastyValues: Map<string, { value: number; age?: number }>,
   teamCount: number,
@@ -43,18 +109,22 @@ export function resolvePickValue(
   round: number,
   slotOrTier: number | PickTier,
 ): number {
-  if (round === 1) {
-    const tier =
-      typeof slotOrTier === "number" ? slotToTier(slotOrTier, teamCount) : slotOrTier;
-    const v =
-      dynastyValues.get(normName(`${year} ${tier} 1st`))?.value ??
-      dynastyValues.get(normName(`${year} 1st`))?.value;
-    if (v) return v;
-    return tier === "early" ? 2500 : tier === "mid" ? 2000 : 1500;
+  if (typeof slotOrTier === "number") {
+    const exact = dynastyValues.get(
+      normName(`${year} Pick ${round}.${String(slotOrTier).padStart(2, "0")}`),
+    );
+    if (exact) return exact.value;
   }
-  const labels = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"] as const;
-  const v = dynastyValues.get(normName(`${year} ${labels[round - 1]}`))?.value;
-  if (v) return v;
+  const tier =
+    typeof slotOrTier === "number" ? slotToTier(slotOrTier, teamCount) : slotOrTier;
+
+  const label = ROUND_LABELS[round - 1];
+  const generic = label ? dynastyValues.get(normName(`${year} ${label}`))?.value : undefined;
+  if (generic) {
+    return Math.round(generic * tierMultiplier(dynastyValues, round, tier));
+  }
+
+  if (round === 1) return tier === "early" ? 2500 : tier === "mid" ? 2000 : 1500;
   return round === 2 ? 900 : round === 3 ? 450 : 200;
 }
 
