@@ -117,6 +117,29 @@ checkpoint commit is better than risking another session resetting it.
 
 ---
 
+## Orchestration: delegate implementation to the coder subagent
+
+The main session acts as ORCHESTRATOR and should delegate coding work to the
+`coder` subagent (Sonnet, defined in .claude/agents/coder.md) by default,
+without Johnny having to ask. This conserves usage of the stronger model for
+the work that actually needs it.
+
+**Delegate to coder** (spawn it proactively, in parallel when tasks are
+independent): UI components/pages, CSS work, endpoint scaffolding,
+mechanical refactors, wiring, validation scripts — anything where the design
+is already decided and the work is typing more than ~20 lines.
+
+**Keep in the main session**: algorithm/weight/threshold changes and audits,
+cross-system debugging, product/design decisions, plan writing, reviewing
+the coder's diffs, deploys, and anything under ~20 lines where a delegation
+brief would cost more than the edit.
+
+**Delegation contract**: briefs must be self-contained (the coder starts
+cold) — file paths, exact requirements, acceptance criteria, and which
+validation commands to run. The orchestrator reviews the resulting diff,
+runs validation, and owns commits/deploys. If a coder result needs more than
+one round of correction, take the task over instead of iterating.
+
 ## Architecture: Claude's Two Jobs
 
 **At build time:** thinking partner. Stress-test the algorithm, propose improvements, push back on bad ideas. Treat the algorithm as a living thing that improves over time.

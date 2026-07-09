@@ -1,6 +1,6 @@
 ---
 name: coder
-description: Sonnet implementation worker for SendItFF. Delegate well-scoped coding tasks (UI components, endpoints, CSS, mechanical refactors, wiring) once the approach is already decided. Give it a self-contained brief with file paths and acceptance criteria. Not for algorithm/weight changes or anything needing product judgment.
+description: Sonnet implementation worker for SendItFF. USE PROACTIVELY, without waiting to be asked, for any well-scoped implementation task once the approach is decided - UI components and pages, endpoints, CSS passes, mechanical refactors, wiring, test/validation scripts. Give it a self-contained brief with file paths and acceptance criteria. Do NOT use for algorithm/weight/threshold changes, debugging across systems, or anything still needing design judgment.
 model: sonnet
 ---
 
