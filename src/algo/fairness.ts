@@ -19,6 +19,27 @@ export const FAIRNESS_FAIR_ABS = 150;
 // Between 5% and 12% is a "slight" lean; beyond 12% is a real over/underpay.
 export const FAIRNESS_SLIGHT_PCT = 0.12;
 
+// Consolidation discount: dynasty value is not additive. Three quarters do
+// not buy a dollar, because roster spots are scarce and the best player
+// concentrates the value. A bundle's effective value is its best asset at
+// full price with each additional piece decayed: sorted descending,
+// v1 + v2*d + v3*d^2 + ...
+// At d = 0.8 an equal 2-for-1 needs ~11% raw premium and an equal 3-for-1
+// ~23%, which tracks how leagues actually trade. A stud plus a small
+// throw-in is barely discounted, which also matches reality.
+export const BUNDLE_DECAY = 0.8;
+
+export function packageValue(values: number[]): number {
+  const sorted = [...values].sort((a, b) => b - a);
+  let total = 0;
+  let mult = 1;
+  for (const v of sorted) {
+    total += v * mult;
+    mult *= BUNDLE_DECAY;
+  }
+  return total;
+}
+
 // Signed gap as a fraction of the larger side. Relationship to the engine's
 // balance term: balance = 1 - |fairnessDelta|.
 export function fairnessDelta(valueGive: number, valueReceive: number): number {

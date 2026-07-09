@@ -2010,12 +2010,25 @@ body {
 }
 .calc-team-clear:hover { color: #94a3b8; }
 
+.calc-panel-total-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
 .calc-panel-total {
   font-size: 13px;
   font-weight: 700;
   color: #e2e8f0;
   letter-spacing: 0.5px;
   flex-shrink: 0;
+}
+
+.calc-adj-note {
+  font-size: 9px;
+  color: #64748b;
+  text-align: right;
 }
 
 .calc-panel-body {

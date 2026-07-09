@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
-import { fairnessColor, fairnessLabel, fairnessText } from "../algo/fairness.ts";
+import { fairnessColor, fairnessLabel, fairnessText, packageValue } from "../algo/fairness.ts";
 import type { Position } from "../algo/types.ts";
 import type { TeamProfile } from "../algo/types.ts";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
@@ -84,18 +84,21 @@ function TeamSelector({
 }
 
 function TradePanel({
-  side, accent, profiles, total, totalColor,
+  side, accent, profiles, total, adjustedTotal, totalColor,
   onSelectTeam, onClearTeam, onRemove,
 }: {
   side: TradeSide;
   accent: string;
   profiles: TeamProfile[];
   total: number;
+  adjustedTotal: number;
   totalColor: string;
   onSelectTeam: (id: number) => void;
   onClearTeam: () => void;
   onRemove: (id: string) => void;
 }) {
+  const consolidationDiff = Math.round(total - adjustedTotal);
+  const showAdjNote = side.assets.length >= 2 && consolidationDiff !== 0;
   return (
     <div className="calc-panel">
       <div className="calc-panel-header" style={{ borderBottomColor: accent }}>
@@ -106,7 +109,14 @@ function TradePanel({
           onClear={onClearTeam}
           accent={accent}
         />
-        <span className="calc-panel-total" style={{ color: totalColor }}>{total > 0 ? total.toLocaleString() : "—"}</span>
+        <div className="calc-panel-total-col">
+          <span className="calc-panel-total" style={{ color: totalColor }}>{total > 0 ? total.toLocaleString() : "—"}</span>
+          {showAdjNote && (
+            <span className="calc-adj-note">
+              adj {Math.round(adjustedTotal).toLocaleString()} (-{consolidationDiff.toLocaleString()} consolidation)
+            </span>
+          )}
+        </div>
       </div>
       <div className="calc-panel-body">
         {side.assets.length === 0 ? (
@@ -381,6 +391,11 @@ export default function Calc() {
   // ── Value math ──
   const totalA = sideA.assets.reduce((s, a) => s + a.value, 0);
   const totalB = sideB.assets.reduce((s, a) => s + a.value, 0);
+  // Consolidation-adjusted totals: dynasty value isn't additive, so multi-asset
+  // bundles get discounted (best asset full price, each extra piece decayed).
+  // Used only for the shared fairness badge, not the headline verdict.
+  const adjA = packageValue(sideA.assets.map((a) => a.value));
+  const adjB = packageValue(sideB.assets.map((a) => a.value));
   // diff from A's perspective: positive = A benefits (gets more than gives)
   const diff = totalB - totalA;
   const base = Math.max(totalA, totalB, 1);
@@ -410,7 +425,7 @@ export default function Calc() {
 
   // Shared engine fairness label (same math as Send It packages and trade
   // grades). Computed from A's perspective, displayed against the overpayer.
-  const engineFairness = fairnessLabel(totalA, totalB);
+  const engineFairness = fairnessLabel(adjA, adjB);
   const overpayerName =
     engineFairness === "SLIGHT_OVERPAY" || engineFairness === "OVERPAY"
       ? profileA?.ownerName
@@ -467,6 +482,7 @@ export default function Calc() {
           accent="#06b6d4"
           profiles={profiles}
           total={totalA}
+          adjustedTotal={adjA}
           totalColor={totalColorA}
           onSelectTeam={(id) => setTeam("A", id)}
           onClearTeam={() => clearTeam("A")}
@@ -515,6 +531,7 @@ export default function Calc() {
           accent="#f59e0b"
           profiles={profiles}
           total={totalB}
+          adjustedTotal={adjB}
           totalColor={totalColorB}
           onSelectTeam={(id) => setTeam("B", id)}
           onClearTeam={() => clearTeam("B")}

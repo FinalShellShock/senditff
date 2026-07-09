@@ -9,7 +9,7 @@
 
 import type { ArchetypeFamily } from "../../src/algo/archetypes";
 import { PICK_DECAY, POSITIONS } from "../../src/algo/constants";
-import { fairnessLabel, type FairnessLabel } from "../../src/algo/fairness";
+import { fairnessLabel, packageValue, type FairnessLabel } from "../../src/algo/fairness";
 import {
   depthByPosition,
   depthSlotsFor,
@@ -116,6 +116,9 @@ type ScoredCandidate = Candidate & {
   archMatch: number;
   valueGive: number;
   valueReceive: number;
+  // Consolidation-adjusted side values (fairness/balance math).
+  adjGive: number;
+  adjReceive: number;
 };
 
 type GenContext = {
@@ -148,6 +151,12 @@ function pickAsset(pk: Pick, ownerRosterId: number): Asset {
 }
 function assetValue(a: Asset): number {
   return a.kind === "player" ? a.player.valueDynasty : a.pick.value;
+}
+// Consolidation-adjusted worth of a trade side: bundles are worth less than
+// their raw sum (see packageValue). All fairness/balance math and package
+// construction use this; raw sums stay on the wire for display.
+function sideEffectiveValue(assets: Asset[]): number {
+  return packageValue(assets.map(assetValue));
 }
 function assetId(a: Asset): string {
   return a.kind === "player"
@@ -391,8 +400,12 @@ function scoreCandidate(
 
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
-  const maxVal = Math.max(valueGive, valueReceive, 1);
-  const balance = 1 - Math.abs(valueGive - valueReceive) / maxVal;
+  // Balance judges consolidation-adjusted worth, not raw sums: three
+  // quarters do not buy a dollar.
+  const adjGive = sideEffectiveValue(cand.give);
+  const adjReceive = sideEffectiveValue(cand.receive);
+  const maxVal = Math.max(adjGive, adjReceive, 1);
+  const balance = 1 - Math.abs(adjGive - adjReceive) / maxVal;
 
   // Archetype match: how strongly the trade shape fits both teams' archetypes.
   const myArchScore = (myProfile.archetypeScores?.[cand.archetype] ?? 0) / 100;
@@ -420,6 +433,8 @@ function scoreCandidate(
     archMatch,
     valueGive,
     valueReceive,
+    adjGive,
+    adjReceive,
   };
 }
 
@@ -453,7 +468,8 @@ function bestPickSet(picks: Pick[], target: number, maxCount: number): Pick[] | 
   let best: Pick[] | null = null;
   let bestDelta = Infinity;
   for (const combo of combinations(picks, maxCount)) {
-    const v = combo.reduce((s, p) => s + p.value, 0);
+    // Consolidation-adjusted: multi-pick sets must overshoot the raw target.
+    const v = packageValue(combo.map((p) => p.value));
     const delta = Math.abs(v - target);
     if (delta < bestDelta) {
       bestDelta = delta;
@@ -510,13 +526,14 @@ function buildGiveSides(
     shapes.push([playerAsset(bestSingle, mine.rosterId)]);
   }
 
-  // 2-for-1: search top 8 surplus-side players for best pair
+  // 2-for-1: search top 8 surplus-side players for best pair, judged on
+  // consolidation-adjusted worth (pairs must overshoot the raw target).
   const top = players.slice(0, 8);
   let bestPair: [Player, Player] | null = null;
   let bestPairDelta = Infinity;
   for (let i = 0; i < top.length; i++) {
     for (let j = i + 1; j < top.length; j++) {
-      const v = top[i]!.valueDynasty + top[j]!.valueDynasty;
+      const v = packageValue([top[i]!.valueDynasty, top[j]!.valueDynasty]);
       const d = Math.abs(v - targetValue);
       if (d < bestPairDelta) {
         bestPairDelta = d;
@@ -525,7 +542,7 @@ function buildGiveSides(
     }
   }
   if (bestPair) {
-    const v = bestPair[0].valueDynasty + bestPair[1].valueDynasty;
+    const v = packageValue([bestPair[0].valueDynasty, bestPair[1].valueDynasty]);
     if (within(v, targetValue, 0.18)) {
       shapes.push([playerAsset(bestPair[0], mine.rosterId), playerAsset(bestPair[1], mine.rosterId)]);
     }
@@ -538,7 +555,7 @@ function buildGiveSides(
       if (gap < 200) continue;
       const pickSet = bestPickSet(picks, gap, 2);
       if (!pickSet) continue;
-      const v = pl.valueDynasty + pickSet.reduce((s, p) => s + p.value, 0);
+      const v = packageValue([pl.valueDynasty, ...pickSet.map((p) => p.value)]);
       if (within(v, targetValue, 0.15)) {
         shapes.push([
           playerAsset(pl, mine.rosterId),
@@ -552,7 +569,7 @@ function buildGiveSides(
     if (targetValue <= 4000) {
       const pickSet = bestPickSet(picks, targetValue, 3);
       if (pickSet) {
-        const v = pickSet.reduce((s, p) => s + p.value, 0);
+        const v = packageValue(pickSet.map((p) => p.value));
         if (within(v, targetValue, 0.20)) {
           shapes.push(pickSet.map((pk) => pickAsset(pk, mine.rosterId)));
         }
@@ -617,7 +634,7 @@ function genTierDown(ctx: GenContext): Candidate[] {
       const theirAtPos = topPlayersByPos(them, pos, 4);
       const pair = theirAtPos.slice(1, 3);
       if (pair.length < 2) continue;
-      const pairValue = pair.reduce((s, p) => s + p.valueDynasty, 0);
+      const pairValue = packageValue(pair.map((p) => p.valueDynasty));
       const ratio = pairValue / myElite.valueDynasty;
 
       if (ratio >= 0.75 && ratio <= 1.30) {
@@ -634,7 +651,10 @@ function genTierDown(ctx: GenContext): Candidate[] {
         const gap = myElite.valueDynasty - pairValue;
         const pickSet = bestPickSet(them.picks, gap, 2);
         if (pickSet) {
-          const sweetenedValue = pairValue + pickSet.reduce((s, p) => s + p.value, 0);
+          const sweetenedValue = packageValue([
+            ...pair.map((p) => p.valueDynasty),
+            ...pickSet.map((p) => p.value),
+          ]);
           if (within(sweetenedValue, myElite.valueDynasty, 0.15)) {
             out.push({
               give: [playerAsset(myElite, mine.rosterId)],
@@ -656,7 +676,7 @@ function genTierDown(ctx: GenContext): Candidate[] {
         if (gap > 500 && them.picks.length > 0) {
           const pickSet = bestPickSet(them.picks, gap, 2);
           if (pickSet) {
-            const v = theirSecond.valueDynasty + pickSet.reduce((s, p) => s + p.value, 0);
+            const v = packageValue([theirSecond.valueDynasty, ...pickSet.map((p) => p.value)]);
             if (within(v, myElite.valueDynasty, 0.15)) {
               out.push({
                 give: [playerAsset(myElite, mine.rosterId)],
@@ -684,7 +704,7 @@ function genTierDown(ctx: GenContext): Candidate[] {
         const theirAtQ = topPlayersByPos(them, q, 3).slice(1, 3);
         for (const pieceAtPos of theirAtPos.slice(1, 3)) {
           for (const pieceAtQ of theirAtQ) {
-            const v = pieceAtPos.valueDynasty + pieceAtQ.valueDynasty;
+            const v = packageValue([pieceAtPos.valueDynasty, pieceAtQ.valueDynasty]);
             const ratio = v / myElite.valueDynasty;
             if (ratio >= 0.75 && ratio <= 1.30) {
               out.push({
@@ -713,7 +733,7 @@ function genConsolidate(ctx: GenContext): Candidate[] {
     const myAtPos = topPlayersByPos(mine, pos, 4);
     const myPair = myAtPos.slice(1, 3); // my #2 + #3
     if (myPair.length < 2) continue;
-    const pairValue = myPair.reduce((s, p) => s + p.valueDynasty, 0);
+    const pairValue = packageValue(myPair.map((p) => p.valueDynasty));
 
     for (const them of others) {
       const theirElite = topPlayersByPos(them, pos, 1)[0];
@@ -735,7 +755,10 @@ function genConsolidate(ctx: GenContext): Candidate[] {
         const gap = theirElite.valueDynasty - pairValue;
         const pickSet = bestPickSet(mine.picks, gap, 2);
         if (pickSet) {
-          const v = pairValue + pickSet.reduce((s, p) => s + p.value, 0);
+          const v = packageValue([
+            ...myPair.map((p) => p.valueDynasty),
+            ...pickSet.map((p) => p.value),
+          ]);
           if (within(v, theirElite.valueDynasty, 0.15)) {
             out.push({
               give: [
@@ -771,7 +794,7 @@ function genConsolidateFlex(ctx: GenContext): Candidate[] {
   const candidatesGive: Player[] = [myRB2, myWR2].filter((p): p is Player => !!p);
   if (candidatesGive.length < 2) return out;
 
-  const giveValue = candidatesGive.reduce((s, p) => s + p.valueDynasty, 0);
+  const giveValue = packageValue(candidatesGive.map((p) => p.valueDynasty));
 
   for (const them of others) {
     const target = topPlayersByPos(them, upgradePos, 2)[0];
@@ -852,7 +875,7 @@ function genAgeArbSell(ctx: GenContext): Candidate[] {
       if (them.picks.length > 0) {
         const pickSet = bestPickSet(them.picks, myAging.valueDynasty * 0.90, 3);
         if (pickSet) {
-          const v = pickSet.reduce((s, p) => s + p.value, 0);
+          const v = packageValue(pickSet.map((p) => p.value));
           if (within(v, myAging.valueDynasty, 0.20)) {
             out.push({
               give: [playerAsset(myAging, mine.rosterId)],
@@ -911,7 +934,7 @@ function genCapitalConvertPicksToProduction(ctx: GenContext): Candidate[] {
       if (!target || target.valueDynasty < 1200) continue;
       const pickSet = bestPickSet(mine.picks, target.valueDynasty, 3);
       if (!pickSet) continue;
-      const v = pickSet.reduce((s, p) => s + p.value, 0);
+      const v = packageValue(pickSet.map((p) => p.value));
       if (!within(v, target.valueDynasty, 0.20)) continue;
       out.push({
         give: pickSet.map((pk) => pickAsset(pk, mine.rosterId)),
@@ -942,7 +965,7 @@ function genCapitalConvertProductionToPicks(ctx: GenContext): Candidate[] {
       if (them.picks.length === 0) continue;
       const pickSet = bestPickSet(them.picks, seller.valueDynasty * 0.95, 3);
       if (!pickSet) continue;
-      const v = pickSet.reduce((s, p) => s + p.value, 0);
+      const v = packageValue(pickSet.map((p) => p.value));
       if (!within(v, seller.valueDynasty, 0.20)) continue;
       out.push({
         give: [playerAsset(seller, mine.rosterId)],
@@ -1131,7 +1154,7 @@ export function generatePackages(
       valueGive: s.valueGive,
       valueReceive: s.valueReceive,
       archetype: s.archetype,
-      fairness: fairnessLabel(s.valueGive, s.valueReceive),
+      fairness: fairnessLabel(s.adjGive, s.adjReceive),
       scores: {
         total: s.total,
         myFit: s.myFit,
