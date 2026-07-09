@@ -613,7 +613,7 @@ function bestPickSet(picks, target, maxCount) {
   return best;
 }
 function eligiblePlayersForGiving(mine, excludePos, avoidIds) {
-  return mine.players.filter((p) => !excludePos.includes(p.position)).filter((p) => !avoidIds.has(p.id)).sort((a, b) => {
+  return mine.players.filter((p) => !excludePos.includes(p.position)).filter((p) => !avoidIds.has(p.id)).filter((p) => p.valueDynasty >= 100).sort((a, b) => {
     const aUrg = mine.positionScores[a.position]?.urgency ?? 50;
     const bUrg = mine.positionScores[b.position]?.urgency ?? 50;
     if (aUrg !== bUrg) return aUrg - bUrg;

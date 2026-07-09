@@ -931,16 +931,16 @@ function buildTeamInputs(params) {
       const knownSlot = year === upcomingYear ? upcomingSlots.get(origRosterId) : void 0;
       const slotKnown = knownSlot !== void 0;
       const slot = slotKnown ? knownSlot : slotRankByRoster.get(origRosterId) ?? teamCount;
-      const tier = round === 1 && !slotKnown ? tierForRoster(origRosterId) : null;
+      const tier = !slotKnown ? tierForRoster(origRosterId) : null;
       const value = resolvePickValue(
         dynastyValues,
         teamCount,
         year,
         round,
-        slotKnown ? slot : tier ?? tierForRoster(origRosterId)
+        slotKnown ? slot : tier ?? "mid"
       );
       const ordinal = ordinalRound(round);
-      const baseLabel = slotKnown ? `${year} ${round}.${String(slot).padStart(2, "0")}` : round === 1 ? `${year} ${tier} ${ordinal}` : `${year} ${ordinal}`;
+      const baseLabel = slotKnown ? `${year} ${round}.${String(slot).padStart(2, "0")}` : `${year} ${tier} ${ordinal}`;
       const origRoster = rosters.find((rr) => rr.roster_id === origRosterId);
       const origUser = users.find((u) => u.user_id === origRoster?.owner_id);
       const viaSuffix = origRosterId !== r.roster_id ? ` (via ${origUser?.display_name ?? "?"})` : "";

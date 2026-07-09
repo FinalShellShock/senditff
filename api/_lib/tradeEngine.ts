@@ -487,6 +487,9 @@ function eligiblePlayersForGiving(
   return mine.players
     .filter((p) => !excludePos.includes(p.position))
     .filter((p) => !avoidIds.has(p.id))
+    // Zero/near-zero players are roster filler, not trade pieces; a "0 value
+    // throw-in" on a card reads as junk.
+    .filter((p) => p.valueDynasty >= 100)
     .sort((a, b) => {
       // Prefer giving from low-urgency (surplus) positions first.
       const aUrg = mine.positionScores[a.position]?.urgency ?? 50;

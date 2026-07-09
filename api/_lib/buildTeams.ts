@@ -150,28 +150,27 @@ export function buildTeamInputs(params: {
         const slot = slotKnown
           ? knownSlot!
           : (slotRankByRoster.get(origRosterId) ?? teamCount);
-        const tier: PickTier | null = round === 1 && !slotKnown
-          ? tierForRoster(origRosterId)
-          : null;
+        // Projected picks carry a tier for EVERY round (from the original
+        // team's competitiveness), and resolvePickValue tier-scales every
+        // round off the published slot curves. Labels must say so too, or an
+        // early 2nd priced near a late 1st reads like a bug.
+        const tier: PickTier | null = !slotKnown ? tierForRoster(origRosterId) : null;
 
         const value = resolvePickValue(
           dynastyValues,
           teamCount,
           year,
           round,
-          slotKnown ? slot : (tier ?? tierForRoster(origRosterId)),
+          slotKnown ? slot : (tier ?? "mid"),
         );
 
         // Label format depends on what we actually know:
-        //   known slot:         "2026 1.07"
-        //   projected, round 1: "2027 mid 1st"
-        //   projected, round 2+: "2027 2nd"   (FantasyCalc doesn't tier these)
+        //   known slot: "2026 1.07"
+        //   projected:  "2027 mid 1st", "2027 early 2nd", ...
         const ordinal = ordinalRound(round);
         const baseLabel = slotKnown
           ? `${year} ${round}.${String(slot).padStart(2, "0")}`
-          : round === 1
-            ? `${year} ${tier} ${ordinal}`
-            : `${year} ${ordinal}`;
+          : `${year} ${tier} ${ordinal}`;
 
         const origRoster = rosters.find((rr) => rr.roster_id === origRosterId);
         const origUser = users.find((u) => u.user_id === origRoster?.owner_id);
