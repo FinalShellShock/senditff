@@ -40,6 +40,30 @@ export function packageValue(values: number[]): number {
   return total;
 }
 
+// Best-asset premium: the other half of how real calculators adjust trades
+// (KeepTradeCut boosts the best player in a package deal; FantasyCalc
+// credits the single-asset side). Elite players are the hardest thing to
+// acquire, so the side holding the single best asset in the trade gets
+// credit proportional to how far that asset towers over the other side's
+// best. A 1-for-1 of near-equals is barely affected.
+export const BEST_ASSET_PREMIUM = 0.15;
+
+// Effective values for the two sides of a trade: bundle decay per side plus
+// the best-asset premium across sides. This is the comparison every
+// fairness/balance judgment should use.
+export function tradeEffectiveValues(
+  giveValues: number[],
+  receiveValues: number[],
+): { give: number; receive: number } {
+  let give = packageValue(giveValues);
+  let receive = packageValue(receiveValues);
+  const bestGive = giveValues.length > 0 ? Math.max(...giveValues) : 0;
+  const bestReceive = receiveValues.length > 0 ? Math.max(...receiveValues) : 0;
+  if (bestGive > bestReceive) give += BEST_ASSET_PREMIUM * (bestGive - bestReceive);
+  else if (bestReceive > bestGive) receive += BEST_ASSET_PREMIUM * (bestReceive - bestGive);
+  return { give, receive };
+}
+
 // Signed gap as a fraction of the larger side. Relationship to the engine's
 // balance term: balance = 1 - |fairnessDelta|.
 export function fairnessDelta(valueGive: number, valueReceive: number): number {

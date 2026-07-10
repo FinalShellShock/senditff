@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
-import { fairnessColor, fairnessLabel, fairnessText, packageValue } from "../algo/fairness.ts";
+import { fairnessColor, fairnessLabel, fairnessText, tradeEffectiveValues } from "../algo/fairness.ts";
 import type { Position } from "../algo/types.ts";
 import type { TeamProfile } from "../algo/types.ts";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
@@ -98,7 +98,7 @@ function TradePanel({
   onRemove: (id: string) => void;
 }) {
   const consolidationDiff = Math.round(total - adjustedTotal);
-  const showAdjNote = side.assets.length >= 2 && consolidationDiff !== 0;
+  const showAdjNote = Math.abs(consolidationDiff) >= 1;
   return (
     <div className="calc-panel">
       <div className="calc-panel-header" style={{ borderBottomColor: accent }}>
@@ -113,7 +113,9 @@ function TradePanel({
           <span className="calc-panel-total" style={{ color: totalColor }}>{total > 0 ? total.toLocaleString() : "—"}</span>
           {showAdjNote && (
             <span className="calc-adj-note">
-              adj {Math.round(adjustedTotal).toLocaleString()} (-{consolidationDiff.toLocaleString()} consolidation)
+              {consolidationDiff > 0
+                ? `adj ${Math.round(adjustedTotal).toLocaleString()} (-${consolidationDiff.toLocaleString()} consolidation)`
+                : `adj ${Math.round(adjustedTotal).toLocaleString()} (+${Math.abs(consolidationDiff).toLocaleString()} best asset)`}
             </span>
           )}
         </div>
@@ -391,11 +393,13 @@ export default function Calc() {
   // ── Value math ──
   const totalA = sideA.assets.reduce((s, a) => s + a.value, 0);
   const totalB = sideB.assets.reduce((s, a) => s + a.value, 0);
-  // Consolidation-adjusted totals: dynasty value isn't additive, so multi-asset
-  // bundles get discounted (best asset full price, each extra piece decayed).
-  // Used only for the shared fairness badge, not the headline verdict.
-  const adjA = packageValue(sideA.assets.map((a) => a.value));
-  const adjB = packageValue(sideB.assets.map((a) => a.value));
+  // Effective totals: per-side bundle decay (multi-asset packages discounted,
+  // best asset full price) plus a cross-side best-asset premium (the side
+  // holding the single best asset in the trade gets extra credit). Used only
+  // for the shared fairness badge, not the headline verdict.
+  const eff = tradeEffectiveValues(sideA.assets.map((a) => a.value), sideB.assets.map((a) => a.value));
+  const adjA = eff.give;
+  const adjB = eff.receive;
   // diff from A's perspective: positive = A benefits (gets more than gives)
   const diff = totalB - totalA;
   const base = Math.max(totalA, totalB, 1);

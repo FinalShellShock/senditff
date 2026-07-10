@@ -9,7 +9,7 @@
 
 import type { ArchetypeFamily } from "../../src/algo/archetypes";
 import { PICK_DECAY, POSITIONS } from "../../src/algo/constants";
-import { fairnessLabel, packageValue, type FairnessLabel } from "../../src/algo/fairness";
+import { fairnessLabel, packageValue, tradeEffectiveValues, type FairnessLabel } from "../../src/algo/fairness";
 import {
   depthByPosition,
   depthSlotsFor,
@@ -151,13 +151,6 @@ function pickAsset(pk: Pick, ownerRosterId: number): Asset {
 function assetValue(a: Asset): number {
   return a.kind === "player" ? a.player.valueDynasty : a.pick.value;
 }
-// Consolidation-adjusted worth of a trade side: bundles are worth less than
-// their raw sum (see packageValue). All fairness/balance math and package
-// construction use this; raw sums stay on the wire for display.
-function sideEffectiveValue(assets: Asset[]): number {
-  return packageValue(assets.map(assetValue));
-}
-
 // A bundle must be a real package, not stacked filler. Beyond the top two
 // pieces, every additional piece must be a true sweetener: at most this
 // fraction of the bundle's raw value. Three mid 4ths for a startable WR is
@@ -412,10 +405,13 @@ function scoreCandidate(
 
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
-  // Balance judges consolidation-adjusted worth, not raw sums: three
-  // quarters do not buy a dollar.
-  const adjGive = sideEffectiveValue(cand.give);
-  const adjReceive = sideEffectiveValue(cand.receive);
+  // Balance judges trade-effective worth, not raw sums: bundle decay per
+  // side plus the cross-side best-asset premium (three quarters do not buy
+  // a dollar, and the dollar holder charges extra).
+  const { give: adjGive, receive: adjReceive } = tradeEffectiveValues(
+    cand.give.map(assetValue),
+    cand.receive.map(assetValue),
+  );
   const maxVal = Math.max(adjGive, adjReceive, 1);
   const balance = 1 - Math.abs(adjGive - adjReceive) / maxVal;
 
@@ -429,12 +425,14 @@ function scoreCandidate(
   const theirArch = counterArchetypeScore(cand.archetype, them);
   const archMatch = myArch * 0.7 + theirArch * 0.3;
 
-  // Combined score, normalised to [0, 1].
+  // Combined score, normalised to [0, 1]. The partner's fit weighs nearly
+  // as much as ours: the founding philosophy is surfacing trades the other
+  // manager would actually accept, not fantasy heists.
   const total =
-    ((myFit + 1) / 2) * 0.40 +
-    balance * 0.20 +
-    archMatch * 0.20 +
-    ((theirFit + 1) / 2) * 0.20;
+    ((myFit + 1) / 2) * 0.32 +
+    ((theirFit + 1) / 2) * 0.28 +
+    archMatch * 0.22 +
+    balance * 0.18;
 
   return {
     ...cand,
@@ -1001,10 +999,11 @@ const GENERATORS: Record<ArchetypeFamily, (ctx: GenContext) => Candidate[]> = {
 
 // Hard reject gates. Forced mode is looser: the user asked for this shape,
 // so mediocre results get surfaced with honest labels instead of hidden.
-// The myFit floor sits below zero because the consolidation premium makes a
-// FAIR bundle-giving trade read slightly negative on raw roster value; the
-// old -0.10 floor rejected normal market-shaped deals wholesale.
-const DEFAULT_GATES = { myFit: -0.15, theirFit: -0.40, balance: 0.55 };
+// The fit floors sit below zero because the consolidation premium makes a
+// FAIR bundle-giving trade read slightly negative on raw roster value.
+// theirFit tightened from -0.40: auto mode should only surface deals the
+// partner could plausibly say yes to.
+const DEFAULT_GATES = { myFit: -0.15, theirFit: -0.25, balance: 0.55 };
 const FORCED_GATES = { myFit: -0.30, theirFit: -0.60, balance: 0.40 };
 
 // ── Top-level orchestration ──────────────────────────────────────────────────

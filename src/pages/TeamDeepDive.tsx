@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import type { Pick as DraftPick, TeamProfile, WindowLabel } from "../algo/types.ts";
+import type { Pick as DraftPick, Player, TeamProfile, WindowLabel } from "../algo/types.ts";
 import { makeApiClient, type LedgerRow } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
@@ -45,6 +45,8 @@ const ARCHETYPE_LABELS: Record<string, string> = {
 
 const POSITIONS = ["QB", "RB", "WR", "TE"] as const;
 
+type RosterItem = { divider: (typeof POSITIONS)[number]; player?: undefined } | { divider?: undefined; player: Player };
+
 function posColor(pos: string) {
   const map: Record<string, string> = { QB: "#f97316", RB: "#22c55e", WR: "#3b82f6", TE: "#a855f7" };
   return map[pos] ?? "#94a3b8";
@@ -75,6 +77,7 @@ export default function TeamDeepDive() {
   const navigate = useNavigate();
   const { getToken } = useAuth();
   const { overview } = useOutletContext<LeagueOutletContext>();
+  const [rosterSort, setRosterSort] = useState<"value" | "position">("value");
 
   // Trade ledger (cached Firestore read; never triggers a backfill). One
   // fetch per league visit, shared across team switches.
@@ -96,6 +99,25 @@ export default function TeamDeepDive() {
   const profile = overview.profiles.find((p) => p.rosterId === rosterId) as TeamProfile | undefined;
   const sortedTeams = [...overview.profiles].sort((a, b) => a.starterRank - b.starterRank);
 
+  const rosterItems = useMemo(() => {
+    if (!profile) return [] as RosterItem[];
+    if (rosterSort === "value") {
+      return [...profile.players]
+        .sort((a, b) => b.valueDynasty - a.valueDynasty)
+        .map((player): RosterItem => ({ player }));
+    }
+    const items: RosterItem[] = [];
+    for (const pos of POSITIONS) {
+      const group = profile.players
+        .filter((p) => p.position === pos)
+        .sort((a, b) => b.valueDynasty - a.valueDynasty);
+      if (group.length === 0) continue;
+      items.push({ divider: pos });
+      for (const player of group) items.push({ player });
+    }
+    return items;
+  }, [profile, rosterSort]);
+
   if (!profile) {
     return <p className="dim-text" style={{ marginTop: 48, textAlign: "center" }}>Team not found.</p>;
   }
@@ -107,8 +129,6 @@ export default function TeamDeepDive() {
     if (a.round !== b.round) return a.round - b.round;
     return a.slot - b.slot;
   });
-
-  const sortedRoster = [...profile.players].sort((a, b) => b.valueDynasty - a.valueDynasty);
 
   const pickFlagColor = profile.pickCapital.flag === "PICK_RICH" ? "#22c55e"
     : profile.pickCapital.flag === "PICK_POOR" ? "#ef4444"
@@ -234,21 +254,43 @@ export default function TeamDeepDive() {
 
       {/* Roster — compact, deprioritized */}
       <section className="dive-pos-section">
-        <h2 className="section-title">ROSTER</h2>
+        <div className="shape-header">
+          <h2 className="section-title">ROSTER</h2>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              className={`sendit-reset-btn${rosterSort === "value" ? " roster-sort-active" : ""}`}
+              onClick={() => setRosterSort("value")}
+            >
+              BY VALUE
+            </button>
+            <button
+              className={`sendit-reset-btn${rosterSort === "position" ? " roster-sort-active" : ""}`}
+              onClick={() => setRosterSort("position")}
+            >
+              BY POSITION
+            </button>
+          </div>
+        </div>
         <div className="roster-compact">
-          {sortedRoster.map((p) => (
-            <div key={p.id} className="roster-row">
-              <span
-                className="pos-tag"
-                style={{ background: posColor(p.position), color: "#fff", padding: "1px 4px", borderRadius: 2, fontSize: 8, fontWeight: 700, letterSpacing: 0.5, flexShrink: 0 }}
-              >
-                {p.position}
-              </span>
-              <span className="roster-name">{p.name}</span>
-              {p.age != null && <span className="roster-age">{Number(p.age).toFixed(1)}</span>}
-              <span className="roster-val">{p.valueDynasty.toLocaleString()}</span>
-            </div>
-          ))}
+          {rosterItems.map((item) =>
+            item.divider !== undefined ? (
+              <div key={`div-${item.divider}`} className="roster-pos-divider" style={{ color: posColor(item.divider) }}>
+                {item.divider}
+              </div>
+            ) : (
+              <div key={item.player.id} className="roster-row">
+                <span
+                  className="pos-tag"
+                  style={{ background: posColor(item.player.position), color: "#fff", padding: "1px 4px", borderRadius: 2, fontSize: 8, fontWeight: 700, letterSpacing: 0.5, flexShrink: 0 }}
+                >
+                  {item.player.position}
+                </span>
+                <span className="roster-name">{item.player.name}</span>
+                {item.player.age != null && <span className="roster-age">{Number(item.player.age).toFixed(1)}</span>}
+                <span className="roster-val">{item.player.valueDynasty.toLocaleString()}</span>
+              </div>
+            )
+          )}
         </div>
       </section>
 

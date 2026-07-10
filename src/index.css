@@ -1903,8 +1903,21 @@ body {
 
 .roster-compact {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 3px;
+  max-width: 560px;
+}
+
+.roster-sort-active {
+  border-color: rgba(245,158,11,0.6);
+  color: #f59e0b;
+}
+
+.roster-pos-divider {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  margin: 10px 0 4px;
 }
 
 .roster-row {

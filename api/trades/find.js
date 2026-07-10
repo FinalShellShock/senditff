@@ -71,6 +71,16 @@ function packageValue(values) {
   }
   return total;
 }
+var BEST_ASSET_PREMIUM = 0.15;
+function tradeEffectiveValues(giveValues, receiveValues) {
+  let give = packageValue(giveValues);
+  let receive = packageValue(receiveValues);
+  const bestGive = giveValues.length > 0 ? Math.max(...giveValues) : 0;
+  const bestReceive = receiveValues.length > 0 ? Math.max(...receiveValues) : 0;
+  if (bestGive > bestReceive) give += BEST_ASSET_PREMIUM * (bestGive - bestReceive);
+  else if (bestReceive > bestGive) receive += BEST_ASSET_PREMIUM * (bestReceive - bestGive);
+  return { give, receive };
+}
 function fairnessDelta(valueGive, valueReceive) {
   return (valueReceive - valueGive) / Math.max(valueGive, valueReceive, 1);
 }
@@ -376,9 +386,6 @@ function pickAsset(pk, ownerRosterId) {
 function assetValue(a) {
   return a.kind === "player" ? a.player.valueDynasty : a.pick.value;
 }
-function sideEffectiveValue(assets) {
-  return packageValue(assets.map(assetValue));
-}
 var FILLER_SWEETENER_MAX = 0.15;
 function bundleShapeOk(assets) {
   if (assets.length <= 2) return true;
@@ -562,8 +569,10 @@ function scoreCandidate(cand, myProfile, others, ctx) {
   const theirFit = fitScore(theirImpact);
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
-  const adjGive = sideEffectiveValue(cand.give);
-  const adjReceive = sideEffectiveValue(cand.receive);
+  const { give: adjGive, receive: adjReceive } = tradeEffectiveValues(
+    cand.give.map(assetValue),
+    cand.receive.map(assetValue)
+  );
   const maxVal = Math.max(adjGive, adjReceive, 1);
   const balance = 1 - Math.abs(adjGive - adjReceive) / maxVal;
   const myArchScore = (myProfile.archetypeScores?.[cand.archetype] ?? 0) / 100;
@@ -571,7 +580,7 @@ function scoreCandidate(cand, myProfile, others, ctx) {
   const myArch = Math.max(myArchScore, myArchScoreFallback);
   const theirArch = counterArchetypeScore(cand.archetype, them);
   const archMatch = myArch * 0.7 + theirArch * 0.3;
-  const total = (myFit + 1) / 2 * 0.4 + balance * 0.2 + archMatch * 0.2 + (theirFit + 1) / 2 * 0.2;
+  const total = (myFit + 1) / 2 * 0.32 + (theirFit + 1) / 2 * 0.28 + archMatch * 0.22 + balance * 0.18;
   return {
     ...cand,
     total,
@@ -1017,7 +1026,7 @@ var GENERATORS = {
   capital_convert_picks_to_production: genCapitalConvertPicksToProduction,
   capital_convert_production_to_picks: genCapitalConvertProductionToPicks
 };
-var DEFAULT_GATES = { myFit: -0.15, theirFit: -0.4, balance: 0.55 };
+var DEFAULT_GATES = { myFit: -0.15, theirFit: -0.25, balance: 0.55 };
 var FORCED_GATES = { myFit: -0.3, theirFit: -0.6, balance: 0.4 };
 function candidateKey(c) {
   const g = c.give.map(assetId).sort().join("|");
