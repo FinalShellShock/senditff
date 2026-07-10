@@ -85,11 +85,10 @@ export type GenerateDiagnostics = {
   myArchetypeScore?: number;
   // One deterministic sentence about the target team, when one was set.
   counterNote?: string;
-  // Auto mode only: the strict path produced nothing, so results came from a
-  // relaxed pass. "no_archetype" = generators reran with score gates skipped
-  // (nothing fired for this roster); "gates" = candidates existed but none
-  // cleared the strict quality gates.
-  degraded?: "no_archetype" | "gates";
+  // Auto mode only: candidates existed but none cleared the strict quality
+  // gates, so results came from the relaxed labeled pass. Should be rare;
+  // the UI warns on it.
+  degraded?: "gates";
 };
 
 export type GenerateResult = {
@@ -142,8 +141,6 @@ function genPositions(ctx: GenContext): Position[] {
 }
 
 // ── Asset helpers ────────────────────────────────────────────────────────────
-
-const ARCHETYPE_THRESHOLD = 30; // softer than archetypes.ts (50) so we explore neighbours
 
 function playerAsset(p: Player, ownerRosterId: number): Asset {
   return { kind: "player", player: p, ownerRosterId };
@@ -642,7 +639,6 @@ function genTierDown(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
   for (const pos of genPositions(ctx)) {
-    if (!ctx.forced && (mine.archetypeScores?.[`tier_down_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
     const myElite = topPlayersByPos(mine, pos, 1)[0];
     // Forced mode still needs a real top-tier piece to tier down from, just a
     // softer bar (their best at the position, not necessarily league-elite).
@@ -747,7 +743,6 @@ function genConsolidate(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
   for (const pos of genPositions(ctx)) {
-    if (!ctx.forced && (mine.archetypeScores?.[`consolidate_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
     const myAtPos = topPlayersByPos(mine, pos, 4);
     const myPair = myAtPos.slice(1, 3); // my #2 + #3
     if (myPair.length < 2) continue;
@@ -798,7 +793,6 @@ function genConsolidate(ctx: GenContext): Candidate[] {
 function genConsolidateFlex(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  if (!ctx.forced && (mine.archetypeScores?.["consolidate_flex"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
 
   // Pick the position with highest urgency to upgrade INTO
   const upgradePos = [...POSITIONS].sort(
@@ -834,7 +828,6 @@ function genConsolidateFlex(ctx: GenContext): Candidate[] {
 function genAgeArbBuy(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  if (!ctx.forced && (mine.archetypeScores?.["age_arb_buy"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
 
   for (const them of others) {
     if (them.windowTier === "LONG") continue; // they're young too, not a seller
@@ -865,7 +858,6 @@ function genAgeArbBuy(ctx: GenContext): Candidate[] {
 function genAgeArbSell(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  if (!ctx.forced && (mine.archetypeScores?.["age_arb_sell"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
 
   for (const pos of genPositions(ctx)) {
     const myAging = mine.players
@@ -912,7 +904,6 @@ function genAgeArbSell(ctx: GenContext): Candidate[] {
 function genPushIn(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  if (!ctx.forced && (mine.archetypeScores?.["push_in"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
 
   // Convert future capital + a depth piece into proven production at a need spot.
   const needPos = ctx.forced?.position
@@ -943,7 +934,6 @@ function genPushIn(ctx: GenContext): Candidate[] {
 function genCapitalConvertPicksToProduction(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  if (!ctx.forced && (mine.archetypeScores?.["capital_convert_picks_to_production"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
   if (mine.picks.length === 0) return out;
 
   for (const them of others) {
@@ -968,7 +958,6 @@ function genCapitalConvertPicksToProduction(ctx: GenContext): Candidate[] {
 function genCapitalConvertProductionToPicks(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  if (!ctx.forced && (mine.archetypeScores?.["capital_convert_production_to_picks"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
 
   // Sell aging or low-urgency-position players for picks.
   const sellable = mine.players
@@ -1012,7 +1001,10 @@ const GENERATORS: Record<ArchetypeFamily, (ctx: GenContext) => Candidate[]> = {
 
 // Hard reject gates. Forced mode is looser: the user asked for this shape,
 // so mediocre results get surfaced with honest labels instead of hidden.
-const DEFAULT_GATES = { myFit: -0.10, theirFit: -0.40, balance: 0.55 };
+// The myFit floor sits below zero because the consolidation premium makes a
+// FAIR bundle-giving trade read slightly negative on raw roster value; the
+// old -0.10 floor rejected normal market-shaped deals wholesale.
+const DEFAULT_GATES = { myFit: -0.15, theirFit: -0.40, balance: 0.55 };
 const FORCED_GATES = { myFit: -0.30, theirFit: -0.60, balance: 0.40 };
 
 // ── Top-level orchestration ──────────────────────────────────────────────────
@@ -1091,13 +1083,7 @@ export function generatePackages(
     cands.filter((c) => sideOk(c.give) && sideOk(c.receive));
 
   let degraded: GenerateDiagnostics["degraded"];
-  let rawCandidates = shapeFilter(generators.flatMap((g) => g(ctx)));
-  if (!forced && rawCandidates.length === 0) {
-    degraded = "no_archetype";
-    rawCandidates = shapeFilter(
-      Object.values(GENERATORS).flatMap((g) => g({ ...ctx, forced: {} })),
-    );
-  }
+  const rawCandidates = shapeFilter(generators.flatMap((g) => g(ctx)));
 
   // Dedup identical packages, keep first occurrence
   const seen = new Set<string>();
@@ -1126,15 +1112,13 @@ export function generatePackages(
     return { passed, rej };
   };
 
-  let gatePass = applyGates(forced || degraded ? FORCED_GATES : DEFAULT_GATES);
+  let gatePass = applyGates(forced ? FORCED_GATES : DEFAULT_GATES);
   // Auto mode second chance: strict gates rejected everything, so relax to
   // the labeled gates; if even those reject everything, surface the
   // top-scored candidates as-is. Fairness badges keep it honest either way.
   if (!forced && gatePass.passed.length === 0 && scored.length > 0) {
-    if (!degraded) {
-      degraded = "gates";
-      gatePass = applyGates(FORCED_GATES);
-    }
+    degraded = "gates";
+    gatePass = applyGates(FORCED_GATES);
     if (gatePass.passed.length === 0) {
       gatePass = { passed: [...scored], rej: gatePass.rej };
     }

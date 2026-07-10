@@ -367,7 +367,6 @@ function weightedSlotAverage(scores) {
 function genPositions(ctx) {
   return ctx.forced?.position ? [ctx.forced.position] : POSITIONS;
 }
-var ARCHETYPE_THRESHOLD = 30;
 function playerAsset(p, ownerRosterId) {
   return { kind: "player", player: p, ownerRosterId };
 }
@@ -723,7 +722,6 @@ function genTierDown(ctx) {
   const out = [];
   const { mine, others } = ctx;
   for (const pos of genPositions(ctx)) {
-    if (!ctx.forced && (mine.archetypeScores?.[`tier_down_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
     const myElite = topPlayersByPos(mine, pos, 1)[0];
     if (!myElite || myElite.valueDynasty < (ctx.forced ? 1500 : 2500)) continue;
     for (const them of others) {
@@ -811,7 +809,6 @@ function genConsolidate(ctx) {
   const out = [];
   const { mine, others } = ctx;
   for (const pos of genPositions(ctx)) {
-    if (!ctx.forced && (mine.archetypeScores?.[`consolidate_${pos}`] ?? 0) < ARCHETYPE_THRESHOLD) continue;
     const myAtPos = topPlayersByPos(mine, pos, 4);
     const myPair = myAtPos.slice(1, 3);
     if (myPair.length < 2) continue;
@@ -857,7 +854,6 @@ function genConsolidate(ctx) {
 function genConsolidateFlex(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  if (!ctx.forced && (mine.archetypeScores?.["consolidate_flex"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
   const upgradePos = [...POSITIONS].sort(
     (a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency
   )[0];
@@ -886,7 +882,6 @@ function genConsolidateFlex(ctx) {
 function genAgeArbBuy(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  if (!ctx.forced && (mine.archetypeScores?.["age_arb_buy"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
   for (const them of others) {
     if (them.windowTier === "LONG") continue;
     for (const pos of genPositions(ctx)) {
@@ -911,7 +906,6 @@ function genAgeArbBuy(ctx) {
 function genAgeArbSell(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  if (!ctx.forced && (mine.archetypeScores?.["age_arb_sell"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
   for (const pos of genPositions(ctx)) {
     const myAging = mine.players.filter((p) => p.position === pos && (p.age ?? 0) >= 28 && p.valueDynasty >= 1500).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
     if (!myAging) continue;
@@ -947,7 +941,6 @@ function genAgeArbSell(ctx) {
 function genPushIn(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  if (!ctx.forced && (mine.archetypeScores?.["push_in"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
   const needPos = ctx.forced?.position ?? [...POSITIONS].sort(
     (a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency
   )[0];
@@ -973,7 +966,6 @@ function genPushIn(ctx) {
 function genCapitalConvertPicksToProduction(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  if (!ctx.forced && (mine.archetypeScores?.["capital_convert_picks_to_production"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
   if (mine.picks.length === 0) return out;
   for (const them of others) {
     for (const pos of genPositions(ctx)) {
@@ -996,7 +988,6 @@ function genCapitalConvertPicksToProduction(ctx) {
 function genCapitalConvertProductionToPicks(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  if (!ctx.forced && (mine.archetypeScores?.["capital_convert_production_to_picks"] ?? 0) < ARCHETYPE_THRESHOLD) return out;
   const sellable = mine.players.filter((p) => !ctx.forced?.position || p.position === ctx.forced.position).filter((p) => p.valueDynasty >= 1500).filter((p) => mine.positionScores[p.position].classification !== "CRITICAL_NEED").sort((a, b) => b.valueDynasty - a.valueDynasty).slice(0, 6);
   for (const seller of sellable) {
     for (const them of others) {
@@ -1026,7 +1017,7 @@ var GENERATORS = {
   capital_convert_picks_to_production: genCapitalConvertPicksToProduction,
   capital_convert_production_to_picks: genCapitalConvertProductionToPicks
 };
-var DEFAULT_GATES = { myFit: -0.1, theirFit: -0.4, balance: 0.55 };
+var DEFAULT_GATES = { myFit: -0.15, theirFit: -0.4, balance: 0.55 };
 var FORCED_GATES = { myFit: -0.3, theirFit: -0.6, balance: 0.4 };
 function candidateKey(c) {
   const g = c.give.map(assetId).sort().join("|");
@@ -1071,13 +1062,7 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
   };
   const shapeFilter = (cands) => cands.filter((c) => sideOk(c.give) && sideOk(c.receive));
   let degraded;
-  let rawCandidates = shapeFilter(generators.flatMap((g) => g(ctx)));
-  if (!forced && rawCandidates.length === 0) {
-    degraded = "no_archetype";
-    rawCandidates = shapeFilter(
-      Object.values(GENERATORS).flatMap((g) => g({ ...ctx, forced: {} }))
-    );
-  }
+  const rawCandidates = shapeFilter(generators.flatMap((g) => g(ctx)));
   const seen = /* @__PURE__ */ new Set();
   const unique = [];
   for (const c of rawCandidates) {
@@ -1107,12 +1092,10 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
     });
     return { passed, rej };
   };
-  let gatePass = applyGates(forced || degraded ? FORCED_GATES : DEFAULT_GATES);
+  let gatePass = applyGates(forced ? FORCED_GATES : DEFAULT_GATES);
   if (!forced && gatePass.passed.length === 0 && scored.length > 0) {
-    if (!degraded) {
-      degraded = "gates";
-      gatePass = applyGates(FORCED_GATES);
-    }
+    degraded = "gates";
+    gatePass = applyGates(FORCED_GATES);
     if (gatePass.passed.length === 0) {
       gatePass = { passed: [...scored], rej: gatePass.rej };
     }
