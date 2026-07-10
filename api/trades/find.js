@@ -380,6 +380,14 @@ function assetValue(a) {
 function sideEffectiveValue(assets) {
   return packageValue(assets.map(assetValue));
 }
+var FILLER_SWEETENER_MAX = 0.15;
+function bundleShapeOk(assets) {
+  if (assets.length <= 2) return true;
+  const values = assets.map(assetValue).sort((a, b) => b - a);
+  const sum = values.reduce((s, v) => s + v, 0);
+  if (sum <= 0) return false;
+  return values.slice(2).every((v) => v <= FILLER_SWEETENER_MAX * sum);
+}
 function assetId(a) {
   return a.kind === "player" ? `p:${a.player.id}` : `pk:${a.pick.year}-${a.pick.round}-${a.pick.origRosterId}`;
 }
@@ -1052,11 +1060,23 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
   const averages = computeLeagueAverages(allProfiles, format, opts.pools);
   const ctx = { mine, others, format, averages, thisYear, forced };
   const generators = forced ? [GENERATORS[forced.family]] : Object.values(GENERATORS);
+  const sideOk = (assets) => {
+    if (!bundleShapeOk(assets)) return false;
+    if (opts.noFillerPicks) {
+      const pickAssets = assets.filter((a) => a.kind === "pick");
+      if (pickAssets.length > 1) return false;
+      if (pickAssets.some((a) => a.kind === "pick" && a.pick.round >= 3)) return false;
+    }
+    return true;
+  };
+  const shapeFilter = (cands) => cands.filter((c) => sideOk(c.give) && sideOk(c.receive));
   let degraded;
-  let rawCandidates = generators.flatMap((g) => g(ctx));
+  let rawCandidates = shapeFilter(generators.flatMap((g) => g(ctx)));
   if (!forced && rawCandidates.length === 0) {
     degraded = "no_archetype";
-    rawCandidates = Object.values(GENERATORS).flatMap((g) => g({ ...ctx, forced: {} }));
+    rawCandidates = shapeFilter(
+      Object.values(GENERATORS).flatMap((g) => g({ ...ctx, forced: {} }))
+    );
   }
   const seen = /* @__PURE__ */ new Set();
   const unique = [];
@@ -1220,7 +1240,7 @@ async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   const user = await requireApprovedUser(req, res);
   if (!user) return;
-  const { leagueId, rosterId, archetype, position, targetRosterId } = req.body;
+  const { leagueId, rosterId, archetype, position, targetRosterId, noFillerPicks } = req.body;
   if (!leagueId || rosterId == null) {
     return res.status(400).json({ error: "leagueId and rosterId required" });
   }
@@ -1266,7 +1286,8 @@ async function handler(req, res) {
           ...position ? { position } : {}
         }
       } : {},
-      ...targetRosterId != null ? { targetRosterId: Number(targetRosterId) } : {}
+      ...targetRosterId != null ? { targetRosterId: Number(targetRosterId) } : {},
+      ...noFillerPicks === true ? { noFillerPicks: true } : {}
     });
     const withRationales = await Promise.all(
       packages.map((pkg) => addRationale(pkg, myProfile))

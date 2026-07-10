@@ -88,19 +88,27 @@ function tierMultiplier(
   return bucketMean / curve.mean;
 }
 
+// How much of the projected tier spread survives per year of distance. A
+// "late 1st" two drafts out is a guess: the strong team it came from can
+// crater. Tier multipliers blend toward mid by this factor per year, so
+// distant projections price closer to the median outcome.
+export const TIER_CONVICTION_DECAY = 0.65;
+
 // Resolve a pick's dynasty value from FantasyCalc.
 //
 // `slotOrTier` is either a concrete slot number (1..teamCount) for picks
 // belonging to the upcoming draft where Sleeper publishes the real slot, or
 // a tier string ("early" | "mid" | "late") for projected future-year picks.
+// `yearsOut` (0 = upcoming draft) fades projected tiers toward mid.
 //
 // Resolution order:
 //   1. Exact slot entry ("2026 Pick 1.01") — published for the upcoming
 //      draft. A 1.01 is worth ~3x a 1.12; treating them alike was flattening
 //      every pick valuation in the app.
 //   2. Generic round value for the year ("2027 1st") scaled by a tier
-//      multiplier derived from the published slot-curve shape, so a
-//      projected-early future 1st beats a projected-late one.
+//      multiplier derived from the published slot-curve shape (uncertainty-
+//      faded by yearsOut), so a projected-early future 1st beats a
+//      projected-late one, but not with false confidence.
 //   3. Hardcoded fallbacks.
 export function resolvePickValue(
   dynastyValues: Map<string, { value: number; age?: number }>,
@@ -108,6 +116,7 @@ export function resolvePickValue(
   year: number,
   round: number,
   slotOrTier: number | PickTier,
+  yearsOut = 0,
 ): number {
   if (typeof slotOrTier === "number") {
     const exact = dynastyValues.get(
@@ -121,7 +130,11 @@ export function resolvePickValue(
   const label = ROUND_LABELS[round - 1];
   const generic = label ? dynastyValues.get(normName(`${year} ${label}`))?.value : undefined;
   if (generic) {
-    return Math.round(generic * tierMultiplier(dynastyValues, round, tier));
+    const tierMult = tierMultiplier(dynastyValues, round, tier);
+    const midMult = tierMultiplier(dynastyValues, round, "mid");
+    const conviction = yearsOut <= 0 ? 1 : Math.pow(TIER_CONVICTION_DECAY, yearsOut);
+    const effMult = midMult + (tierMult - midMult) * conviction;
+    return Math.round(generic * effMult);
   }
 
   if (round === 1) return tier === "early" ? 2500 : tier === "mid" ? 2000 : 1500;

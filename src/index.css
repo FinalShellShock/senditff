@@ -799,6 +799,18 @@ body {
   color: #64748b;
   font-weight: 700;
 }
+.sendit-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  padding: 7px 0;
+}
+.sendit-toggle input { accent-color: #f59e0b; }
+
 .sendit-find-btn {
   background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.5);

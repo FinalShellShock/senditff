@@ -265,7 +265,8 @@ function tierMultiplier(dynastyValues, round, tier) {
   const bucketMean = bucket.reduce((s, n) => s + (curve.slots.get(n) ?? 0), 0) / bucket.length;
   return bucketMean / curve.mean;
 }
-function resolvePickValue(dynastyValues, teamCount, year, round, slotOrTier) {
+var TIER_CONVICTION_DECAY = 0.65;
+function resolvePickValue(dynastyValues, teamCount, year, round, slotOrTier, yearsOut = 0) {
   if (typeof slotOrTier === "number") {
     const exact = dynastyValues.get(
       normName(`${year} Pick ${round}.${String(slotOrTier).padStart(2, "0")}`)
@@ -276,7 +277,11 @@ function resolvePickValue(dynastyValues, teamCount, year, round, slotOrTier) {
   const label = ROUND_LABELS[round - 1];
   const generic = label ? dynastyValues.get(normName(`${year} ${label}`))?.value : void 0;
   if (generic) {
-    return Math.round(generic * tierMultiplier(dynastyValues, round, tier));
+    const tierMult = tierMultiplier(dynastyValues, round, tier);
+    const midMult = tierMultiplier(dynastyValues, round, "mid");
+    const conviction = yearsOut <= 0 ? 1 : Math.pow(TIER_CONVICTION_DECAY, yearsOut);
+    const effMult = midMult + (tierMult - midMult) * conviction;
+    return Math.round(generic * effMult);
   }
   if (round === 1) return tier === "early" ? 2500 : tier === "mid" ? 2e3 : 1500;
   return round === 2 ? 900 : round === 3 ? 450 : 200;

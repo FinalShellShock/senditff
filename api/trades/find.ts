@@ -106,12 +106,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await requireApprovedUser(req, res);
   if (!user) return;
 
-  const { leagueId, rosterId, archetype, position, targetRosterId } = req.body as {
+  const { leagueId, rosterId, archetype, position, targetRosterId, noFillerPicks } = req.body as {
     leagueId?: string;
     rosterId?: number;
     archetype?: string;
     position?: string;
     targetRosterId?: number;
+    noFillerPicks?: boolean;
   };
   if (!leagueId || rosterId == null) {
     return res.status(400).json({ error: "leagueId and rosterId required" });
@@ -174,6 +175,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         : {}),
       ...(targetRosterId != null ? { targetRosterId: Number(targetRosterId) } : {}),
+      ...(noFillerPicks === true ? { noFillerPicks: true } : {}),
     });
 
     const withRationales = await Promise.all(

@@ -28,10 +28,37 @@ const INTENT_LABELS: Record<ArchetypeFamily, string> = {
   capital_convert_production_to_picks: "Players to picks",
 };
 
-// Fit scores can run negative internally; users should only ever see a
-// percentage where 50% is neutral.
-function fitPct(fit: number) {
-  return Math.min(100, Math.max(0, Math.round((fit + 1) * 50)));
+// Fit scores run in [-1, 1] internally with 0 = neutral. Percentages read
+// wrong (50% looks failing), so users get letter grades: C is neutral.
+function fitGrade(fit: number): string {
+  if (fit >= 0.5) return "A+";
+  if (fit >= 0.3) return "A";
+  if (fit >= 0.15) return "B+";
+  if (fit >= 0.05) return "B";
+  if (fit >= -0.05) return "C";
+  if (fit >= -0.15) return "C-";
+  if (fit >= -0.3) return "D";
+  return "F";
+}
+
+function gradeColor(grade: string): string {
+  if (grade === "A+" || grade === "A") return "#22c55e";
+  if (grade === "B+" || grade === "B") return "#4ade80";
+  if (grade === "C" || grade === "C-") return "#94a3b8";
+  if (grade === "D") return "#eab308";
+  return "#ef4444";
+}
+
+function FitGrade({ fit }: { fit: number }) {
+  const grade = fitGrade(fit);
+  return (
+    <span
+      style={{ color: gradeColor(grade), fontWeight: 700 }}
+      title="C is neutral. Grades reflect how much the trade helps or hurts this roster."
+    >
+      {grade}
+    </span>
+  );
 }
 
 function posColor(pos?: string) {
@@ -93,8 +120,8 @@ function TradeCard({ pkg }: { pkg: TradePackage }) {
       </div>
       {pkg.scores && (
         <div className="trade-score-strip">
-          fit for you {fitPct(pkg.scores.myFit)}%
-          {" · "}fit for them {fitPct(pkg.scores.theirFit)}%
+          fit for you <FitGrade fit={pkg.scores.myFit} />
+          {" · "}fit for them <FitGrade fit={pkg.scores.theirFit} />
           {" · "}value balance {Math.round(pkg.scores.balance * 100)}%
         </div>
       )}
@@ -172,6 +199,7 @@ export default function SendIt() {
   const [target, setTarget] = useState<number | "">(
     urlTarget != null && Number(urlTarget) !== rosterId ? Number(urlTarget) : "",
   );
+  const [noFiller, setNoFiller] = useState(searchParams.get("nofiller") === "1");
 
   const [result, setResult] = useState<FindTradesResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,7 +207,12 @@ export default function SendIt() {
 
   const showPosition = intent !== "" && POSITIONAL_FAMILIES.includes(intent);
 
-  function runSearch(opts: { intent: ArchetypeFamily | ""; position: Position | ""; target: number | "" }) {
+  function runSearch(opts: {
+    intent: ArchetypeFamily | "";
+    position: Position | "";
+    target: number | "";
+    noFiller: boolean;
+  }) {
     if (!leagueId || !rosterId) return;
     setResult(null);
     setLoading(true);
@@ -190,12 +223,14 @@ export default function SendIt() {
     if (opts.intent) next.set("archetype", opts.intent);
     if (usePosition) next.set("pos", usePosition);
     if (opts.target !== "") next.set("target", String(opts.target));
+    if (opts.noFiller) next.set("nofiller", "1");
     setSearchParams(next, { replace: true });
 
     api.findTrades(leagueId, rosterId, {
       ...(opts.intent ? { archetype: opts.intent } : {}),
       ...(usePosition ? { position: usePosition } : {}),
       ...(opts.target !== "" ? { targetRosterId: opts.target } : {}),
+      ...(opts.noFiller ? { noFillerPicks: true } : {}),
     })
       .then(setResult)
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to find trades"))
@@ -212,7 +247,7 @@ export default function SendIt() {
     // A stale target equal to the new perspective team gets cleared.
     const effectiveTarget = target !== "" && target === rosterId ? "" : target;
     if (effectiveTarget !== target) setTarget(effectiveTarget);
-    runSearch({ intent, position, target: effectiveTarget });
+    runSearch({ intent, position, target: effectiveTarget, noFiller });
   }, [leagueId, rosterId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sortedTeams = [...overview.profiles].sort((a, b) => a.starterRank - b.starterRank);
@@ -223,7 +258,8 @@ export default function SendIt() {
     setIntent("");
     setPosition("");
     setTarget("");
-    runSearch({ intent: "", position: "", target: "" });
+    setNoFiller(false);
+    runSearch({ intent: "", position: "", target: "", noFiller: false });
   }
 
   return (
@@ -293,10 +329,22 @@ export default function SendIt() {
           </select>
         </label>
 
+        <div className="sendit-control">
+          <span className="sendit-control-label">NO FILLER PICKS</span>
+          <label className="sendit-toggle">
+            <input
+              type="checkbox"
+              checked={noFiller}
+              onChange={(e) => setNoFiller(e.target.checked)}
+            />
+            <span>max 1 pick, no 3rds/4ths</span>
+          </label>
+        </div>
+
         <button
           className="sendit-find-btn"
           disabled={loading}
-          onClick={() => runSearch({ intent, position, target })}
+          onClick={() => runSearch({ intent, position, target, noFiller })}
         >
           FIND TRADES
         </button>

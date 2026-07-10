@@ -162,6 +162,7 @@ export function buildTeamInputs(params: {
           year,
           round,
           slotKnown ? slot : (tier ?? "mid"),
+          year - upcomingYear,
         );
 
         // Label format depends on what we actually know:

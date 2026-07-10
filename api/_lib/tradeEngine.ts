@@ -66,6 +66,8 @@ export type GenerateOptions = {
   forceArchetype?: { family: ArchetypeFamily; position?: Position };
   // Only consider this counter-team.
   targetRosterId?: number;
+  // User toggle: at most one pick per side and no 3rds/4ths at all.
+  noFillerPicks?: boolean;
   pools?: {
     dynastyByPos: Record<Position, number[]>;
     redraftByPos: Record<Position, number[]>;
@@ -157,6 +159,19 @@ function assetValue(a: Asset): number {
 // construction use this; raw sums stay on the wire for display.
 function sideEffectiveValue(assets: Asset[]): number {
   return packageValue(assets.map(assetValue));
+}
+
+// A bundle must be a real package, not stacked filler. Beyond the top two
+// pieces, every additional piece must be a true sweetener: at most this
+// fraction of the bundle's raw value. Three mid 4ths for a startable WR is
+// a no from every league mate.
+const FILLER_SWEETENER_MAX = 0.15;
+function bundleShapeOk(assets: Asset[]): boolean {
+  if (assets.length <= 2) return true;
+  const values = assets.map(assetValue).sort((a, b) => b - a);
+  const sum = values.reduce((s, v) => s + v, 0);
+  if (sum <= 0) return false;
+  return values.slice(2).every((v) => v <= FILLER_SWEETENER_MAX * sum);
 }
 function assetId(a: Asset): string {
   return a.kind === "player"
@@ -1061,11 +1076,27 @@ export function generatePackages(
   const generators = forced
     ? [GENERATORS[forced.family as ArchetypeFamily]]
     : Object.values(GENERATORS);
+  // Shape rules applied to every candidate regardless of mode: no stacked
+  // filler bundles, and the optional no-filler-picks user toggle.
+  const sideOk = (assets: Asset[]): boolean => {
+    if (!bundleShapeOk(assets)) return false;
+    if (opts.noFillerPicks) {
+      const pickAssets = assets.filter((a) => a.kind === "pick");
+      if (pickAssets.length > 1) return false;
+      if (pickAssets.some((a) => a.kind === "pick" && a.pick.round >= 3)) return false;
+    }
+    return true;
+  };
+  const shapeFilter = (cands: Candidate[]) =>
+    cands.filter((c) => sideOk(c.give) && sideOk(c.receive));
+
   let degraded: GenerateDiagnostics["degraded"];
-  let rawCandidates = generators.flatMap((g) => g(ctx));
+  let rawCandidates = shapeFilter(generators.flatMap((g) => g(ctx)));
   if (!forced && rawCandidates.length === 0) {
     degraded = "no_archetype";
-    rawCandidates = Object.values(GENERATORS).flatMap((g) => g({ ...ctx, forced: {} }));
+    rawCandidates = shapeFilter(
+      Object.values(GENERATORS).flatMap((g) => g({ ...ctx, forced: {} })),
+    );
   }
 
   // Dedup identical packages, keep first occurrence

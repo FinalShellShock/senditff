@@ -45,6 +45,7 @@ export type FindTradesOptions = {
   archetype?: ArchetypeFamily;
   position?: Position;
   targetRosterId?: number;
+  noFillerPicks?: boolean;
 };
 
 export type FindTradesResponse = {
