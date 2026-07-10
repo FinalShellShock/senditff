@@ -145,7 +145,7 @@ export default function TeamDeepDive() {
           </h1>
           <span className="window-label" style={{ background: labelColor }}>{profile.windowLabel}</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+        <div className="dive-header-row">
           <div className="team-meta" style={{ marginBottom: 0 }}>
             <span className="meta-pill">{profile.competitiveness} / {profile.windowTier}</span>
             <span className="meta-pill">rank <strong>#{profile.starterRank}</strong></span>

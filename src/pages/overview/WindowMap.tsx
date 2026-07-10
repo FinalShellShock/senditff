@@ -1,8 +1,11 @@
-// Window Map: the league plotted on a continuous 2D field. x = window
-// pressure (LONG left → SHORT right), y = starter strength (z-scored, STRONG
-// top). The 3x3 band boundaries reproduce the classic grid cells; dots land
-// in the region matching their windowLabel because both derive from the same
-// numbers. Dashed trails project each team 1-2 years out (Shotgun).
+// Window Map: the league plotted on a continuous 2D field. On wide screens
+// x = window pressure (LONG left → SHORT right) and y = starter strength
+// (STRONG top). On phones the field rotates to portrait: x = strength (WEAK
+// left → STRONG right), y = window (LONG top → SHORT bottom), so the map
+// fills the screen with zero horizontal scrolling. The 3x3 band boundaries
+// reproduce the classic grid cells; dots land in the region matching their
+// windowLabel because both derive from the same numbers. Dashed trails
+// project each team 1-2 years out (Shotgun).
 //
 // Readability rules (dataviz): identity comes from an ink-colored name label
 // beside each dot, never text inside the mark; the dot's color carries the
@@ -10,7 +13,7 @@
 // surface ring; band boundaries are solid hairlines; hover targets are
 // bigger than the marks.
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   STD_THRESHOLD,
@@ -34,50 +37,89 @@ const LABEL_COLOR: Record<WindowLabel, string> = {
 
 const SURFACE = "#0a0c0f";
 
-// Field geometry (viewBox units)
-const W = 760;
-const H = 480;
-const PAD = { top: 30, right: 18, bottom: 34, left: 70 };
-const FW = W - PAD.left - PAD.right;
-const FH = H - PAD.top - PAD.bottom;
-
-// Pressure beyond this pins to the right edge.
+// Pressure beyond this pins to the field edge.
 const PRESSURE_MAX = 45;
-// z beyond ±this pins to the top/bottom edge.
+// z beyond ±this pins to the field edge.
 const Z_MAX = 2.0;
 
 const DOT_R = 7;
 const HIT_R = 15;
-const NAME_MAX = 13;
-const LABEL_GAP = DOT_R + 5;
 
-// Piecewise x: each window band (LONG / MID / SHORT) gets a third of the
-// width so band boundaries line up with the visual grid.
-function xScale(pressure: number): number {
-  const p = Math.max(0, Math.min(PRESSURE_MAX, pressure));
-  let frac: number;
-  if (p <= WINDOW_LONG_THRESHOLD) {
-    frac = (p / WINDOW_LONG_THRESHOLD) / 3;
-  } else if (p <= WINDOW_SHORT_THRESHOLD) {
-    frac = 1 / 3 + ((p - WINDOW_LONG_THRESHOLD) / (WINDOW_SHORT_THRESHOLD - WINDOW_LONG_THRESHOLD)) / 3;
-  } else {
-    frac = 2 / 3 + ((p - WINDOW_SHORT_THRESHOLD) / (PRESSURE_MAX - WINDOW_SHORT_THRESHOLD)) / 3;
+type Geometry = {
+  W: number;
+  H: number;
+  pad: { top: number; right: number; bottom: number; left: number };
+  fw: number;
+  fh: number;
+  portrait: boolean;
+  nameMax: number;
+  collideX: number;
+  labelFlipMargin: number;
+};
+
+function makeGeometry(portrait: boolean): Geometry {
+  if (portrait) {
+    const W = 460;
+    const H = 720;
+    const pad = { top: 34, right: 12, bottom: 34, left: 12 };
+    return {
+      W, H, pad,
+      fw: W - pad.left - pad.right,
+      fh: H - pad.top - pad.bottom,
+      portrait,
+      nameMax: 11,
+      collideX: 115,
+      labelFlipMargin: 95,
+    };
   }
-  return PAD.left + frac * FW;
+  const W = 760;
+  const H = 480;
+  const pad = { top: 30, right: 18, bottom: 34, left: 70 };
+  return {
+    W, H, pad,
+    fw: W - pad.left - pad.right,
+    fh: H - pad.top - pad.bottom,
+    portrait,
+    nameMax: 13,
+    collideX: 160,
+    labelFlipMargin: 110,
+  };
 }
 
-// Piecewise y: STRONG band (z >= +0.5σ) top third, AVERAGE middle, WEAK bottom.
-function yScale(z: number): number {
-  const zc = Math.max(-Z_MAX, Math.min(Z_MAX, z));
-  let frac: number;
-  if (zc >= STD_THRESHOLD) {
-    frac = ((Z_MAX - zc) / (Z_MAX - STD_THRESHOLD)) / 3;
-  } else if (zc >= -STD_THRESHOLD) {
-    frac = 1 / 3 + ((STD_THRESHOLD - zc) / (2 * STD_THRESHOLD)) / 3;
-  } else {
-    frac = 2 / 3 + ((-STD_THRESHOLD - zc) / (Z_MAX - STD_THRESHOLD)) / 3;
+// Piecewise window fraction: each band (LONG / MID / SHORT) gets a third,
+// so band boundaries line up with the visual grid. 0 = longest window.
+function windowFrac(pressure: number): number {
+  const p = Math.max(0, Math.min(PRESSURE_MAX, pressure));
+  if (p <= WINDOW_LONG_THRESHOLD) return (p / WINDOW_LONG_THRESHOLD) / 3;
+  if (p <= WINDOW_SHORT_THRESHOLD) {
+    return 1 / 3 + ((p - WINDOW_LONG_THRESHOLD) / (WINDOW_SHORT_THRESHOLD - WINDOW_LONG_THRESHOLD)) / 3;
   }
-  return PAD.top + frac * FH;
+  return 2 / 3 + ((p - WINDOW_SHORT_THRESHOLD) / (PRESSURE_MAX - WINDOW_SHORT_THRESHOLD)) / 3;
+}
+
+// Piecewise strength fraction: STRONG band (z >= +0.5σ) is the first third.
+// 0 = strongest.
+function strengthFrac(z: number): number {
+  const zc = Math.max(-Z_MAX, Math.min(Z_MAX, z));
+  if (zc >= STD_THRESHOLD) return ((Z_MAX - zc) / (Z_MAX - STD_THRESHOLD)) / 3;
+  if (zc >= -STD_THRESHOLD) return 1 / 3 + ((STD_THRESHOLD - zc) / (2 * STD_THRESHOLD)) / 3;
+  return 2 / 3 + ((-STD_THRESHOLD - zc) / (Z_MAX - STD_THRESHOLD)) / 3;
+}
+
+// Map (window, strength) fractions to viewBox coordinates.
+// Landscape: window → x, strength → y.
+// Portrait: strength → x (WEAK left, STRONG right), window → y (LONG top).
+function toPoint(g: Geometry, fWindow: number, fStrength: number): { x: number; y: number } {
+  if (g.portrait) {
+    return {
+      x: g.pad.left + (1 - fStrength) * g.fw,
+      y: g.pad.top + fWindow * g.fh,
+    };
+  }
+  return {
+    x: g.pad.left + fWindow * g.fw,
+    y: g.pad.top + fStrength * g.fh,
+  };
 }
 
 function meanStd(values: number[]): { mean: number; std: number } {
@@ -87,8 +129,8 @@ function meanStd(values: number[]): { mean: number; std: number } {
   return { mean, std: Math.sqrt(variance) };
 }
 
-function displayName(name: string): string {
-  return name.length > NAME_MAX ? `${name.slice(0, NAME_MAX - 1)}…` : name;
+function displayName(name: string, max: number): string {
+  return name.length > max ? `${name.slice(0, max - 1)}…` : name;
 }
 
 type Placed = {
@@ -99,16 +141,17 @@ type Placed = {
   trail: Array<{ x: number; y: number }>;
 };
 
-const REGION_LABELS: Array<{ label: string; col: number; row: number }> = [
-  { label: "JUGGERNAUT", col: 0, row: 0 },
-  { label: "CONTEND", col: 1, row: 0 },
-  { label: "CLOSING", col: 2, row: 0 },
-  { label: "RISING", col: 0, row: 1 },
-  { label: "AVERAGE", col: 1, row: 1 },
-  { label: "MIDDLING", col: 2, row: 1 },
-  { label: "REBUILD", col: 0, row: 2 },
-  { label: "TRANSITION", col: 1, row: 2 },
-  { label: "STUCK", col: 2, row: 2 },
+// Region labels by (windowBand, strengthBand): 0 = LONG / STRONG.
+const REGIONS: Array<{ label: string; windowBand: number; strengthBand: number }> = [
+  { label: "JUGGERNAUT", windowBand: 0, strengthBand: 0 },
+  { label: "CONTEND", windowBand: 1, strengthBand: 0 },
+  { label: "CLOSING", windowBand: 2, strengthBand: 0 },
+  { label: "RISING", windowBand: 0, strengthBand: 1 },
+  { label: "AVERAGE", windowBand: 1, strengthBand: 1 },
+  { label: "MIDDLING", windowBand: 2, strengthBand: 1 },
+  { label: "REBUILD", windowBand: 0, strengthBand: 2 },
+  { label: "TRANSITION", windowBand: 1, strengthBand: 2 },
+  { label: "STUCK", windowBand: 2, strengthBand: 2 },
 ];
 
 export default function WindowMap({
@@ -122,6 +165,17 @@ export default function WindowMap({
 }) {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+
+  const [portrait, setPortrait] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const update = () => setPortrait(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  const g = makeGeometry(portrait);
 
   const placed: Placed[] = useMemo(() => {
     const sorted = [...profiles].sort((a, b) => a.rosterId - b.rosterId);
@@ -142,92 +196,114 @@ export default function WindowMap({
     };
 
     const result: Placed[] = sorted.map((p, idx) => {
-      const baseX = p.windowPressure;
-      const baseY = zNow(p);
+      const baseWindow = p.windowPressure;
+      const baseZ = zNow(p);
       const trail = [1, 2].map((h) => {
         const dPressure = horizons[h]!.proj[idx]!.agePressure - horizons[0]!.proj[idx]!.agePressure;
         const dz = zAt(idx, h) - zAt(idx, 0);
-        return { x: xScale(baseX + dPressure), y: yScale(baseY + dz) };
+        return toPoint(g, windowFrac(baseWindow + dPressure), strengthFrac(baseZ + dz));
       });
-      const x = xScale(baseX);
+      const pt = toPoint(g, windowFrac(baseWindow), strengthFrac(baseZ));
       return {
         profile: p,
-        x,
-        y: yScale(baseY),
-        labelSide: x > PAD.left + FW - 110 ? ("left" as const) : ("right" as const),
+        x: pt.x,
+        y: pt.y,
+        labelSide: pt.x > g.pad.left + g.fw - g.labelFlipMargin ? ("left" as const) : ("right" as const),
         trail,
       };
     });
 
-    // Deterministic label decollision: dot + name occupy a horizontal strip
-    // (~90 units of text beside the dot), so any two teams whose strips can
-    // overlap need vertical separation. Facing labels (right-label followed
-    // by a left-label) reach toward each other, hence the generous window.
+    // Deterministic label decollision: dot + name occupy a horizontal strip,
+    // so any two teams whose strips overlap need vertical separation.
     // rosterId order, later one pushed down; a few passes settle it.
     for (let pass = 0; pass < 4; pass++) {
       for (let i = 0; i < result.length; i++) {
         for (let j = i + 1; j < result.length; j++) {
           const a = result[i]!;
           const b = result[j]!;
-          if (Math.abs(b.x - a.x) >= 160) continue;
+          if (Math.abs(b.x - a.x) >= g.collideX) continue;
           const dy = b.y - a.y;
           if (Math.abs(dy) < 17) {
-            b.y = Math.min(PAD.top + FH - DOT_R, a.y + 17);
+            b.y = Math.min(g.pad.top + g.fh - DOT_R, a.y + 17);
           }
         }
       }
     }
     return result;
-  }, [profiles, format, thisYear]);
+  }, [profiles, format, thisYear, portrait]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const colX = (col: number) => PAD.left + (col + 0.5) * (FW / 3);
-  const rowY = (row: number) => PAD.top + (row + 0.5) * (FH / 3);
+  // Cell centers for region labels, honoring orientation.
+  const regionCenter = (windowBand: number, strengthBand: number) =>
+    toPoint(g, (windowBand + 0.5) / 3, (strengthBand + 0.5) / 3);
+
+  const labelGap = DOT_R + 5;
 
   return (
     <div className="wm-wrap">
-      <svg viewBox={`0 0 ${W} ${H}`} className="window-map" role="img" aria-label="League window map">
+      <svg
+        viewBox={`0 0 ${g.W} ${g.H}`}
+        className={portrait ? "window-map window-map-portrait" : "window-map"}
+        role="img"
+        aria-label="League window map"
+      >
         {/* Band boundaries: solid hairlines, one step off the surface */}
         {[1, 2].map((i) => (
           <line
             key={`v${i}`}
-            x1={PAD.left + (i * FW) / 3} y1={PAD.top}
-            x2={PAD.left + (i * FW) / 3} y2={PAD.top + FH}
+            x1={g.pad.left + (i * g.fw) / 3} y1={g.pad.top}
+            x2={g.pad.left + (i * g.fw) / 3} y2={g.pad.top + g.fh}
             stroke="rgba(255,255,255,0.07)" strokeWidth={1}
           />
         ))}
         {[1, 2].map((i) => (
           <line
             key={`h${i}`}
-            x1={PAD.left} y1={PAD.top + (i * FH) / 3}
-            x2={PAD.left + FW} y2={PAD.top + (i * FH) / 3}
+            x1={g.pad.left} y1={g.pad.top + (i * g.fh) / 3}
+            x2={g.pad.left + g.fw} y2={g.pad.top + (i * g.fh) / 3}
             stroke="rgba(255,255,255,0.07)" strokeWidth={1}
           />
         ))}
         <rect
-          x={PAD.left} y={PAD.top} width={FW} height={FH}
+          x={g.pad.left} y={g.pad.top} width={g.fw} height={g.fh}
           fill="none" stroke="rgba(255,255,255,0.06)"
         />
 
         {/* Region labels (double as the color legend) */}
-        {REGION_LABELS.map((r) => (
-          <text
-            key={r.label}
-            x={colX(r.col)} y={rowY(r.row)}
-            textAnchor="middle" dominantBaseline="central"
-            className="wm-region-label"
-          >
-            {r.label}
-          </text>
-        ))}
+        {REGIONS.map((r) => {
+          const c = regionCenter(r.windowBand, r.strengthBand);
+          return (
+            <text
+              key={r.label}
+              x={c.x} y={c.y}
+              textAnchor="middle" dominantBaseline="central"
+              className={portrait ? "wm-region-label wm-region-label-sm" : "wm-region-label"}
+            >
+              {r.label}
+            </text>
+          );
+        })}
 
         {/* Axis labels */}
-        <text x={PAD.left} y={H - 10} className="wm-axis-label" textAnchor="start">◀ LONG WINDOW</text>
-        <text x={PAD.left + FW} y={H - 10} className="wm-axis-label" textAnchor="end">SHORT WINDOW ▶</text>
-        <text x={16} y={PAD.top + 10} className="wm-axis-label" textAnchor="start">STRONG ▲</text>
-        <text x={16} y={PAD.top + FH} className="wm-axis-label" textAnchor="start">WEAK ▼</text>
-        <text x={PAD.left + FW} y={18} className="wm-axis-label wm-axis-hint" textAnchor="end">
-          dashed trail = projected drift (+1y, +2y)
-        </text>
+        {portrait ? (
+          <>
+            <text x={g.pad.left} y={18} className="wm-axis-label" textAnchor="start">▲ LONG WINDOW</text>
+            <text x={g.pad.left + g.fw} y={18} className="wm-axis-label" textAnchor="end">◀ WEAK · STRONG ▶</text>
+            <text x={g.pad.left} y={g.H - 10} className="wm-axis-label" textAnchor="start">▼ SHORT WINDOW</text>
+            <text x={g.pad.left + g.fw} y={g.H - 10} className="wm-axis-label wm-axis-hint" textAnchor="end">
+              dashed = drift (+1y, +2y)
+            </text>
+          </>
+        ) : (
+          <>
+            <text x={g.pad.left} y={g.H - 10} className="wm-axis-label" textAnchor="start">◀ LONG WINDOW</text>
+            <text x={g.pad.left + g.fw} y={g.H - 10} className="wm-axis-label" textAnchor="end">SHORT WINDOW ▶</text>
+            <text x={16} y={g.pad.top + 10} className="wm-axis-label" textAnchor="start">STRONG ▲</text>
+            <text x={16} y={g.pad.top + g.fh} className="wm-axis-label" textAnchor="start">WEAK ▼</text>
+            <text x={g.pad.left + g.fw} y={16} className="wm-axis-label wm-axis-hint" textAnchor="end">
+              dashed trail = projected drift (+1y, +2y)
+            </text>
+          </>
+        )}
 
         {/* Trajectory trails under the dots (dashed = projection) */}
         {placed.map(({ profile, x, y, trail }) => {
@@ -256,7 +332,7 @@ export default function WindowMap({
         {/* Team dots + ink name labels */}
         {placed.map(({ profile, x, y, labelSide }) => {
           const color = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
-          const name = displayName(profile.ownerName);
+          const name = displayName(profile.ownerName, g.nameMax);
           return (
             <g
               key={profile.rosterId}
@@ -275,7 +351,7 @@ export default function WindowMap({
                 strokeWidth={2}
               />
               <text
-                x={labelSide === "right" ? x + LABEL_GAP : x - LABEL_GAP}
+                x={labelSide === "right" ? x + labelGap : x - labelGap}
                 y={y}
                 textAnchor={labelSide === "right" ? "start" : "end"}
                 dominantBaseline="central"

@@ -193,14 +193,14 @@ export default function TradeGrades() {
   return (
     <>
       <div className="tg-header">
-        <div>
+        <div className="tg-header-info">
           <h2 className="tg-title">TRADE GRADES</h2>
-          <p className="dim-text" style={{ fontSize: 11 }}>
+          <p className="dim-text tg-header-footnote">
             Values reflect today's market (as of {data?.valuesAsOf}). Picks graded as the players
             drafted with them where known.
           </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+        <div className="tg-controls">
           <select
             className="team-switcher-select"
             value={managerFilter}
@@ -247,7 +247,7 @@ export default function TradeGrades() {
               }
             >
               <span className="dim-text">{i + 1}</span>
-              <span>{row.managerName}{row.rosterId === myRosterId ? " ★" : ""}</span>
+              <span className="tg-ledger-manager">{row.managerName}{row.rosterId === myRosterId ? " ★" : ""}</span>
               <span>{row.trades}</span>
               <span className="dim-text">{row.wins}-{row.losses}-{row.ties}</span>
               <span style={{ color: row.netValue > 0 ? "#22c55e" : row.netValue < 0 ? "#ef4444" : "#64748b" }}>
