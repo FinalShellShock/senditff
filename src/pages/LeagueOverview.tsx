@@ -179,7 +179,7 @@ function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
   return (
     <div className="picks-visual">
       <span className="picks-flag" style={{ color: flagColor }}>
-        {flag === "PICK_RICH" ? "RICH" : flag === "PICK_POOR" ? "POOR" : "NEU"}
+        {flag === "PICK_RICH" ? "RICH" : flag === "PICK_POOR" ? "POOR" : "FINE"}
       </span>
       <div className="picks-years">
         {years.length === 0 && <span className="picks-none">none</span>}
@@ -471,6 +471,34 @@ function LeagueTableRow({
             return (
               <div key={`d-${pos}`} className="lt-pos-grid-bar-cell">
                 <ThickBar score={ps?.depthScore ?? 0} kind={dClass} />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Mobile-only dense numbers block (under 640px) — replaces
+            .lt-pos-grid so the row never needs horizontal scroll. Same
+            starter/depth data as the ThickBars above, shown as colored
+            numbers instead. */}
+        <div className="lt-mobile-numbers">
+          <div className="lt-mn-col lt-mn-label">
+            <span className="lt-mn-spacer" aria-hidden="true" />
+            <span className="lt-mn-label-text">STR</span>
+            <span className="lt-mn-label-text">DEP</span>
+          </div>
+          {POSITIONS.map((pos) => {
+            const ps = profile.positionScores?.[pos];
+            const sClass = ps?.starterClassification ?? "HEALTHY";
+            const dClass = ps?.depthClassification ?? "HEALTHY";
+            return (
+              <div key={pos} className="lt-mn-col">
+                <span className="lt-mn-pos" style={{ color: POS_COLOR[pos] }}>{pos}</span>
+                <span className="lt-mn-val" style={{ color: POS_CLASS_COLOR[sClass] }}>
+                  {Math.round(ps?.starterScore ?? 0)}
+                </span>
+                <span className="lt-mn-val lt-mn-depth" style={{ color: POS_CLASS_COLOR[dClass] }}>
+                  {Math.round(ps?.depthScore ?? 0)}
+                </span>
               </div>
             );
           })}

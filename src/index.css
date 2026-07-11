@@ -321,6 +321,26 @@ body {
   flex-shrink: 0;
 }
 
+/* Under 640px the row-based layout squashes the league name into an
+   ellipsis and crowds the action buttons. Stack instead: name (wrapping
+   allowed), meta row, then actions, each full width and left-aligned. */
+@media (max-width: 640px) {
+  .league-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .league-name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .league-card-actions {
+    margin-top: 2px;
+  }
+}
+
 .add-league {
   padding: 24px;
   background: rgba(255,255,255,0.02);
@@ -1519,6 +1539,54 @@ body {
   letter-spacing: 1px;
 }
 
+/* Mobile-only dense numbers block, swapped in for .lt-pos-grid under 640px
+   (see the media query near the end of the League table section). Hidden
+   on desktop by default. */
+.lt-mobile-numbers {
+  display: none;
+  gap: 4px;
+}
+
+.lt-mn-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.lt-mn-label {
+  flex: 0 0 26px;
+  align-items: flex-start;
+}
+
+.lt-mn-spacer {
+  height: 13px;
+}
+
+.lt-mn-label-text {
+  font-size: 8px;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  line-height: 1.3;
+}
+
+.lt-mn-pos {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.lt-mn-val {
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+.lt-mn-depth { opacity: 0.85; font-weight: 700; }
+
 /* Chevron in the top-right — larger and more clickable. */
 .lt-row-chevron {
   background: none;
@@ -1933,6 +2001,71 @@ body {
     padding: 5px;
     min-height: 0;
     gap: 4px;
+  }
+}
+
+/* Under 640px the Teams table rows stop trying to fit a wide grid — they
+   stack into three full-width rows instead: sticky team info (chevron
+   pinned top-right), the dense numbers block, then picks. This removes the
+   need for horizontal scrolling on the section entirely. Comes after the
+   600px block above so it wins the cascade on shared properties (both
+   queries match under 600px; later source order wins at equal specificity). */
+@media (max-width: 640px) {
+  .table-scroll-wrapper {
+    overflow-x: visible;
+  }
+
+  .league-table {
+    min-width: 0;
+  }
+
+  .lt-pos-grid {
+    display: none;
+  }
+
+  .lt-mobile-numbers {
+    display: flex;
+    flex: 1 1 100%;
+    width: 100%;
+    padding: 2px 8px 10px 12px;
+  }
+
+  .lt-row-main {
+    flex-wrap: wrap;
+    position: relative;
+    padding-right: 34px;
+  }
+
+  .lt-col-sticky {
+    position: static;
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .lt-row-sticky {
+    border-right: none;
+  }
+
+  .lt-col-picks {
+    width: auto;
+    flex: 1 1 100%;
+    padding: 0 8px 10px 12px;
+  }
+
+  .lt-row-chevron {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    padding: 4px 8px;
+    font-size: 18px;
+  }
+
+  .lt-row-detail {
+    grid-template-columns: 1fr;
+  }
+
+  .radar-svg {
+    max-width: 150px;
   }
 }
 
