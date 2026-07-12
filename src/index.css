@@ -2936,3 +2936,9 @@ body {
   padding-top: 10px;
   border-top: 1px solid rgba(255,255,255,0.05);
 }
+
+/* ── Scouting report caveat (team deep dive) ────────────────────────── */
+.scout-caveat {
+  color: #64748b;
+  font-size: 12px;
+}

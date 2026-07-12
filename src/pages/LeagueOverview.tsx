@@ -291,7 +291,7 @@ function RadarChart({ profile, allProfiles }: { profile: TeamProfile; allProfile
   });
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="radar-svg">
+    <svg viewBox={`-18 0 ${size + 36} ${size}`} className="radar-svg">
       {/* Grid rings */}
       {rings.map((ratio) => (
         <polygon

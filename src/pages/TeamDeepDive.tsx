@@ -45,6 +45,8 @@ const ARCHETYPE_LABELS: Record<string, string> = {
 
 const POSITIONS = ["QB", "RB", "WR", "TE"] as const;
 
+const pickFlagText = (flag: string) => (flag === "NEUTRAL" ? "FINE" : flag.replace("_", " "));
+
 type RosterItem = { divider: (typeof POSITIONS)[number]; player?: undefined } | { divider?: undefined; player: Player };
 
 function posColor(pos: string) {
@@ -114,19 +116,19 @@ function buildScoutData(key: string, profile: TeamProfile): string {
     const top = topPlayerAt(profile, pos);
     const ps = profile.positionScores[pos as Position];
     if (!top) return `no clear ${pos} centerpiece to build around`;
-    return `${top.name} ${top.valueDynasty.toLocaleString()} carries the room; depth score ${ps.depthScore.toFixed(0)}`;
+    return ps.depthScore < 35
+      ? `${top.name} (${top.valueDynasty.toLocaleString()}) carries the room with little behind him; split him into two starters`
+      : `${top.name} (${top.valueDynasty.toLocaleString()}) headlines a room with support; trading him down adds depth elsewhere`;
   }
 
   const consolidateMatch = key.match(/^consolidate_(QB|RB|WR|TE)$/);
   if (consolidateMatch) {
-    const pos = consolidateMatch[1];
-    const ps = profile.positionScores[pos as Position];
-    return `starter score ${ps.starterScore.toFixed(0)} with depth score ${ps.depthScore.toFixed(0)}; two pieces could become one stud`;
+    const pos = consolidateMatch[1] as string;
+    return `no true ${pos}1 here but plenty of bodies; two spares could become one stud`;
   }
 
   if (key === "consolidate_flex") {
-    const score = profile.flex?.score ?? 0;
-    return `flex depth score ${score.toFixed(0)}; bundle spares into a starter`;
+    return "extra flex bodies riding the bench; bundle spares into a real starter";
   }
 
   if (key === "age_arb_sell") {
@@ -135,29 +137,28 @@ function buildScoutData(key: string, profile: TeamProfile): string {
       .sort((a, b) => (b.age as number) - (a.age as number) || b.valueDynasty - a.valueDynasty || a.id.localeCompare(b.id));
     const oldest = candidates[0];
     if (!oldest) return "no aging studs to move";
-    return `${oldest.name} is ${Number(oldest.age).toFixed(1)} with ${oldest.valueDynasty.toLocaleString()} value; peak sell window`;
+    return `${oldest.name} is ${Number(oldest.age).toFixed(1)} and still worth ${oldest.valueDynasty.toLocaleString()}; cash out before the cliff`;
   }
 
   if (key === "age_arb_buy") {
-    return `window pressure ${profile.windowPressure.toFixed(0)} with pick score ${profile.pickCapital.score.toFixed(0)}; you can absorb an aging stud`;
+    return "young roster with time to spare; buy a proven vet at an age discount";
   }
 
   if (key === "push_in") {
-    return `window ${profile.windowTier}, ${profile.competitiveness}; convert future capital into now`;
+    return "your best players are peaking now; convert future picks into this year's lineup";
   }
 
   if (key === "need_fill") {
     const pos = mostUrgentPosition(profile);
-    const urgency = profile.positionScores[pos].urgency;
-    return `${pos} urgency ${urgency.toFixed(0)}; fill it with surplus elsewhere`;
+    return `${pos} is the thinnest spot on this roster; trade from strength to fix it`;
   }
 
   if (key === "capital_convert_picks_to_production") {
-    return `pick capital score ${profile.pickCapital.score.toFixed(0)}; turn picks into players`;
+    return "sitting on a pile of picks; turn some into players who help now";
   }
 
   if (key === "capital_convert_production_to_picks") {
-    return `pick capital score ${profile.pickCapital.score.toFixed(0)}; sell production for picks`;
+    return "light on future draft capital; selling a vet restocks the shelf";
   }
 
   return "";
@@ -252,7 +253,7 @@ export default function TeamDeepDive() {
             <span className="meta-pill">rank <strong>#{profile.starterRank}</strong></span>
             <span className="meta-pill">age <strong>{profile.starterCalAge.toFixed(1)}</strong></span>
             <span className="meta-pill">
-              picks <strong style={{ color: pickFlagColor }}>{profile.pickCapital.flag.replace("_", " ")}</strong>
+              picks <strong style={{ color: pickFlagColor }}>{pickFlagText(profile.pickCapital.flag)}</strong>
               <span style={{ color: "#475569" }}> · {profile.pickCapital.score.toFixed(0)}</span>
             </span>
             <span className="meta-pill">{profile.record}</span>
@@ -292,9 +293,12 @@ export default function TeamDeepDive() {
       <section className="dive-pos-section">
         <h2 className="section-title">SCOUTING REPORT</h2>
         <p className="dim-text scout-intro">Your best trade angles by the numbers. Send one to the trade finder.</p>
+        {(scoutEntries[0]?.[1] ?? 0) < 35 && (
+          <p className="scout-caveat">No screaming angles on this roster. These are the closest fits:</p>
+        )}
         <div className="scout-list">
           {scoutEntries.map(([key, score]) => {
-            const strength = score >= 60 ? "strong angle" : score >= 35 ? "worth exploring" : "situational";
+            const strength = score >= 60 ? "strong angle" : score >= 35 ? "worth a look" : score >= 15 ? "situational" : "a stretch";
             return (
               <div key={key} className="scout-row">
                 <div className="scout-row-main">
@@ -421,7 +425,7 @@ export default function TeamDeepDive() {
               total <strong>{sortedPicks.reduce((s, p) => s + p.value, 0).toLocaleString()}</strong>
             </span>
             <span className="meta-pill" style={{ fontSize: 10 }}>
-              capital <strong style={{ color: pickFlagColor }}>{profile.pickCapital.flag.replace("_", " ")}</strong>
+              capital <strong style={{ color: pickFlagColor }}>{pickFlagText(profile.pickCapital.flag)}</strong>
               <span style={{ color: "#475569" }}> · {profile.pickCapital.score.toFixed(0)}</span>
             </span>
           </div>

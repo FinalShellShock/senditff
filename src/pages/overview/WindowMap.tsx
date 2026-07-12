@@ -45,6 +45,13 @@ const Z_MAX = 2.0;
 const DOT_R = 7;
 const HIT_R = 15;
 
+// Plain-English stand-in for the "window pressure" number in tooltips.
+function windowTierPhrase(tier: "LONG" | "MID" | "SHORT"): string {
+  if (tier === "LONG") return "young core, long window";
+  if (tier === "MID") return "prime window";
+  return "win-now, window closing";
+}
+
 type Geometry = {
   W: number;
   H: number;
@@ -320,7 +327,7 @@ export default function WindowMap({
               onClick={() => navigate(`/league/${id}/team/${profile.rosterId}`)}
             >
               <title>
-                {`${profile.ownerName} — ${profile.windowLabel}\nstarter rank #${profile.starterRank} · window pressure ${profile.windowPressure.toFixed(0)}`}
+                {`${profile.ownerName} (${profile.windowLabel})\nstarter rank #${profile.starterRank} · ${windowTierPhrase(profile.windowTier)}`}
               </title>
               {/* hover/click target, larger than the mark */}
               <circle cx={x} cy={y} r={HIT_R} fill="transparent" />
