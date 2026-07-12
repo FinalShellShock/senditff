@@ -1,12 +1,71 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { computeAllProfiles } from "../../src/algo/profile";
 import { detectFormat } from "../../src/data/format";
-import { fetchLeague, fetchNflState, fetchPlayers } from "../../src/data/sleeper";
+import {
+  fetchLeague,
+  fetchLeagueOnly,
+  fetchLeagueUsersRosters,
+  fetchNflState,
+  fetchPlayers,
+} from "../../src/data/sleeper";
 import { findUpcomingDraft } from "../../src/data/picks";
+import type { SleeperNflState, SleeperRoster } from "../../src/data/types";
 import { adminDb } from "../_lib/admin";
 import { requireApprovedUser } from "../_lib/auth";
 import { buildTeamInputs } from "../_lib/buildTeams";
 import { getValueMaps } from "../_lib/snapshot";
+
+// Regular-season standing per roster: wins desc, then points desc. Roster
+// ids are stable across a Sleeper league's previous_league_id chain (same
+// assumption the trade history relies on).
+function standings(rosters: SleeperRoster[]): Map<number, number> {
+  const ranked = [...rosters].sort((a, b) => {
+    const wa = a.settings?.wins ?? 0;
+    const wb = b.settings?.wins ?? 0;
+    if (wa !== wb) return wb - wa;
+    const fa = parseFloat(String(a.settings?.fpts ?? 0));
+    const fb = parseFloat(String(b.settings?.fpts ?? 0));
+    if (fa !== fb) return fb - fa;
+    return a.roster_id - b.roster_id;
+  });
+  const map = new Map<number, number>();
+  ranked.forEach((r, i) => map.set(r.roster_id, i + 1));
+  return map;
+}
+
+// Past-season finishes (up to two seasons back) plus the current standing
+// when a season is actually underway. Replaces the meaningless "0-0" record.
+async function fetchPlacements(
+  league: { previous_league_id?: string },
+  rosters: SleeperRoster[],
+  nflState: SleeperNflState,
+): Promise<{
+  history: Map<number, Array<{ season: number; place: number }>>;
+  current: Map<number, number> | null;
+}> {
+  const history = new Map<number, Array<{ season: number; place: number }>>();
+  let cursor = league.previous_league_id;
+  for (let hop = 0; hop < 2 && cursor; hop++) {
+    try {
+      const prevLeague = await fetchLeagueOnly(cursor);
+      const season = parseInt(prevLeague.season ?? "", 10);
+      const { rosters: prevRosters } = await fetchLeagueUsersRosters(cursor);
+      if (Number.isFinite(season)) {
+        const places = standings(prevRosters);
+        for (const [rosterId, place] of places) {
+          const arr = history.get(rosterId) ?? [];
+          arr.push({ season, place });
+          history.set(rosterId, arr);
+        }
+      }
+      cursor = prevLeague.previous_league_id;
+    } catch {
+      break; // placements are garnish; never fail a sync over them
+    }
+  }
+  const inSeason = nflState.season_type === "regular" || nflState.season_type === "post";
+  return { history, current: inSeason ? standings(rosters) : null };
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -91,6 +150,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       { merge: true },
     );
 
+    const placements = await fetchPlacements(league, rosters, nflState);
     for (const profile of profiles) {
       const profileRef = leagueRef
         .collection("profiles")
@@ -100,6 +160,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       batch.set(profileRef, {
         ...profile,
         ownerSleeperUserId: roster?.owner_id ?? null,
+        placements: placements.history.get(profile.rosterId) ?? [],
+        currentPlace: placements.current?.get(profile.rosterId) ?? null,
         generatedAt: new Date().toISOString(),
       });
     }

@@ -16,12 +16,17 @@ const MODEL_HAIKU = "claude-haiku-4-5-20251001";
 
 // ── Rationale generation ─────────────────────────────────────────────────────
 
-function rationaleHash(pkg: Omit<TradePackage, "rationale">, myProfile: TeamProfile): string {
+function rationaleHash(
+  pkg: Omit<TradePackage, "rationale">,
+  myProfile: TeamProfile,
+  counterProfile?: TeamProfile,
+): string {
   const key = JSON.stringify({
     give: pkg.give.map((a) => a.id).sort(),
     receive: pkg.receive.map((a) => a.id).sort(),
     archetype: pkg.archetype,
     myWindow: myProfile.windowLabel,
+    theirWindow: counterProfile?.windowLabel ?? null,
     fairness: pkg.fairness,
   });
   return createHash("sha256").update(key).digest("hex");
@@ -45,6 +50,7 @@ function sanitizeRationale(text: string): string {
 async function generateRationale(
   pkg: Omit<TradePackage, "rationale">,
   myProfile: TeamProfile,
+  counterProfile?: TeamProfile,
 ): Promise<string> {
   const giveNames = pkg.give.map(describeAsset).join(", ");
   const receiveNames = pkg.receive.map(describeAsset).join(", ");
@@ -55,12 +61,16 @@ async function generateRationale(
       ? "The value is even."
       : `On raw value this is a ${fairnessText(pkg.fairness).toLowerCase()} for this team. Acknowledge that lean and why the deal can still make sense (or what it costs).`;
 
+  const counterNote = counterProfile
+    ? `${pkg.counterTeam} profiles as ${counterProfile.windowLabel} (${counterProfile.competitiveness}, ${counterProfile.windowTier} window).`
+    : "";
+
   const prompt = `You are analyzing a dynasty fantasy football trade for a team classified as ${myProfile.windowLabel} (${myProfile.competitiveness} competitiveness, ${myProfile.windowTier} window).
 
-Trade: Send ${giveNames} and receive ${receiveNames} from ${pkg.counterTeam}.
+Trade: Send ${giveNames} and receive ${receiveNames} from ${pkg.counterTeam}. ${counterNote}
 Trade type: ${archetypeLabel}. ${fairnessNote}
 
-Write 2-3 sentences explaining why this trade makes sense for this team right now. Be specific about the players, picks, and the team's situation. Plain prose only: no markdown, no headings, no bullet points, no em dashes.`;
+Write 3-4 sentences explaining why this trade makes sense for this team right now, and end with one sentence on why ${pkg.counterTeam} says yes given their situation (a trade nobody accepts is worthless). Be specific about the players, picks, and both teams' timelines. Plain prose only: no markdown, no headings, no bullet points, no em dashes.`;
 
   const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -84,8 +94,9 @@ Write 2-3 sentences explaining why this trade makes sense for this team right no
 async function addRationale(
   pkg: Omit<TradePackage, "rationale">,
   myProfile: TeamProfile,
+  counterProfile?: TeamProfile,
 ): Promise<TradePackage> {
-  const hash = rationaleHash(pkg, myProfile);
+  const hash = rationaleHash(pkg, myProfile, counterProfile);
   const cacheRef = adminDb.collection("rationaleCache").doc(hash);
   const cached = await cacheRef.get();
 
@@ -93,7 +104,7 @@ async function addRationale(
     return { ...pkg, rationale: sanitizeRationale(cached.data()?.["rationale"] as string) };
   }
 
-  const rationale = sanitizeRationale(await generateRationale(pkg, myProfile));
+  const rationale = sanitizeRationale(await generateRationale(pkg, myProfile, counterProfile));
   await cacheRef.set({ hash, rationale, archetype: pkg.archetype, generatedAt: new Date().toISOString() });
   return { ...pkg, rationale };
 }
@@ -179,7 +190,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     const withRationales = await Promise.all(
-      packages.map((pkg) => addRationale(pkg, myProfile)),
+      packages.map((pkg) =>
+        addRationale(pkg, myProfile, profiles.find((p) => p.rosterId === pkg.counterRosterId)),
+      ),
     );
 
     return res.status(200).json({ packages: withRationales, diagnostics });

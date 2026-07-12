@@ -679,6 +679,23 @@ async function fetchLeague(leagueId) {
     drafts: dR.ok ? await dR.json() : []
   };
 }
+async function fetchLeagueOnly(leagueId) {
+  const r = await fetch(`${SLEEPER}/league/${leagueId}`);
+  if (!r.ok) throw new Error(`Sleeper league fetch failed: HTTP ${r.status}`);
+  return await r.json();
+}
+async function fetchLeagueUsersRosters(leagueId) {
+  const [uR, rR] = await Promise.all([
+    fetch(`${SLEEPER}/league/${leagueId}/users`),
+    fetch(`${SLEEPER}/league/${leagueId}/rosters`)
+  ]);
+  if (!uR.ok) throw new Error(`Sleeper users fetch failed: HTTP ${uR.status}`);
+  if (!rR.ok) throw new Error(`Sleeper rosters fetch failed: HTTP ${rR.status}`);
+  return {
+    users: await uR.json(),
+    rosters: await rR.json()
+  };
+}
 async function fetchPlayers() {
   const r = await fetch(`${SLEEPER}/players/nfl`);
   if (!r.ok) throw new Error(`Sleeper players fetch failed: HTTP ${r.status}`);
@@ -1061,6 +1078,44 @@ function deserializeSnapshot(data) {
 }
 
 // api/leagues/sync.ts
+function standings(rosters) {
+  const ranked = [...rosters].sort((a, b) => {
+    const wa = a.settings?.wins ?? 0;
+    const wb = b.settings?.wins ?? 0;
+    if (wa !== wb) return wb - wa;
+    const fa = parseFloat(String(a.settings?.fpts ?? 0));
+    const fb = parseFloat(String(b.settings?.fpts ?? 0));
+    if (fa !== fb) return fb - fa;
+    return a.roster_id - b.roster_id;
+  });
+  const map = /* @__PURE__ */ new Map();
+  ranked.forEach((r, i) => map.set(r.roster_id, i + 1));
+  return map;
+}
+async function fetchPlacements(league, rosters, nflState) {
+  const history = /* @__PURE__ */ new Map();
+  let cursor = league.previous_league_id;
+  for (let hop = 0; hop < 2 && cursor; hop++) {
+    try {
+      const prevLeague = await fetchLeagueOnly(cursor);
+      const season = parseInt(prevLeague.season ?? "", 10);
+      const { rosters: prevRosters } = await fetchLeagueUsersRosters(cursor);
+      if (Number.isFinite(season)) {
+        const places = standings(prevRosters);
+        for (const [rosterId, place] of places) {
+          const arr = history.get(rosterId) ?? [];
+          arr.push({ season, place });
+          history.set(rosterId, arr);
+        }
+      }
+      cursor = prevLeague.previous_league_id;
+    } catch {
+      break;
+    }
+  }
+  const inSeason = nflState.season_type === "regular" || nflState.season_type === "post";
+  return { history, current: inSeason ? standings(rosters) : null };
+}
 async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   const user = await requireApprovedUser(req, res);
@@ -1117,12 +1172,15 @@ async function handler(req, res) {
       },
       { merge: true }
     );
+    const placements = await fetchPlacements(league, rosters, nflState);
     for (const profile of profiles) {
       const profileRef = leagueRef.collection("profiles").doc(String(profile.rosterId));
       const roster = rosters.find((r) => r.roster_id === profile.rosterId);
       batch.set(profileRef, {
         ...profile,
         ownerSleeperUserId: roster?.owner_id ?? null,
+        placements: placements.history.get(profile.rosterId) ?? [],
+        currentPlace: placements.current?.get(profile.rosterId) ?? null,
         generatedAt: (/* @__PURE__ */ new Date()).toISOString()
       });
     }

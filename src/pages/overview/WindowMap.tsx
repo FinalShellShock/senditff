@@ -1,11 +1,11 @@
-// Window Map: the league plotted on a continuous 2D field. On wide screens
-// x = window pressure (LONG left → SHORT right) and y = starter strength
-// (STRONG top). On phones the field rotates to portrait: x = strength (WEAK
-// left → STRONG right), y = window (LONG top → SHORT bottom), so the map
-// fills the screen with zero horizontal scrolling. The 3x3 band boundaries
-// reproduce the classic grid cells; dots land in the region matching their
-// windowLabel because both derive from the same numbers. Dashed trails
-// project each team 1-2 years out (Shotgun).
+// Window Map: the league plotted on a continuous 2D field. x = window
+// pressure (LONG left → SHORT right), y = starter strength (STRONG top) at
+// EVERY viewport: same mental model on phone and desktop. Phones just get a
+// taller, narrower field (labels stack via decollision) so nothing scrolls
+// horizontally. The 3x3 band boundaries reproduce the classic grid cells;
+// dots land in the region matching their windowLabel because both derive
+// from the same numbers. Dashed trails project each team 1-2 years out
+// (Shotgun).
 //
 // Readability rules (dataviz): identity comes from an ink-colored name label
 // beside each dot, never text inside the mark; the dot's color carries the
@@ -60,16 +60,16 @@ type Geometry = {
 function makeGeometry(portrait: boolean): Geometry {
   if (portrait) {
     const W = 460;
-    const H = 720;
-    const pad = { top: 34, right: 12, bottom: 34, left: 12 };
+    const H = 680;
+    const pad = { top: 22, right: 12, bottom: 30, left: 40 };
     return {
       W, H, pad,
       fw: W - pad.left - pad.right,
       fh: H - pad.top - pad.bottom,
       portrait,
-      nameMax: 11,
-      collideX: 115,
-      labelFlipMargin: 95,
+      nameMax: 10,
+      collideX: 110,
+      labelFlipMargin: 85,
     };
   }
   const W = 760;
@@ -106,16 +106,9 @@ function strengthFrac(z: number): number {
   return 2 / 3 + ((-STD_THRESHOLD - zc) / (Z_MAX - STD_THRESHOLD)) / 3;
 }
 
-// Map (window, strength) fractions to viewBox coordinates.
-// Landscape: window → x, strength → y.
-// Portrait: strength → x (WEAK left, STRONG right), window → y (LONG top).
+// Map (window, strength) fractions to viewBox coordinates. Window is always
+// the x axis, strength always the y axis, regardless of orientation.
 function toPoint(g: Geometry, fWindow: number, fStrength: number): { x: number; y: number } {
-  if (g.portrait) {
-    return {
-      x: g.pad.left + (1 - fStrength) * g.fw,
-      y: g.pad.top + fWindow * g.fh,
-    };
-  }
   return {
     x: g.pad.left + fWindow * g.fw,
     y: g.pad.top + fStrength * g.fh,
@@ -283,27 +276,14 @@ export default function WindowMap({
           );
         })}
 
-        {/* Axis labels */}
-        {portrait ? (
-          <>
-            <text x={g.pad.left} y={18} className="wm-axis-label" textAnchor="start">▲ LONG WINDOW</text>
-            <text x={g.pad.left + g.fw} y={18} className="wm-axis-label" textAnchor="end">◀ WEAK · STRONG ▶</text>
-            <text x={g.pad.left} y={g.H - 10} className="wm-axis-label" textAnchor="start">▼ SHORT WINDOW</text>
-            <text x={g.pad.left + g.fw} y={g.H - 10} className="wm-axis-label wm-axis-hint" textAnchor="end">
-              dashed = drift (+1y, +2y)
-            </text>
-          </>
-        ) : (
-          <>
-            <text x={g.pad.left} y={g.H - 10} className="wm-axis-label" textAnchor="start">◀ LONG WINDOW</text>
-            <text x={g.pad.left + g.fw} y={g.H - 10} className="wm-axis-label" textAnchor="end">SHORT WINDOW ▶</text>
-            <text x={16} y={g.pad.top + 10} className="wm-axis-label" textAnchor="start">STRONG ▲</text>
-            <text x={16} y={g.pad.top + g.fh} className="wm-axis-label" textAnchor="start">WEAK ▼</text>
-            <text x={g.pad.left + g.fw} y={16} className="wm-axis-label wm-axis-hint" textAnchor="end">
-              dashed trail = projected drift (+1y, +2y)
-            </text>
-          </>
-        )}
+        {/* Axis labels: same arrangement in both orientations */}
+        <text x={g.pad.left} y={g.H - 10} className="wm-axis-label" textAnchor="start">◀ LONG WINDOW</text>
+        <text x={g.pad.left + g.fw} y={g.H - 10} className="wm-axis-label" textAnchor="end">SHORT WINDOW ▶</text>
+        <text x={portrait ? 4 : 16} y={g.pad.top + 10} className="wm-axis-label" textAnchor="start">STRONG ▲</text>
+        <text x={portrait ? 4 : 16} y={g.pad.top + g.fh} className="wm-axis-label" textAnchor="start">WEAK ▼</text>
+        <text x={g.pad.left + g.fw} y={portrait ? 14 : 16} className="wm-axis-label wm-axis-hint" textAnchor="end">
+          {portrait ? "dashed = drift (+1y, +2y)" : "dashed trail = projected drift (+1y, +2y)"}
+        </text>
 
         {/* Trajectory trails under the dots (dashed = projection) */}
         {placed.map(({ profile, x, y, trail }) => {

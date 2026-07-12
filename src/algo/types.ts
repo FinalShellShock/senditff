@@ -110,6 +110,11 @@ export type TeamProfile = {
   ownerName: string;
   isMine: boolean;
   record: string;
+  // Regular-season finishes for recent past seasons (newest first) and the
+  // current standing when a season is actually underway. Attached by sync;
+  // optional because older profile docs predate it.
+  placements?: Array<{ season: number; place: number }>;
+  currentPlace?: number | null;
   players: Player[];
   picks: Pick[];
   starterTotalValue: number;

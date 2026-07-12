@@ -1,0 +1,5471 @@
+{
+  "defaults": {
+    "roster_1": {
+      "owner": "pickoff90",
+      "windowLabel": "MIDDLING",
+      "packages": [
+        {
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
+          "give": [
+            {
+              "id": "9224",
+              "kind": "player",
+              "name": "Chase Brown",
+              "position": "RB",
+              "valueDynasty": 4285
+            }
+          ],
+          "receive": [
+            {
+              "id": "8136",
+              "kind": "player",
+              "name": "Rachaad White",
+              "position": "RB",
+              "valueDynasty": 1628
+            },
+            {
+              "id": "8146",
+              "kind": "player",
+              "name": "Garrett Wilson",
+              "position": "WR",
+              "valueDynasty": 4027
+            }
+          ],
+          "valueGive": 4285,
+          "valueReceive": 5655,
+          "archetype": "tier_down_RB",
+          "fairness": "UNDERPAY",
+          "scores": {
+            "total": 0.5643820306877784,
+            "myFit": -0.06730897183150647,
+            "theirFit": 0.4508492296962657,
+            "balance": 0.8112920779074568,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "9228",
+              "kind": "player",
+              "name": "Bryce Young",
+              "position": "QB",
+              "valueDynasty": 1360
+            },
+            {
+              "id": "5846",
+              "kind": "player",
+              "name": "DK Metcalf",
+              "position": "WR",
+              "valueDynasty": 1847
+            }
+          ],
+          "receive": [
+            {
+              "id": "5850",
+              "kind": "player",
+              "name": "Josh Jacobs",
+              "position": "RB",
+              "valueDynasty": 2828
+            }
+          ],
+          "valueGive": 3207,
+          "valueReceive": 2828,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.5404017777116596,
+            "myFit": 0.10820657884121242,
+            "theirFit": -0.1463010977296823,
+            "balance": 0.9865048821067846,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
+          "give": [
+            {
+              "id": "9487",
+              "kind": "player",
+              "name": "Parker Washington",
+              "position": "WR",
+              "valueDynasty": 1979
+            }
+          ],
+          "receive": [
+            {
+              "id": "2027-3-5",
+              "kind": "pick",
+              "name": "2027 late 3rd",
+              "valueDynasty": 918
+            },
+            {
+              "id": "2028-2-5",
+              "kind": "pick",
+              "name": "2028 late 2nd",
+              "valueDynasty": 1147
+            }
+          ],
+          "valueGive": 1979,
+          "valueReceive": 2065,
+          "archetype": "capital_convert_production_to_picks",
+          "fairness": "SLIGHT_OVERPAY",
+          "scores": {
+            "total": 0.49494305235709135,
+            "myFit": -0.1059166957311347,
+            "theirFit": -0.10772751121944452,
+            "balance": 0.8942865291377506,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "7569",
+              "kind": "player",
+              "name": "Nico Collins",
+              "position": "WR",
+              "valueDynasty": 4219
+            }
+          ],
+          "receive": [
+            {
+              "id": "7526",
+              "kind": "player",
+              "name": "Jaylen Waddle",
+              "position": "WR",
+              "valueDynasty": 3067
+            },
+            {
+              "id": "5850",
+              "kind": "player",
+              "name": "Josh Jacobs",
+              "position": "RB",
+              "valueDynasty": 2828
+            }
+          ],
+          "valueGive": 4219,
+          "valueReceive": 5895,
+          "archetype": "tier_down_WR",
+          "fairness": "UNDERPAY",
+          "scores": {
+            "total": 0.49406901799197006,
+            "myFit": 0.10696272163875713,
+            "theirFit": -0.1632690199725637,
+            "balance": 0.8240702518107105,
+            "archMatch": 0.23399999999999999
+          }
+        },
+        {
+          "counterTeam": "FinalShellShock",
+          "counterRosterId": 6,
+          "give": [
+            {
+              "id": "9487",
+              "kind": "player",
+              "name": "Parker Washington",
+              "position": "WR",
+              "valueDynasty": 1979
+            }
+          ],
+          "receive": [
+            {
+              "id": "2028-2-6",
+              "kind": "pick",
+              "name": "2028 late 2nd",
+              "valueDynasty": 1147
+            },
+            {
+              "id": "2028-3-6",
+              "kind": "pick",
+              "name": "2028 late 3rd",
+              "valueDynasty": 861
+            }
+          ],
+          "valueGive": 1979,
+          "valueReceive": 2008,
+          "archetype": "capital_convert_production_to_picks",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.48914046220050267,
+            "myFit": -0.11189474256590028,
+            "theirFit": -0.11447459059443454,
+            "balance": 0.8726114649681529,
+            "archMatch": 0.3
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 357,
+        "afterDedup": 345,
+        "rejected": {
+          "myFit": 203,
+          "theirFit": 218,
+          "balance": 12
+        },
+        "forced": false
+      }
+    },
+    "roster_2": {
+      "owner": "supermiro",
+      "windowLabel": "RISING",
+      "packages": [
+        {
+          "counterTeam": "starknet",
+          "counterRosterId": 14,
+          "give": [
+            {
+              "id": "9493",
+              "kind": "player",
+              "name": "Puka Nacua",
+              "position": "WR",
+              "valueDynasty": 8508
+            }
+          ],
+          "receive": [
+            {
+              "id": "12514",
+              "kind": "player",
+              "name": "Emeka Egbuka",
+              "position": "WR",
+              "valueDynasty": 4460
+            },
+            {
+              "id": "12508",
+              "kind": "player",
+              "name": "Jaxson Dart",
+              "position": "QB",
+              "valueDynasty": 2886
+            }
+          ],
+          "valueGive": 8508,
+          "valueReceive": 7346,
+          "archetype": "tier_down_WR",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.43673698266950933,
+            "myFit": 0.10894150512371509,
+            "theirFit": -0.24399103598657654,
+            "balance": 0.7425838160435316,
+            "archMatch": 0.09
+          }
+        },
+        {
+          "counterTeam": "kwescoe3",
+          "counterRosterId": 16,
+          "give": [
+            {
+              "id": "12507",
+              "kind": "player",
+              "name": "Omarion Hampton",
+              "position": "RB",
+              "valueDynasty": 6394
+            }
+          ],
+          "receive": [
+            {
+              "id": "12481",
+              "kind": "player",
+              "name": "Cam Skattebo",
+              "position": "RB",
+              "valueDynasty": 3487
+            },
+            {
+              "id": "3163",
+              "kind": "player",
+              "name": "Jared Goff",
+              "position": "QB",
+              "valueDynasty": 1824
+            }
+          ],
+          "valueGive": 6394,
+          "valueReceive": 5311,
+          "archetype": "tier_down_RB",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.3794229298594151,
+            "myFit": -0.10922746226666194,
+            "theirFit": -0.2389532531439275,
+            "balance": 0.7241821070123937,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "kwescoe3",
+          "counterRosterId": 16,
+          "give": [
+            {
+              "id": "12507",
+              "kind": "player",
+              "name": "Omarion Hampton",
+              "position": "RB",
+              "valueDynasty": 6394
+            }
+          ],
+          "receive": [
+            {
+              "id": "11584",
+              "kind": "player",
+              "name": "Bucky Irving",
+              "position": "RB",
+              "valueDynasty": 3444
+            },
+            {
+              "id": "3163",
+              "kind": "player",
+              "name": "Jared Goff",
+              "position": "QB",
+              "valueDynasty": 1824
+            }
+          ],
+          "valueGive": 6394,
+          "valueReceive": 5268,
+          "archetype": "tier_down_RB",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.3779624996046721,
+            "myFit": -0.11400629682210277,
+            "theirFit": -0.2349580755992209,
+            "balance": 0.7172090982227748,
+            "archMatch": 0
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 299,
+        "afterDedup": 288,
+        "rejected": {
+          "myFit": 264,
+          "theirFit": 172,
+          "balance": 7
+        },
+        "forced": false
+      }
+    },
+    "roster_3": {
+      "owner": "thejester21",
+      "windowLabel": "RISING",
+      "packages": [
+        {
+          "counterTeam": "starknet",
+          "counterRosterId": 14,
+          "give": [
+            {
+              "id": "12527",
+              "kind": "player",
+              "name": "Ashton Jeanty",
+              "position": "RB",
+              "valueDynasty": 7937
+            }
+          ],
+          "receive": [
+            {
+              "id": "6786",
+              "kind": "player",
+              "name": "CeeDee Lamb",
+              "position": "WR",
+              "valueDynasty": 6332
+            }
+          ],
+          "valueGive": 7937,
+          "valueReceive": 6332,
+          "archetype": "age_arb_buy",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.4864143887724339,
+            "myFit": 0.006969916170656301,
+            "theirFit": 0.045185019167373525,
+            "balance": 0.7742961083427593,
+            "archMatch": 0.18
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "12506",
+              "kind": "player",
+              "name": "Harold Fannin",
+              "position": "TE",
+              "valueDynasty": 2830
+            }
+          ],
+          "receive": [
+            {
+              "id": "2505",
+              "kind": "player",
+              "name": "Darren Waller",
+              "position": "TE",
+              "valueDynasty": 96
+            },
+            {
+              "id": "7526",
+              "kind": "player",
+              "name": "Jaylen Waddle",
+              "position": "WR",
+              "valueDynasty": 3067
+            }
+          ],
+          "valueGive": 2830,
+          "valueReceive": 3163,
+          "archetype": "tier_down_TE",
+          "fairness": "SLIGHT_UNDERPAY",
+          "scores": {
+            "total": 0.5320033562559832,
+            "myFit": 0.15178900188282043,
+            "theirFit": -0.028459378240662834,
+            "balance": 0.8901190494912481,
+            "archMatch": 0.23399999999999999
+          }
+        },
+        {
+          "counterTeam": "FinalShellShock",
+          "counterRosterId": 6,
+          "give": [
+            {
+              "id": "10236",
+              "kind": "player",
+              "name": "Dalton Kincaid",
+              "position": "TE",
+              "valueDynasty": 1746
+            },
+            {
+              "id": "5001",
+              "kind": "player",
+              "name": "Dalton Schultz",
+              "position": "TE",
+              "valueDynasty": 1127
+            }
+          ],
+          "receive": [
+            {
+              "id": "7553",
+              "kind": "player",
+              "name": "Kyle Pitts",
+              "position": "TE",
+              "valueDynasty": 2627
+            }
+          ],
+          "valueGive": 2873,
+          "valueReceive": 2627,
+          "archetype": "consolidate_TE",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.47135549109724084,
+            "myFit": 0.07405563977841158,
+            "theirFit": -0.09440121491397382,
+            "balance": 0.9595708823369515,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
+          "give": [
+            {
+              "id": "12506",
+              "kind": "player",
+              "name": "Harold Fannin",
+              "position": "TE",
+              "valueDynasty": 2830
+            }
+          ],
+          "receive": [
+            {
+              "id": "5844",
+              "kind": "player",
+              "name": "T.J. Hockenson",
+              "position": "TE",
+              "valueDynasty": 1295
+            },
+            {
+              "id": "5967",
+              "kind": "player",
+              "name": "Tony Pollard",
+              "position": "RB",
+              "valueDynasty": 1708
+            }
+          ],
+          "valueGive": 2830,
+          "valueReceive": 3003,
+          "archetype": "tier_down_TE",
+          "fairness": "SLIGHT_OVERPAY",
+          "scores": {
+            "total": 0.4678570001075265,
+            "myFit": 0.012254384685060746,
+            "theirFit": -0.1331217881413706,
+            "balance": 0.9151852716539371,
+            "archMatch": 0.09
+          }
+        },
+        {
+          "counterTeam": "kwescoe3",
+          "counterRosterId": 16,
+          "give": [
+            {
+              "id": "12527",
+              "kind": "player",
+              "name": "Ashton Jeanty",
+              "position": "RB",
+              "valueDynasty": 7937
+            }
+          ],
+          "receive": [
+            {
+              "id": "12481",
+              "kind": "player",
+              "name": "Cam Skattebo",
+              "position": "RB",
+              "valueDynasty": 3487
+            },
+            {
+              "id": "11631",
+              "kind": "player",
+              "name": "Brian Thomas",
+              "position": "WR",
+              "valueDynasty": 3264
+            }
+          ],
+          "valueGive": 7937,
+          "valueReceive": 6751,
+          "archetype": "tier_down_RB",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.439141546584097,
+            "myFit": 0.21711810767016176,
+            "theirFit": -0.16548102206387238,
+            "balance": 0.708722180254518,
+            "archMatch": 0
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 367,
+        "afterDedup": 363,
+        "rejected": {
+          "myFit": 247,
+          "theirFit": 232,
+          "balance": 7
+        },
+        "forced": false
+      }
+    },
+    "roster_4": {
+      "owner": "FustinJerguson",
+      "windowLabel": "REBUILD",
+      "packages": [
+        {
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
+          "give": [
+            {
+              "id": "11632",
+              "kind": "player",
+              "name": "Malik Nabers",
+              "position": "WR",
+              "valueDynasty": 6521
+            }
+          ],
+          "receive": [
+            {
+              "id": "9754",
+              "kind": "player",
+              "name": "Quentin Johnston",
+              "position": "WR",
+              "valueDynasty": 1996
+            },
+            {
+              "id": "4034",
+              "kind": "player",
+              "name": "Christian McCaffrey",
+              "position": "RB",
+              "valueDynasty": 4510
+            }
+          ],
+          "valueGive": 6521,
+          "valueReceive": 6506,
+          "archetype": "tier_down_WR",
+          "fairness": "SLIGHT_OVERPAY",
+          "scores": {
+            "total": 0.5571639364557152,
+            "myFit": 0.10098472039185352,
+            "theirFit": 0.09923174661557763,
+            "balance": 0.895077425926876,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "2306",
+              "kind": "player",
+              "name": "Jameis Winston",
+              "position": "QB",
+              "valueDynasty": 141
+            },
+            {
+              "id": "2027-3-4",
+              "kind": "pick",
+              "name": "2027 early 3rd",
+              "valueDynasty": 1054
+            },
+            {
+              "id": "2028-1-4",
+              "kind": "pick",
+              "name": "2028 early 1st",
+              "valueDynasty": 2241
+            }
+          ],
+          "receive": [
+            {
+              "id": "7526",
+              "kind": "player",
+              "name": "Jaylen Waddle",
+              "position": "WR",
+              "valueDynasty": 3067
+            }
+          ],
+          "valueGive": 3436,
+          "valueReceive": 3067,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.6572201643362492,
+            "myFit": 0.04240604496349118,
+            "theirFit": -0.10540205280038124,
+            "balance": 0.9948415807452443,
+            "archMatch": 0.8459999999999999
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "2026-1-4",
+              "kind": "pick",
+              "name": "2026 1.04",
+              "valueDynasty": 3464
+            },
+            {
+              "id": "2026-2-4",
+              "kind": "pick",
+              "name": "2026 2.04",
+              "valueDynasty": 1762
+            }
+          ],
+          "receive": [
+            {
+              "id": "12526",
+              "kind": "player",
+              "name": "Tetairoa McMillan",
+              "position": "WR",
+              "valueDynasty": 4872
+            }
+          ],
+          "valueGive": 5226,
+          "valueReceive": 4872,
+          "archetype": "capital_convert_picks_to_production",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.47413220122479605,
+            "myFit": 0.03650749601061174,
+            "theirFit": -0.03062072728300999,
+            "balance": 0.9587661315706643,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "kwescoe3",
+          "counterRosterId": 16,
+          "give": [
+            {
+              "id": "2026-1-4",
+              "kind": "pick",
+              "name": "2026 1.04",
+              "valueDynasty": 3464
+            },
+            {
+              "id": "2027-2-15",
+              "kind": "pick",
+              "name": "2027 mid 2nd (via jde5011)",
+              "valueDynasty": 1404
+            }
+          ],
+          "receive": [
+            {
+              "id": "8137",
+              "kind": "player",
+              "name": "George Pickens",
+              "position": "WR",
+              "valueDynasty": 4575
+            }
+          ],
+          "valueGive": 4868,
+          "valueReceive": 4575,
+          "archetype": "capital_convert_picks_to_production",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.4671067454409966,
+            "myFit": 0.06143679643123929,
+            "theirFit": -0.12042852202956482,
+            "balance": 0.9674269505340968,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
+          "give": [
+            {
+              "id": "11632",
+              "kind": "player",
+              "name": "Malik Nabers",
+              "position": "WR",
+              "valueDynasty": 6521
+            }
+          ],
+          "receive": [
+            {
+              "id": "5927",
+              "kind": "player",
+              "name": "Terry McLaurin",
+              "position": "WR",
+              "valueDynasty": 2195
+            },
+            {
+              "id": "12529",
+              "kind": "player",
+              "name": "TreVeyon Henderson",
+              "position": "RB",
+              "valueDynasty": 4165
+            }
+          ],
+          "valueGive": 6521,
+          "valueReceive": 6360,
+          "archetype": "tier_down_WR",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.46638446776656917,
+            "myFit": 0.14900159680823513,
+            "theirFit": -0.2306561685604381,
+            "balance": 0.8613115326428489,
+            "archMatch": 0.09
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 301,
+        "afterDedup": 297,
+        "rejected": {
+          "myFit": 216,
+          "theirFit": 187,
+          "balance": 4
+        },
+        "forced": false
+      }
+    },
+    "roster_5": {
+      "owner": "Daneo29",
+      "windowLabel": "CLOSING",
+      "packages": [
+        {
+          "counterTeam": "starknet",
+          "counterRosterId": 14,
+          "give": [
+            {
+              "id": "4034",
+              "kind": "player",
+              "name": "Christian McCaffrey",
+              "position": "RB",
+              "valueDynasty": 4510
+            }
+          ],
+          "receive": [
+            {
+              "id": "12514",
+              "kind": "player",
+              "name": "Emeka Egbuka",
+              "position": "WR",
+              "valueDynasty": 4460
+            }
+          ],
+          "valueGive": 4510,
+          "valueReceive": 4460,
+          "archetype": "age_arb_sell",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.6915645435353921,
+            "myFit": 0.19331618655435331,
+            "theirFit": 0.06517888493896365,
+            "balance": 0.9872717210846708,
+            "archMatch": 0.7899999999999999
+          }
+        },
+        {
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
+          "give": [
+            {
+              "id": "4034",
+              "kind": "player",
+              "name": "Christian McCaffrey",
+              "position": "RB",
+              "valueDynasty": 4510
+            }
+          ],
+          "receive": [
+            {
+              "id": "7569",
+              "kind": "player",
+              "name": "Nico Collins",
+              "position": "WR",
+              "valueDynasty": 4219
+            }
+          ],
+          "valueGive": 4510,
+          "valueReceive": 4219,
+          "archetype": "age_arb_buy",
+          "fairness": "SLIGHT_OVERPAY",
+          "scores": {
+            "total": 0.560126158944901,
+            "myFit": 0.2883470073975447,
+            "theirFit": 0.05442090825368641,
+            "balance": 0.9265095033654323,
+            "archMatch": 0.18
+          }
+        },
+        {
+          "counterTeam": "kwescoe3",
+          "counterRosterId": 16,
+          "give": [
+            {
+              "id": "8112",
+              "kind": "player",
+              "name": "Drake London",
+              "position": "WR",
+              "valueDynasty": 5795
+            }
+          ],
+          "receive": [
+            {
+              "id": "11631",
+              "kind": "player",
+              "name": "Brian Thomas",
+              "position": "WR",
+              "valueDynasty": 3264
+            },
+            {
+              "id": "6819",
+              "kind": "player",
+              "name": "Michael Pittman",
+              "position": "WR",
+              "valueDynasty": 1776
+            }
+          ],
+          "valueGive": 5795,
+          "valueReceive": 5040,
+          "archetype": "tier_down_WR",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.45014734871460593,
+            "myFit": 0.01597429424254106,
+            "theirFit": 0.0787339231367523,
+            "balance": 0.7587150688703004,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "2026-3-5",
+              "kind": "pick",
+              "name": "2026 3.09",
+              "valueDynasty": 1019
+            },
+            {
+              "id": "2027-1-5",
+              "kind": "pick",
+              "name": "2027 late 1st",
+              "valueDynasty": 2148
+            }
+          ],
+          "receive": [
+            {
+              "id": "5850",
+              "kind": "player",
+              "name": "Josh Jacobs",
+              "position": "RB",
+              "valueDynasty": 2828
+            }
+          ],
+          "valueGive": 3167,
+          "valueReceive": 2828,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.645880509860019,
+            "myFit": 0.7268794984852973,
+            "theirFit": -0.10288193740515333,
+            "balance": 0.9887958963282938,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "8112",
+              "kind": "player",
+              "name": "Drake London",
+              "position": "WR",
+              "valueDynasty": 5795
+            }
+          ],
+          "receive": [
+            {
+              "id": "10229",
+              "kind": "player",
+              "name": "Rashee Rice",
+              "position": "WR",
+              "valueDynasty": 3650
+            },
+            {
+              "id": "5850",
+              "kind": "player",
+              "name": "Josh Jacobs",
+              "position": "RB",
+              "valueDynasty": 2828
+            }
+          ],
+          "valueGive": 5795,
+          "valueReceive": 6478,
+          "archetype": "tier_down_WR",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.6254406814491552,
+            "myFit": 0.7819554178421835,
+            "theirFit": -0.1795621275066327,
+            "balance": 0.966591735807414,
+            "archMatch": 0.23399999999999999
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 272,
+        "afterDedup": 267,
+        "rejected": {
+          "myFit": 151,
+          "theirFit": 170,
+          "balance": 8
+        },
+        "forced": false
+      }
+    },
+    "roster_6": {
+      "owner": "FinalShellShock",
+      "windowLabel": "CLOSING",
+      "packages": [
+        {
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
+          "give": [
+            {
+              "id": "6813",
+              "kind": "player",
+              "name": "Jonathan Taylor",
+              "position": "RB",
+              "valueDynasty": 5957
+            }
+          ],
+          "receive": [
+            {
+              "id": "8136",
+              "kind": "player",
+              "name": "Rachaad White",
+              "position": "RB",
+              "valueDynasty": 1628
+            },
+            {
+              "id": "8146",
+              "kind": "player",
+              "name": "Garrett Wilson",
+              "position": "WR",
+              "valueDynasty": 4027
+            }
+          ],
+          "valueGive": 5957,
+          "valueReceive": 5655,
+          "archetype": "tier_down_RB",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.5996817005111158,
+            "myFit": 0.06964328882565048,
+            "theirFit": 0.49261466839576035,
+            "balance": 0.8531817817978067,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "kwescoe3",
+          "counterRosterId": 16,
+          "give": [
+            {
+              "id": "7528",
+              "kind": "player",
+              "name": "Najee Harris",
+              "position": "RB",
+              "valueDynasty": 386
+            },
+            {
+              "id": "2027-1-15",
+              "kind": "pick",
+              "name": "2027 mid 1st (via jde5011)",
+              "valueDynasty": 2510
+            },
+            {
+              "id": "2027-1-6",
+              "kind": "pick",
+              "name": "2027 late 1st",
+              "valueDynasty": 2148
+            }
+          ],
+          "receive": [
+            {
+              "id": "8137",
+              "kind": "player",
+              "name": "George Pickens",
+              "position": "WR",
+              "valueDynasty": 4575
+            }
+          ],
+          "valueGive": 5044,
+          "valueReceive": 4575,
+          "archetype": "push_in",
+          "fairness": "SLIGHT_UNDERPAY",
+          "scores": {
+            "total": 0.6559456754594878,
+            "myFit": 0.3573639433097067,
+            "theirFit": -0.14392668923311122,
+            "balance": 0.9162065612365012,
+            "archMatch": 0.7
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "2027-1-6",
+              "kind": "pick",
+              "name": "2027 late 1st",
+              "valueDynasty": 2148
+            },
+            {
+              "id": "2028-2-6",
+              "kind": "pick",
+              "name": "2028 late 2nd",
+              "valueDynasty": 1147
+            }
+          ],
+          "receive": [
+            {
+              "id": "5850",
+              "kind": "player",
+              "name": "Josh Jacobs",
+              "position": "RB",
+              "valueDynasty": 2828
+            }
+          ],
+          "valueGive": 3295,
+          "valueReceive": 2828,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.5948267043558373,
+            "myFit": 0.4513151892279065,
+            "theirFit": -0.11015590092425721,
+            "balance": 0.955767223382046,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "7528",
+              "kind": "player",
+              "name": "Najee Harris",
+              "position": "RB",
+              "valueDynasty": 386
+            },
+            {
+              "id": "2028-1-6",
+              "kind": "pick",
+              "name": "2028 late 1st",
+              "valueDynasty": 1660
+            },
+            {
+              "id": "2028-2-6",
+              "kind": "pick",
+              "name": "2028 late 2nd",
+              "valueDynasty": 1147
+            }
+          ],
+          "receive": [
+            {
+              "id": "5850",
+              "kind": "player",
+              "name": "Josh Jacobs",
+              "position": "RB",
+              "valueDynasty": 2828
+            }
+          ],
+          "valueGive": 3193,
+          "valueReceive": 2828,
+          "archetype": "age_arb_buy",
+          "fairness": "SLIGHT_UNDERPAY",
+          "scores": {
+            "total": 0.5925332922753297,
+            "myFit": 0.4736588124763152,
+            "theirFit": -0.13249952417266586,
+            "balance": 0.940543420351625,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
+          "give": [
+            {
+              "id": "7528",
+              "kind": "player",
+              "name": "Najee Harris",
+              "position": "RB",
+              "valueDynasty": 386
+            },
+            {
+              "id": "2026-2-1",
+              "kind": "pick",
+              "name": "2026 2.10 (via pickoff90)",
+              "valueDynasty": 1402
+            }
+          ],
+          "receive": [
+            {
+              "id": "5967",
+              "kind": "player",
+              "name": "Tony Pollard",
+              "position": "RB",
+              "valueDynasty": 1708
+            }
+          ],
+          "valueGive": 1788,
+          "valueReceive": 1708,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.5468787148697877,
+            "myFit": 0.37234006307362494,
+            "theirFit": -0.19908864265698603,
+            "balance": 0.9754261930554763,
+            "archMatch": 0.18
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 260,
+        "afterDedup": 256,
+        "rejected": {
+          "myFit": 166,
+          "theirFit": 151,
+          "balance": 7
+        },
+        "forced": false
+      }
+    },
+    "roster_7": {
+      "owner": "mtakacs12",
+      "windowLabel": "STUCK",
+      "packages": [
+        {
+          "counterTeam": "starknet",
+          "counterRosterId": 14,
+          "give": [
+            {
+              "id": "5859",
+              "kind": "player",
+              "name": "A.J. Brown",
+              "position": "WR",
+              "valueDynasty": 3756
+            }
+          ],
+          "receive": [
+            {
+              "id": "4983",
+              "kind": "player",
+              "name": "DJ Moore",
+              "position": "WR",
+              "valueDynasty": 2192
+            },
+            {
+              "id": "12508",
+              "kind": "player",
+              "name": "Jaxson Dart",
+              "position": "QB",
+              "valueDynasty": 2886
+            }
+          ],
+          "valueGive": 3756,
+          "valueReceive": 5078,
+          "archetype": "tier_down_WR",
+          "fairness": "UNDERPAY",
+          "scores": {
+            "total": 0.5228328327325142,
+            "myFit": 0.20140908060231238,
+            "theirFit": 0.14303560572921148,
+            "balance": 0.8376799724114147,
+            "archMatch": 0.09
+          }
+        },
+        {
+          "counterTeam": "FinalShellShock",
+          "counterRosterId": 6,
+          "give": [
+            {
+              "id": "6790",
+              "kind": "player",
+              "name": "D'Andre Swift",
+              "position": "RB",
+              "valueDynasty": 2342
+            }
+          ],
+          "receive": [
+            {
+              "id": "3294",
+              "kind": "player",
+              "name": "Dak Prescott",
+              "position": "QB",
+              "valueDynasty": 2226
+            }
+          ],
+          "valueGive": 2342,
+          "valueReceive": 2226,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.5285319511875162,
+            "myFit": 0.06742478907643458,
+            "theirFit": -0.1291346527073615,
+            "balance": 0.9434602017462066,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "FustinJerguson",
+          "counterRosterId": 4,
+          "give": [
+            {
+              "id": "7021",
+              "kind": "player",
+              "name": "Rico Dowdle",
+              "position": "RB",
+              "valueDynasty": 1790
+            },
+            {
+              "id": "8167",
+              "kind": "player",
+              "name": "Christian Watson",
+              "position": "WR",
+              "valueDynasty": 2227
+            }
+          ],
+          "receive": [
+            {
+              "id": "4881",
+              "kind": "player",
+              "name": "Lamar Jackson",
+              "position": "QB",
+              "valueDynasty": 3738
+            }
+          ],
+          "valueGive": 4017,
+          "valueReceive": 3738,
+          "archetype": "consolidate_flex",
+          "fairness": "SLIGHT_UNDERPAY",
+          "scores": {
+            "total": 0.523109682670858,
+            "myFit": 0.33055265453959604,
+            "theirFit": -0.1907275361908159,
+            "balance": 0.92290618339576,
+            "archMatch": 0.13999999999999999
+          }
+        },
+        {
+          "counterTeam": "FinalShellShock",
+          "counterRosterId": 6,
+          "give": [
+            {
+              "id": "4217",
+              "kind": "player",
+              "name": "George Kittle",
+              "position": "TE",
+              "valueDynasty": 1867
+            },
+            {
+              "id": "11626",
+              "kind": "player",
+              "name": "Xavier Legette",
+              "position": "WR",
+              "valueDynasty": 525
+            }
+          ],
+          "receive": [
+            {
+              "id": "3294",
+              "kind": "player",
+              "name": "Dak Prescott",
+              "position": "QB",
+              "valueDynasty": 2226
+            }
+          ],
+          "valueGive": 2392,
+          "valueReceive": 2226,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.5210757080922168,
+            "myFit": -0.050116928642633674,
+            "theirFit": -0.11673455263972686,
+            "balance": 0.9968736335811106,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "starknet",
+          "counterRosterId": 14,
+          "give": [
+            {
+              "id": "9480",
+              "kind": "player",
+              "name": "Brenton Strange",
+              "position": "TE",
+              "valueDynasty": 1565
+            },
+            {
+              "id": "4217",
+              "kind": "player",
+              "name": "George Kittle",
+              "position": "TE",
+              "valueDynasty": 1867
+            }
+          ],
+          "receive": [
+            {
+              "id": "6904",
+              "kind": "player",
+              "name": "Jalen Hurts",
+              "position": "QB",
+              "valueDynasty": 2912
+            }
+          ],
+          "valueGive": 3432,
+          "valueReceive": 2912,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.48581754407000344,
+            "myFit": -0.14621521435691948,
+            "theirFit": -0.05348609781748337,
+            "balance": 0.9838890670086566,
+            "archMatch": 0.18
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 328,
+        "afterDedup": 317,
+        "rejected": {
+          "myFit": 260,
+          "theirFit": 181,
+          "balance": 22
+        },
+        "forced": false
+      }
+    },
+    "roster_8": {
+      "owner": "stillblazzin2",
+      "windowLabel": "STUCK",
+      "packages": [
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "2026-1-6",
+              "kind": "pick",
+              "name": "2026 1.15 (via FinalShellShock)",
+              "valueDynasty": 2101
+            },
+            {
+              "id": "2026-3-11",
+              "kind": "pick",
+              "name": "2026 3.07 (via cwescoe1511)",
+              "valueDynasty": 1073
+            }
+          ],
+          "receive": [
+            {
+              "id": "5850",
+              "kind": "player",
+              "name": "Josh Jacobs",
+              "position": "RB",
+              "valueDynasty": 2828
+            }
+          ],
+          "valueGive": 3174,
+          "valueReceive": 2828,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.5203602536648512,
+            "myFit": -0.0714263000317809,
+            "theirFit": -0.09180100824972078,
+            "balance": 0.9924477934716497,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
+          "give": [
+            {
+              "id": "2027-3-8",
+              "kind": "pick",
+              "name": "2027 early 3rd",
+              "valueDynasty": 1054
+            },
+            {
+              "id": "2028-3-8",
+              "kind": "pick",
+              "name": "2028 early 3rd",
+              "valueDynasty": 942
+            }
+          ],
+          "receive": [
+            {
+              "id": "5967",
+              "kind": "player",
+              "name": "Tony Pollard",
+              "position": "RB",
+              "valueDynasty": 1708
+            }
+          ],
+          "valueGive": 1996,
+          "valueReceive": 1708,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.4827866692388598,
+            "myFit": -0.030414502751331136,
+            "theirFit": -0.22712600708163957,
+            "balance": 0.9991701703916795,
+            "archMatch": 0.18
+          }
+        },
+        {
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
+          "give": [
+            {
+              "id": "11571",
+              "kind": "player",
+              "name": "Isaiah Davis",
+              "position": "RB",
+              "valueDynasty": 398
+            },
+            {
+              "id": "2028-2-8",
+              "kind": "pick",
+              "name": "2028 early 2nd",
+              "valueDynasty": 1310
+            }
+          ],
+          "receive": [
+            {
+              "id": "5967",
+              "kind": "player",
+              "name": "Tony Pollard",
+              "position": "RB",
+              "valueDynasty": 1708
+            }
+          ],
+          "valueGive": 1708,
+          "valueReceive": 1708,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.4741689280698177,
+            "myFit": -0.008929213930211384,
+            "theirFit": -0.2129847437617637,
+            "balance": 0.9211970356961023,
+            "archMatch": 0.18
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 282,
+        "afterDedup": 269,
+        "rejected": {
+          "myFit": 251,
+          "theirFit": 161,
+          "balance": 14
+        },
+        "forced": false
+      }
+    },
+    "roster_9": {
+      "owner": "buzzy5",
+      "windowLabel": "CLOSING",
+      "packages": [
+        {
+          "counterTeam": "starknet",
+          "counterRosterId": 14,
+          "give": [
+            {
+              "id": "7526",
+              "kind": "player",
+              "name": "Jaylen Waddle",
+              "position": "WR",
+              "valueDynasty": 3067
+            }
+          ],
+          "receive": [
+            {
+              "id": "6904",
+              "kind": "player",
+              "name": "Jalen Hurts",
+              "position": "QB",
+              "valueDynasty": 2912
+            }
+          ],
+          "valueGive": 3067,
+          "valueReceive": 2912,
+          "archetype": "age_arb_buy",
+          "fairness": "SLIGHT_OVERPAY",
+          "scores": {
+            "total": 0.5547108282768061,
+            "myFit": 0.026697813456528836,
+            "theirFit": 0.29444166606251,
+            "balance": 0.9423185826389451,
+            "archMatch": 0.18
+          }
+        },
+        {
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
+          "give": [
+            {
+              "id": "12526",
+              "kind": "player",
+              "name": "Tetairoa McMillan",
+              "position": "WR",
+              "valueDynasty": 4872
+            }
+          ],
+          "receive": [
+            {
+              "id": "9754",
+              "kind": "player",
+              "name": "Quentin Johnston",
+              "position": "WR",
+              "valueDynasty": 1996
+            },
+            {
+              "id": "4034",
+              "kind": "player",
+              "name": "Christian McCaffrey",
+              "position": "RB",
+              "valueDynasty": 4510
+            }
+          ],
+          "valueGive": 4872,
+          "valueReceive": 6506,
+          "archetype": "tier_down_WR",
+          "fairness": "UNDERPAY",
+          "scores": {
+            "total": 0.5188323818081784,
+            "myFit": -0.007966617573298723,
+            "theirFit": 0.06359055906956514,
+            "balance": 0.8066909019453724,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "FinalShellShock",
+          "counterRosterId": 6,
+          "give": [
+            {
+              "id": "5850",
+              "kind": "player",
+              "name": "Josh Jacobs",
+              "position": "RB",
+              "valueDynasty": 2828
+            }
+          ],
+          "receive": [
+            {
+              "id": "2028-1-6",
+              "kind": "pick",
+              "name": "2028 late 1st",
+              "valueDynasty": 1660
+            },
+            {
+              "id": "2028-2-6",
+              "kind": "pick",
+              "name": "2028 late 2nd",
+              "valueDynasty": 1147
+            }
+          ],
+          "valueGive": 2828,
+          "valueReceive": 2807,
+          "archetype": "age_arb_sell",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.7196035192557224,
+            "myFit": -0.13249952417266586,
+            "theirFit": 0.4736588124763152,
+            "balance": 0.8582844965370272,
+            "archMatch": 1
+          }
+        },
+        {
+          "counterTeam": "FinalShellShock",
+          "counterRosterId": 6,
+          "give": [
+            {
+              "id": "2216",
+              "kind": "player",
+              "name": "Mike Evans",
+              "position": "WR",
+              "valueDynasty": 2016
+            }
+          ],
+          "receive": [
+            {
+              "id": "2028-2-6",
+              "kind": "pick",
+              "name": "2028 late 2nd",
+              "valueDynasty": 1147
+            },
+            {
+              "id": "2028-3-6",
+              "kind": "pick",
+              "name": "2028 late 3rd",
+              "valueDynasty": 861
+            }
+          ],
+          "valueGive": 2016,
+          "valueReceive": 2008,
+          "archetype": "age_arb_sell",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.710384344258937,
+            "myFit": -0.10196791161695841,
+            "theirFit": 0.3767354200520443,
+            "balance": 0.8553125072798007,
+            "archMatch": 1
+          }
+        },
+        {
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
+          "give": [
+            {
+              "id": "2216",
+              "kind": "player",
+              "name": "Mike Evans",
+              "position": "WR",
+              "valueDynasty": 2016
+            }
+          ],
+          "receive": [
+            {
+              "id": "2028-2-5",
+              "kind": "pick",
+              "name": "2028 late 2nd",
+              "valueDynasty": 1147
+            },
+            {
+              "id": "2028-3-5",
+              "kind": "pick",
+              "name": "2028 late 3rd",
+              "valueDynasty": 861
+            }
+          ],
+          "valueGive": 2016,
+          "valueReceive": 2008,
+          "archetype": "age_arb_sell",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.7089405004088514,
+            "myFit": -0.10196791161695841,
+            "theirFit": 0.3664222496942894,
+            "balance": 0.8553125072798007,
+            "archMatch": 1
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 334,
+        "afterDedup": 330,
+        "rejected": {
+          "myFit": 95,
+          "theirFit": 206,
+          "balance": 12
+        },
+        "forced": false
+      }
+    },
+    "roster_10": {
+      "owner": "Numlckr",
+      "windowLabel": "TRANSITION",
+      "packages": [
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "9226",
+              "kind": "player",
+              "name": "De'Von Achane",
+              "position": "RB",
+              "valueDynasty": 6386
+            }
+          ],
+          "receive": [
+            {
+              "id": "12512",
+              "kind": "player",
+              "name": "Quinshon Judkins",
+              "position": "RB",
+              "valueDynasty": 4322
+            },
+            {
+              "id": "7002",
+              "kind": "player",
+              "name": "Juwan Johnson",
+              "position": "TE",
+              "valueDynasty": 1207
+            }
+          ],
+          "valueGive": 6386,
+          "valueReceive": 5529,
+          "archetype": "tier_down_RB",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.5174341482935841,
+            "myFit": 0.2514994578240713,
+            "theirFit": -0.11738601027388355,
+            "balance": 0.7897126471115359,
+            "archMatch": 0.23399999999999999
+          }
+        },
+        {
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
+          "give": [
+            {
+              "id": "9226",
+              "kind": "player",
+              "name": "De'Von Achane",
+              "position": "RB",
+              "valueDynasty": 6386
+            }
+          ],
+          "receive": [
+            {
+              "id": "12529",
+              "kind": "player",
+              "name": "TreVeyon Henderson",
+              "position": "RB",
+              "valueDynasty": 4165
+            },
+            {
+              "id": "5844",
+              "kind": "player",
+              "name": "T.J. Hockenson",
+              "position": "TE",
+              "valueDynasty": 1295
+            }
+          ],
+          "valueGive": 6386,
+          "valueReceive": 5460,
+          "archetype": "tier_down_RB",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.4734863486929761,
+            "myFit": 0.30772864170724273,
+            "theirFit": -0.24914541130090312,
+            "balance": 0.7740562422330206,
+            "archMatch": 0.09
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 234,
+        "afterDedup": 220,
+        "rejected": {
+          "myFit": 172,
+          "theirFit": 155,
+          "balance": 6
+        },
+        "forced": false
+      }
+    },
+    "roster_11": {
+      "owner": "cwescoe1511",
+      "windowLabel": "JUGGERNAUT",
+      "packages": [
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "8150",
+              "kind": "player",
+              "name": "Kyren Williams",
+              "position": "RB",
+              "valueDynasty": 3674
+            }
+          ],
+          "receive": [
+            {
+              "id": "5850",
+              "kind": "player",
+              "name": "Josh Jacobs",
+              "position": "RB",
+              "valueDynasty": 2828
+            },
+            {
+              "id": "7002",
+              "kind": "player",
+              "name": "Juwan Johnson",
+              "position": "TE",
+              "valueDynasty": 1207
+            }
+          ],
+          "valueGive": 3674,
+          "valueReceive": 4035,
+          "archetype": "tier_down_RB",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.5298379561290706,
+            "myFit": 0.11616949867619815,
+            "theirFit": -0.14202468616822622,
+            "balance": 0.9980794022468362,
+            "archMatch": 0.23399999999999999
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 210,
+        "afterDedup": 207,
+        "rejected": {
+          "myFit": 163,
+          "theirFit": 135,
+          "balance": 0
+        },
+        "forced": false
+      }
+    },
+    "roster_12": {
+      "owner": "BMcFarland",
+      "windowLabel": "RISING",
+      "packages": [
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "9484",
+              "kind": "player",
+              "name": "Tucker Kraft",
+              "position": "TE",
+              "valueDynasty": 3156
+            }
+          ],
+          "receive": [
+            {
+              "id": "7002",
+              "kind": "player",
+              "name": "Juwan Johnson",
+              "position": "TE",
+              "valueDynasty": 1207
+            },
+            {
+              "id": "7526",
+              "kind": "player",
+              "name": "Jaylen Waddle",
+              "position": "WR",
+              "valueDynasty": 3067
+            }
+          ],
+          "valueGive": 3156,
+          "valueReceive": 4274,
+          "archetype": "tier_down_TE",
+          "fairness": "UNDERPAY",
+          "scores": {
+            "total": 0.5459976944351994,
+            "myFit": 0.30252447082975165,
+            "theirFit": 0.022185654077299027,
+            "balance": 0.7859321529534296,
+            "archMatch": 0.241
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "11596",
+              "kind": "player",
+              "name": "Ben Sinnott",
+              "position": "TE",
+              "valueDynasty": 267
+            },
+            {
+              "id": "2027-2-12",
+              "kind": "pick",
+              "name": "2027 mid 2nd",
+              "valueDynasty": 1404
+            },
+            {
+              "id": "2028-1-12",
+              "kind": "pick",
+              "name": "2028 mid 1st",
+              "valueDynasty": 1832
+            }
+          ],
+          "receive": [
+            {
+              "id": "7526",
+              "kind": "player",
+              "name": "Jaylen Waddle",
+              "position": "WR",
+              "valueDynasty": 3067
+            }
+          ],
+          "valueGive": 3503,
+          "valueReceive": 3067,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.6508584844713499,
+            "myFit": 0.569531470126254,
+            "theirFit": -0.10502505885584651,
+            "balance": 0.9612053193942655,
+            "archMatch": 0.46099999999999997
+          }
+        },
+        {
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
+          "give": [
+            {
+              "id": "11596",
+              "kind": "player",
+              "name": "Ben Sinnott",
+              "position": "TE",
+              "valueDynasty": 267
+            },
+            {
+              "id": "2026-2-12",
+              "kind": "pick",
+              "name": "2026 2.06",
+              "valueDynasty": 1623
+            }
+          ],
+          "receive": [
+            {
+              "id": "5967",
+              "kind": "player",
+              "name": "Tony Pollard",
+              "position": "RB",
+              "valueDynasty": 1708
+            }
+          ],
+          "valueGive": 1890,
+          "valueReceive": 1708,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.5295499162598223,
+            "myFit": 0.10851661726301659,
+            "theirFit": -0.22484721332762136,
+            "balance": 0.9369214853533704,
+            "archMatch": 0.34099999999999997
+          }
+        },
+        {
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
+          "give": [
+            {
+              "id": "2028-1-12",
+              "kind": "pick",
+              "name": "2028 mid 1st",
+              "valueDynasty": 1832
+            }
+          ],
+          "receive": [
+            {
+              "id": "5967",
+              "kind": "player",
+              "name": "Tony Pollard",
+              "position": "RB",
+              "valueDynasty": 1708
+            }
+          ],
+          "valueGive": 1832,
+          "valueReceive": 1708,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.5272632458138884,
+            "myFit": 0.11998127239770781,
+            "theirFit": -0.23631186846231256,
+            "balance": 0.9229439100832163,
+            "archMatch": 0.34099999999999997
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 265,
+        "afterDedup": 260,
+        "rejected": {
+          "myFit": 190,
+          "theirFit": 172,
+          "balance": 5
+        },
+        "forced": false
+      }
+    },
+    "roster_13": {
+      "owner": "Gibbs16",
+      "windowLabel": "REBUILD",
+      "packages": [
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "11562",
+              "kind": "player",
+              "name": "Spencer Rattler",
+              "position": "QB",
+              "valueDynasty": 124
+            },
+            {
+              "id": "2026-2-8",
+              "kind": "pick",
+              "name": "2026 2.03 (via stillblazzin2)",
+              "valueDynasty": 1841
+            },
+            {
+              "id": "2027-2-13",
+              "kind": "pick",
+              "name": "2027 early 2nd",
+              "valueDynasty": 1572
+            }
+          ],
+          "receive": [
+            {
+              "id": "7526",
+              "kind": "player",
+              "name": "Jaylen Waddle",
+              "position": "WR",
+              "valueDynasty": 3067
+            }
+          ],
+          "valueGive": 3537,
+          "valueReceive": 3067,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.4996960761346697,
+            "myFit": -0.8281692161213952,
+            "theirFit": -0.08141581307935675,
+            "balance": 0.9775631363622382,
+            "archMatch": 0.762
+          }
+        },
+        {
+          "counterTeam": "mtakacs12",
+          "counterRosterId": 7,
+          "give": [
+            {
+              "id": "11560",
+              "kind": "player",
+              "name": "Caleb Williams",
+              "position": "QB",
+              "valueDynasty": 3900
+            }
+          ],
+          "receive": [
+            {
+              "id": "1166",
+              "kind": "player",
+              "name": "Kirk Cousins",
+              "position": "QB",
+              "valueDynasty": 598
+            },
+            {
+              "id": "2028-1-7",
+              "kind": "pick",
+              "name": "2028 early 1st",
+              "valueDynasty": 2241
+            },
+            {
+              "id": "2028-2-7",
+              "kind": "pick",
+              "name": "2028 early 2nd",
+              "valueDynasty": 1310
+            }
+          ],
+          "valueGive": 3900,
+          "valueReceive": 4149,
+          "archetype": "tier_down_QB",
+          "fairness": "SLIGHT_OVERPAY",
+          "scores": {
+            "total": 0.38613003861573525,
+            "myFit": -1,
+            "theirFit": 0.6202183577736574,
+            "balance": 0.8849970473745736,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "kwescoe3",
+          "counterRosterId": 16,
+          "give": [
+            {
+              "id": "2027-1-13",
+              "kind": "pick",
+              "name": "2027 early 1st",
+              "valueDynasty": 3371
+            },
+            {
+              "id": "2027-2-13",
+              "kind": "pick",
+              "name": "2027 early 2nd",
+              "valueDynasty": 1572
+            }
+          ],
+          "receive": [
+            {
+              "id": "8137",
+              "kind": "player",
+              "name": "George Pickens",
+              "position": "WR",
+              "valueDynasty": 4575
+            }
+          ],
+          "valueGive": 4943,
+          "valueReceive": 4575,
+          "archetype": "capital_convert_picks_to_production",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.32710635853753356,
+            "myFit": -0.8067407833576999,
+            "theirFit": -0.13577251217386593,
+            "balance": 0.9732946421061486,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "starknet",
+          "counterRosterId": 14,
+          "give": [
+            {
+              "id": "11562",
+              "kind": "player",
+              "name": "Spencer Rattler",
+              "position": "QB",
+              "valueDynasty": 124
+            },
+            {
+              "id": "2026-3-7",
+              "kind": "pick",
+              "name": "2026 3.05 (via mtakacs12)",
+              "valueDynasty": 1132
+            },
+            {
+              "id": "2027-1-13",
+              "kind": "pick",
+              "name": "2027 early 1st",
+              "valueDynasty": 3371
+            }
+          ],
+          "receive": [
+            {
+              "id": "4866",
+              "kind": "player",
+              "name": "Saquon Barkley",
+              "position": "RB",
+              "valueDynasty": 4177
+            }
+          ],
+          "valueGive": 4627,
+          "valueReceive": 4177,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.3253152411478972,
+            "myFit": -1,
+            "theirFit": -0.9537540233371637,
+            "balance": 0.9866711356394456,
+            "archMatch": 0.6419999999999999
+          }
+        },
+        {
+          "counterTeam": "FinalShellShock",
+          "counterRosterId": 6,
+          "give": [
+            {
+              "id": "11560",
+              "kind": "player",
+              "name": "Caleb Williams",
+              "position": "QB",
+              "valueDynasty": 3900
+            }
+          ],
+          "receive": [
+            {
+              "id": "12545",
+              "kind": "player",
+              "name": "Tyler Shough",
+              "position": "QB",
+              "valueDynasty": 1768
+            },
+            {
+              "id": "2027-1-6",
+              "kind": "pick",
+              "name": "2027 late 1st",
+              "valueDynasty": 2148
+            }
+          ],
+          "valueGive": 3900,
+          "valueReceive": 3916,
+          "archetype": "tier_down_QB",
+          "fairness": "OVERPAY",
+          "scores": {
+            "total": 0.32478425877339445,
+            "myFit": -1,
+            "theirFit": -0.2518169219517661,
+            "balance": 0.8557701547035649,
+            "archMatch": 0.3
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 173,
+        "afterDedup": 170,
+        "rejected": {
+          "myFit": 170,
+          "theirFit": 100,
+          "balance": 0
+        },
+        "forced": false,
+        "degraded": "gates"
+      }
+    },
+    "roster_14": {
+      "owner": "starknet",
+      "windowLabel": "MIDDLING",
+      "packages": [
+        {
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
+          "give": [
+            {
+              "id": "4866",
+              "kind": "player",
+              "name": "Saquon Barkley",
+              "position": "RB",
+              "valueDynasty": 4177
+            }
+          ],
+          "receive": [
+            {
+              "id": "8112",
+              "kind": "player",
+              "name": "Drake London",
+              "position": "WR",
+              "valueDynasty": 5795
+            }
+          ],
+          "valueGive": 4177,
+          "valueReceive": 5795,
+          "archetype": "age_arb_sell",
+          "fairness": "UNDERPAY",
+          "scores": {
+            "total": 0.7370202619267213,
+            "myFit": 0.3229655053296107,
+            "theirFit": 0.7315587799403155,
+            "balance": 0.6918197326796628,
+            "archMatch": 0.72
+          }
+        },
+        {
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
+          "give": [
+            {
+              "id": "4866",
+              "kind": "player",
+              "name": "Saquon Barkley",
+              "position": "RB",
+              "valueDynasty": 4177
+            }
+          ],
+          "receive": [
+            {
+              "id": "8136",
+              "kind": "player",
+              "name": "Rachaad White",
+              "position": "RB",
+              "valueDynasty": 1628
+            },
+            {
+              "id": "8146",
+              "kind": "player",
+              "name": "Garrett Wilson",
+              "position": "WR",
+              "valueDynasty": 4027
+            }
+          ],
+          "valueGive": 4177,
+          "valueReceive": 5655,
+          "archetype": "tier_down_RB",
+          "fairness": "UNDERPAY",
+          "scores": {
+            "total": 0.6642735276211837,
+            "myFit": 0.5623266623393696,
+            "theirFit": 0.47473950943406484,
+            "balance": 0.7879873907006418,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "12508",
+              "kind": "player",
+              "name": "Jaxson Dart",
+              "position": "QB",
+              "valueDynasty": 2886
+            },
+            {
+              "id": "11577",
+              "kind": "player",
+              "name": "Will Shipley",
+              "position": "RB",
+              "valueDynasty": 121
+            }
+          ],
+          "receive": [
+            {
+              "id": "5850",
+              "kind": "player",
+              "name": "Josh Jacobs",
+              "position": "RB",
+              "valueDynasty": 2828
+            }
+          ],
+          "valueGive": 3007,
+          "valueReceive": 2828,
+          "archetype": "age_arb_buy",
+          "fairness": "SLIGHT_OVERPAY",
+          "scores": {
+            "total": 0.6119199479227088,
+            "myFit": 0.4741060973820649,
+            "theirFit": -0.000708240586825173,
+            "balance": 0.9453451445762995,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "6904",
+              "kind": "player",
+              "name": "Jalen Hurts",
+              "position": "QB",
+              "valueDynasty": 2912
+            }
+          ],
+          "receive": [
+            {
+              "id": "5850",
+              "kind": "player",
+              "name": "Josh Jacobs",
+              "position": "RB",
+              "valueDynasty": 2828
+            }
+          ],
+          "valueGive": 2912,
+          "valueReceive": 2828,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.590516679178603,
+            "myFit": 0.3010203830963507,
+            "theirFit": 0.01642033084174623,
+            "balance": 0.9669698420296793,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "kwescoe3",
+          "counterRosterId": 16,
+          "give": [
+            {
+              "id": "6904",
+              "kind": "player",
+              "name": "Jalen Hurts",
+              "position": "QB",
+              "valueDynasty": 2912
+            }
+          ],
+          "receive": [
+            {
+              "id": "11557",
+              "kind": "player",
+              "name": "Joe Milton",
+              "position": "QB",
+              "valueDynasty": 121
+            },
+            {
+              "id": "11631",
+              "kind": "player",
+              "name": "Brian Thomas",
+              "position": "WR",
+              "valueDynasty": 3264
+            }
+          ],
+          "valueGive": 2912,
+          "valueReceive": 3385,
+          "archetype": "tier_down_QB",
+          "fairness": "UNDERPAY",
+          "scores": {
+            "total": 0.46841780657478527,
+            "myFit": 0.05797114161669753,
+            "theirFit": 0.03994228606591606,
+            "balance": 0.8530583548160299,
+            "archMatch": 0
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 322,
+        "afterDedup": 314,
+        "rejected": {
+          "myFit": 141,
+          "theirFit": 199,
+          "balance": 9
+        },
+        "forced": false
+      }
+    },
+    "roster_15": {
+      "owner": "jde5011",
+      "windowLabel": "MIDDLING",
+      "packages": [
+        {
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
+          "give": [
+            {
+              "id": "3198",
+              "kind": "player",
+              "name": "Derrick Henry",
+              "position": "RB",
+              "valueDynasty": 2998
+            }
+          ],
+          "receive": [
+            {
+              "id": "8112",
+              "kind": "player",
+              "name": "Drake London",
+              "position": "WR",
+              "valueDynasty": 5795
+            }
+          ],
+          "valueGive": 2998,
+          "valueReceive": 5795,
+          "archetype": "age_arb_sell",
+          "fairness": "UNDERPAY",
+          "scores": {
+            "total": 0.604202218954377,
+            "myFit": -0.2535492344669054,
+            "theirFit": 0.710965491136507,
+            "balance": 0.48241626505539414,
+            "archMatch": 0.72
+          }
+        },
+        {
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
+          "give": [
+            {
+              "id": "4984",
+              "kind": "player",
+              "name": "Josh Allen",
+              "position": "QB",
+              "valueDynasty": 5449
+            }
+          ],
+          "receive": [
+            {
+              "id": "1373",
+              "kind": "player",
+              "name": "Geno Smith",
+              "position": "QB",
+              "valueDynasty": 754
+            },
+            {
+              "id": "4034",
+              "kind": "player",
+              "name": "Christian McCaffrey",
+              "position": "RB",
+              "valueDynasty": 4510
+            }
+          ],
+          "valueGive": 5449,
+          "valueReceive": 5264,
+          "archetype": "tier_down_QB",
+          "fairness": "SLIGHT_OVERPAY",
+          "scores": {
+            "total": 0.437417229789538,
+            "myFit": -0.25160394096698885,
+            "theirFit": -0.3784101946955634,
+            "balance": 0.9147293755646394,
+            "archMatch": 0.3
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 170,
+        "afterDedup": 164,
+        "rejected": {
+          "myFit": 151,
+          "theirFit": 77,
+          "balance": 3
+        },
+        "forced": false,
+        "degraded": "gates"
+      }
+    },
+    "roster_16": {
+      "owner": "kwescoe3",
+      "windowLabel": "JUGGERNAUT",
+      "packages": [
+        {
+          "counterTeam": "FinalShellShock",
+          "counterRosterId": 6,
+          "give": [
+            {
+              "id": "6819",
+              "kind": "player",
+              "name": "Michael Pittman",
+              "position": "WR",
+              "valueDynasty": 1776
+            }
+          ],
+          "receive": [
+            {
+              "id": "12493",
+              "kind": "player",
+              "name": "Oronde Gadsden",
+              "position": "TE",
+              "valueDynasty": 1811
+            }
+          ],
+          "valueGive": 1776,
+          "valueReceive": 1811,
+          "archetype": "age_arb_sell",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.5559966955254751,
+            "myFit": 0.07599947574187704,
+            "theirFit": 0.013041197906025483,
+            "balance": 0.9778389538885065,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "starknet",
+          "counterRosterId": 14,
+          "give": [
+            {
+              "id": "11576",
+              "kind": "player",
+              "name": "Braelon Allen",
+              "position": "RB",
+              "valueDynasty": 1338
+            },
+            {
+              "id": "7594",
+              "kind": "player",
+              "name": "Chuba Hubbard",
+              "position": "RB",
+              "valueDynasty": 2073
+            }
+          ],
+          "receive": [
+            {
+              "id": "6904",
+              "kind": "player",
+              "name": "Jalen Hurts",
+              "position": "QB",
+              "valueDynasty": 2912
+            }
+          ],
+          "valueGive": 3411,
+          "valueReceive": 2912,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.549418604258619,
+            "myFit": 0.09268558960197566,
+            "theirFit": 0.15023573075961164,
+            "balance": 0.9664217089775402,
+            "archMatch": 0.18
+          }
+        },
+        {
+          "counterTeam": "starknet",
+          "counterRosterId": 14,
+          "give": [
+            {
+              "id": "11631",
+              "kind": "player",
+              "name": "Brian Thomas",
+              "position": "WR",
+              "valueDynasty": 3264
+            },
+            {
+              "id": "6819",
+              "kind": "player",
+              "name": "Michael Pittman",
+              "position": "WR",
+              "valueDynasty": 1776
+            },
+            {
+              "id": "2026-3-16",
+              "kind": "pick",
+              "name": "2026 3.11",
+              "valueDynasty": 971
+            },
+            {
+              "id": "2028-3-16",
+              "kind": "pick",
+              "name": "2028 late 3rd",
+              "valueDynasty": 861
+            }
+          ],
+          "receive": [
+            {
+              "id": "6786",
+              "kind": "player",
+              "name": "CeeDee Lamb",
+              "position": "WR",
+              "valueDynasty": 6332
+            }
+          ],
+          "valueGive": 6872,
+          "valueReceive": 6332,
+          "archetype": "consolidate_WR",
+          "fairness": "UNDERPAY",
+          "scores": {
+            "total": 0.4652427669715012,
+            "myFit": 0.03063867966267036,
+            "theirFit": 0.05741072261781748,
+            "balance": 0.8461282058832191,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
+          "give": [
+            {
+              "id": "11631",
+              "kind": "player",
+              "name": "Brian Thomas",
+              "position": "WR",
+              "valueDynasty": 3264
+            },
+            {
+              "id": "6819",
+              "kind": "player",
+              "name": "Michael Pittman",
+              "position": "WR",
+              "valueDynasty": 1776
+            }
+          ],
+          "receive": [
+            {
+              "id": "8112",
+              "kind": "player",
+              "name": "Drake London",
+              "position": "WR",
+              "valueDynasty": 5795
+            }
+          ],
+          "valueGive": 5040,
+          "valueReceive": 5795,
+          "archetype": "consolidate_WR",
+          "fairness": "UNDERPAY",
+          "scores": {
+            "total": 0.45140254129249024,
+            "myFit": 0.0787339231367523,
+            "theirFit": 0.01597429424254106,
+            "balance": 0.7587150688703004,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "FinalShellShock",
+          "counterRosterId": 6,
+          "give": [
+            {
+              "id": "6819",
+              "kind": "player",
+              "name": "Michael Pittman",
+              "position": "WR",
+              "valueDynasty": 1776
+            }
+          ],
+          "receive": [
+            {
+              "id": "2028-1-6",
+              "kind": "pick",
+              "name": "2028 late 1st",
+              "valueDynasty": 1660
+            }
+          ],
+          "valueGive": 1776,
+          "valueReceive": 1660,
+          "archetype": "age_arb_sell",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.5325673754324691,
+            "myFit": -0.06743228163352015,
+            "theirFit": 0.0767545274006233,
+            "balance": 0.9256161480985836,
+            "archMatch": 0.3
+          }
+        }
+      ],
+      "diagnostics": {
+        "rawCandidates": 303,
+        "afterDedup": 296,
+        "rejected": {
+          "myFit": 146,
+          "theirFit": 190,
+          "balance": 14
+        },
+        "forced": false
+      }
+    }
+  },
+  "forcedSummary": {
+    "roster_1": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 91,
+          "afterDedup": 91,
+          "rejected": {
+            "myFit": 37,
+            "theirFit": 50,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 9
+        }
+      },
+      "tier_down": {
+        "count": 5,
+        "fairness": [
+          "UNDERPAY",
+          "FAIR",
+          "FAIR",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 192,
+          "afterDedup": 192,
+          "rejected": {
+            "myFit": 93,
+            "theirFit": 69,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 26,
+          "afterDedup": 26,
+          "rejected": {
+            "myFit": 7,
+            "theirFit": 7,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 3,
+          "afterDedup": 3,
+          "rejected": {
+            "myFit": 3,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 28
+        }
+      },
+      "age_arb_buy": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 58,
+          "afterDedup": 58,
+          "rejected": {
+            "myFit": 12,
+            "theirFit": 36,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_sell": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "OVERPAY",
+          "FAIR",
+          "OVERPAY",
+          "OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 32,
+          "afterDedup": 32,
+          "rejected": {
+            "myFit": 9,
+            "theirFit": 6,
+            "balance": 10
+          },
+          "forced": true,
+          "myArchetypeScore": 60
+        }
+      },
+      "push_in": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 12,
+          "afterDedup": 12,
+          "rejected": {
+            "myFit": 2,
+            "theirFit": 11,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 30
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 3,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 26,
+          "afterDedup": 26,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 23,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 21
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_OVERPAY",
+          "OVERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 48,
+          "afterDedup": 48,
+          "rejected": {
+            "myFit": 33,
+            "theirFit": 5,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      }
+    },
+    "roster_2": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 111,
+          "afterDedup": 111,
+          "rejected": {
+            "myFit": 87,
+            "theirFit": 46,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 13
+        }
+      },
+      "tier_down": {
+        "count": 5,
+        "fairness": [
+          "OVERPAY",
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 155,
+          "afterDedup": 155,
+          "rejected": {
+            "myFit": 115,
+            "theirFit": 54,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 7,
+          "afterDedup": 7,
+          "rejected": {
+            "myFit": 7,
+            "theirFit": 4,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 2,
+          "afterDedup": 2,
+          "rejected": {
+            "myFit": 2,
+            "theirFit": 1,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_buy": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "OVERPAY",
+          "OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 70,
+          "afterDedup": 70,
+          "rejected": {
+            "myFit": 52,
+            "theirFit": 37,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_sell": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 17,
+          "afterDedup": 17,
+          "rejected": {
+            "myFit": 15,
+            "theirFit": 4,
+            "balance": 7
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "push_in": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 11,
+          "afterDedup": 11,
+          "rejected": {
+            "myFit": 9,
+            "theirFit": 8,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 4,
+        "fairness": [
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 25,
+          "afterDedup": 25,
+          "rejected": {
+            "myFit": 11,
+            "theirFit": 21,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 1
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 60,
+          "afterDedup": 60,
+          "rejected": {
+            "myFit": 60,
+            "theirFit": 11,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      }
+    },
+    "roster_3": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "UNDERPAY",
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 97,
+          "afterDedup": 97,
+          "rejected": {
+            "myFit": 27,
+            "theirFit": 50,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 12
+        }
+      },
+      "tier_down": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_UNDERPAY",
+          "OVERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 163,
+          "afterDedup": 163,
+          "rejected": {
+            "myFit": 73,
+            "theirFit": 61,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "UNDERPAY",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 20,
+          "afterDedup": 20,
+          "rejected": {
+            "myFit": 4,
+            "theirFit": 7,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 5,
+          "afterDedup": 5,
+          "rejected": {
+            "myFit": 5,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_buy": {
+        "count": 5,
+        "fairness": [
+          "OVERPAY",
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 69,
+          "afterDedup": 69,
+          "rejected": {
+            "myFit": 22,
+            "theirFit": 36,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_sell": {
+        "count": 3,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "SLIGHT_OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 18,
+          "afterDedup": 18,
+          "rejected": {
+            "myFit": 5,
+            "theirFit": 9,
+            "balance": 7
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "push_in": {
+        "count": 1,
+        "fairness": [
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 7,
+          "afterDedup": 7,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 6,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 2,
+        "fairness": [
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 23,
+          "afterDedup": 23,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 21,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 2
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 62,
+          "afterDedup": 62,
+          "rejected": {
+            "myFit": 62,
+            "theirFit": 8,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      }
+    },
+    "roster_4": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 113,
+          "afterDedup": 113,
+          "rejected": {
+            "myFit": 67,
+            "theirFit": 61,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 23
+        }
+      },
+      "tier_down": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_OVERPAY",
+          "OVERPAY",
+          "SLIGHT_OVERPAY",
+          "UNDERPAY",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 147,
+          "afterDedup": 147,
+          "rejected": {
+            "myFit": 102,
+            "theirFit": 50,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 80
+        }
+      },
+      "consolidate": {
+        "count": 3,
+        "fairness": [
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 30,
+          "afterDedup": 30,
+          "rejected": {
+            "myFit": 19,
+            "theirFit": 21,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 3,
+          "afterDedup": 3,
+          "rejected": {
+            "myFit": 3,
+            "theirFit": 1,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_buy": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 73,
+          "afterDedup": 73,
+          "rejected": {
+            "myFit": 53,
+            "theirFit": 38,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 78
+        }
+      },
+      "age_arb_sell": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 11,
+          "afterDedup": 11,
+          "rejected": {
+            "myFit": 11,
+            "theirFit": 4,
+            "balance": 1
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "push_in": {
+        "count": 1,
+        "fairness": [
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 12,
+          "afterDedup": 12,
+          "rejected": {
+            "myFit": 1,
+            "theirFit": 10,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 27,
+          "afterDedup": 27,
+          "rejected": {
+            "myFit": 15,
+            "theirFit": 20,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 28,
+          "afterDedup": 28,
+          "rejected": {
+            "myFit": 28,
+            "theirFit": 4,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 78
+        }
+      }
+    },
+    "roster_5": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_OVERPAY",
+          "UNDERPAY",
+          "FAIR",
+          "UNDERPAY",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 87,
+          "afterDedup": 87,
+          "rejected": {
+            "myFit": 36,
+            "theirFit": 47,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 14
+        }
+      },
+      "tier_down": {
+        "count": 5,
+        "fairness": [
+          "OVERPAY",
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 134,
+          "afterDedup": 134,
+          "rejected": {
+            "myFit": 37,
+            "theirFit": 51,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 17,
+          "afterDedup": 17,
+          "rejected": {
+            "myFit": 12,
+            "theirFit": 5,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 1,
+          "afterDedup": 1,
+          "rejected": {
+            "myFit": 1,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_buy": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_OVERPAY",
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 55,
+          "afterDedup": 55,
+          "rejected": {
+            "myFit": 14,
+            "theirFit": 27,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_sell": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_OVERPAY",
+          "UNDERPAY",
+          "UNDERPAY",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 20,
+          "afterDedup": 20,
+          "rejected": {
+            "myFit": 10,
+            "theirFit": 6,
+            "balance": 3
+          },
+          "forced": true,
+          "myArchetypeScore": 100
+        }
+      },
+      "push_in": {
+        "count": 1,
+        "fairness": [
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 9,
+          "afterDedup": 9,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 8,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 100
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 3,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 19,
+          "afterDedup": 19,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 16,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 23
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 2,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 17,
+          "afterDedup": 17,
+          "rejected": {
+            "myFit": 14,
+            "theirFit": 2,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      }
+    },
+    "roster_6": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 150,
+          "afterDedup": 150,
+          "rejected": {
+            "myFit": 72,
+            "theirFit": 73,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 11
+        }
+      },
+      "tier_down": {
+        "count": 5,
+        "fairness": [
+          "OVERPAY",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_OVERPAY",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 137,
+          "afterDedup": 137,
+          "rejected": {
+            "myFit": 98,
+            "theirFit": 37,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate": {
+        "count": 2,
+        "fairness": [
+          "SLIGHT_UNDERPAY",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 17,
+          "afterDedup": 17,
+          "rejected": {
+            "myFit": 12,
+            "theirFit": 6,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 3,
+          "afterDedup": 3,
+          "rejected": {
+            "myFit": 3,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 41
+        }
+      },
+      "age_arb_buy": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "FAIR",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 73,
+          "afterDedup": 73,
+          "rejected": {
+            "myFit": 38,
+            "theirFit": 33,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_sell": {
+        "count": 2,
+        "fairness": [
+          "UNDERPAY",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 16,
+          "afterDedup": 16,
+          "rejected": {
+            "myFit": 9,
+            "theirFit": 6,
+            "balance": 4
+          },
+          "forced": true,
+          "myArchetypeScore": 100
+        }
+      },
+      "push_in": {
+        "count": 2,
+        "fairness": [
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 11,
+          "afterDedup": 11,
+          "rejected": {
+            "myFit": 2,
+            "theirFit": 8,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 100
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 3,
+        "fairness": [
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 25,
+          "afterDedup": 25,
+          "rejected": {
+            "myFit": 9,
+            "theirFit": 21,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 38
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 27,
+          "afterDedup": 27,
+          "rejected": {
+            "myFit": 27,
+            "theirFit": 1,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      }
+    },
+    "roster_7": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "UNDERPAY",
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 87,
+          "afterDedup": 87,
+          "rejected": {
+            "myFit": 45,
+            "theirFit": 39,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 17
+        }
+      },
+      "tier_down": {
+        "count": 5,
+        "fairness": [
+          "UNDERPAY",
+          "FAIR",
+          "UNDERPAY",
+          "UNDERPAY",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 160,
+          "afterDedup": 160,
+          "rejected": {
+            "myFit": 147,
+            "theirFit": 68,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate": {
+        "count": 1,
+        "fairness": [
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 12,
+          "afterDedup": 12,
+          "rejected": {
+            "myFit": 5,
+            "theirFit": 6,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 3,
+        "fairness": [
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "SLIGHT_OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 5,
+          "afterDedup": 5,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 2,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 20
+        }
+      },
+      "age_arb_buy": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 62,
+          "afterDedup": 62,
+          "rejected": {
+            "myFit": 40,
+            "theirFit": 28,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_sell": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 56,
+          "afterDedup": 56,
+          "rejected": {
+            "myFit": 54,
+            "theirFit": 14,
+            "balance": 18
+          },
+          "forced": true,
+          "myArchetypeScore": 10
+        }
+      },
+      "push_in": {
+        "count": 4,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 18,
+          "afterDedup": 18,
+          "rejected": {
+            "myFit": 2,
+            "theirFit": 14,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 2,
+        "fairness": [
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 28,
+          "afterDedup": 28,
+          "rejected": {
+            "myFit": 20,
+            "theirFit": 22,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 65,
+          "afterDedup": 65,
+          "rejected": {
+            "myFit": 65,
+            "theirFit": 6,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 14
+        }
+      }
+    },
+    "roster_8": {
+      "need_fill": {
+        "count": 3,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 70,
+          "afterDedup": 70,
+          "rejected": {
+            "myFit": 54,
+            "theirFit": 33,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 18
+        }
+      },
+      "tier_down": {
+        "count": 2,
+        "fairness": [
+          "UNDERPAY",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 159,
+          "afterDedup": 159,
+          "rejected": {
+            "myFit": 155,
+            "theirFit": 70,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 21,
+          "afterDedup": 21,
+          "rejected": {
+            "myFit": 21,
+            "theirFit": 5,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 2,
+          "afterDedup": 2,
+          "rejected": {
+            "myFit": 2,
+            "theirFit": 1,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_buy": {
+        "count": 3,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 54,
+          "afterDedup": 54,
+          "rejected": {
+            "myFit": 42,
+            "theirFit": 24,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_sell": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 29,
+          "afterDedup": 29,
+          "rejected": {
+            "myFit": 22,
+            "theirFit": 9,
+            "balance": 14
+          },
+          "forced": true,
+          "myArchetypeScore": 10
+        }
+      },
+      "push_in": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 9,
+          "afterDedup": 9,
+          "rejected": {
+            "myFit": 5,
+            "theirFit": 5,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 33,
+          "afterDedup": 33,
+          "rejected": {
+            "myFit": 11,
+            "theirFit": 24,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 86,
+          "afterDedup": 86,
+          "rejected": {
+            "myFit": 86,
+            "theirFit": 17,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 73
+        }
+      }
+    },
+    "roster_9": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_OVERPAY",
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 96,
+          "afterDedup": 96,
+          "rejected": {
+            "myFit": 41,
+            "theirFit": 44,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 10
+        }
+      },
+      "tier_down": {
+        "count": 5,
+        "fairness": [
+          "UNDERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "OVERPAY",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 147,
+          "afterDedup": 147,
+          "rejected": {
+            "myFit": 55,
+            "theirFit": 43,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 2
+        }
+      },
+      "consolidate": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_UNDERPAY",
+          "UNDERPAY",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 22,
+          "afterDedup": 22,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 8,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 4,
+        "fairness": [
+          "SLIGHT_OVERPAY",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_OVERPAY",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 4,
+          "afterDedup": 4,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 22
+        }
+      },
+      "age_arb_buy": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 60,
+          "afterDedup": 60,
+          "rejected": {
+            "myFit": 8,
+            "theirFit": 28,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_sell": {
+        "count": 5,
+        "fairness": [
+          "OVERPAY",
+          "OVERPAY",
+          "OVERPAY",
+          "OVERPAY",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 42,
+          "afterDedup": 42,
+          "rejected": {
+            "myFit": 12,
+            "theirFit": 11,
+            "balance": 5
+          },
+          "forced": true,
+          "myArchetypeScore": 100
+        }
+      },
+      "push_in": {
+        "count": 1,
+        "fairness": [
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 10,
+          "afterDedup": 10,
+          "rejected": {
+            "myFit": 3,
+            "theirFit": 6,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 78
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 2,
+        "fairness": [
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 21,
+          "afterDedup": 21,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 19,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 35
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 28,
+          "afterDedup": 28,
+          "rejected": {
+            "myFit": 1,
+            "theirFit": 4,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      }
+    },
+    "roster_10": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 126,
+          "afterDedup": 126,
+          "rejected": {
+            "myFit": 69,
+            "theirFit": 65,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 9
+        }
+      },
+      "tier_down": {
+        "count": 5,
+        "fairness": [
+          "OVERPAY",
+          "OVERPAY",
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 124,
+          "afterDedup": 124,
+          "rejected": {
+            "myFit": 117,
+            "theirFit": 45,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate": {
+        "count": 3,
+        "fairness": [
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 23,
+          "afterDedup": 23,
+          "rejected": {
+            "myFit": 10,
+            "theirFit": 17,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 2,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 4,
+          "afterDedup": 4,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 2,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_buy": {
+        "count": 2,
+        "fairness": [
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 62,
+          "afterDedup": 62,
+          "rejected": {
+            "myFit": 47,
+            "theirFit": 32,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 5
+        }
+      },
+      "age_arb_sell": {
+        "count": 1,
+        "fairness": [
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 16,
+          "afterDedup": 16,
+          "rejected": {
+            "myFit": 13,
+            "theirFit": 3,
+            "balance": 6
+          },
+          "forced": true,
+          "myArchetypeScore": 5
+        }
+      },
+      "push_in": {
+        "count": 4,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 12,
+          "afterDedup": 12,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 8,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 2,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 29,
+          "afterDedup": 29,
+          "rejected": {
+            "myFit": 21,
+            "theirFit": 22,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 45,
+          "afterDedup": 45,
+          "rejected": {
+            "myFit": 45,
+            "theirFit": 9,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 25
+        }
+      }
+    },
+    "roster_11": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 117,
+          "afterDedup": 117,
+          "rejected": {
+            "myFit": 64,
+            "theirFit": 61,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 8
+        }
+      },
+      "tier_down": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "OVERPAY",
+          "FAIR",
+          "SLIGHT_OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 108,
+          "afterDedup": 108,
+          "rejected": {
+            "myFit": 95,
+            "theirFit": 41,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 11,
+          "afterDedup": 11,
+          "rejected": {
+            "myFit": 6,
+            "theirFit": 8,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 0,
+          "afterDedup": 0,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 34
+        }
+      },
+      "age_arb_buy": {
+        "count": 4,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 73,
+          "afterDedup": 73,
+          "rejected": {
+            "myFit": 56,
+            "theirFit": 38,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_sell": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 0,
+          "afterDedup": 0,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "push_in": {
+        "count": 4,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 10,
+          "afterDedup": 10,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 6,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 3,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 27,
+          "afterDedup": 27,
+          "rejected": {
+            "myFit": 15,
+            "theirFit": 22,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 16
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 37,
+          "afterDedup": 37,
+          "rejected": {
+            "myFit": 37,
+            "theirFit": 3,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      }
+    },
+    "roster_12": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 93,
+          "afterDedup": 93,
+          "rejected": {
+            "myFit": 32,
+            "theirFit": 53,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 21
+        }
+      },
+      "tier_down": {
+        "count": 5,
+        "fairness": [
+          "UNDERPAY",
+          "FAIR",
+          "UNDERPAY",
+          "FAIR",
+          "OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 144,
+          "afterDedup": 144,
+          "rejected": {
+            "myFit": 112,
+            "theirFit": 59,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 1
+        }
+      },
+      "consolidate": {
+        "count": 4,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_OVERPAY",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 11,
+          "afterDedup": 11,
+          "rejected": {
+            "myFit": 2,
+            "theirFit": 7,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 3,
+          "afterDedup": 3,
+          "rejected": {
+            "myFit": 3,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_buy": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 64,
+          "afterDedup": 64,
+          "rejected": {
+            "myFit": 35,
+            "theirFit": 36,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 23
+        }
+      },
+      "age_arb_sell": {
+        "count": 1,
+        "fairness": [
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 14,
+          "afterDedup": 14,
+          "rejected": {
+            "myFit": 12,
+            "theirFit": 4,
+            "balance": 1
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "push_in": {
+        "count": 1,
+        "fairness": [
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 12,
+          "afterDedup": 12,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 11,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 2,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 27,
+          "afterDedup": 27,
+          "rejected": {
+            "myFit": 9,
+            "theirFit": 23,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_OVERPAY",
+          "OVERPAY",
+          "FAIR",
+          "FAIR",
+          "SLIGHT_OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 23,
+          "afterDedup": 23,
+          "rejected": {
+            "myFit": 8,
+            "theirFit": 4,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 13
+        }
+      }
+    },
+    "roster_13": {
+      "need_fill": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 95,
+          "afterDedup": 95,
+          "rejected": {
+            "myFit": 95,
+            "theirFit": 60,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 24
+        }
+      },
+      "tier_down": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 77,
+          "afterDedup": 77,
+          "rejected": {
+            "myFit": 77,
+            "theirFit": 35,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 24,
+          "afterDedup": 24,
+          "rejected": {
+            "myFit": 24,
+            "theirFit": 18,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 1,
+          "afterDedup": 1,
+          "rejected": {
+            "myFit": 1,
+            "theirFit": 1,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_buy": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 62,
+          "afterDedup": 62,
+          "rejected": {
+            "myFit": 62,
+            "theirFit": 39,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 66
+        }
+      },
+      "age_arb_sell": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 0,
+          "afterDedup": 0,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "push_in": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 9,
+          "afterDedup": 9,
+          "rejected": {
+            "myFit": 9,
+            "theirFit": 7,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 24,
+          "afterDedup": 24,
+          "rejected": {
+            "myFit": 24,
+            "theirFit": 20,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 0,
+          "afterDedup": 0,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 66
+        }
+      }
+    },
+    "roster_14": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 93,
+          "afterDedup": 93,
+          "rejected": {
+            "myFit": 12,
+            "theirFit": 50,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 8
+        }
+      },
+      "tier_down": {
+        "count": 5,
+        "fairness": [
+          "UNDERPAY",
+          "FAIR",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_UNDERPAY",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 139,
+          "afterDedup": 139,
+          "rejected": {
+            "myFit": 30,
+            "theirFit": 44,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate": {
+        "count": 3,
+        "fairness": [
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_OVERPAY",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 14,
+          "afterDedup": 14,
+          "rejected": {
+            "myFit": 5,
+            "theirFit": 6,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 3,
+          "afterDedup": 3,
+          "rejected": {
+            "myFit": 3,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 33
+        }
+      },
+      "age_arb_buy": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_OVERPAY",
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 63,
+          "afterDedup": 63,
+          "rejected": {
+            "myFit": 13,
+            "theirFit": 31,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_sell": {
+        "count": 5,
+        "fairness": [
+          "UNDERPAY",
+          "FAIR",
+          "UNDERPAY",
+          "UNDERPAY",
+          "SLIGHT_UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 24,
+          "afterDedup": 24,
+          "rejected": {
+            "myFit": 13,
+            "theirFit": 5,
+            "balance": 6
+          },
+          "forced": true,
+          "myArchetypeScore": 60
+        }
+      },
+      "push_in": {
+        "count": 1,
+        "fairness": [
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 8,
+          "afterDedup": 8,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 7,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 30
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 2,
+        "fairness": [
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 22,
+          "afterDedup": 22,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 20,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 7
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 49,
+          "afterDedup": 49,
+          "rejected": {
+            "myFit": 26,
+            "theirFit": 10,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      }
+    },
+    "roster_15": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "UNDERPAY",
+          "OVERPAY",
+          "SLIGHT_OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 65,
+          "afterDedup": 65,
+          "rejected": {
+            "myFit": 56,
+            "theirFit": 33,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 30
+        }
+      },
+      "tier_down": {
+        "count": 2,
+        "fairness": [
+          "SLIGHT_OVERPAY",
+          "OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 38,
+          "afterDedup": 38,
+          "rejected": {
+            "myFit": 34,
+            "theirFit": 14,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 15,
+          "afterDedup": 15,
+          "rejected": {
+            "myFit": 15,
+            "theirFit": 7,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 4,
+          "afterDedup": 4,
+          "rejected": {
+            "myFit": 4,
+            "theirFit": 1,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_buy": {
+        "count": 1,
+        "fairness": [
+          "OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 49,
+          "afterDedup": 49,
+          "rejected": {
+            "myFit": 43,
+            "theirFit": 29,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_sell": {
+        "count": 1,
+        "fairness": [
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 24,
+          "afterDedup": 24,
+          "rejected": {
+            "myFit": 22,
+            "theirFit": 4,
+            "balance": 3
+          },
+          "forced": true,
+          "myArchetypeScore": 60
+        }
+      },
+      "push_in": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 8,
+          "afterDedup": 8,
+          "rejected": {
+            "myFit": 8,
+            "theirFit": 8,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 30
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 21,
+          "afterDedup": 21,
+          "rejected": {
+            "myFit": 20,
+            "theirFit": 19,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 29
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 11,
+          "afterDedup": 11,
+          "rejected": {
+            "myFit": 11,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      }
+    },
+    "roster_16": {
+      "need_fill": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_OVERPAY",
+          "FAIR",
+          "FAIR",
+          "FAIR",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 109,
+          "afterDedup": 109,
+          "rejected": {
+            "myFit": 19,
+            "theirFit": 40,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 13
+        }
+      },
+      "tier_down": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "SLIGHT_OVERPAY",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 125,
+          "afterDedup": 125,
+          "rejected": {
+            "myFit": 44,
+            "theirFit": 40,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 76
+        }
+      },
+      "consolidate": {
+        "count": 5,
+        "fairness": [
+          "UNDERPAY",
+          "UNDERPAY",
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 18,
+          "afterDedup": 18,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 6,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "consolidate_flex": {
+        "count": 4,
+        "fairness": [
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "UNDERPAY",
+          "UNDERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 4,
+          "afterDedup": 4,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 26
+        }
+      },
+      "age_arb_buy": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "OVERPAY",
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 72,
+          "afterDedup": 72,
+          "rejected": {
+            "myFit": 7,
+            "theirFit": 33,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "age_arb_sell": {
+        "count": 5,
+        "fairness": [
+          "FAIR",
+          "FAIR",
+          "OVERPAY",
+          "OVERPAY",
+          "SLIGHT_OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 34,
+          "afterDedup": 34,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 11,
+            "balance": 13
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "push_in": {
+        "count": 0,
+        "fairness": [],
+        "diagnostics": {
+          "rawCandidates": 12,
+          "afterDedup": 12,
+          "rejected": {
+            "myFit": 4,
+            "theirFit": 8,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      },
+      "capital_convert_picks_to_production": {
+        "count": 2,
+        "fairness": [
+          "FAIR",
+          "FAIR"
+        ],
+        "diagnostics": {
+          "rawCandidates": 17,
+          "afterDedup": 17,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 15,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 25
+        }
+      },
+      "capital_convert_production_to_picks": {
+        "count": 5,
+        "fairness": [
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY"
+        ],
+        "diagnostics": {
+          "rawCandidates": 21,
+          "afterDedup": 21,
+          "rejected": {
+            "myFit": 0,
+            "theirFit": 0,
+            "balance": 0
+          },
+          "forced": true,
+          "myArchetypeScore": 0
+        }
+      }
+    }
+  }
+}

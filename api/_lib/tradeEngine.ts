@@ -1125,8 +1125,18 @@ export function generatePackages(
   const filtered = gatePass.passed;
   const rejected = gatePass.rej;
 
-  // Sort by score; deterministic tiebreak by candidate key
+  // Sort: mutually-agreeable trades first (both fits at least neutral),
+  // one-sided trades only behind them. Within a tier, by score with a
+  // deterministic tiebreak. This is the founding philosophy as a hard
+  // ordering, not just a weight: surface deals both managers would want,
+  // loosen only when nothing mutual exists.
+  const MUTUAL_FLOOR = -0.02;
+  const mutualTier = (s: ScoredCandidate) =>
+    s.myFit >= MUTUAL_FLOOR && s.theirFit >= MUTUAL_FLOOR ? 0 : 1;
   filtered.sort((a, b) => {
+    const ta = mutualTier(a);
+    const tb = mutualTier(b);
+    if (ta !== tb) return ta - tb;
     if (b.total !== a.total) return b.total - a.total;
     return candidateKey(a).localeCompare(candidateKey(b));
   });

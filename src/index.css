@@ -1576,6 +1576,7 @@ body {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.5px;
+  color: #64748b;
 }
 
 .lt-mn-val {
@@ -1900,34 +1901,47 @@ body {
 
 /* ── Picks visual ────────────────────────────────────────────────────── */
 
+/* Horizontal flow: flag at left, then each year group ("'27" + its round
+   dots) as its own inline-flex unit, wrapping only when out of room. Applies
+   at all widths; on the narrow desktop lt-col-picks column this wraps
+   aggressively (fine), on the full-width mobile row it fills the space. */
 .picks-visual {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
 }
 
 .picks-flag {
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 1px;
+  flex-shrink: 0;
 }
 
 .picks-years {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
 }
 
 .picks-year-row {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .picks-year-label {
   font-size: 9px;
   color: #475569;
-  width: 18px;
   flex-shrink: 0;
 }
 
@@ -1936,6 +1950,8 @@ body {
   gap: 2px;
   flex-wrap: wrap;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .pick-dot {
@@ -2789,6 +2805,118 @@ body {
   color: #475569;
   font-weight: 400;
   margin: 0 2px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SCOUTING REPORT (Team Deep Dive): appended block, do not interleave
+   with rules above. See src/pages/TeamDeepDive.tsx.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.scout-intro {
+  margin-top: -4px;
+  margin-bottom: 14px;
+}
+
+.scout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.scout-row {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.scout-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
+.scout-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.scout-data {
+  font-size: 11px;
+  color: #475569;
+  overflow-wrap: break-word;
+}
+
+.scout-row-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.scout-meter-bar {
+  width: 90px;
+}
+
+.scout-score {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+  width: 22px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.scout-strength {
+  font-size: 10px;
+  color: #64748b;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.scout-cta {
+  border-color: rgba(245,158,11,0.5);
+  color: #f59e0b;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.scout-cta:hover {
+  border-color: rgba(245,158,11,0.8);
+  color: #fbbf24;
+}
+
+@media (max-width: 640px) {
+  .scout-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .scout-row-main {
+    flex: none;
+  }
+  .scout-row-meter {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  .scout-meter-bar {
+    width: auto;
+    flex: 1 1 100px;
+  }
+  .scout-cta {
+    flex: 1 1 100%;
+    width: 100%;
+    text-align: center;
+  }
 }
 
 .trade-val {

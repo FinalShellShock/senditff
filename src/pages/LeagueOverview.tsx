@@ -215,14 +215,6 @@ function ThickBar({ score, kind }: { score: number; kind?: SubClassification }) 
   );
 }
 
-// Position-specific colors for the per-row position headers.
-const POS_COLOR: Record<string, string> = {
-  QB: "#f97316", // orange
-  RB: "#eab308", // yellow
-  WR: "#3b82f6", // blue
-  TE: "#a855f7", // purple
-};
-
 // Combined per-position classification label shown in the collapsed view.
 // "OK" if both starter + depth are HEALTHY/SURPLUS, otherwise the worse-side
 // label (NEED / CRITICAL).
@@ -235,6 +227,18 @@ function combinedColor(s?: SubClassification, d?: SubClassification): string {
   if (s === "CRITICAL" || d === "CRITICAL") return POS_CLASS_COLOR.CRITICAL ?? "#ef4444";
   if (s === "NEED" || d === "NEED") return POS_CLASS_COLOR.NEED ?? "#eab308";
   return POS_CLASS_COLOR.HEALTHY ?? "#22c55e";
+}
+
+// 1st / 2nd / 3rd / Nth
+function ordinal(n: number): string {
+  const rem100 = n % 100;
+  if (rem100 >= 11 && rem100 <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1: return `${n}st`;
+    case 2: return `${n}nd`;
+    case 3: return `${n}rd`;
+    default: return `${n}th`;
+  }
 }
 
 // Radar chart showing team dynasty value across 5 asset classes, normalized
@@ -438,7 +442,14 @@ function LeagueTableRow({
               <span className="window-label" style={{ background: labelColor }}>
                 {profile.windowLabel ?? "—"}
               </span>
-              <span className="lt-row-meta-dim">{profile.record}</span>
+              {profile.currentPlace != null && (
+                <span className="lt-row-meta-dim">now {ordinal(profile.currentPlace)}</span>
+              )}
+              {(profile.placements ?? []).slice(0, 2).map((pl) => (
+                <span key={pl.season} className="lt-row-meta-dim">
+                  '{String(pl.season).slice(2)} {ordinal(pl.place)}
+                </span>
+              ))}
               <span className="lt-row-meta-dim">age {(profile.starterCalAge ?? 0).toFixed(1)}</span>
             </div>
           </div>
@@ -492,7 +503,7 @@ function LeagueTableRow({
             const dClass = ps?.depthClassification ?? "HEALTHY";
             return (
               <div key={pos} className="lt-mn-col">
-                <span className="lt-mn-pos" style={{ color: POS_COLOR[pos] }}>{pos}</span>
+                <span className="lt-mn-pos">{pos}</span>
                 <span className="lt-mn-val" style={{ color: POS_CLASS_COLOR[sClass] }}>
                   {Math.round(ps?.starterScore ?? 0)}
                 </span>

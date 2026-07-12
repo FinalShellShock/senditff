@@ -1111,7 +1111,12 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
   }
   const filtered = gatePass.passed;
   const rejected = gatePass.rej;
+  const MUTUAL_FLOOR = -0.02;
+  const mutualTier = (s) => s.myFit >= MUTUAL_FLOOR && s.theirFit >= MUTUAL_FLOOR ? 0 : 1;
   filtered.sort((a, b) => {
+    const ta = mutualTier(a);
+    const tb = mutualTier(b);
+    if (ta !== tb) return ta - tb;
     if (b.total !== a.total) return b.total - a.total;
     return candidateKey(a).localeCompare(candidateKey(b));
   });
@@ -1173,12 +1178,13 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
 
 // api/trades/find.ts
 var MODEL_HAIKU = "claude-haiku-4-5-20251001";
-function rationaleHash(pkg, myProfile) {
+function rationaleHash(pkg, myProfile, counterProfile) {
   const key = JSON.stringify({
     give: pkg.give.map((a) => a.id).sort(),
     receive: pkg.receive.map((a) => a.id).sort(),
     archetype: pkg.archetype,
     myWindow: myProfile.windowLabel,
+    theirWindow: counterProfile?.windowLabel ?? null,
     fairness: pkg.fairness
   });
   return (0, import_crypto.createHash)("sha256").update(key).digest("hex");
@@ -1189,17 +1195,18 @@ function describeAsset(a) {
 function sanitizeRationale(text) {
   return text.replace(/^#{1,6}[^\n]*$/gm, "").replace(/\*\*/g, "").replace(/\s*[—–]\s*/g, ", ").trim();
 }
-async function generateRationale(pkg, myProfile) {
+async function generateRationale(pkg, myProfile, counterProfile) {
   const giveNames = pkg.give.map(describeAsset).join(", ");
   const receiveNames = pkg.receive.map(describeAsset).join(", ");
   const archetypeLabel = pkg.archetype.replace(/_/g, " ");
   const fairnessNote = pkg.fairness === "FAIR" ? "The value is even." : `On raw value this is a ${fairnessText(pkg.fairness).toLowerCase()} for this team. Acknowledge that lean and why the deal can still make sense (or what it costs).`;
+  const counterNote = counterProfile ? `${pkg.counterTeam} profiles as ${counterProfile.windowLabel} (${counterProfile.competitiveness}, ${counterProfile.windowTier} window).` : "";
   const prompt = `You are analyzing a dynasty fantasy football trade for a team classified as ${myProfile.windowLabel} (${myProfile.competitiveness} competitiveness, ${myProfile.windowTier} window).
 
-Trade: Send ${giveNames} and receive ${receiveNames} from ${pkg.counterTeam}.
+Trade: Send ${giveNames} and receive ${receiveNames} from ${pkg.counterTeam}. ${counterNote}
 Trade type: ${archetypeLabel}. ${fairnessNote}
 
-Write 2-3 sentences explaining why this trade makes sense for this team right now. Be specific about the players, picks, and the team's situation. Plain prose only: no markdown, no headings, no bullet points, no em dashes.`;
+Write 3-4 sentences explaining why this trade makes sense for this team right now, and end with one sentence on why ${pkg.counterTeam} says yes given their situation (a trade nobody accepts is worthless). Be specific about the players, picks, and both teams' timelines. Plain prose only: no markdown, no headings, no bullet points, no em dashes.`;
   const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -1217,14 +1224,14 @@ Write 2-3 sentences explaining why this trade makes sense for this team right no
   const data = await apiRes.json();
   return data.content?.[0]?.text?.trim() ?? "Rationale unavailable.";
 }
-async function addRationale(pkg, myProfile) {
-  const hash = rationaleHash(pkg, myProfile);
+async function addRationale(pkg, myProfile, counterProfile) {
+  const hash = rationaleHash(pkg, myProfile, counterProfile);
   const cacheRef = adminDb.collection("rationaleCache").doc(hash);
   const cached = await cacheRef.get();
   if (cached.exists) {
     return { ...pkg, rationale: sanitizeRationale(cached.data()?.["rationale"]) };
   }
-  const rationale = sanitizeRationale(await generateRationale(pkg, myProfile));
+  const rationale = sanitizeRationale(await generateRationale(pkg, myProfile, counterProfile));
   await cacheRef.set({ hash, rationale, archetype: pkg.archetype, generatedAt: (/* @__PURE__ */ new Date()).toISOString() });
   return { ...pkg, rationale };
 }
@@ -1282,7 +1289,9 @@ async function handler(req, res) {
       ...noFillerPicks === true ? { noFillerPicks: true } : {}
     });
     const withRationales = await Promise.all(
-      packages.map((pkg) => addRationale(pkg, myProfile))
+      packages.map(
+        (pkg) => addRationale(pkg, myProfile, profiles.find((p) => p.rosterId === pkg.counterRosterId))
+      )
     );
     return res.status(200).json({ packages: withRationales, diagnostics });
   } catch (err) {

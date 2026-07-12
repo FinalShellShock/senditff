@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import type { Pick as DraftPick, Player, TeamProfile, WindowLabel } from "../algo/types.ts";
+import type { Pick as DraftPick, Player, Position, TeamProfile, WindowLabel } from "../algo/types.ts";
 import { makeApiClient, type LedgerRow } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
@@ -71,6 +71,98 @@ function PickRow({ pick }: { pick: DraftPick }) {
   );
 }
 
+// Position with the highest urgency score. Deterministic: iterates QB/RB/WR/TE
+// in fixed order, first strictly-greater win keeps ties on the earlier position.
+function mostUrgentPosition(profile: TeamProfile): (typeof POSITIONS)[number] {
+  return POSITIONS.reduce((best, pos) =>
+    profile.positionScores[pos].urgency > profile.positionScores[best].urgency ? pos : best
+  , POSITIONS[0]);
+}
+
+function topPlayerAt(profile: TeamProfile, pos: string): Player | undefined {
+  return [...profile.players]
+    .filter((p) => p.position === pos)
+    .sort((a, b) => b.valueDynasty - a.valueDynasty || a.id.localeCompare(b.id))[0];
+}
+
+// Family + optional position for the Send It deep link. Mirrors ArchetypeFamily
+// in src/algo/archetypes.ts (tier_down_WR -> archetype=tier_down&pos=WR, etc).
+function scoutLink(leagueId: string | undefined, rosterId: number, key: string, profile: TeamProfile): string {
+  const params = new URLSearchParams();
+  const tierDownMatch = key.match(/^tier_down_(QB|RB|WR|TE)$/);
+  const consolidateMatch = key.match(/^consolidate_(QB|RB|WR|TE)$/);
+  if (tierDownMatch) {
+    params.set("archetype", "tier_down");
+    params.set("pos", tierDownMatch[1] as string);
+  } else if (consolidateMatch) {
+    params.set("archetype", "consolidate");
+    params.set("pos", consolidateMatch[1] as string);
+  } else if (key === "need_fill") {
+    params.set("archetype", "need_fill");
+    params.set("pos", mostUrgentPosition(profile));
+  } else {
+    params.set("archetype", key);
+  }
+  return `/league/${leagueId}/sendit/${rosterId}?${params.toString()}`;
+}
+
+// One supporting data line per archetype family, built from real profile numbers.
+function buildScoutData(key: string, profile: TeamProfile): string {
+  const tierDownMatch = key.match(/^tier_down_(QB|RB|WR|TE)$/);
+  if (tierDownMatch) {
+    const pos = tierDownMatch[1] as string;
+    const top = topPlayerAt(profile, pos);
+    const ps = profile.positionScores[pos as Position];
+    if (!top) return `no clear ${pos} centerpiece to build around`;
+    return `${top.name} ${top.valueDynasty.toLocaleString()} carries the room; depth score ${ps.depthScore.toFixed(0)}`;
+  }
+
+  const consolidateMatch = key.match(/^consolidate_(QB|RB|WR|TE)$/);
+  if (consolidateMatch) {
+    const pos = consolidateMatch[1];
+    const ps = profile.positionScores[pos as Position];
+    return `starter score ${ps.starterScore.toFixed(0)} with depth score ${ps.depthScore.toFixed(0)}; two pieces could become one stud`;
+  }
+
+  if (key === "consolidate_flex") {
+    const score = profile.flex?.score ?? 0;
+    return `flex depth score ${score.toFixed(0)}; bundle spares into a starter`;
+  }
+
+  if (key === "age_arb_sell") {
+    const candidates = [...profile.players]
+      .filter((p) => p.valueDynasty >= 1500 && p.age != null)
+      .sort((a, b) => (b.age as number) - (a.age as number) || b.valueDynasty - a.valueDynasty || a.id.localeCompare(b.id));
+    const oldest = candidates[0];
+    if (!oldest) return "no aging studs to move";
+    return `${oldest.name} is ${Number(oldest.age).toFixed(1)} with ${oldest.valueDynasty.toLocaleString()} value; peak sell window`;
+  }
+
+  if (key === "age_arb_buy") {
+    return `window pressure ${profile.windowPressure.toFixed(0)} with pick score ${profile.pickCapital.score.toFixed(0)}; you can absorb an aging stud`;
+  }
+
+  if (key === "push_in") {
+    return `window ${profile.windowTier}, ${profile.competitiveness}; convert future capital into now`;
+  }
+
+  if (key === "need_fill") {
+    const pos = mostUrgentPosition(profile);
+    const urgency = profile.positionScores[pos].urgency;
+    return `${pos} urgency ${urgency.toFixed(0)}; fill it with surplus elsewhere`;
+  }
+
+  if (key === "capital_convert_picks_to_production") {
+    return `pick capital score ${profile.pickCapital.score.toFixed(0)}; turn picks into players`;
+  }
+
+  if (key === "capital_convert_production_to_picks") {
+    return `pick capital score ${profile.pickCapital.score.toFixed(0)}; sell production for picks`;
+  }
+
+  return "";
+}
+
 export default function TeamDeepDive() {
   const { id: leagueId, rosterId: rosterIdStr } = useParams<{ id: string; rosterId: string }>();
   const rosterId = Number(rosterIdStr);
@@ -117,6 +209,15 @@ export default function TeamDeepDive() {
     }
     return items;
   }, [profile, rosterSort]);
+
+  // Top 4 archetype angles by score, always shown regardless of threshold.
+  // Deterministic tiebreak: score descending, then key ascending.
+  const scoutEntries = useMemo(() => {
+    if (!profile) return [] as Array<[string, number]>;
+    return Object.entries(profile.archetypeScores)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 4);
+  }, [profile]);
 
   if (!profile) {
     return <p className="dim-text" style={{ marginTop: 48, textAlign: "center" }}>Team not found.</p>;
@@ -188,19 +289,36 @@ export default function TeamDeepDive() {
       </div>
 
       {/* Scouting Report — main focus */}
-      {profile.archetypes.length > 0 && (
-        <section className="dive-pos-section">
-          <h2 className="section-title">SCOUTING REPORT</h2>
-          <div className="dive-archetypes">
-            {profile.archetypes.map((a) => (
-              <div key={a} className="dive-arch-row">
-                <span className="arch-tag">{a.replace(/_/g, " ")}</span>
-                <span className="dive-arch-desc">{ARCHETYPE_LABELS[a] ?? a.replace(/_/g, " ")}</span>
+      <section className="dive-pos-section">
+        <h2 className="section-title">SCOUTING REPORT</h2>
+        <p className="dim-text scout-intro">Your best trade angles by the numbers. Send one to the trade finder.</p>
+        <div className="scout-list">
+          {scoutEntries.map(([key, score]) => {
+            const strength = score >= 60 ? "strong angle" : score >= 35 ? "worth exploring" : "situational";
+            return (
+              <div key={key} className="scout-row">
+                <div className="scout-row-main">
+                  <span className="scout-title">{ARCHETYPE_LABELS[key] ?? key.replace(/_/g, " ")}</span>
+                  <span className="scout-data">{buildScoutData(key, profile)}</span>
+                </div>
+                <div className="scout-row-meter">
+                  <div className="scout-meter-bar">
+                    <MiniBar score={score} />
+                  </div>
+                  <span className="scout-score">{score}</span>
+                  <span className="scout-strength">{strength}</span>
+                  <button
+                    className="sendit-reset-btn scout-cta"
+                    onClick={() => navigate(scoutLink(leagueId, rosterId, key, profile))}
+                  >
+                    Find these trades
+                  </button>
+                </div>
               </div>
-            ))}
-          </div>
-        </section>
-      )}
+            );
+          })}
+        </div>
+      </section>
 
       {/* Position dashboard */}
       <section className="dive-pos-section">
