@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { ALGO_VERSION } from "../src/algo/version";
+import { ALGO_FINGERPRINT, ALGO_VERSION } from "../src/algo/version";
 import { adminDb } from "./_lib/admin";
 import { requireApprovedUser } from "./_lib/auth";
 import { ensureLeagueAccess } from "./_lib/membership";
@@ -92,6 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       userId: user.uid,
       userEmail: user.email,
       algoVersion: ALGO_VERSION,
+      algoFingerprint: ALGO_FINGERPRINT,
       verdict,
       reasons,
       comment,

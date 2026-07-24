@@ -285,10 +285,22 @@ feedback/{autoId}            thumbs up/down on a Send It package: verdict,
                              `npm run feedback:export`.
 ```
 
-**Feedback carries an `algoVersion` stamp** (`src/algo/version.ts`). The engine
-changes constantly, so unstamped feedback would be unattributable within
-weeks. Bump `ALGO_VERSION` whenever the algorithm changes materially, and
-treat feedback from older versions as evidence about that version only.
+**Feedback is version-stamped automatically.** The engine changes constantly,
+so unstamped feedback would be unattributable within weeks. Every entry
+carries two fields from `src/algo/version.ts`:
+
+- `algoFingerprint` — sha256 of every file that decides which trades get
+  suggested (`src/algo/*.ts` + `api/_lib/tradeEngine.ts`), computed by
+  `scripts/build-api.mjs` and injected into the bundle as
+  `__ALGO_FINGERPRINT__`. **Nothing to maintain**: change any algorithm file
+  and the next `npm run build:api` moves the hash on its own. Reads `"dev"`
+  outside a bundled build.
+- `ALGO_VERSION` — the friendly formation name ("shotgun"), for reading
+  feedback at a glance. Rename it when a new formation starts; attribution
+  does not depend on remembering to.
+
+To see what produced a given entry, match its `algoFingerprint` against
+`npm run build:api` output at any commit.
 
 ## API Endpoints
 

@@ -77,6 +77,7 @@ type FeedbackDoc = {
   userId?: string;
   userEmail?: string;
   algoVersion?: string;
+  algoFingerprint?: string;
   verdict?: string;
   reasons?: string[];
   comment?: string;
@@ -95,6 +96,7 @@ const CSV_COLUMNS = [
   "createdAt",
   "userEmail",
   "algoVersion",
+  "algoFingerprint",
   "verdict",
   "reasons",
   "comment",
@@ -148,6 +150,7 @@ function toRow(entry: FeedbackEntry): string[] {
     createdAt: entry.createdAt ?? "",
     userEmail: entry.userEmail ?? "",
     algoVersion: entry.algoVersion ?? "",
+    algoFingerprint: entry.algoFingerprint ?? "",
     verdict: entry.verdict ?? "",
     reasons: (entry.reasons ?? []).join(";"),
     comment: entry.comment ?? "",

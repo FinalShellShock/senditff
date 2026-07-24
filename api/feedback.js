@@ -35,6 +35,7 @@ module.exports = __toCommonJS(feedback_exports);
 
 // src/algo/version.ts
 var ALGO_VERSION = "shotgun";
+var ALGO_FINGERPRINT = true ? "b3f7c63e402a" : "dev";
 
 // api/_lib/admin.ts
 var admin = __toESM(require("firebase-admin"));
@@ -142,6 +143,7 @@ async function handler(req, res) {
       userId: user.uid,
       userEmail: user.email,
       algoVersion: ALGO_VERSION,
+      algoFingerprint: ALGO_FINGERPRINT,
       verdict,
       reasons,
       comment,
