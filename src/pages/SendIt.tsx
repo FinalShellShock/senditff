@@ -94,6 +94,31 @@ const UP_REASONS: Array<{ key: string; label: string }> = [
   { key: "would_send", label: "I'd actually send this" },
 ];
 
+// Outline thumb, drawn with strokes so `currentColor` drives it: the button's
+// own color handles the neutral/green/red states with no second icon. Thumbs
+// down is the same path rotated 180 degrees, which is exactly how the two
+// glyphs relate.
+function ThumbIcon({ direction }: { direction: "up" | "down" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="15"
+      height="15"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      {...(direction === "down" ? { style: { transform: "rotate(180deg)" } } : {})}
+    >
+      <path d="M7 10v12" />
+      <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
+    </svg>
+  );
+}
+
 function AssetList({ assets }: { assets: TradeAssetWire[] }) {
   return (
     <span className="trade-names">
@@ -222,8 +247,9 @@ function TradeCard({
           disabled={sent}
           aria-pressed={verdict === "up"}
           title="Good trade"
+          aria-label="Good trade"
         >
-          👍
+          <ThumbIcon direction="up" />
         </button>
         <button
           type="button"
@@ -232,14 +258,18 @@ function TradeCard({
           disabled={sent}
           aria-pressed={verdict === "down"}
           title="Bad trade"
+          aria-label="Bad trade"
         >
-          👎
+          <ThumbIcon direction="down" />
         </button>
       </div>
 
       {verdict && sent && (
         <div className="trade-feedback-panel">
-          <p className="trade-feedback-sent">Thanks, logged. {verdict === "up" ? "👍" : "👎"}</p>
+          <p className="trade-feedback-sent">
+            <ThumbIcon direction={verdict} />
+            Thanks, logged.
+          </p>
         </div>
       )}
 

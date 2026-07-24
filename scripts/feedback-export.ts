@@ -40,15 +40,43 @@ function loadServiceAccountJson(envFile: string): string | null {
     .find((l) => l.startsWith(`${SERVICE_ACCOUNT_KEY}=`));
   if (!line) return null;
 
-  let value = line.slice(`${SERVICE_ACCOUNT_KEY}=`.length).trim();
-  if (
-    (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith("'") && value.endsWith("'"))
-  ) {
-    value = value.slice(1, -1);
-  }
-  value = value.replace(/\\n/g, "\n").replace(/\\"/g, '"');
+  const value = decodeEnvValue(line.slice(`${SERVICE_ACCOUNT_KEY}=`.length));
   return value || null;
+}
+
+// `vercel env pull` writes the value double-quoted with the JSON's own
+// newlines encoded as \n, but it does NOT escape the backslashes already
+// inside the value, so the private key's \n escapes come out looking
+// identical to the pretty-print ones. A blind \n -> newline pass therefore
+// puts raw newlines inside the private_key string literal and JSON.parse
+// dies with "Bad control character in string literal".
+//
+// So walk it instead: outside a JSON string a \n is just pretty-print
+// whitespace and can be unescaped; inside one it belongs to the key and has
+// to stay a two-character escape for JSON.parse to turn it back into a
+// newline itself.
+function decodeEnvValue(rawValue: string): string {
+  let s = rawValue.trim();
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    s = s.slice(1, -1);
+  }
+
+  let out = "";
+  let inString = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === "\\" && s[i + 1] === "n") {
+      out += inString ? "\\n" : "\n";
+      i++;
+      continue;
+    }
+    if (c === '"') inString = !inString;
+    out += c;
+  }
+  return out;
 }
 
 type FeedbackAsset = { name?: string; position?: string; kind?: string };
