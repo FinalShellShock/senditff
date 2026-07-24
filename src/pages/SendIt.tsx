@@ -13,6 +13,15 @@ import {
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 
+type ApiClient = ReturnType<typeof makeApiClient>;
+
+type ResultSearchContext = {
+  archetype: string | null;
+  position: string | null;
+  targetRosterId: number | null;
+  noFillerPicks: boolean;
+};
+
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 
 // Friendly intent names for the archetype families. "" = auto (all families).
@@ -66,6 +75,25 @@ function posColor(pos?: string) {
   return pos ? map[pos] ?? "#94a3b8" : "#475569";
 }
 
+const DOWN_REASONS: Array<{ key: string; label: string }> = [
+  { key: "fit_me", label: "Doesn't fit for me" },
+  { key: "fit_them", label: "Doesn't fit for them" },
+  { key: "archetype_mismatch", label: "Doesn't match the archetype" },
+  { key: "unbalanced", label: "Value is unbalanced" },
+  { key: "unrealistic", label: "They'd never accept" },
+  { key: "wrong_players", label: "Wrong players targeted" },
+  { key: "bad_rationale", label: "Rationale is off" },
+];
+
+const UP_REASONS: Array<{ key: string; label: string }> = [
+  { key: "fit_me_good", label: "Great fit for me" },
+  { key: "fit_them_good", label: "Realistic for them" },
+  { key: "archetype_match", label: "Nails the archetype" },
+  { key: "fair_value", label: "Value feels fair" },
+  { key: "good_rationale", label: "Rationale is sharp" },
+  { key: "would_send", label: "I'd actually send this" },
+];
+
 function AssetList({ assets }: { assets: TradeAssetWire[] }) {
   return (
     <span className="trade-names">
@@ -85,11 +113,70 @@ function AssetList({ assets }: { assets: TradeAssetWire[] }) {
   );
 }
 
-function TradeCard({ pkg }: { pkg: TradePackage }) {
+function TradeCard({
+  pkg, index, leagueId, rosterId, search, diagnostics, api,
+}: {
+  pkg: TradePackage;
+  index: number;
+  leagueId: string;
+  rosterId: number;
+  search: ResultSearchContext;
+  diagnostics: TradeDiagnostics | null;
+  api: ApiClient;
+}) {
   const delta = pkg.valueReceive - pkg.valueGive;
   const deltaColor = delta > 200 ? "#22c55e" : delta < -200 ? "#ef4444" : "#94a3b8";
   // Older API responses don't carry fairness; the label is derivable.
   const fairness = pkg.fairness ?? fairnessLabel(pkg.valueGive, pkg.valueReceive);
+
+  const [verdict, setVerdict] = useState<"up" | "down" | null>(null);
+  const [reasons, setReasons] = useState<string[]>([]);
+  const [comment, setComment] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+
+  function pickVerdict(next: "up" | "down") {
+    if (sent) return;
+    if (verdict === next) {
+      // Toggle off.
+      setVerdict(null);
+      setReasons([]);
+      return;
+    }
+    // Either opening fresh or switching sides: the reason keys differ
+    // between up and down, so always clear.
+    setVerdict(next);
+    setReasons([]);
+    setSendError(null);
+  }
+
+  function toggleReason(key: string) {
+    setReasons((prev) => (prev.includes(key) ? prev.filter((r) => r !== key) : [...prev, key]));
+  }
+
+  function submit() {
+    if (!verdict || sending) return;
+    setSending(true);
+    setSendError(null);
+    api
+      .submitFeedback({
+        verdict,
+        reasons,
+        comment: comment.trim(),
+        leagueId,
+        rosterId,
+        packageIndex: index,
+        search,
+        package: pkg,
+        diagnostics,
+      })
+      .then(() => setSent(true))
+      .catch((e) => setSendError(e instanceof Error ? e.message : "Failed to send feedback"))
+      .finally(() => setSending(false));
+  }
+
+  const reasonOptions = verdict === "down" ? DOWN_REASONS : UP_REASONS;
 
   return (
     <div className="trade-card">
@@ -126,6 +213,68 @@ function TradeCard({ pkg }: { pkg: TradePackage }) {
         </div>
       )}
       {pkg.rationale && <p className="trade-rationale">{pkg.rationale}</p>}
+
+      <div className="trade-feedback-bar">
+        <button
+          type="button"
+          className={`trade-feedback-btn${verdict === "up" ? " trade-feedback-btn-up" : ""}`}
+          onClick={() => pickVerdict("up")}
+          disabled={sent}
+          aria-pressed={verdict === "up"}
+          title="Good trade"
+        >
+          👍
+        </button>
+        <button
+          type="button"
+          className={`trade-feedback-btn${verdict === "down" ? " trade-feedback-btn-down" : ""}`}
+          onClick={() => pickVerdict("down")}
+          disabled={sent}
+          aria-pressed={verdict === "down"}
+          title="Bad trade"
+        >
+          👎
+        </button>
+      </div>
+
+      {verdict && sent && (
+        <div className="trade-feedback-panel">
+          <p className="trade-feedback-sent">Thanks, logged. {verdict === "up" ? "👍" : "👎"}</p>
+        </div>
+      )}
+
+      {verdict && !sent && (
+        <div className="trade-feedback-panel">
+          <div className="trade-feedback-chips">
+            {reasonOptions.map((r) => (
+              <button
+                type="button"
+                key={r.key}
+                className={`trade-feedback-chip${reasons.includes(r.key) ? " selected" : ""}`}
+                onClick={() => toggleReason(r.key)}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          <textarea
+            className="trade-feedback-comment"
+            placeholder="Anything else? (optional)"
+            maxLength={2000}
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+          {sendError && <p className="trade-feedback-error">{sendError}</p>}
+          <button
+            type="button"
+            className="trade-feedback-submit"
+            disabled={sending}
+            onClick={submit}
+          >
+            {sending ? "Sending..." : "Send feedback"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -204,6 +353,15 @@ export default function SendIt() {
   const [result, setResult] = useState<FindTradesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // What actually produced `result`, captured at search time. Controls can
+  // drift after a search runs (dropdowns change without hitting FIND
+  // TRADES), so this must not read the live control state.
+  const [resultSearch, setResultSearch] = useState<ResultSearchContext>({
+    archetype: null,
+    position: null,
+    targetRosterId: null,
+    noFillerPicks: false,
+  });
 
   const showPosition = intent !== "" && POSITIONAL_FAMILIES.includes(intent);
 
@@ -218,6 +376,12 @@ export default function SendIt() {
     setLoading(true);
     setError(null);
     const usePosition = opts.intent !== "" && POSITIONAL_FAMILIES.includes(opts.intent) ? opts.position : "";
+    setResultSearch({
+      archetype: opts.intent || null,
+      position: usePosition || null,
+      targetRosterId: opts.target === "" ? null : opts.target,
+      noFillerPicks: opts.noFiller,
+    });
     // Keep the URL shareable
     const next = new URLSearchParams();
     if (opts.intent) next.set("archetype", opts.intent);
@@ -377,7 +541,18 @@ export default function SendIt() {
 
       {result && result.packages.length > 0 && (
         <div className="trade-list">
-          {result.packages.map((pkg, i) => <TradeCard key={i} pkg={pkg} />)}
+          {result.packages.map((pkg, i) => (
+            <TradeCard
+              key={i}
+              pkg={pkg}
+              index={i}
+              leagueId={leagueId!}
+              rosterId={rosterId}
+              search={resultSearch}
+              diagnostics={result.diagnostics ?? null}
+              api={api}
+            />
+          ))}
         </div>
       )}
     </>

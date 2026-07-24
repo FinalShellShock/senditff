@@ -53,6 +53,25 @@ export type FindTradesResponse = {
   diagnostics?: TradeDiagnostics;
 };
 
+export type FeedbackVerdict = "up" | "down";
+
+export type FeedbackPayload = {
+  verdict: FeedbackVerdict;
+  reasons: string[];
+  comment: string;
+  leagueId: string;
+  rosterId: number;
+  packageIndex: number;
+  search: {
+    archetype: string | null;
+    position: string | null;
+    targetRosterId: number | null;
+    noFillerPicks: boolean;
+  };
+  package: TradePackage;
+  diagnostics: TradeDiagnostics | null;
+};
+
 // ── Trade Grades (league trade history, graded at today's values) ───────────
 
 export type GradedAsset = {
@@ -188,6 +207,12 @@ export function makeApiClient(getToken: GetTokenFn) {
       apiFetch<TradesResponse>(getToken, "/api/leagues/trades", {
         method: "POST",
         body: JSON.stringify({ leagueId }),
+      }),
+
+    submitFeedback: (payload: FeedbackPayload) =>
+      apiFetch<{ ok: true; id: string }>(getToken, "/api/feedback", {
+        method: "POST",
+        body: JSON.stringify(payload),
       }),
   };
 }
