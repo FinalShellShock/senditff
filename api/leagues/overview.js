@@ -86,6 +86,13 @@ async function ensureLeagueAccess(uid, leagueRef, members) {
 }
 
 // api/leagues/overview.ts
+var LEAGUE_TTL_MS = 60 * 60 * 1e3;
+function isStale(lastRefreshed) {
+  if (typeof lastRefreshed !== "string") return true;
+  const t = new Date(lastRefreshed).getTime();
+  if (!Number.isFinite(t)) return true;
+  return Date.now() - t > LEAGUE_TTL_MS;
+}
 async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
   const user = await requireApprovedUser(req, res);
@@ -112,11 +119,15 @@ async function handler(req, res) {
         isMine: mySleeperUserId ? data["ownerSleeperUserId"] === mySleeperUserId : data["isMine"] ?? false
       };
     });
+    const lastRefreshed = leagueSnap.data()?.["lastRefreshed"];
     return res.status(200).json({
       leagueId,
       name: leagueSnap.data()?.["name"],
       format: leagueSnap.data()?.["format"],
-      lastRefreshed: leagueSnap.data()?.["lastRefreshed"],
+      lastRefreshed,
+      // The client re-syncs on its own when this is true, so league data
+      // freshens by being looked at instead of on a schedule.
+      stale: isStale(lastRefreshed),
       upcomingDraftYear: leagueSnap.data()?.["upcomingDraftYear"] ?? null,
       profiles
     });

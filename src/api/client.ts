@@ -173,6 +173,10 @@ export type OverviewResponse = {
   // Sync stores the complete detected format (starter slots included).
   format: LeagueFormat;
   lastRefreshed: string;
+  // True once the cached league data is past the server's TTL. Optional so a
+  // response from an older API deploy doesn't read as stale and trigger a
+  // pointless re-sync on every view.
+  stale?: boolean;
   upcomingDraftYear: number | null;
   profiles: TeamProfile[];
 };

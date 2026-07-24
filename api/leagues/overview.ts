@@ -3,6 +3,20 @@ import { adminDb } from "../_lib/admin";
 import { requireApprovedUser } from "../_lib/auth";
 import { ensureLeagueAccess } from "../_lib/membership";
 
+// How old cached league data may get before the client is told to re-sync.
+// Same lazy-TTL pattern as the FantasyCalc snapshot in _lib/snapshot.ts:
+// nothing is scheduled, staleness is resolved the moment someone looks.
+const LEAGUE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+// Missing or unparseable timestamps count as stale so a league that predates
+// this field self-heals on the next view.
+function isStale(lastRefreshed: unknown): boolean {
+  if (typeof lastRefreshed !== "string") return true;
+  const t = new Date(lastRefreshed).getTime();
+  if (!Number.isFinite(t)) return true;
+  return Date.now() - t > LEAGUE_TTL_MS;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
@@ -42,11 +56,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       };
     });
 
+    const lastRefreshed = leagueSnap.data()?.["lastRefreshed"];
+
     return res.status(200).json({
       leagueId,
       name: leagueSnap.data()?.["name"],
       format: leagueSnap.data()?.["format"],
-      lastRefreshed: leagueSnap.data()?.["lastRefreshed"],
+      lastRefreshed,
+      // The client re-syncs on its own when this is true, so league data
+      // freshens by being looked at instead of on a schedule.
+      stale: isStale(lastRefreshed),
       upcomingDraftYear: leagueSnap.data()?.["upcomingDraftYear"] ?? null,
       profiles,
     });

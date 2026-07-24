@@ -1,4 +1,4 @@
-import { Component, useEffect, useState, type ReactNode } from "react";
+import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { makeApiClient, type OverviewResponse } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
@@ -42,21 +42,50 @@ export default function LeagueShell() {
 
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [resyncing, setResyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
-    if (!id) return;
+  async function load(): Promise<OverviewResponse | null> {
+    if (!id) return null;
     try {
       const data = await api.getOverview(id);
       setOverview(data);
+      return data;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load league");
+      return null;
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // At most one auto-resync per league per mount, so a league that keeps
+  // failing to sync can't spin. StrictMode double-invokes this effect in dev;
+  // the check-and-set below is synchronous, so the second pass bails out.
+  const resyncedFor = useRef<string | null>(null);
+
+  // Cached profiles paint immediately, then anything past the server's TTL
+  // gets refreshed in the background. That's the whole auto-sync: no cron,
+  // no cost when nobody's looking.
+  async function loadAndFreshen() {
+    const data = await load();
+    if (!data?.stale || !id) return;
+    if (resyncedFor.current === id) return;
+    resyncedFor.current = id;
+
+    setResyncing(true);
+    try {
+      await api.syncLeague(id);
+      await load();
+    } catch {
+      // A failed refresh is not worth an error banner: the stale data on
+      // screen is still perfectly usable, and Refresh is one click away.
+    } finally {
+      setResyncing(false);
+    }
+  }
+
+  useEffect(() => { loadAndFreshen(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fmt = overview?.format;
   const formatStr = fmt
@@ -85,6 +114,7 @@ export default function LeagueShell() {
           {overview && <span className="status-brand">{overview.name}</span>}
         </div>
         <div className="status-right">
+          {resyncing && <span className="dim-text" style={{ color: "#f59e0b" }}>syncing...</span>}
           {formatStr && <span className="dim-text">{formatStr}</span>}
         </div>
       </div>
@@ -129,7 +159,7 @@ export default function LeagueShell() {
           <p className="dim-text" style={{ marginTop: 48, textAlign: "center" }}>Loading league...</p>
         ) : overview ? (
           <ContentErrorBoundary onReset={async () => { await makeApiClient(getToken).syncLeague(id!).catch(() => {}); await load(); }}>
-            <Outlet context={{ overview, reload: load } satisfies LeagueOutletContext} />
+            <Outlet context={{ overview, reload: async () => { await load(); } } satisfies LeagueOutletContext} />
           </ContentErrorBoundary>
         ) : null}
       </div>

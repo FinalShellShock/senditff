@@ -79,6 +79,11 @@ npm run validate             # team profiles + HTML report
 npm run validate:trades      # engine sweep: default mode + every forced archetype, determinism check
 npm run validate:history     # trade history chain walk + hindsight grading + ledger
 npm run validate:projection  # Shotgun projection table + invariants
+
+# Pull down Send It feedback for algo tuning (JSON + CSV in repo root).
+# Needs the service account, which lives only in Vercel:
+npx vercel env pull .env.vercel.local
+npm run feedback:export
 ```
 
 ## Deploying
@@ -272,7 +277,18 @@ leagues/{leagueId}/tradeHistory/{season}
                              managers{}, draftSelections{} — values applied at
                              READ time against today's snapshot, never stored
 rationaleCache/{hash}        rationale, archetype, generatedAt
+feedback/{autoId}            thumbs up/down on a Send It package: verdict,
+                             reasons[], comment, the full package payload +
+                             scores, the search that produced it, and
+                             algoVersion. Server-stamped identity/time;
+                             Admin SDK writes only. Pull it down with
+                             `npm run feedback:export`.
 ```
+
+**Feedback carries an `algoVersion` stamp** (`src/algo/version.ts`). The engine
+changes constantly, so unstamped feedback would be unattributable within
+weeks. Bump `ALGO_VERSION` whenever the algorithm changes materially, and
+treat feedback from older versions as evidence about that version only.
 
 ## API Endpoints
 
@@ -281,6 +297,27 @@ rationaleCache/{hash}        rationale, archetype, generatedAt
 - `POST /api/trades/find` — body: `{ leagueId, rosterId, archetype?, position?, targetRosterId? }` → `{ packages (fairness + scores), diagnostics }` with rationales
 - `GET /api/leagues/trades?leagueId=` — graded trade history + power-rankings ledger (`{ needsBackfill: true }` before first backfill)
 - `POST /api/leagues/trades` — backfill full league chain / refresh current season (maxDuration 60s in vercel.json)
+- `POST /api/feedback` — log a thumbs up/down on a Send It package
+
+## League freshness: lazy TTL, no cron
+
+League data auto-refreshes by being looked at, not on a schedule.
+`GET /api/leagues/overview` returns `stale: true` once `lastRefreshed` is
+older than `LEAGUE_TTL_MS` (1 hour), and `LeagueShell` responds by painting
+the cached profiles immediately, then re-syncing in the background and
+reloading. Same lazy-TTL pattern as the FantasyCalc snapshot in
+`api/_lib/snapshot.ts`.
+
+Why not a Vercel cron: the Hobby plan caps crons at **once per day** and fires
+them at an imprecise hour, so a cron literally cannot deliver hourly
+freshness. Firestore was never the constraint (a league sync is ~13 writes,
+so even hourly syncing across several leagues sits under 10% of the 20k/day
+free tier). The real cost is `fetchPlayers()` pulling the full ~5MB Sleeper
+player DB per sync, which the lazy TTL keeps at zero when nobody is using
+the app.
+
+Auto-resync is capped at one attempt per league per mount, and a failure is
+swallowed on purpose: stale data still renders, and Refresh is one click away.
 
 ---
 
