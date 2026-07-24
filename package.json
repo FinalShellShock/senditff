@@ -11,7 +11,8 @@
     "validate:trades": "tsx scripts/validate/trades.ts",
     "validate:history": "tsx scripts/validate/history.ts",
     "validate:projection": "tsx scripts/validate/projection.ts",
-    "build:api": "node scripts/build-api.mjs"
+    "build:api": "node scripts/build-api.mjs",
+    "feedback:export": "tsx scripts/feedback-export.ts"
   },
   "dependencies": {
     "@vercel/node": "^5.7.15",

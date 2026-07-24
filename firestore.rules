@@ -20,6 +20,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Trade feedback: Admin SDK writes only, never client-readable.
+    match /feedback/{docId} {
+      allow read, write: if false;
+    }
+
     function isApproved() {
       return request.auth != null
         && get(/databases/$(database)/documents/users/$(request.auth.uid))

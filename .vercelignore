@@ -1,2 +1,3 @@
 api/**/*.ts
 scripts/validate
+scripts/feedback-export.ts
