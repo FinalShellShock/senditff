@@ -54,7 +54,9 @@ var VALUE_LOSS_RATE = {
 };
 var AGING_LOSS_RATE = { QB: 6, RB: 8.5, WR: 7, TE: 7 };
 var DECLINING_LOSS_RATE = { QB: 10, RB: 10.5, WR: 10, TE: 10 };
+var DEPTH_RESILIENCE_WEIGHT = 0.5;
 var LATERAL_SWAP_MIN_AGE_GAP = 2.5;
+var STANCE_CONFIDENT_ARCH_MATCH = 0.5;
 var STANCE_CAUTION_ARCH_MATCH = 0.05;
 var TANK_PRODUCTION_SCALE = 3e3;
 var TANK_SURPLUS_SCALE = 2500;
@@ -78,47 +80,6 @@ var ARCHETYPE_FAMILIES = [
   "capital_convert_picks_to_production",
   "capital_convert_production_to_picks"
 ];
-
-// src/algo/fairness.ts
-var FAIRNESS_FAIR_PCT = 0.05;
-var FAIRNESS_FAIR_ABS = 150;
-var FAIRNESS_SLIGHT_PCT = 0.12;
-var BUNDLE_DECAY = 0.8;
-function packageValue(values) {
-  const sorted = [...values].sort((a, b) => b - a);
-  let total = 0;
-  let mult = 1;
-  for (const v of sorted) {
-    total += v * mult;
-    mult *= BUNDLE_DECAY;
-  }
-  return total;
-}
-var BEST_ASSET_PREMIUM = 0.15;
-function tradeEffectiveValues(giveValues, receiveValues) {
-  let give = packageValue(giveValues);
-  let receive = packageValue(receiveValues);
-  const bestGive = giveValues.length > 0 ? Math.max(...giveValues) : 0;
-  const bestReceive = receiveValues.length > 0 ? Math.max(...receiveValues) : 0;
-  if (bestGive > bestReceive) give += BEST_ASSET_PREMIUM * (bestGive - bestReceive);
-  else if (bestReceive > bestGive) receive += BEST_ASSET_PREMIUM * (bestReceive - bestGive);
-  return { give, receive };
-}
-function fairnessDelta(valueGive, valueReceive) {
-  return (valueReceive - valueGive) / Math.max(valueGive, valueReceive, 1);
-}
-function fairnessLabel(valueGive, valueReceive) {
-  const delta = fairnessDelta(valueGive, valueReceive);
-  const absGap = Math.abs(valueReceive - valueGive);
-  if (Math.abs(delta) <= FAIRNESS_FAIR_PCT || absGap <= FAIRNESS_FAIR_ABS) return "FAIR";
-  if (delta < 0) {
-    return -delta <= FAIRNESS_SLIGHT_PCT ? "SLIGHT_OVERPAY" : "OVERPAY";
-  }
-  return delta <= FAIRNESS_SLIGHT_PCT ? "SLIGHT_UNDERPAY" : "UNDERPAY";
-}
-function fairnessText(label) {
-  return label.replace(/_/g, " ");
-}
 
 // api/_lib/admin.ts
 var admin = __toESM(require("firebase-admin"));
@@ -256,6 +217,47 @@ function deserializeSnapshot(data) {
   };
 }
 
+// src/algo/fairness.ts
+var FAIRNESS_FAIR_PCT = 0.05;
+var FAIRNESS_FAIR_ABS = 150;
+var FAIRNESS_SLIGHT_PCT = 0.12;
+var BUNDLE_DECAY = 0.8;
+function packageValue(values) {
+  const sorted = [...values].sort((a, b) => b - a);
+  let total = 0;
+  let mult = 1;
+  for (const v of sorted) {
+    total += v * mult;
+    mult *= BUNDLE_DECAY;
+  }
+  return total;
+}
+var BEST_ASSET_PREMIUM = 0.15;
+function tradeEffectiveValues(giveValues, receiveValues) {
+  let give = packageValue(giveValues);
+  let receive = packageValue(receiveValues);
+  const bestGive = giveValues.length > 0 ? Math.max(...giveValues) : 0;
+  const bestReceive = receiveValues.length > 0 ? Math.max(...receiveValues) : 0;
+  if (bestGive > bestReceive) give += BEST_ASSET_PREMIUM * (bestGive - bestReceive);
+  else if (bestReceive > bestGive) receive += BEST_ASSET_PREMIUM * (bestReceive - bestGive);
+  return { give, receive };
+}
+function fairnessDelta(valueGive, valueReceive) {
+  return (valueReceive - valueGive) / Math.max(valueGive, valueReceive, 1);
+}
+function fairnessLabel(valueGive, valueReceive) {
+  const delta = fairnessDelta(valueGive, valueReceive);
+  const absGap = Math.abs(valueReceive - valueGive);
+  if (Math.abs(delta) <= FAIRNESS_FAIR_PCT || absGap <= FAIRNESS_FAIR_ABS) return "FAIR";
+  if (delta < 0) {
+    return -delta <= FAIRNESS_SLIGHT_PCT ? "SLIGHT_OVERPAY" : "OVERPAY";
+  }
+  return delta <= FAIRNESS_SLIGHT_PCT ? "SLIGHT_UNDERPAY" : "UNDERPAY";
+}
+function fairnessText(label) {
+  return label.replace(/_/g, " ");
+}
+
 // src/algo/profile.ts
 var REDRAFT = (p) => p.valueRedraft;
 function depthSlotsFor(pos, format) {
@@ -332,6 +334,10 @@ function depthByPosition(players, format, getValue = REDRAFT) {
     depth[pos] = sorted.slice(baseN, baseN + depthN);
   }
   return depth;
+}
+function postInjuryValues(starters, depth) {
+  const promoted = [...starters.slice(1), ...depth].slice(0, starters.length);
+  return Array.from({ length: starters.length }, (_, i) => promoted[i]?.valueRedraft ?? 0);
 }
 function flexStrengthValue(players, format, totalStarterValue, getValue = REDRAFT) {
   let positionSpecificValue = 0;
@@ -446,6 +452,11 @@ function weightedSlotAverage(scores) {
 }
 
 // api/_lib/tradeEngine.ts
+function confidenceTier(archMatch, weak) {
+  if (weak || archMatch < STANCE_CAUTION_ARCH_MATCH) return "inspiration";
+  if (archMatch >= STANCE_CONFIDENT_ARCH_MATCH) return "recommended";
+  return "measured";
+}
 function genPositions(ctx) {
   return ctx.forced?.position ? [ctx.forced.position] : POSITIONS;
 }
@@ -531,6 +542,7 @@ function computeLeagueAverages(profiles, format, globalPlayerPools) {
   const depthPlayerPool = globalPlayerPools ? { ...globalPlayerPools.dynastyByPos } : { QB: [], RB: [], WR: [], TE: [] };
   const startersInUse = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depthSlotsTotal = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const resiliencePool = { QB: [], RB: [], WR: [], TE: [] };
   let flex = 0;
   let cap = 0;
   for (const p of profiles) {
@@ -541,8 +553,12 @@ function computeLeagueAverages(profiles, format, globalPlayerPools) {
       depthPool[pos].push(p.positionScores[pos].depthValue);
     }
     const { starters } = fillStarters(p.players, format);
+    const depthByPos = depthByPosition(p.players, format, (pl) => pl.valueDynasty);
     for (const pos of POSITIONS) {
       startersInUse[pos] += starters[pos].length;
+      resiliencePool[pos].push(
+        postInjuryValues(starters[pos], depthByPos[pos]).reduce((a, v) => a + v, 0)
+      );
     }
     if (!globalPlayerPools) {
       for (const pl of p.players) {
@@ -563,9 +579,11 @@ function computeLeagueAverages(profiles, format, globalPlayerPools) {
   cap /= n;
   const starterStats = {};
   const depthStats = {};
+  const resilienceStats = {};
   for (const pos of POSITIONS) {
     starterStats[pos] = topNStats(starterPlayerPool[pos], startersInUse[pos]);
     depthStats[pos] = topNStats(depthPlayerPool[pos], depthSlotsTotal[pos]);
+    resilienceStats[pos] = topNStats(resiliencePool[pos], resiliencePool[pos].length);
   }
   const variance = profiles.reduce((s, p) => s + (p.pickCapital.value - cap) ** 2, 0) / n;
   return {
@@ -581,7 +599,9 @@ function computeLeagueAverages(profiles, format, globalPlayerPools) {
     starterStats,
     depthStats,
     startersInUse,
-    depthSlotsTotal
+    depthSlotsTotal,
+    resiliencePool,
+    resilienceStats
   };
 }
 function simulateImpact(team, give, receive, format, averages, thisYear) {
@@ -610,7 +630,10 @@ function simulateImpact(team, give, receive, format, averages, thisYear) {
       (p) => positionScoreFromPool(p.valueDynasty, averages.depthPlayerPool[pos], averages.depthSlotsTotal[pos])
     );
     const newStarterScore = weightedSlotAverage(starterPlayerScores);
-    const newDepthScore = weightedSlotAverage(depthPlayerScores);
+    const postInjuryTotal = postInjuryValues(starters[pos], depth[pos]).reduce((a, v) => a + v, 0);
+    const rMean = averages.resilienceStats[pos].mean;
+    const newResilienceScore = starters[pos].length > 0 && rMean > 0 ? Math.max(0, Math.min(100, 50 + (postInjuryTotal - rMean) / rMean * 50)) : 0;
+    const newDepthScore = weightedSlotAverage(depthPlayerScores) * (1 - DEPTH_RESILIENCE_WEIGHT) + newResilienceScore * DEPTH_RESILIENCE_WEIGHT;
     perPosition[pos] = {
       starterScoreDelta: newStarterScore - team.positionScores[pos].starterScore,
       depthScoreDelta: newDepthScore - team.positionScores[pos].depthScore,
@@ -1255,6 +1278,8 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
       counterRosterId: s.counterRosterId,
       give: s.give.map(toWire),
       receive: s.receive.map(toWire),
+      adjValueGive: s.adjGive,
+      adjValueReceive: s.adjReceive,
       valueGive: s.valueGive,
       valueReceive: s.valueReceive,
       archetype: s.archetype,
@@ -1280,32 +1305,22 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
   return { packages, diagnostics };
 }
 
-// api/trades/find.ts
-var MODEL_HAIKU = "claude-haiku-4-5-20251001";
-var PROMPT_VERSION = 3;
-function rationaleHash(pkg, myProfile, counterProfile, diagnostics) {
-  const key = JSON.stringify({
-    promptVersion: PROMPT_VERSION,
-    // These shape the prompt's stance (recommendation vs "closest we found"),
-    // so the same package under different diagnostics is a different prompt
-    // and must not share a cache entry.
-    degraded: diagnostics?.degraded ?? null,
-    myArchetypeScore: diagnostics?.myArchetypeScore ?? null,
-    give: pkg.give.map((a) => a.id).sort(),
-    receive: pkg.receive.map((a) => a.id).sort(),
-    archetype: pkg.archetype,
-    myWindow: myProfile.windowLabel,
-    theirWindow: counterProfile?.windowLabel ?? null,
-    fairness: pkg.fairness
-  });
-  return (0, import_crypto.createHash)("sha256").update(key).digest("hex");
-}
+// api/_lib/rationalePrompt.ts
+var PROMPT_VERSION = 4;
 function describeAsset(a) {
-  if (a.kind !== "player") return a.name;
-  return a.age != null ? `${a.name} (${a.position}, age ${a.age.toFixed(1)})` : `${a.name} (${a.position})`;
+  const v = a.valueDynasty != null ? ` ${Math.round(a.valueDynasty)}` : "";
+  if (a.kind !== "player") return `${a.name}${v}`;
+  return a.age != null ? `${a.name} (${a.position}, ${a.age.toFixed(1)})${v}` : `${a.name} (${a.position})${v}`;
 }
 function sanitizeRationale(text) {
   return text.replace(/^#{1,6}[^\n]*$/gm, "").replace(/\*\*/g, "").replace(/\s*[—–]\s*/g, ", ").trim();
+}
+function isWeakMatch(pkg, diagnostics) {
+  return diagnostics?.degraded != null || diagnostics?.myArchetypeScore != null && diagnostics.myArchetypeScore < 30;
+}
+function confidenceForPackage(pkg, diagnostics) {
+  const archMatch = pkg.scores?.archMatch ?? 0;
+  return { tier: confidenceTier(archMatch, isWeakMatch(pkg, diagnostics)), archMatch };
 }
 function buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics) {
   const giveNames = pkg.give.map(describeAsset).join(", ");
@@ -1322,20 +1337,52 @@ function buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics) {
   const fitNote = pkg.scores ? `Fit grades: you ${pkg.scores.myFit >= 0.05 ? "gain" : pkg.scores.myFit <= -0.05 ? "lose" : "roughly break even"}, they ${pkg.scores.theirFit >= 0.05 ? "gain" : pkg.scores.theirFit <= -0.05 ? "lose" : "roughly break even"}.` : "";
   const archMatch = pkg.scores?.archMatch ?? 0;
   const rosterFit = diagnostics?.myArchetypeScore;
-  const weak = diagnostics?.degraded != null || archMatch < STANCE_CAUTION_ARCH_MATCH || rosterFit != null && rosterFit < 30;
-  const stance = weak ? `IMPORTANT: this roster is a weak match for ${archetypeLabel}${rosterFit != null ? ` (archetype fit ${rosterFit}/100)` : ""} and this was the closest package available, not a strong one. Open by saying plainly that this is an idea to consider rather than a recommendation, and name what is imperfect about it. Do not oversell.` : archMatch >= 0.6 ? `This is a textbook ${archetypeLabel} for this roster. Lead with why the shape fits, and recommend it directly.` : `This is a reasonable ${archetypeLabel} fit. Be measured, neither overselling nor hedging.`;
+  const tier = confidenceTier(archMatch, isWeakMatch(pkg, diagnostics));
+  const stance = tier === "inspiration" ? `IMPORTANT: this roster is a weak match for ${archetypeLabel}${rosterFit != null ? ` (archetype fit ${rosterFit}/100)` : ""} and this was the closest package available, not a strong one. Open by saying plainly that this is an idea to consider rather than a recommendation, and name what is imperfect about it. Do not oversell.` : tier === "recommended" ? `This is a textbook ${archetypeLabel} for this roster. Lead with why the shape fits, and recommend it directly.` : `This is a reasonable ${archetypeLabel} fit. Be measured, neither overselling nor hedging.`;
+  const adjGive = pkg.adjValueGive;
+  const adjReceive = pkg.adjValueReceive;
+  const rawGive = pkg.valueGive;
+  const rawReceive = pkg.valueReceive;
+  const diverges = Math.abs(adjGive - rawGive) > rawGive * 0.02 || Math.abs(adjReceive - rawReceive) > rawReceive * 0.02;
+  const adjNote = diverges ? `Trade-effective value (a bundle is worth less than its parts, and the side with the single best asset charges a premium): yours ${Math.round(rawGive)} counts as ${Math.round(adjGive)}, theirs ${Math.round(rawReceive)} counts as ${Math.round(adjReceive)}.` : "";
+  const theirInbound = [...new Set(pkg.give.filter((a) => a.kind === "player" && a.position).map((a) => a.position))];
+  const theirNeeds = counterProfile ? theirInbound.map((pos) => {
+    const ps = counterProfile.positionScores?.[pos];
+    return ps ? `${pos} ${ps.classification}` : null;
+  }).filter(Boolean) : [];
+  const theirNeedNote = theirNeeds.length ? `Their need at what they're getting: ${theirNeeds.join(", ")}.` : "";
   const theirs = counterProfile ? `${pkg.counterTeam} is ${counterProfile.windowLabel} (${counterProfile.competitiveness}, ${counterProfile.windowTier}).` : "";
   return `Dynasty fantasy football trade. You are ${myProfile.windowLabel} (${myProfile.competitiveness}, ${myProfile.windowTier} window). ${theirs}
 
 Send: ${giveNames}
 Get: ${receiveNames}
 
-Shape: ${archetypeLabel}. ${fairnessNote} ${fitNote} ${needNote}
+Shape: ${archetypeLabel}. ${[fairnessNote, fitNote, needNote, theirNeedNote, adjNote].filter(Boolean).join(" ")}
 ${stance}
 
 Write 2-3 sentences on why this fits your roster now, then one sentence on why ${pkg.counterTeam} accepts (a trade nobody takes is worthless). Be concrete about the players and both timelines.
 
 Use only the facts above. Never invent an age, stat, injury, contract, or team situation not stated here. Plain prose: no markdown, no bullets, no em dashes.`;
+}
+
+// api/trades/find.ts
+var MODEL_HAIKU = "claude-haiku-4-5-20251001";
+function rationaleHash(pkg, myProfile, counterProfile, diagnostics) {
+  const key = JSON.stringify({
+    promptVersion: PROMPT_VERSION,
+    // These shape the prompt's stance (recommendation vs "closest we found"),
+    // so the same package under different diagnostics is a different prompt
+    // and must not share a cache entry.
+    degraded: diagnostics?.degraded ?? null,
+    myArchetypeScore: diagnostics?.myArchetypeScore ?? null,
+    give: pkg.give.map((a) => a.id).sort(),
+    receive: pkg.receive.map((a) => a.id).sort(),
+    archetype: pkg.archetype,
+    myWindow: myProfile.windowLabel,
+    theirWindow: counterProfile?.windowLabel ?? null,
+    fairness: pkg.fairness
+  });
+  return (0, import_crypto.createHash)("sha256").update(key).digest("hex");
 }
 async function generateRationale(prompt) {
   const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -1358,14 +1405,15 @@ async function generateRationale(prompt) {
 async function addRationale(pkg, myProfile, counterProfile, diagnostics) {
   const hash = rationaleHash(pkg, myProfile, counterProfile, diagnostics);
   const prompt = buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics);
+  const confidence = confidenceForPackage(pkg, diagnostics);
   const cacheRef = adminDb.collection("rationaleCache").doc(hash);
   const cached = await cacheRef.get();
   if (cached.exists) {
-    return { ...pkg, rationale: sanitizeRationale(cached.data()?.["rationale"]), prompt };
+    return { ...pkg, confidence, rationale: sanitizeRationale(cached.data()?.["rationale"]), prompt };
   }
   const rationale = sanitizeRationale(await generateRationale(prompt));
   await cacheRef.set({ hash, rationale, archetype: pkg.archetype, generatedAt: (/* @__PURE__ */ new Date()).toISOString() });
-  return { ...pkg, rationale, prompt };
+  return { ...pkg, confidence, rationale, prompt };
 }
 async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });

@@ -42,6 +42,9 @@ var REMAINING_VALUE = {
   TE: { 23: 35.5, 24: 33.9, 25: 30.4, 26: 29.9, 27: 26.6, 28: 25.1, 29: 23.7, 30: 21.4, 31: 21.4, 32: 21.4, 33: 21.4 }
 };
 var PRESSURE_REFERENCE_AGE = 23;
+var DEPTH_COVER_SLOTS = 1;
+var DEPTH_RESILIENCE_WEIGHT = 0.5;
+var DEPTH_RESILIENCE_CREDIT = 1;
 var PICK_DECAY = {
   0: 1,
   1: 0.85,
@@ -197,6 +200,10 @@ function depthByPosition(players, format, getValue = REDRAFT) {
     depth[pos] = sorted.slice(baseN, baseN + depthN);
   }
   return depth;
+}
+function postInjuryValues(starters, depth) {
+  const promoted = [...starters.slice(1), ...depth].slice(0, starters.length);
+  return Array.from({ length: starters.length }, (_, i) => promoted[i]?.valueRedraft ?? 0);
 }
 function flexStrengthValue(players, format, totalStarterValue, getValue = REDRAFT) {
   let positionSpecificValue = 0;
@@ -360,6 +367,9 @@ function combineClassifications(args) {
   const { starterSub, depthSub, pressure } = args;
   const sIsBad = starterSub === "CRITICAL" || starterSub === "NEED";
   const dIsBad = depthSub === "CRITICAL" || depthSub === "NEED";
+  if (starterSub === "SURPLUS" && dIsBad) {
+    return depthSub === "CRITICAL" ? { classification: "NEED", needKind: "depth" } : { classification: "HEALTHY", needKind: null };
+  }
   if (starterSub === "CRITICAL" || depthSub === "CRITICAL") {
     return {
       classification: "CRITICAL_NEED",
@@ -414,7 +424,13 @@ function computePositionScores(team, format, averages) {
     );
     const starterScore = weightedSlotAverage(starterPlayerScores);
     const minStarterSlotScore = starterPlayerScores.length > 0 ? Math.min(...starterPlayerScores) : 0;
-    const depthScore = weightedSlotAverage(depthPlayerScores);
+    const postInjuryRedraft = postInjuryValues(starters[pos], depth[pos]);
+    const hasLineup = starters[pos].length > 0;
+    const postInjuryTotal = postInjuryRedraft.reduce((s, v) => s + v, 0);
+    const rStats = averages.resilienceStats[pos];
+    const resilienceScore = hasLineup && rStats.mean > 0 ? Math.max(0, Math.min(100, 50 + (postInjuryTotal - rStats.mean) / rStats.mean * 50)) : 0;
+    const isolatedDepthScore = weightedSlotAverage(depthPlayerScores);
+    const depthScore = isolatedDepthScore * (1 - DEPTH_RESILIENCE_WEIGHT) + resilienceScore * DEPTH_RESILIENCE_WEIGHT;
     const depthSlots = depthSlotsFor(pos, format);
     const baseDepthWeight = 0.15;
     const baseStarterWeight = 0.5;
@@ -451,11 +467,15 @@ function computePositionScores(team, format, averages) {
       minSlotValue: baseValues.length > 0 ? Math.min(...baseValues) : 0,
       worstTopN: sWorstTopN
     });
+    const resilienceZ = hasLineup && rStats.std > 0 ? (postInjuryTotal - rStats.mean) / rStats.std : -3;
+    const resilienceCredit = Math.max(0, Math.min(1, resilienceZ)) * DEPTH_RESILIENCE_CREDIT;
+    const coverZs = depthPlayerZs.slice(0, DEPTH_COVER_SLOTS);
+    const coverValues = depthValues.slice(0, DEPTH_COVER_SLOTS);
     const depthSub = classifySide({
-      weightedZ: depthWeightedZ,
-      minSlotZ: minDepthZ,
+      weightedZ: (coverZs.length > 0 ? weightedSlotAverage(coverZs) : -3) + resilienceCredit,
+      minSlotZ: (coverZs.length > 0 ? Math.min(...coverZs) : -3) + resilienceCredit,
       weightedValue: depthValue,
-      minSlotValue: depthMinValue,
+      minSlotValue: coverValues.length > 0 ? Math.min(...coverValues) : 0,
       worstTopN: dWorstTopN
     });
     const { classification, needKind } = combineClassifications({
@@ -549,6 +569,7 @@ function computeAllProfiles(teams, format, thisYear, globalPlayerPools) {
   };
   const starterPool = { QB: [], RB: [], WR: [], TE: [] };
   const depthPool = { QB: [], RB: [], WR: [], TE: [] };
+  const resiliencePool = { QB: [], RB: [], WR: [], TE: [] };
   const startersInUse = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depthSlotsTotal = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const starterPlayerPool = globalPlayerPools ? { ...globalPlayerPools.redraftByPos } : { QB: [], RB: [], WR: [], TE: [] };
@@ -559,6 +580,9 @@ function computeAllProfiles(teams, format, thisYear, globalPlayerPools) {
       starterPool[pos].push(t.starters[pos].reduce((s, p) => s + p.valueRedraft, 0));
       depthPool[pos].push(t.depth[pos].reduce((s, p) => s + p.valueDynasty, 0));
       startersInUse[pos] += t.starters[pos].length;
+      resiliencePool[pos].push(
+        postInjuryValues(t.starters[pos], t.depth[pos]).reduce((s, v) => s + v, 0)
+      );
     }
     if (!globalPlayerPools) {
       for (const p of t.players) {
@@ -573,9 +597,11 @@ function computeAllProfiles(teams, format, thisYear, globalPlayerPools) {
   }
   const starterStats = {};
   const depthStats = {};
+  const resilienceStats = {};
   for (const pos of POSITIONS) {
     starterStats[pos] = topNStats(starterPlayerPool[pos], startersInUse[pos]);
     depthStats[pos] = topNStats(depthPlayerPool[pos], depthSlotsTotal[pos]);
+    resilienceStats[pos] = topNStats(resiliencePool[pos], resiliencePool[pos].length);
   }
   const avgStarter = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const avgDepth = { QB: 0, RB: 0, WR: 0, TE: 0 };
@@ -599,7 +625,9 @@ function computeAllProfiles(teams, format, thisYear, globalPlayerPools) {
     starterStats,
     depthStats,
     startersInUse,
-    depthSlotsTotal
+    depthSlotsTotal,
+    resiliencePool,
+    resilienceStats
   };
   return stage2.map((t) => {
     const tier = windowTierFor(t.windowPressure);
