@@ -240,21 +240,7 @@ function TradeCard({
             {fairnessText(fairness)}
           </span>
         </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="trade-counter-team">{pkg.counterTeam}</span>
-          {pkg.prompt && (
-            <button
-              type="button"
-              className="trade-prompt-btn"
-              onClick={() => setPromptOpen((v) => !v)}
-              aria-pressed={promptOpen}
-              aria-label="Show the prompt sent to Claude"
-              title="Show the prompt sent to Claude"
-            >
-              <PromptIcon />
-            </button>
-          )}
-        </span>
+        <span className="trade-counter-team">{pkg.counterTeam}</span>
       </div>
       <div className="trade-players">
         <div className="trade-side">
@@ -285,6 +271,22 @@ function TradeCard({
       )}
 
       <div className="trade-feedback-bar">
+        {pkg.prompt ? (
+          <button
+            type="button"
+            className={`trade-prompt-btn${promptOpen ? " trade-prompt-btn-open" : ""}`}
+            onClick={() => setPromptOpen((v) => !v)}
+            aria-pressed={promptOpen}
+            aria-label="Show the prompt sent to Claude"
+            title="Show the prompt sent to Claude"
+          >
+            <PromptIcon />
+          </button>
+        ) : (
+          // Keeps the thumbs pinned right even when there is no prompt to show.
+          <span />
+        )}
+        <span className="trade-feedback-thumbs">
         <button
           type="button"
           className={`trade-feedback-btn${verdict === "up" ? " trade-feedback-btn-up" : ""}`}
@@ -307,6 +309,7 @@ function TradeCard({
         >
           <ThumbIcon direction="down" />
         </button>
+        </span>
       </div>
 
       {verdict && sent && (

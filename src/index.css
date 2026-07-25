@@ -2956,6 +2956,20 @@ body {
 
 .trade-prompt-btn:hover { color: #e2e8f0; border-color: rgba(255,255,255,0.3); }
 
+/* Amber while the prompt is showing, matching the app accent. */
+.trade-prompt-btn-open,
+.trade-prompt-btn-open:hover {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.6);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.trade-feedback-thumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .trade-prompt-btn[aria-pressed="true"] {
   border-color: rgba(245,158,11,0.6);
   background: rgba(245,158,11,0.12);
@@ -2989,7 +3003,9 @@ body {
 
 .trade-feedback-bar {
   display: flex;
-  justify-content: flex-end;
+  /* Prompt toggle sits left, thumbs stay right. */
+  justify-content: space-between;
+  align-items: center;
   gap: 8px;
   margin-top: 10px;
   padding-top: 10px;
