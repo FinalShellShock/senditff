@@ -3172,12 +3172,22 @@ body {
 
 .app-footer {
   display: flex;
+  align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
   margin-top: 64px;
   padding: 16px 24px 24px;
 }
 
-.app-footer-version {
+.app-footer-sep,
+.app-footer-copy {
+  color: #475569;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.app-footer-link {
   background: none;
   border: none;
   color: #64748b;
@@ -3188,7 +3198,7 @@ body {
   padding: 4px 8px;
 }
 
-.app-footer-version:hover {
+.app-footer-link:hover {
   color: #64748b;
 }
 
@@ -3331,4 +3341,28 @@ body {
   .patch-modal {
     max-height: min(85vh, 720px);
   }
+}
+
+/* Legal panels reuse the patch-notes modal shell. */
+.legal-updated {
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+
+.legal-section {
+  margin-bottom: 18px;
+}
+
+.legal-para {
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1.65;
+  margin: 0 0 8px;
+}
+
+.patch-release-algo {
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
 }

@@ -8,7 +8,7 @@ import TeamDeepDive from "./pages/TeamDeepDive.tsx";
 import SendIt from "./pages/SendIt.tsx";
 import Calc from "./pages/Calc.tsx";
 import TradeGrades from "./pages/TradeGrades.tsx";
-import PatchNotes from "./pages/PatchNotes.tsx";
+import Footer from "./pages/Footer.tsx";
 
 class AppErrorBoundary extends Component<{ children: ReactNode }, { caught: Error | null }> {
   state: { caught: Error | null } = { caught: null };
@@ -60,8 +60,8 @@ function AuthGate() {
   const { authState } = useAuth();
 
   if (authState.status === "loading") return null;
-  if (authState.status === "signed_out") return <SignInScreen />;
-  if (authState.status === "pending") return <PendingScreen />;
+  if (authState.status === "signed_out") return <><SignInScreen /><Footer /></>;
+  if (authState.status === "pending") return <><PendingScreen /><Footer /></>;
 
   return (
     <>
@@ -76,7 +76,7 @@ function AuthGate() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <PatchNotes />
+      <Footer />
     </>
   );
 }

@@ -214,8 +214,6 @@ function TradeCard({
   diagnostics: TradeDiagnostics | null;
   api: ApiClient;
 }) {
-  const delta = pkg.valueReceive - pkg.valueGive;
-  const deltaColor = delta > 200 ? "#22c55e" : delta < -200 ? "#ef4444" : "#94a3b8";
   // Older API responses don't carry fairness; the label is derivable.
   const fairness = pkg.fairness ?? fairnessLabel(pkg.valueGive, pkg.valueReceive);
 
@@ -285,13 +283,13 @@ function TradeCard({
           >
             {fairnessText(fairness)}
           </span>
-          {confidenceMeta && pkg.confidence && (
+          {confidenceMeta && (
             <span
               className="fairness-badge"
               style={{ borderColor: confidenceMeta.color, color: confidenceMeta.color, marginTop: 0 }}
               title={confidenceMeta.title}
             >
-              {confidenceMeta.label} {Math.round(pkg.confidence.archMatch * 100)}%
+              {confidenceMeta.label}
             </span>
           )}
         </span>
@@ -307,7 +305,7 @@ function TradeCard({
         <div className="trade-side trade-side-receive">
           <span className="trade-dir">GET</span>
           <AssetList assets={pkg.receive} />
-          <span className="trade-val" style={{ color: deltaColor }} title={receiveValue.title}>{receiveValue.text}</span>
+          <span className="trade-val" title={receiveValue.title}>{receiveValue.text}</span>
         </div>
       </div>
       {pkg.scores && (

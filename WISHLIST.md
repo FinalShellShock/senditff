@@ -35,7 +35,34 @@ be traced to a human-readable release rather than a hash.
 
 ---
 
-## 2. New-feedback notification
+## 2. General site feedback (HIGH PRIORITY)
+
+Feedback about the **site**, not just about a specific trade. A small button in
+the footer, next to Recent updates / Privacy / Terms.
+
+**Johnny (2026-07-25):** high priority, deferred only because he was about to
+hit a session limit.
+
+**Why it matters:** the trade thumbs only capture "was this trade good." They
+cannot capture "the overview page confused me", "this label is wrong", "I
+expected X and got Y". Every UI problem found so far came from Johnny noticing
+it himself, which does not scale past one user, and the other three have no way
+to report anything.
+
+**Implementation notes:** `POST /api/feedback` already exists and already
+server-stamps identity, time, `algoVersion`, and `algoFingerprint`. Site
+feedback is the same write with a different shape: no trade package, plus the
+current route so a report lands somewhere specific. Worth adding a `kind`
+field (`"trade"` or `"site"`) so `scripts/feedback-export.ts` can split them,
+since mixing free-form site complaints into the algorithm tuning data would
+poison the signal that export exists to produce.
+
+Pairs naturally with entry 3, the unread notification: both are about closing
+the loop between users noticing something and Johnny hearing about it.
+
+---
+
+## 3. New-feedback notification
 
 Some way for Johnny to see that someone has submitted feedback without going
 looking for it. A small bell or badge in the footer:
@@ -63,7 +90,7 @@ should see.
 
 ---
 
-## 3. Trade scenario simulation builder
+## 4. Trade scenario simulation builder
 
 "The move after the move." Chain hypothetical trades and see where the roster
 lands.
@@ -87,7 +114,7 @@ age" part of the answer.
 
 ---
 
-## 4. Trade Tinder
+## 5. Trade Tinder
 
 Managers opt in to trade archetypes they'd be interested in. When two managers
 in the same league mark **complementary** archetypes, both get a nudge.
@@ -108,7 +135,7 @@ matchmaking logic, already written and already tested in scoring.
 
 ---
 
-## 5. Saved trades / drafts
+## 6. Saved trades / drafts
 
 Draft a trade, save it, come back to it.
 
@@ -135,7 +162,7 @@ later. Every day not retained is history that can't be recovered.
 
 ---
 
-## 6. Additional fantasy platforms — MyFantasyLeague (MFL) first
+## 7. Additional fantasy platforms — MyFantasyLeague (MFL) first
 
 Support leagues hosted somewhere other than Sleeper. MFL is the first target.
 

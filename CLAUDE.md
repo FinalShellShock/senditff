@@ -49,7 +49,10 @@ senditff/
 - `main` — original deployment branch (kept for reference, superseded by prod)
 - working branches — named after dynasty football players (kelce, gronk,
   pickens, harrison, barkley, daniels, ...). Formations name the ALGORITHM
-  (`ALGO_VERSION`), players name the BRANCH. Don't mix the two.
+  (`ALGO_VERSION`), players name the BRANCH. Don't mix the two: a release is a
+  BRANCH and is labelled with the branch name, and it merely REPORTS which
+  formation engine it runs. One engine spans many branches. "Shotgun 1.4" was
+  briefly used as a release label and was wrong on both counts.
 
 ### When to cut a new branch
 
