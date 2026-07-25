@@ -109,7 +109,12 @@ function sideValueDisplay(raw: number, adj?: number): { text: string; title?: st
   if (adj == null || raw === 0 || Math.abs(adj - raw) / Math.abs(raw) <= 0.01) {
     return { text: raw.toLocaleString() };
   }
-  return { text: `${raw.toLocaleString()} → adj ${adj.toLocaleString()}`, title: ADJ_VALUE_TOOLTIP };
+  // Rounded: the bundle math produces fractions, and "adj 5,452.75" reads as
+  // false precision next to whole-number player values.
+  return {
+    text: `${raw.toLocaleString()} → adj ${Math.round(adj).toLocaleString()}`,
+    title: ADJ_VALUE_TOOLTIP,
+  };
 }
 
 const DOWN_REASONS: Array<{ key: string; label: string }> = [
