@@ -11,6 +11,7 @@ import type { ArchetypeFamily } from "../../src/algo/archetypes";
 import { PICK_DECAY, POSITIONS } from "../../src/algo/constants";
 import { fairnessLabel, packageValue, tradeEffectiveValues, type FairnessLabel } from "../../src/algo/fairness";
 import {
+  agePressure,
   depthByPosition,
   depthSlotsFor,
   fillStarters,
@@ -37,6 +38,10 @@ export type TradeAssetWire = {
   name: string;
   position?: string;
   valueDynasty: number;
+  // Players only. Carried so the rationale writer works from real ages
+  // instead of inventing them, and so logged feedback records the age the
+  // engine actually saw.
+  age?: number;
 };
 
 export type TradePackage = {
@@ -176,6 +181,7 @@ function toWire(a: Asset): TradeAssetWire {
       name: a.player.name,
       position: a.player.position,
       valueDynasty: a.player.valueDynasty,
+      ...(a.player.age != null ? { age: a.player.age } : {}),
     };
   }
   return {
@@ -184,6 +190,33 @@ function toWire(a: Asset): TradeAssetWire {
     name: a.pick.label,
     valueDynasty: a.pick.value,
   };
+}
+
+// Age gates for the age-arbitrage archetypes.
+//
+// These used to be flat calendar ages (buy >= 27, sell >= 28) applied to every
+// position, which contradicted the position curves the rest of the app runs
+// on. At 27 an RB is at the end of its peak (pressure 25) while a WR is barely
+// into it (pressure 6), so the flat gate was calling prime-age WRs, TEs and
+// QBs "aging" and generating age-arb packages around players in their best
+// years. Real feedback caught it on a 27-year-old WR.
+//
+// Reading these off agePressure makes the gate position-aware for free and
+// keeps a single source of truth for how each position ages. The relative
+// ordering of the old thresholds is preserved: selling your own guy stays a
+// notch stricter than buying someone else's.
+const AGING_PRESSURE = 25;    // at or past the positional peak
+const DECLINING_PRESSURE = 40; // meaningfully into decline
+
+function playerPressure(p: Player): number {
+  if (p.age == null) return 0; // unknown age never counts as aging
+  return agePressure(p.age, p.position);
+}
+function isAging(p: Player): boolean {
+  return playerPressure(p) >= AGING_PRESSURE;
+}
+function isDeclining(p: Player): boolean {
+  return playerPressure(p) >= DECLINING_PRESSURE;
 }
 
 function topPlayersByPos(profile: TeamProfile, pos: Position, n: number): Player[] {
@@ -832,7 +865,7 @@ function genAgeArbBuy(ctx: GenContext): Candidate[] {
     for (const pos of genPositions(ctx)) {
       // Aging high-value player on their roster
       const aging = them.players
-        .filter((p) => p.position === pos && (p.age ?? 0) >= 27 && p.valueDynasty >= 1500)
+        .filter((p) => p.position === pos && isAging(p) && p.valueDynasty >= 1500)
         .sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
       if (!aging) continue;
       // Pay slightly above value with picks + maybe a young player they'd want
@@ -859,7 +892,7 @@ function genAgeArbSell(ctx: GenContext): Candidate[] {
 
   for (const pos of genPositions(ctx)) {
     const myAging = mine.players
-      .filter((p) => p.position === pos && (p.age ?? 0) >= 28 && p.valueDynasty >= 1500)
+      .filter((p) => p.position === pos && isDeclining(p) && p.valueDynasty >= 1500)
       .sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
     if (!myAging) continue;
 

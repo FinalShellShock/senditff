@@ -214,8 +214,17 @@ MIDDLING:   bottom 50% starter strength + weighted_age >= 26  (stuck, worst spot
 |-----------|---------|-------|
 | Tier down | Elite asset (top 5%) at position with weak depth | WR1 → WR8 + WR20 + pick |
 | Consolidate up | 2-3 mid-tier at one position + hole elsewhere | RB2 + RB3 → RB1 |
-| Age arbitrage (buy) | Pick rich + young, can absorb aging asset | Buy 30yo WR1 at discount |
-| Age arbitrage (sell) | Old starters with high current value, age >= 28 | Sell aging stud now |
+| Age arbitrage (buy) | Pick rich + young, can absorb an asset at/past its positional peak (`agePressure >= 25`) | Buy 30yo WR1 at discount |
+| Age arbitrage (sell) | Own a high-value starter meaningfully into decline (`agePressure >= 40`) | Sell aging stud now |
+
+**"Aging" is position-relative, never a flat calendar age.** Both age-arb gates
+read off `agePressure(age, pos)` (`src/algo/profile.ts`), the same curve the
+window math uses. Flat cutoffs were tried first (buy >= 27, sell >= 28) and
+were badly wrong: at 27 an RB is at the end of its peak while a WR is barely
+into it, so the flat gate labelled Justin Jefferson, CeeDee Lamb, Josh Allen
+and every elite QB as "aging assets to buy at a discount." On Johnny's league
+that was 22 of 46 flagged players, about half, all false positives. Real user
+feedback caught it. Don't reintroduce a bare `p.age >= N` filter.
 | Need fill | Positional deficit (urgency > 70) + surplus elsewhere | Swap surplus for need |
 | Capital play | PICK_POOR contender or PICK_RICH rebuilder | Picks ↔ production |
 

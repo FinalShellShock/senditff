@@ -16,12 +16,20 @@ const MODEL_HAIKU = "claude-haiku-4-5-20251001";
 
 // ── Rationale generation ─────────────────────────────────────────────────────
 
+// Bump when the rationale prompt changes in a way that should invalidate
+// already-cached prose. The cache key is otherwise all trade inputs, so a
+// better prompt would keep serving the old text forever: that is exactly how
+// rationales with invented ages would have survived the fix that added real
+// ages to the prompt.
+const PROMPT_VERSION = 2;
+
 function rationaleHash(
   pkg: Omit<TradePackage, "rationale">,
   myProfile: TeamProfile,
   counterProfile?: TeamProfile,
 ): string {
   const key = JSON.stringify({
+    promptVersion: PROMPT_VERSION,
     give: pkg.give.map((a) => a.id).sort(),
     receive: pkg.receive.map((a) => a.id).sort(),
     archetype: pkg.archetype,
@@ -32,8 +40,21 @@ function rationaleHash(
   return createHash("sha256").update(key).digest("hex");
 }
 
-function describeAsset(a: { kind: "player" | "pick"; name: string; position?: string }): string {
-  return a.kind === "player" ? `${a.name} (${a.position})` : a.name;
+// Ages are included because the model was otherwise inventing them, and on an
+// age-arbitrage trade the age IS the argument. Real feedback caught a rationale
+// claiming a 27-year-old was 25. Ages come straight from the FantasyCalc
+// snapshot the algorithm scored the trade with, so the prose can't disagree
+// with the math.
+function describeAsset(a: {
+  kind: "player" | "pick";
+  name: string;
+  position?: string;
+  age?: number;
+}): string {
+  if (a.kind !== "player") return a.name;
+  return a.age != null
+    ? `${a.name} (${a.position}, age ${a.age.toFixed(1)})`
+    : `${a.name} (${a.position})`;
 }
 
 // Haiku ignores the plain-prose instructions often enough that we enforce
@@ -70,7 +91,9 @@ async function generateRationale(
 Trade: Send ${giveNames} and receive ${receiveNames} from ${pkg.counterTeam}. ${counterNote}
 Trade type: ${archetypeLabel}. ${fairnessNote}
 
-Write 3-4 sentences explaining why this trade makes sense for this team right now, and end with one sentence on why ${pkg.counterTeam} says yes given their situation (a trade nobody accepts is worthless). Be specific about the players, picks, and both teams' timelines. Plain prose only: no markdown, no headings, no bullet points, no em dashes.`;
+Write 3-4 sentences explaining why this trade makes sense for this team right now, and end with one sentence on why ${pkg.counterTeam} says yes given their situation (a trade nobody accepts is worthless). Be specific about the players, picks, and both teams' timelines. Plain prose only: no markdown, no headings, no bullet points, no em dashes.
+
+Use only the facts given above. Ages are stated where they matter: cite them only as given, and never estimate one that is not listed. Do not invent stats, injuries, contracts, team situations, or draft capital that does not appear in this prompt. If you are unsure of a detail, argue from the roster timelines instead of guessing.`;
 
   const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",

@@ -36,6 +36,21 @@ var import_crypto = require("crypto");
 
 // src/algo/constants.ts
 var POSITIONS = ["QB", "RB", "WR", "TE"];
+var POSITION_CURVES = {
+  // QB: long careers, peak 27-32 for pocket / 24-27 for dual-threat. Use averaged window.
+  QB: { productiveStart: 23, peakStart: 26, peakEnd: 32, declineStart: 35, done: 38 },
+  // RB: short careers, sharp decline 28-29.
+  RB: { productiveStart: 21, peakStart: 23, peakEnd: 27, declineStart: 28, done: 30 },
+  // WR: peak 26-30, decline 31-32.
+  WR: { productiveStart: 22, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 },
+  // TE: late breakout, peak 26-30, decline 32.
+  TE: { productiveStart: 23, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 }
+};
+var PRESSURE_AT_PRODUCTIVE = 0;
+var PRESSURE_AT_PEAK_START = 0;
+var PRESSURE_AT_PEAK_END = 25;
+var PRESSURE_AT_DECLINE_START = 60;
+var PRESSURE_AT_DONE = 100;
 var PICK_DECAY = {
   0: 1,
   1: 0.85,
@@ -320,6 +335,27 @@ function flexStrengthValue(players, format, totalStarterValue, getValue = REDRAF
   }
   return Math.max(0, totalStarterValue - positionSpecificValue);
 }
+function interp(x, x0, x1, y0, y1) {
+  if (x1 === x0) return y0;
+  return y0 + (x - x0) / (x1 - x0) * (y1 - y0);
+}
+function agePressure(age, pos) {
+  const c = POSITION_CURVES[pos];
+  if (age <= c.productiveStart) return PRESSURE_AT_PRODUCTIVE;
+  if (age <= c.peakStart) {
+    return interp(age, c.productiveStart, c.peakStart, PRESSURE_AT_PRODUCTIVE, PRESSURE_AT_PEAK_START);
+  }
+  if (age <= c.peakEnd) {
+    return interp(age, c.peakStart, c.peakEnd, PRESSURE_AT_PEAK_START, PRESSURE_AT_PEAK_END);
+  }
+  if (age <= c.declineStart) {
+    return interp(age, c.peakEnd, c.declineStart, PRESSURE_AT_PEAK_END, PRESSURE_AT_DECLINE_START);
+  }
+  if (age <= c.done) {
+    return interp(age, c.declineStart, c.done, PRESSURE_AT_DECLINE_START, PRESSURE_AT_DONE);
+  }
+  return PRESSURE_AT_DONE;
+}
 function score0to100(value, leagueAvg) {
   if (leagueAvg <= 0) return 50;
   const score = 50 + (value - leagueAvg) / leagueAvg * 50;
@@ -404,7 +440,8 @@ function toWire(a) {
       kind: "player",
       name: a.player.name,
       position: a.player.position,
-      valueDynasty: a.player.valueDynasty
+      valueDynasty: a.player.valueDynasty,
+      ...a.player.age != null ? { age: a.player.age } : {}
     };
   }
   return {
@@ -413,6 +450,18 @@ function toWire(a) {
     name: a.pick.label,
     valueDynasty: a.pick.value
   };
+}
+var AGING_PRESSURE = 25;
+var DECLINING_PRESSURE = 40;
+function playerPressure(p) {
+  if (p.age == null) return 0;
+  return agePressure(p.age, p.position);
+}
+function isAging(p) {
+  return playerPressure(p) >= AGING_PRESSURE;
+}
+function isDeclining(p) {
+  return playerPressure(p) >= DECLINING_PRESSURE;
 }
 function topPlayersByPos(profile, pos, n) {
   return profile.players.filter((p) => p.position === pos).sort((a, b) => {
@@ -894,7 +943,7 @@ function genAgeArbBuy(ctx) {
   for (const them of others) {
     if (them.windowTier === "LONG") continue;
     for (const pos of genPositions(ctx)) {
-      const aging = them.players.filter((p) => p.position === pos && (p.age ?? 0) >= 27 && p.valueDynasty >= 1500).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
+      const aging = them.players.filter((p) => p.position === pos && isAging(p) && p.valueDynasty >= 1500).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
       if (!aging) continue;
       const giveSides = buildGiveSides(mine, aging.valueDynasty * 1.05, {
         excludePos: [],
@@ -916,7 +965,7 @@ function genAgeArbSell(ctx) {
   const out = [];
   const { mine, others } = ctx;
   for (const pos of genPositions(ctx)) {
-    const myAging = mine.players.filter((p) => p.position === pos && (p.age ?? 0) >= 28 && p.valueDynasty >= 1500).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
+    const myAging = mine.players.filter((p) => p.position === pos && isDeclining(p) && p.valueDynasty >= 1500).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
     if (!myAging) continue;
     for (const them of others) {
       if (them.windowTier === "LONG") continue;
@@ -1178,8 +1227,10 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
 
 // api/trades/find.ts
 var MODEL_HAIKU = "claude-haiku-4-5-20251001";
+var PROMPT_VERSION = 2;
 function rationaleHash(pkg, myProfile, counterProfile) {
   const key = JSON.stringify({
+    promptVersion: PROMPT_VERSION,
     give: pkg.give.map((a) => a.id).sort(),
     receive: pkg.receive.map((a) => a.id).sort(),
     archetype: pkg.archetype,
@@ -1190,7 +1241,8 @@ function rationaleHash(pkg, myProfile, counterProfile) {
   return (0, import_crypto.createHash)("sha256").update(key).digest("hex");
 }
 function describeAsset(a) {
-  return a.kind === "player" ? `${a.name} (${a.position})` : a.name;
+  if (a.kind !== "player") return a.name;
+  return a.age != null ? `${a.name} (${a.position}, age ${a.age.toFixed(1)})` : `${a.name} (${a.position})`;
 }
 function sanitizeRationale(text) {
   return text.replace(/^#{1,6}[^\n]*$/gm, "").replace(/\*\*/g, "").replace(/\s*[—–]\s*/g, ", ").trim();
@@ -1206,7 +1258,9 @@ async function generateRationale(pkg, myProfile, counterProfile) {
 Trade: Send ${giveNames} and receive ${receiveNames} from ${pkg.counterTeam}. ${counterNote}
 Trade type: ${archetypeLabel}. ${fairnessNote}
 
-Write 3-4 sentences explaining why this trade makes sense for this team right now, and end with one sentence on why ${pkg.counterTeam} says yes given their situation (a trade nobody accepts is worthless). Be specific about the players, picks, and both teams' timelines. Plain prose only: no markdown, no headings, no bullet points, no em dashes.`;
+Write 3-4 sentences explaining why this trade makes sense for this team right now, and end with one sentence on why ${pkg.counterTeam} says yes given their situation (a trade nobody accepts is worthless). Be specific about the players, picks, and both teams' timelines. Plain prose only: no markdown, no headings, no bullet points, no em dashes.
+
+Use only the facts given above. Ages are stated where they matter: cite them only as given, and never estimate one that is not listed. Do not invent stats, injuries, contracts, team situations, or draft capital that does not appear in this prompt. If you are unsure of a detail, argue from the roster timelines instead of guessing.`;
   const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
