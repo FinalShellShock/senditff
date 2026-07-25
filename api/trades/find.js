@@ -36,21 +36,18 @@ var import_crypto = require("crypto");
 
 // src/algo/constants.ts
 var POSITIONS = ["QB", "RB", "WR", "TE"];
-var POSITION_CURVES = {
-  // QB: long careers, peak 27-32 for pocket / 24-27 for dual-threat. Use averaged window.
-  QB: { productiveStart: 23, peakStart: 26, peakEnd: 32, declineStart: 35, done: 38 },
-  // RB: short careers, sharp decline 28-29.
-  RB: { productiveStart: 21, peakStart: 23, peakEnd: 27, declineStart: 28, done: 30 },
-  // WR: peak 26-30, decline 31-32.
-  WR: { productiveStart: 22, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 },
-  // TE: late breakout, peak 26-30, decline 32.
-  TE: { productiveStart: 23, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 }
+var VALUE_LOSS_RATE = {
+  QB: { 23: -1.8, 24: -1.8, 25: -1.8, 26: 0.6, 27: 0.6, 28: 4.4, 29: 4.5, 30: 4.5, 31: 4.5, 32: 4.5, 33: 4.5, 34: 4.5, 35: 12.1 },
+  RB: { 23: 5.6, 24: 6.4, 25: 8, 26: 9.3, 27: 9.3, 28: 9.3, 29: 11.2, 30: 14.6 },
+  WR: { 23: 4.6, 24: 4.6, 25: 4.6, 26: 4.6, 27: 4.6, 28: 4.6, 29: 7.6, 30: 7.6, 31: 7.6, 32: 7.6, 33: 17.9 },
+  // TE never accelerates in this data. That is a sample-size limitation
+  // (n=25-36 above age 30), not evidence that TEs stop aging: the raw series
+  // wanders negative up there and isotonic pooling flattens it. Treat TE
+  // age-arb as unsupported by data rather than as a finding.
+  TE: { 23: 5.5, 24: 5.5, 25: 5.5, 26: 5.5, 27: 5.5, 28: 5.5, 29: 5.5, 30: 5.5 }
 };
-var PRESSURE_AT_PRODUCTIVE = 0;
-var PRESSURE_AT_PEAK_START = 0;
-var PRESSURE_AT_PEAK_END = 25;
-var PRESSURE_AT_DECLINE_START = 60;
-var PRESSURE_AT_DONE = 100;
+var AGING_LOSS_RATE = { QB: 6, RB: 8.5, WR: 7, TE: 7 };
+var DECLINING_LOSS_RATE = { QB: 10, RB: 10.5, WR: 10, TE: 10 };
 var PICK_DECAY = {
   0: 1,
   1: 0.85,
@@ -339,22 +336,15 @@ function interp(x, x0, x1, y0, y1) {
   if (x1 === x0) return y0;
   return y0 + (x - x0) / (x1 - x0) * (y1 - y0);
 }
-function agePressure(age, pos) {
-  const c = POSITION_CURVES[pos];
-  if (age <= c.productiveStart) return PRESSURE_AT_PRODUCTIVE;
-  if (age <= c.peakStart) {
-    return interp(age, c.productiveStart, c.peakStart, PRESSURE_AT_PRODUCTIVE, PRESSURE_AT_PEAK_START);
-  }
-  if (age <= c.peakEnd) {
-    return interp(age, c.peakStart, c.peakEnd, PRESSURE_AT_PEAK_START, PRESSURE_AT_PEAK_END);
-  }
-  if (age <= c.declineStart) {
-    return interp(age, c.peakEnd, c.declineStart, PRESSURE_AT_PEAK_END, PRESSURE_AT_DECLINE_START);
-  }
-  if (age <= c.done) {
-    return interp(age, c.declineStart, c.done, PRESSURE_AT_DECLINE_START, PRESSURE_AT_DONE);
-  }
-  return PRESSURE_AT_DONE;
+function valueLossRate(age, pos) {
+  const table = VALUE_LOSS_RATE[pos];
+  const ages = Object.keys(table).map(Number).sort((a, b) => a - b);
+  const lo = ages[0], hi = ages[ages.length - 1];
+  if (age <= lo) return table[lo];
+  if (age >= hi) return table[hi];
+  const upper = ages.find((a) => a >= age);
+  const lower = ages[ages.indexOf(upper) - 1];
+  return interp(age, lower, upper, table[lower], table[upper]);
 }
 function score0to100(value, leagueAvg) {
   if (leagueAvg <= 0) return 50;
@@ -451,17 +441,15 @@ function toWire(a) {
     valueDynasty: a.pick.value
   };
 }
-var AGING_PRESSURE = 25;
-var DECLINING_PRESSURE = 40;
-function playerPressure(p) {
+function playerLossRate(p) {
   if (p.age == null) return 0;
-  return agePressure(p.age, p.position);
+  return valueLossRate(p.age, p.position);
 }
 function isAging(p) {
-  return playerPressure(p) >= AGING_PRESSURE;
+  return playerLossRate(p) >= AGING_LOSS_RATE[p.position];
 }
 function isDeclining(p) {
-  return playerPressure(p) >= DECLINING_PRESSURE;
+  return playerLossRate(p) >= DECLINING_LOSS_RATE[p.position];
 }
 function topPlayersByPos(profile, pos, n) {
   return profile.players.filter((p) => p.position === pos).sort((a, b) => {

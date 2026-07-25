@@ -11,6 +11,7 @@ import {
   PRESSURE_AT_PRODUCTIVE,
   STD_THRESHOLD,
   TEP_MULTIPLIER,
+  VALUE_LOSS_RATE,
   WINDOW_LONG_THRESHOLD,
   WINDOW_SHORT_THRESHOLD,
 } from "./constants";
@@ -185,6 +186,21 @@ export function agePressure(age: number, pos: Position): number {
     return interp(age, c.declineStart, c.done, PRESSURE_AT_DECLINE_START, PRESSURE_AT_DONE);
   }
   return PRESSURE_AT_DONE;
+}
+
+// Annualized percent of remaining dynasty value this player loses per year.
+// Reads the empirical VALUE_LOSS_RATE table, clamping to the nearest tabulated
+// age at either end and interpolating between (the table is integer-aged;
+// production ages are decimals).
+export function valueLossRate(age: number, pos: Position): number {
+  const table = VALUE_LOSS_RATE[pos];
+  const ages = Object.keys(table).map(Number).sort((a, b) => a - b);
+  const lo = ages[0]!, hi = ages[ages.length - 1]!;
+  if (age <= lo) return table[lo]!;
+  if (age >= hi) return table[hi]!;
+  const upper = ages.find((a) => a >= age)!;
+  const lower = ages[ages.indexOf(upper) - 1]!;
+  return interp(age, lower, upper, table[lower]!, table[upper]!);
 }
 
 // Starter age pressure: REDRAFT-value-weighted avg of player pressures across

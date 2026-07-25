@@ -9,3 +9,7 @@ validate-output.html
 feedback-export.json
 feedback-export.csv
 .vercel
+
+# Research data cache (megabytes of nflverse CSVs)
+scripts/research/.cache/
+scripts/research/aging-output.json

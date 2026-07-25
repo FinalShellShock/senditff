@@ -8,10 +8,9 @@
 //   4. Value balance (is the dynasty-value gap acceptable)
 
 import type { ArchetypeFamily } from "../../src/algo/archetypes";
-import { PICK_DECAY, POSITIONS } from "../../src/algo/constants";
+import { AGING_LOSS_RATE, DECLINING_LOSS_RATE, PICK_DECAY, POSITIONS } from "../../src/algo/constants";
 import { fairnessLabel, packageValue, tradeEffectiveValues, type FairnessLabel } from "../../src/algo/fairness";
 import {
-  agePressure,
   depthByPosition,
   depthSlotsFor,
   fillStarters,
@@ -19,6 +18,7 @@ import {
   positionScoreFromPool,
   score0to100,
   topNStats,
+  valueLossRate,
   weightedSlotAverage,
 } from "../../src/algo/profile";
 import type {
@@ -194,29 +194,29 @@ function toWire(a: Asset): TradeAssetWire {
 
 // Age gates for the age-arbitrage archetypes.
 //
-// These used to be flat calendar ages (buy >= 27, sell >= 28) applied to every
-// position, which contradicted the position curves the rest of the app runs
-// on. At 27 an RB is at the end of its peak (pressure 25) while a WR is barely
-// into it (pressure 6), so the flat gate was calling prime-age WRs, TEs and
-// QBs "aging" and generating age-arb packages around players in their best
-// years. Real feedback caught it on a 27-year-old WR.
+// Version 1 was a flat calendar age (buy >= 27, sell >= 28) for every
+// position, which called prime-age WRs and QBs "aging" and produced age-arb
+// packages around Justin Jefferson and Josh Allen. Real feedback caught it.
 //
-// Reading these off agePressure makes the gate position-aware for free and
-// keeps a single source of truth for how each position ages. The relative
-// ordering of the old thresholds is preserved: selling your own guy stays a
-// notch stricter than buying someone else's.
-const AGING_PRESSURE = 25;    // at or past the positional peak
-const DECLINING_PRESSURE = 40; // meaningfully into decline
-
-function playerPressure(p: Player): number {
+// Version 2 read off agePressure, which fixed the position blindness. But
+// pressure tracks how much career is LEFT, and that falls for everyone with
+// age, so it barely separates positions: at 27 an RB and a WR land within two
+// points of each other despite one falling apart and the other peaking.
+//
+// This reads the empirical rate at which each position drains remaining
+// dynasty value (nflverse 1999-2024, see scripts/research/AGING.md). At 27 an
+// RB bleeds 9.3%/yr against a WR's 4.6% and a QB's 0.6%, which is the
+// distinction the archetype actually needs. Selling stays stricter than
+// buying, as it always has.
+function playerLossRate(p: Player): number {
   if (p.age == null) return 0; // unknown age never counts as aging
-  return agePressure(p.age, p.position);
+  return valueLossRate(p.age, p.position);
 }
 function isAging(p: Player): boolean {
-  return playerPressure(p) >= AGING_PRESSURE;
+  return playerLossRate(p) >= AGING_LOSS_RATE[p.position];
 }
 function isDeclining(p: Player): boolean {
-  return playerPressure(p) >= DECLINING_PRESSURE;
+  return playerLossRate(p) >= DECLINING_LOSS_RATE[p.position];
 }
 
 function topPlayersByPos(profile: TeamProfile, pos: Position, n: number): Player[] {
