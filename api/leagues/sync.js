@@ -230,6 +230,29 @@ function agePressure(age, pos) {
   const pressure = 100 * (1 - remainingValue(age, pos) / reference);
   return Math.max(0, Math.min(100, pressure));
 }
+function effectiveAge(p) {
+  const age = p.age;
+  if (age == null) return 0;
+  const signal = p.agingSignal;
+  if (signal == null || signal >= 1) return age;
+  const ramp = Math.max(0, Math.min(1, (age - 26) / 4));
+  if (ramp <= 0) return age;
+  const applied = 1 - (1 - signal) * ramp;
+  const target = remainingValue(age, p.position) * applied;
+  const table = REMAINING_VALUE[p.position];
+  const ages = Object.keys(table).map(Number).sort((a, b) => a - b);
+  for (let i = 0; i < ages.length; i++) {
+    const a = ages[i];
+    if (table[a] <= target) {
+      if (i === 0) return Math.max(age, a);
+      const prev = ages[i - 1];
+      const span = table[prev] - table[a];
+      const t = span > 0 ? (table[prev] - target) / span : 0;
+      return Math.max(age, prev + t * (a - prev));
+    }
+  }
+  return Math.max(age, ages[ages.length - 1]);
+}
 function starterAgePressure(players, format) {
   const { starters } = fillStarters(players, format, REDRAFT);
   let totalNum = 0;
@@ -237,7 +260,7 @@ function starterAgePressure(players, format) {
   for (const pos of POSITIONS) {
     for (const p of starters[pos]) {
       if (p.age == null) continue;
-      const pressure = agePressure(p.age, p.position);
+      const pressure = agePressure(effectiveAge(p), p.position);
       totalNum += pressure * p.valueRedraft;
       totalDen += p.valueRedraft;
     }
@@ -861,6 +884,9 @@ async function requireApprovedUser(req, res) {
   return { uid, email };
 }
 
+// src/data/qbSignals.json
+var qbSignals_default = { ryanfitzpatrick: 0.981, joshjohnson: 0.863, camnewton: 0.82, tyrodtaylor: 0.842, russellwilson: 0.956, genosmith: 0.972, marcusmariota: 0.899, dakprescott: 0.988, jacobybrissett: 0.918, taylorheinicke: 0.97, deshaunwatson: 0.925, mitchelltrubisky: 0.939, cjbeathard: 0.943, jeffdriskel: 0.873, joshuadobbs: 0.82, lamarjackson: 0.82, joshallen: 0.841, samdarnold: 0.981, kylermurray: 0.863, drewlock: 0.947, danieljones: 0.87, tylerhuntley: 0.82, jalenhurts: 0.82, justinfields: 0.82, trevorlawrence: 0.942, zachwilson: 0.94, samhowell: 0.918, kennypickett: 0.943, desmondridder: 0.914, bryceyoung: 0.914, anthonyrichardson: 0.82, bonix: 0.944, drakemaye: 0.861, jaydendaniels: 0.82, calebwilliams: 0.961 };
+
 // api/_lib/buildTeams.ts
 var POSITIONS2 = ["QB", "RB", "WR", "TE"];
 function calcAge(birthDate) {
@@ -906,7 +932,8 @@ function buildTeamInputs(params) {
         team: sp.team ?? null,
         age: sp.birth_date ? calcAge(sp.birth_date) : dyn?.age ?? red?.age ?? sp.age ?? null,
         valueRedraft: red?.value ?? 0,
-        valueDynasty: dyn?.value ?? 0
+        valueDynasty: dyn?.value ?? 0,
+        ...qbSignals_default[k] != null ? { agingSignal: qbSignals_default[k] } : {}
       };
     }).filter((p) => p !== null);
     rosterPlayers.set(r.roster_id, players);

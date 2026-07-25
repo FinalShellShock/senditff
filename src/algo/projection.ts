@@ -7,7 +7,7 @@
 // a standings predictor.
 
 import { PICK_DECAY, POSITIONS } from "./constants";
-import { agePressure, fillStarters } from "./profile";
+import { agePressure, effectiveAge, fillStarters } from "./profile";
 import type { LeagueFormat, Pick, Player, Position, TeamProfile } from "./types";
 
 const DYN = (p: Player) => p.valueDynasty;
@@ -89,7 +89,7 @@ export function projectTeam(
     for (const p of starters[pos]) {
       starterValue += p.valueDynasty;
       if (p.age == null) continue;
-      pressureNum += agePressure(p.age, p.position) * p.valueDynasty;
+      pressureNum += agePressure(effectiveAge(p), p.position) * p.valueDynasty;
       pressureDen += p.valueDynasty;
     }
   }

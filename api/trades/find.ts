@@ -68,11 +68,15 @@ function sanitizeRationale(text: string): string {
     .trim();
 }
 
-async function generateRationale(
+// Split out from generateRationale so the exact prompt can be returned to the
+// UI for inspection, including for cache hits where no API call happens. It is
+// deterministic from the same inputs, so rebuilding it always matches what the
+// cached rationale was written from.
+export function buildRationalePrompt(
   pkg: Omit<TradePackage, "rationale">,
   myProfile: TeamProfile,
   counterProfile?: TeamProfile,
-): Promise<string> {
+): string {
   const giveNames = pkg.give.map(describeAsset).join(", ");
   const receiveNames = pkg.receive.map(describeAsset).join(", ");
   const archetypeLabel = pkg.archetype.replace(/_/g, " ");
@@ -95,6 +99,10 @@ Write 3-4 sentences explaining why this trade makes sense for this team right no
 
 Use only the facts given above. Ages are stated where they matter: cite them only as given, and never estimate one that is not listed. Do not invent stats, injuries, contracts, team situations, or draft capital that does not appear in this prompt. If you are unsure of a detail, argue from the roster timelines instead of guessing.`;
 
+  return prompt;
+}
+
+async function generateRationale(prompt: string): Promise<string> {
   const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -120,16 +128,17 @@ async function addRationale(
   counterProfile?: TeamProfile,
 ): Promise<TradePackage> {
   const hash = rationaleHash(pkg, myProfile, counterProfile);
+  const prompt = buildRationalePrompt(pkg, myProfile, counterProfile);
   const cacheRef = adminDb.collection("rationaleCache").doc(hash);
   const cached = await cacheRef.get();
 
   if (cached.exists) {
-    return { ...pkg, rationale: sanitizeRationale(cached.data()?.["rationale"] as string) };
+    return { ...pkg, rationale: sanitizeRationale(cached.data()?.["rationale"] as string), prompt };
   }
 
-  const rationale = sanitizeRationale(await generateRationale(pkg, myProfile, counterProfile));
+  const rationale = sanitizeRationale(await generateRationale(prompt));
   await cacheRef.set({ hash, rationale, archetype: pkg.archetype, generatedAt: new Date().toISOString() });
-  return { ...pkg, rationale };
+  return { ...pkg, rationale, prompt };
 }
 
 // ── Handler ──────────────────────────────────────────────────────────────────

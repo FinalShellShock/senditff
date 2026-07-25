@@ -13,6 +13,7 @@ import { fairnessLabel, packageValue, tradeEffectiveValues, type FairnessLabel }
 import {
   depthByPosition,
   depthSlotsFor,
+  effectiveAge,
   fillStarters,
   flexStrengthValue,
   positionScoreFromPool,
@@ -61,6 +62,9 @@ export type TradePackage = {
     archMatch: number;
   };
   rationale: string;
+  // The exact prompt sent to Haiku to write `rationale`, echoed back so the UI
+  // can show what the model was actually asked. Filled in by api/trades/find.ts.
+  prompt?: string;
 };
 
 export type GenerateOptions = {
@@ -210,7 +214,9 @@ function toWire(a: Asset): TradeAssetWire {
 // buying, as it always has.
 function playerLossRate(p: Player): number {
   if (p.age == null) return 0; // unknown age never counts as aging
-  return valueLossRate(p.age, p.position);
+  // Effective age folds in the aging signal, so a high-rushing QB trips the
+  // gates earlier than his birthday alone would justify.
+  return valueLossRate(effectiveAge(p), p.position);
 }
 function isAging(p: Player): boolean {
   return playerLossRate(p) >= AGING_LOSS_RATE[p.position];

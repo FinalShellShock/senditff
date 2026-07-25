@@ -6,6 +6,7 @@ import {
 import { applyTep, fillStarters } from "../../src/algo/profile";
 import { STD_THRESHOLD } from "../../src/algo/constants";
 import { normName } from "../../src/data/normalize";
+import qbSignals from "../../src/data/qbSignals.json";
 import type { LeagueFormat, Pick, PickTier, Player, TeamInput } from "../../src/algo/types";
 import type {
   SleeperDraft,
@@ -87,6 +88,9 @@ export function buildTeamInputs(params: {
           age: sp.birth_date ? calcAge(sp.birth_date) : dyn?.age ?? red?.age ?? sp.age ?? null,
           valueRedraft: red?.value ?? 0,
           valueDynasty: dyn?.value ?? 0,
+          ...((qbSignals as Record<string, number>)[k] != null
+            ? { agingSignal: (qbSignals as Record<string, number>)[k] }
+            : {}),
         };
       })
       .filter((p): p is Player => p !== null);

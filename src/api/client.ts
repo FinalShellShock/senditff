@@ -29,6 +29,9 @@ export type TradePackage = {
     archMatch: number;
   };
   rationale: string;
+  // The exact prompt sent to Haiku to write `rationale`. Optional: responses
+  // from an older API deploy won't have it.
+  prompt?: string;
 };
 
 export type TradeDiagnostics = {

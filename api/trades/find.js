@@ -29,6 +29,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // api/trades/find.ts
 var find_exports = {};
 __export(find_exports, {
+  buildRationalePrompt: () => buildRationalePrompt,
   default: () => handler
 });
 module.exports = __toCommonJS(find_exports);
@@ -36,6 +37,12 @@ var import_crypto = require("crypto");
 
 // src/algo/constants.ts
 var POSITIONS = ["QB", "RB", "WR", "TE"];
+var REMAINING_VALUE = {
+  QB: { 23: 56.1, 24: 56.1, 25: 56.1, 26: 56.1, 27: 56.1, 28: 56.1, 29: 55.8, 30: 55.8, 31: 51.2, 32: 47.4, 33: 47.4, 34: 42.8, 35: 42.8, 36: 42.4, 37: 38, 38: 29.6 },
+  RB: { 23: 40.7, 24: 38.6, 25: 37.3, 26: 34.3, 27: 31.7, 28: 29, 29: 25, 30: 24.1, 31: 21.8, 32: 17.5, 33: 15 },
+  WR: { 23: 45.1, 24: 44.3, 25: 38.7, 26: 37.7, 27: 35.3, 28: 34.6, 29: 34.6, 30: 31.1, 31: 30.3, 32: 25.9, 33: 24.5, 34: 23.6, 35: 23.6, 36: 13.6 },
+  TE: { 23: 35.5, 24: 33.9, 25: 30.4, 26: 29.9, 27: 26.6, 28: 25.1, 29: 23.7, 30: 21.4, 31: 21.4, 32: 21.4, 33: 21.4 }
+};
 var VALUE_LOSS_RATE = {
   QB: { 23: -1.8, 24: -1.8, 25: -1.8, 26: 0.6, 27: 0.6, 28: 4.4, 29: 4.5, 30: 4.5, 31: 4.5, 32: 4.5, 33: 4.5, 34: 4.5, 35: 12.1 },
   RB: { 23: 5.6, 24: 6.4, 25: 8, 26: 9.3, 27: 9.3, 28: 9.3, 29: 11.2, 30: 14.6 },
@@ -335,6 +342,41 @@ function interp(x, x0, x1, y0, y1) {
   if (x1 === x0) return y0;
   return y0 + (x - x0) / (x1 - x0) * (y1 - y0);
 }
+function fromAgeTable(age, table) {
+  const ages = Object.keys(table).map(Number).sort((a, b) => a - b);
+  const lo = ages[0], hi = ages[ages.length - 1];
+  if (age <= lo) return table[lo];
+  if (age >= hi) return table[hi];
+  const upper = ages.find((a) => a >= age);
+  const lower = ages[ages.indexOf(upper) - 1];
+  return interp(age, lower, upper, table[lower], table[upper]);
+}
+function remainingValue(age, pos) {
+  return fromAgeTable(age, REMAINING_VALUE[pos]);
+}
+function effectiveAge(p) {
+  const age = p.age;
+  if (age == null) return 0;
+  const signal = p.agingSignal;
+  if (signal == null || signal >= 1) return age;
+  const ramp = Math.max(0, Math.min(1, (age - 26) / 4));
+  if (ramp <= 0) return age;
+  const applied = 1 - (1 - signal) * ramp;
+  const target = remainingValue(age, p.position) * applied;
+  const table = REMAINING_VALUE[p.position];
+  const ages = Object.keys(table).map(Number).sort((a, b) => a - b);
+  for (let i = 0; i < ages.length; i++) {
+    const a = ages[i];
+    if (table[a] <= target) {
+      if (i === 0) return Math.max(age, a);
+      const prev = ages[i - 1];
+      const span = table[prev] - table[a];
+      const t = span > 0 ? (table[prev] - target) / span : 0;
+      return Math.max(age, prev + t * (a - prev));
+    }
+  }
+  return Math.max(age, ages[ages.length - 1]);
+}
 function valueLossRate(age, pos) {
   const table = VALUE_LOSS_RATE[pos];
   const ages = Object.keys(table).map(Number).sort((a, b) => a - b);
@@ -442,7 +484,7 @@ function toWire(a) {
 }
 function playerLossRate(p) {
   if (p.age == null) return 0;
-  return valueLossRate(p.age, p.position);
+  return valueLossRate(effectiveAge(p), p.position);
 }
 function isAging(p) {
   return playerLossRate(p) >= AGING_LOSS_RATE[p.position];
@@ -1234,7 +1276,7 @@ function describeAsset(a) {
 function sanitizeRationale(text) {
   return text.replace(/^#{1,6}[^\n]*$/gm, "").replace(/\*\*/g, "").replace(/\s*[—–]\s*/g, ", ").trim();
 }
-async function generateRationale(pkg, myProfile, counterProfile) {
+function buildRationalePrompt(pkg, myProfile, counterProfile) {
   const giveNames = pkg.give.map(describeAsset).join(", ");
   const receiveNames = pkg.receive.map(describeAsset).join(", ");
   const archetypeLabel = pkg.archetype.replace(/_/g, " ");
@@ -1248,6 +1290,9 @@ Trade type: ${archetypeLabel}. ${fairnessNote}
 Write 3-4 sentences explaining why this trade makes sense for this team right now, and end with one sentence on why ${pkg.counterTeam} says yes given their situation (a trade nobody accepts is worthless). Be specific about the players, picks, and both teams' timelines. Plain prose only: no markdown, no headings, no bullet points, no em dashes.
 
 Use only the facts given above. Ages are stated where they matter: cite them only as given, and never estimate one that is not listed. Do not invent stats, injuries, contracts, team situations, or draft capital that does not appear in this prompt. If you are unsure of a detail, argue from the roster timelines instead of guessing.`;
+  return prompt;
+}
+async function generateRationale(prompt) {
   const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -1267,14 +1312,15 @@ Use only the facts given above. Ages are stated where they matter: cite them onl
 }
 async function addRationale(pkg, myProfile, counterProfile) {
   const hash = rationaleHash(pkg, myProfile, counterProfile);
+  const prompt = buildRationalePrompt(pkg, myProfile, counterProfile);
   const cacheRef = adminDb.collection("rationaleCache").doc(hash);
   const cached = await cacheRef.get();
   if (cached.exists) {
-    return { ...pkg, rationale: sanitizeRationale(cached.data()?.["rationale"]) };
+    return { ...pkg, rationale: sanitizeRationale(cached.data()?.["rationale"]), prompt };
   }
-  const rationale = sanitizeRationale(await generateRationale(pkg, myProfile, counterProfile));
+  const rationale = sanitizeRationale(await generateRationale(prompt));
   await cacheRef.set({ hash, rationale, archetype: pkg.archetype, generatedAt: (/* @__PURE__ */ new Date()).toISOString() });
-  return { ...pkg, rationale };
+  return { ...pkg, rationale, prompt };
 }
 async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -1340,3 +1386,7 @@ async function handler(req, res) {
     return res.status(500).json({ error: "Internal server error" });
   }
 }
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  buildRationalePrompt
+});

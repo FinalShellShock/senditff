@@ -28,6 +28,10 @@ export type Player = {
   valueRedraft: number;
   // Long-term value (FantasyCalc isDynasty=true). Drives window math.
   valueDynasty: number;
+  // Aging-signal multiplier on remaining career value, from
+  // src/data/qbSignals.json. 1 or absent = no warning; 0.82 = this player
+  // profiles about 18% short of what his calendar age implies. QB-only today.
+  agingSignal?: number;
 };
 
 export type PickTier = "early" | "mid" | "late";

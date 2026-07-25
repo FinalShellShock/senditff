@@ -119,6 +119,28 @@ function ThumbIcon({ direction }: { direction: "up" | "down" }) {
   );
 }
 
+// Outline code glyph (angle brackets), same drawing style as ThumbIcon so it
+// reads as part of the same icon family: stroked paths, no fill.
+function PromptIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="15"
+      height="15"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <polyline points="9 6 3 12 9 18" />
+      <polyline points="15 6 21 12 15 18" />
+    </svg>
+  );
+}
+
 function AssetList({ assets }: { assets: TradeAssetWire[] }) {
   return (
     <span className="trade-names">
@@ -160,6 +182,9 @@ function TradeCard({
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  // Independent of the feedback panel state above: showing the prompt has
+  // nothing to do with logging a thumbs up/down.
+  const [promptOpen, setPromptOpen] = useState(false);
 
   function pickVerdict(next: "up" | "down") {
     if (sent) return;
@@ -215,7 +240,21 @@ function TradeCard({
             {fairnessText(fairness)}
           </span>
         </span>
-        <span className="trade-counter-team">{pkg.counterTeam}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span className="trade-counter-team">{pkg.counterTeam}</span>
+          {pkg.prompt && (
+            <button
+              type="button"
+              className="trade-prompt-btn"
+              onClick={() => setPromptOpen((v) => !v)}
+              aria-pressed={promptOpen}
+              aria-label="Show the prompt sent to Claude"
+              title="Show the prompt sent to Claude"
+            >
+              <PromptIcon />
+            </button>
+          )}
+        </span>
       </div>
       <div className="trade-players">
         <div className="trade-side">
@@ -238,6 +277,12 @@ function TradeCard({
         </div>
       )}
       {pkg.rationale && <p className="trade-rationale">{pkg.rationale}</p>}
+
+      {pkg.prompt && promptOpen && (
+        <div className="trade-prompt-panel">
+          <pre className="trade-prompt-pre">{pkg.prompt}</pre>
+        </div>
+      )}
 
       <div className="trade-feedback-bar">
         <button

@@ -203,6 +203,51 @@ export function agePressure(age: number, pos: Position): number {
   return Math.max(0, Math.min(100, pressure));
 }
 
+// Effective age: what this player's remaining career value says his age is,
+// after applying his aging signal.
+//
+// A high-rushing QB carries roughly 18% less remaining value than his calendar
+// age implies (scripts/research/SIGNALS.md). Rather than bolt a penalty onto
+// every consumer, we knock his remaining value down and read back the age that
+// normally corresponds to it. Everything downstream (window pressure, the
+// projection, the age-arb gates) then works unchanged on one number.
+//
+// Two guards:
+//   - The signal ramps in from 26 to 30, matching the 27-32 range the research
+//     actually measured. Applying it at full strength to a 23-year-old would
+//     extrapolate past the evidence onto exactly the players it hurts most
+//     (Jayden Daniels and Anthony Richardson are both flagged rushers). The
+//     ramp is deliberately wide: a narrow one made Jalen Hurts jump five
+//     effective years between his 26th and 28th birthdays, which is an
+//     artifact of the QB curve being flat, not a real cliff.
+//   - Effective age never goes BELOW calendar age. Signals are warnings only;
+//     nothing here makes a player younger than he is.
+export function effectiveAge(p: Player): number {
+  const age = p.age;
+  if (age == null) return 0;
+  const signal = p.agingSignal;
+  if (signal == null || signal >= 1) return age;
+
+  const ramp = Math.max(0, Math.min(1, (age - 26) / 4));
+  if (ramp <= 0) return age;
+  const applied = 1 - (1 - signal) * ramp;
+
+  const target = remainingValue(age, p.position) * applied;
+  const table = REMAINING_VALUE[p.position];
+  const ages = Object.keys(table).map(Number).sort((a, b) => a - b);
+  for (let i = 0; i < ages.length; i++) {
+    const a = ages[i]!;
+    if (table[a]! <= target) {
+      if (i === 0) return Math.max(age, a);
+      const prev = ages[i - 1]!;
+      const span = table[prev]! - table[a]!;
+      const t = span > 0 ? (table[prev]! - target) / span : 0;
+      return Math.max(age, prev + t * (a - prev));
+    }
+  }
+  return Math.max(age, ages[ages.length - 1]!);
+}
+
 // Annualized percent of remaining dynasty value this player loses per year.
 // Reads the empirical VALUE_LOSS_RATE table, clamping to the nearest tabulated
 // age at either end and interpolating between (the table is integer-aged;
@@ -232,7 +277,7 @@ export function starterAgePressure(players: Player[], format: LeagueFormat): num
   for (const pos of POSITIONS) {
     for (const p of starters[pos]) {
       if (p.age == null) continue;
-      const pressure = agePressure(p.age, p.position);
+      const pressure = agePressure(effectiveAge(p), p.position);
       totalNum += pressure * p.valueRedraft;
       totalDen += p.valueRedraft;
     }
