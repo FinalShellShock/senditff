@@ -35,21 +35,13 @@ module.exports = __toCommonJS(sync_exports);
 
 // src/algo/constants.ts
 var POSITIONS = ["QB", "RB", "WR", "TE"];
-var POSITION_CURVES = {
-  // QB: long careers, peak 27-32 for pocket / 24-27 for dual-threat. Use averaged window.
-  QB: { productiveStart: 23, peakStart: 26, peakEnd: 32, declineStart: 35, done: 38 },
-  // RB: short careers, sharp decline 28-29.
-  RB: { productiveStart: 21, peakStart: 23, peakEnd: 27, declineStart: 28, done: 30 },
-  // WR: peak 26-30, decline 31-32.
-  WR: { productiveStart: 22, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 },
-  // TE: late breakout, peak 26-30, decline 32.
-  TE: { productiveStart: 23, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 }
+var REMAINING_VALUE = {
+  QB: { 23: 56.1, 24: 56.1, 25: 56.1, 26: 56.1, 27: 56.1, 28: 56.1, 29: 55.8, 30: 55.8, 31: 51.2, 32: 47.4, 33: 47.4, 34: 42.8, 35: 42.8, 36: 42.4, 37: 38, 38: 29.6 },
+  RB: { 23: 40.7, 24: 38.6, 25: 37.3, 26: 34.3, 27: 31.7, 28: 29, 29: 25, 30: 24.1, 31: 21.8, 32: 17.5, 33: 15 },
+  WR: { 23: 45.1, 24: 44.3, 25: 38.7, 26: 37.7, 27: 35.3, 28: 34.6, 29: 34.6, 30: 31.1, 31: 30.3, 32: 25.9, 33: 24.5, 34: 23.6, 35: 23.6, 36: 13.6 },
+  TE: { 23: 35.5, 24: 33.9, 25: 30.4, 26: 29.9, 27: 26.6, 28: 25.1, 29: 23.7, 30: 21.4, 31: 21.4, 32: 21.4, 33: 21.4 }
 };
-var PRESSURE_AT_PRODUCTIVE = 0;
-var PRESSURE_AT_PEAK_START = 0;
-var PRESSURE_AT_PEAK_END = 25;
-var PRESSURE_AT_DECLINE_START = 60;
-var PRESSURE_AT_DONE = 100;
+var PRESSURE_REFERENCE_AGE = 23;
 var PICK_DECAY = {
   0: 1,
   1: 0.85,
@@ -64,8 +56,8 @@ var PICK_ADJUSTMENT_BY_FLAG = {
 };
 var FLEX_CONSOLIDATE_THRESHOLD = 55;
 var STD_THRESHOLD = 0.5;
-var WINDOW_LONG_THRESHOLD = 9;
-var WINDOW_SHORT_THRESHOLD = 14;
+var WINDOW_LONG_THRESHOLD = 14;
+var WINDOW_SHORT_THRESHOLD = 19;
 var COMPETITIVENESS_GRID = {
   STRONG: { LONG: "JUGGERNAUT", MID: "CONTEND", SHORT: "CLOSING" },
   AVERAGE: { LONG: "RISING", MID: "AVERAGE", SHORT: "MIDDLING" },
@@ -220,22 +212,23 @@ function interp(x, x0, x1, y0, y1) {
   if (x1 === x0) return y0;
   return y0 + (x - x0) / (x1 - x0) * (y1 - y0);
 }
+function fromAgeTable(age, table) {
+  const ages = Object.keys(table).map(Number).sort((a, b) => a - b);
+  const lo = ages[0], hi = ages[ages.length - 1];
+  if (age <= lo) return table[lo];
+  if (age >= hi) return table[hi];
+  const upper = ages.find((a) => a >= age);
+  const lower = ages[ages.indexOf(upper) - 1];
+  return interp(age, lower, upper, table[lower], table[upper]);
+}
+function remainingValue(age, pos) {
+  return fromAgeTable(age, REMAINING_VALUE[pos]);
+}
 function agePressure(age, pos) {
-  const c = POSITION_CURVES[pos];
-  if (age <= c.productiveStart) return PRESSURE_AT_PRODUCTIVE;
-  if (age <= c.peakStart) {
-    return interp(age, c.productiveStart, c.peakStart, PRESSURE_AT_PRODUCTIVE, PRESSURE_AT_PEAK_START);
-  }
-  if (age <= c.peakEnd) {
-    return interp(age, c.peakStart, c.peakEnd, PRESSURE_AT_PEAK_START, PRESSURE_AT_PEAK_END);
-  }
-  if (age <= c.declineStart) {
-    return interp(age, c.peakEnd, c.declineStart, PRESSURE_AT_PEAK_END, PRESSURE_AT_DECLINE_START);
-  }
-  if (age <= c.done) {
-    return interp(age, c.declineStart, c.done, PRESSURE_AT_DECLINE_START, PRESSURE_AT_DONE);
-  }
-  return PRESSURE_AT_DONE;
+  const reference = REMAINING_VALUE[pos][PRESSURE_REFERENCE_AGE];
+  if (!reference) return 0;
+  const pressure = 100 * (1 - remainingValue(age, pos) / reference);
+  return Math.max(0, Math.min(100, pressure));
 }
 function starterAgePressure(players, format) {
   const { starters } = fillStarters(players, format, REDRAFT);

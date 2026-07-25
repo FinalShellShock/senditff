@@ -41,8 +41,7 @@ var VALUE_LOSS_RATE = {
   RB: { 23: 5.6, 24: 6.4, 25: 8, 26: 9.3, 27: 9.3, 28: 9.3, 29: 11.2, 30: 14.6 },
   WR: { 23: 4.6, 24: 4.6, 25: 4.6, 26: 4.6, 27: 4.6, 28: 4.6, 29: 7.6, 30: 7.6, 31: 7.6, 32: 7.6, 33: 17.9 },
   // TE never accelerates in this data. That is a sample-size limitation
-  // (n=25-36 above age 30), not evidence that TEs stop aging: the raw series
-  // wanders negative up there and isotonic pooling flattens it. Treat TE
+  // (n=25-36 above age 30), not evidence that TEs stop aging. Treat TE
   // age-arb as unsupported by data rather than as a finding.
   TE: { 23: 5.5, 24: 5.5, 25: 5.5, 26: 5.5, 27: 5.5, 28: 5.5, 29: 5.5, 30: 5.5 }
 };

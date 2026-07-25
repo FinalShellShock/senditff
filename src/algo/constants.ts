@@ -2,57 +2,63 @@ import type { Competitiveness, PickFlag, Position, WindowLabel, WindowTier } fro
 
 export const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 
-// West Coast: position-aware age pressure curves.
-// Source: ESPN Cockcroft 2023, PFF, 4for4, FantasyLife.
-// Each player gets pressure 0-100 based on calendar age and position.
-// 0 = years of productivity ahead. 100 = career done.
-export type CurveBreakpoints = {
-  productiveStart: number; // pressure starts climbing AFTER this (before = 0)
-  peakStart: number;       // entering prime
-  peakEnd: number;         // leaving prime
-  declineStart: number;    // sharp decline begins
-  done: number;            // pressure capped at 100 from here
-};
-
-export const POSITION_CURVES: Record<Position, CurveBreakpoints> = {
-  // QB: long careers, peak 27-32 for pocket / 24-27 for dual-threat. Use averaged window.
-  QB: { productiveStart: 23, peakStart: 26, peakEnd: 32, declineStart: 35, done: 38 },
-  // RB: short careers, sharp decline 28-29.
-  RB: { productiveStart: 21, peakStart: 23, peakEnd: 27, declineStart: 28, done: 30 },
-  // WR: peak 26-30, decline 31-32.
-  WR: { productiveStart: 22, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 },
-  // TE: late breakout, peak 26-30, decline 32.
-  TE: { productiveStart: 23, peakStart: 26, peakEnd: 30, declineStart: 32, done: 34 },
-};
-
-// Pressure values at each curve breakpoint. Linear interp between.
-export const PRESSURE_AT_PRODUCTIVE = 0;
-export const PRESSURE_AT_PEAK_START = 0;
-export const PRESSURE_AT_PEAK_END = 25;
-export const PRESSURE_AT_DECLINE_START = 60;
-export const PRESSURE_AT_DONE = 100;
-
-// Annualized percent of REMAINING dynasty value a player loses per year, by
-// position and age. Derived from nflverse 1999-2024 by scripts/research/aging.mjs
-// (see scripts/research/AGING.md). Regenerate with `node scripts/research/aging.mjs`.
+// ── Aging, measured rather than assumed ──────────────────────────────────────
+// Both tables come from nflverse 1999-2024 via scripts/research/aging.mjs.
+// See scripts/research/AGING.md for method and caveats. Regenerate with
+// `node scripts/research/aging.mjs`.
 //
-// Why a loss RATE and not an age: the level of remaining value falls for
-// everyone as they age, so it barely separates positions (at 27 it reads 48
-// for an RB and 46 for a WR, though one is falling apart and the other is in
-// his prime). How FAST the value drains is what actually differs. At 27 an RB
-// bleeds 9.3%/yr, a WR 4.6%, a QB 0.6%.
+// These replaced a hand-set POSITION_CURVES breakpoint model taken from
+// published summaries. There is deliberately only ONE aging model in the app
+// now: window classification, the projection arrows, and the trade engine all
+// read these. Two curves that can be refit independently is a correctness
+// hazard, not just untidiness.
+
+// Expected remaining career production, in discounted PPG-years.
+//
+// Built by crediting each player his PPG k years later, or ZERO if he is no
+// longer startable. Dropout is not missing data here, it IS the dynasty
+// signal: a player out of the league produces nothing.
+//
+// Smoothed isotonic non-increasing: once a player is established, expected
+// remaining value should not rise with age, and the projection model requires
+// retention that cannot increase with horizon. The raw series violated that
+// (QB read 59.1 at 30 against 55.2 at 23, a 7% rise well inside noise). That
+// smoothing deliberately gives up one real effect, young-QB bust risk, which
+// the 200-attempt volume floor already filters most of.
+//
+// Ages 21-22 are excluded: a startable 21-year-old WR is a generational
+// outlier and that bucket reads 65.4 against 46.4 at age 22.
+export const REMAINING_VALUE: Record<Position, Record<number, number>> = {
+  QB: { 23: 56.1, 24: 56.1, 25: 56.1, 26: 56.1, 27: 56.1, 28: 56.1, 29: 55.8, 30: 55.8, 31: 51.2, 32: 47.4, 33: 47.4, 34: 42.8, 35: 42.8, 36: 42.4, 37: 38.0, 38: 29.6 },
+  RB: { 23: 40.7, 24: 38.6, 25: 37.3, 26: 34.3, 27: 31.7, 28: 29.0, 29: 25.0, 30: 24.1, 31: 21.8, 32: 17.5, 33: 15.0 },
+  WR: { 23: 45.1, 24: 44.3, 25: 38.7, 26: 37.7, 27: 35.3, 28: 34.6, 29: 34.6, 30: 31.1, 31: 30.3, 32: 25.9, 33: 24.5, 34: 23.6, 35: 23.6, 36: 13.6 },
+  TE: { 23: 35.5, 24: 33.9, 25: 30.4, 26: 29.9, 27: 26.6, 28: 25.1, 29: 23.7, 30: 21.4, 31: 21.4, 32: 21.4, 33: 21.4 },
+};
+
+// Age 23 is the reference for pressure: the youngest age with a healthy sample
+// at every position. Pressure is the share of a player's age-23 remaining
+// value already gone, so it stays WITHIN position. Normalizing across
+// positions instead was measured and is worse: every roster starts the same
+// position mix, so it tracks mix rather than timeline.
+export const PRESSURE_REFERENCE_AGE = 23;
+
+// Annualized percent of REMAINING dynasty value lost per year.
+//
+// Why a rate and not the level: the level falls for everyone with age, so it
+// barely separates positions (at 27 it reads 48 for an RB and 46 for a WR,
+// though one is falling apart and the other is peaking). How FAST value drains
+// is what differs. At 27 an RB bleeds 9.3%/yr, a WR 4.6%, a QB 0.6%.
 //
 // Fitted with isotonic regression (pool adjacent violators, weighted by sample
 // size) because the raw series is noisy enough to go negative at thin old-age
-// buckets, and a player does not age in reverse. The monotonic constraint is
-// the assumption doing the work here; it is a real assumption, not a fact.
+// buckets, and a player does not age in reverse. That monotonic constraint is
+// the assumption doing the work here; it is an assumption, not a fact.
 export const VALUE_LOSS_RATE: Record<Position, Record<number, number>> = {
   QB: { 23: -1.8, 24: -1.8, 25: -1.8, 26: 0.6, 27: 0.6, 28: 4.4, 29: 4.5, 30: 4.5, 31: 4.5, 32: 4.5, 33: 4.5, 34: 4.5, 35: 12.1 },
   RB: { 23: 5.6, 24: 6.4, 25: 8.0, 26: 9.3, 27: 9.3, 28: 9.3, 29: 11.2, 30: 14.6 },
   WR: { 23: 4.6, 24: 4.6, 25: 4.6, 26: 4.6, 27: 4.6, 28: 4.6, 29: 7.6, 30: 7.6, 31: 7.6, 32: 7.6, 33: 17.9 },
   // TE never accelerates in this data. That is a sample-size limitation
-  // (n=25-36 above age 30), not evidence that TEs stop aging: the raw series
-  // wanders negative up there and isotonic pooling flattens it. Treat TE
+  // (n=25-36 above age 30), not evidence that TEs stop aging. Treat TE
   // age-arb as unsupported by data rather than as a finding.
   TE: { 23: 5.5, 24: 5.5, 25: 5.5, 26: 5.5, 27: 5.5, 28: 5.5, 29: 5.5, 30: 5.5 },
 };
@@ -60,20 +66,15 @@ export const VALUE_LOSS_RATE: Record<Position, Record<number, number>> = {
 // A player is "aging" (worth buying at a discount) once his value drains this
 // fast, and "declining" (worth selling before the cliff) at this rate.
 //
-// These are per position, not one global number, because each position's
-// baseline drain differs: an RB bleeds 5.6%/yr even at 23, so a global
-// threshold that catches genuinely old RBs also catches Bijan Robinson at
-// 24.5. What marks a player as aging is his position's curve ACCELERATING
-// away from its own baseline, and that happens at a different rate for each.
+// Per position, not one global number, because each position's baseline drain
+// differs: an RB bleeds 5.6%/yr even at 23, so a global threshold that catches
+// genuinely old RBs also catches Bijan Robinson at 24.5. What marks a player
+// as aging is his position's curve accelerating away from its own baseline.
 //
-// Resulting gates on the fitted curves:
-//   aging     RB 25.4+, WR 29+, QB 34.6+, TE never
-//   declining RB 28.6+, WR 33+, QB 34.9+, TE never
-//
-// TE never triggers because its fitted curve is flat at 5.5%/yr. That is a
-// data limitation (n=25-36 above age 30, raw series wanders negative), not a
-// finding that TEs stop aging. Thresholds are kept in line with WR so the
-// gate starts working on its own if the TE curve is ever refit with more data.
+// Resulting gates: aging RB 25.4+, WR 29+, QB 34.6+, TE never.
+//                  declining RB 28.6+, WR 33+, QB 34.9+, TE never.
+// TE thresholds are kept in line with WR so the gate starts working on its own
+// if the TE curve is ever refit with more data.
 export const AGING_LOSS_RATE: Record<Position, number> = { QB: 6, RB: 8.5, WR: 7, TE: 7 };
 export const DECLINING_LOSS_RATE: Record<Position, number> = { QB: 10, RB: 10.5, WR: 10, TE: 10 };
 
@@ -105,18 +106,21 @@ export const FLEX_CONSOLIDATE_THRESHOLD = 55;
 // competitiveness axis. 0.5σ = "noticeably above/below average for this league."
 export const STD_THRESHOLD = 0.5;
 
-// Absolute thresholds on window pressure, calibrated against the position
-// curves ON DECIMAL AGES (production computes exact ages from birth dates;
-// the original 5/14 cuts were tuned on a harness that used Sleeper's floored
-// integer ages, which read 2-8 points younger).
-//   < 9   = LONG  (mostly pre-peak rosters, picks-rich rebuilds)
-//   > 14  = SHORT (significant aging starters or PICK_POOR mid-tier teams)
-// Shotgun: LONG cut recalibrated after harness/prod age parity. At the old
-// cut, one just-past-peak starter (Mahomes on a young SF juggernaut) pushed
-// obviously long-window teams into MID. Both test leagues separate cleanly
-// around 9 (nearest teams 8.1/8.6 below, 9.9/11.4 above).
-export const WINDOW_LONG_THRESHOLD = 9;
-export const WINDOW_SHORT_THRESHOLD = 14;
+// Absolute thresholds on window pressure.
+//   < LONG cut  = LONG  (mostly pre-peak rosters, picks-rich rebuilds)
+//   > SHORT cut = SHORT (significant aging starters or PICK_POOR mid-tier teams)
+//
+// Recalibrated when agePressure moved from the hand-set POSITION_CURVES to
+// the measured remaining-value curve, which changed the scale.
+//   LONG cut 14: the one clean separation in the league, a 4.9-point gap
+//     between 11.5 and 16.4 with nothing else close in that region.
+//   SHORT cut 19: no clean break exists up here. The remaining gaps are 2.6
+//     and 6.1, and the 6.1 one isolates a single team. 19 splits the tight
+//     18.4/19.3 pair and keeps the tier sizes near what the league had
+//     before (8 LONG / 2 MID / 6 SHORT). This one is a judgment call, not a
+//     natural boundary: re-derive it if a second league disagrees.
+export const WINDOW_LONG_THRESHOLD = 14;
+export const WINDOW_SHORT_THRESHOLD = 19;
 
 // In-season COMPETITIVENESS weights (parked here so we don't lose the formula).
 //   w_season = 0.25 + 0.04 * week

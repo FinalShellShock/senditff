@@ -331,10 +331,28 @@ console.log("};");
 // (a QB really does have more fantasy value left than an RB), which is what
 // window classification needs. Ages 21-22 are dropped: a startable 21-year-old
 // WR is a generational outlier and the bucket reads 65.4 against 46.4 at 22.
-console.log("\n// Raw remaining value (discounted PPG-years), for window math");
+// Monotone non-increasing, same isotonic prior as the loss rate but in the
+// other direction: once a player is already established, expected remaining
+// career value should not go UP with age. The raw series violates that in
+// places (QB reads 59.1 at 30 against 55.2 at 23, a 7% rise well inside noise
+// at n=52 vs 56; WR ticks up at 29; TE at 31 and 32). Those wiggles also break
+// the projection invariant that value retention cannot increase with horizon.
+//
+// Note this deliberately gives up one real effect: young QBs carry genuine
+// bust risk, so a 30-year-old established starter arguably IS worth more in
+// expectation than a 23-year-old. The volume floor already filters much of
+// that out (everyone here cleared 200 attempts), so smoothing it away costs
+// little and keeps the projection model coherent.
+function pavaDecreasing(points) {
+  const flipped = points.map((p) => ({ x: p.x, y: -p.y, w: p.w }));
+  return pava(flipped).map((p) => ({ x: p.x, y: -p.y }));
+}
+
+console.log("\n// Remaining value (discounted PPG-years), isotonic non-increasing");
 console.log("export const REMAINING_VALUE: Record<Position, Record<number, number>> = {");
 for (const pos of POSITIONS) {
-  const body = out[pos].filter((r) => r.age >= 23).map((r) => `${r.age}: ${r.rv.toFixed(1)}`).join(", ");
+  const pts = out[pos].filter((r) => r.age >= 23).map((r) => ({ x: r.age, y: r.rv, w: r.n }));
+  const body = pavaDecreasing(pts).map((p) => `${p.x}: ${p.y.toFixed(1)}`).join(", ");
   console.log(`  ${pos}: { ${body} },`);
 }
 console.log("};");

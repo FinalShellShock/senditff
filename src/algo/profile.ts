@@ -3,12 +3,8 @@ import {
   PICK_ADJUSTMENT_BY_FLAG,
   PICK_DECAY,
   POSITIONS,
-  POSITION_CURVES,
-  PRESSURE_AT_DECLINE_START,
-  PRESSURE_AT_DONE,
-  PRESSURE_AT_PEAK_END,
-  PRESSURE_AT_PEAK_START,
-  PRESSURE_AT_PRODUCTIVE,
+  PRESSURE_REFERENCE_AGE,
+  REMAINING_VALUE,
   STD_THRESHOLD,
   TEP_MULTIPLIER,
   VALUE_LOSS_RATE,
@@ -169,23 +165,42 @@ function interp(x: number, x0: number, x1: number, y0: number, y1: number): numb
   return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
 }
 
-// Per-player age pressure (0-100). Piecewise linear over the position curve.
+// Reads a value off an integer-aged table, clamping at both ends and
+// interpolating between (production ages are decimals).
+function fromAgeTable(age: number, table: Record<number, number>): number {
+  const ages = Object.keys(table).map(Number).sort((a, b) => a - b);
+  const lo = ages[0]!, hi = ages[ages.length - 1]!;
+  if (age <= lo) return table[lo]!;
+  if (age >= hi) return table[hi]!;
+  const upper = ages.find((a) => a >= age)!;
+  const lower = ages[ages.indexOf(upper) - 1]!;
+  return interp(age, lower, upper, table[lower]!, table[upper]!);
+}
+
+// Expected remaining career production, in discounted PPG-years.
+export function remainingValue(age: number, pos: Position): number {
+  return fromAgeTable(age, REMAINING_VALUE[pos]);
+}
+
+// Per-player age pressure (0-100): the share of this player's age-23 remaining
+// career value that is already gone. 0 means everything still ahead of him,
+// 100 means nothing left.
+//
+// This used to be piecewise-linear over hand-set POSITION_CURVES breakpoints
+// taken from published summaries. It now derives from measured remaining
+// career value (nflverse 1999-2024, see scripts/research/AGING.md), so the
+// whole app runs on ONE aging model instead of a hand curve here and a data
+// curve in the trade engine. Two models that can be refit independently is a
+// correctness hazard, not just a tidiness problem.
+//
+// The swap was validated before shipping: on Johnny's league it ranked teams
+// at Spearman 0.95 against the old hand-tuned curve, so it reproduces
+// established behavior while being derived rather than guessed.
 export function agePressure(age: number, pos: Position): number {
-  const c = POSITION_CURVES[pos];
-  if (age <= c.productiveStart) return PRESSURE_AT_PRODUCTIVE;
-  if (age <= c.peakStart) {
-    return interp(age, c.productiveStart, c.peakStart, PRESSURE_AT_PRODUCTIVE, PRESSURE_AT_PEAK_START);
-  }
-  if (age <= c.peakEnd) {
-    return interp(age, c.peakStart, c.peakEnd, PRESSURE_AT_PEAK_START, PRESSURE_AT_PEAK_END);
-  }
-  if (age <= c.declineStart) {
-    return interp(age, c.peakEnd, c.declineStart, PRESSURE_AT_PEAK_END, PRESSURE_AT_DECLINE_START);
-  }
-  if (age <= c.done) {
-    return interp(age, c.declineStart, c.done, PRESSURE_AT_DECLINE_START, PRESSURE_AT_DONE);
-  }
-  return PRESSURE_AT_DONE;
+  const reference = REMAINING_VALUE[pos][PRESSURE_REFERENCE_AGE];
+  if (!reference) return 0;
+  const pressure = 100 * (1 - remainingValue(age, pos) / reference);
+  return Math.max(0, Math.min(100, pressure));
 }
 
 // Annualized percent of remaining dynasty value this player loses per year.
