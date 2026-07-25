@@ -14,7 +14,7 @@
               "name": "Tony Pollard",
               "position": "RB",
               "valueDynasty": 1770,
-              "age": 29.235463352663068
+              "age": 29.23668374071539
             }
           ],
           "receive": [
@@ -24,7 +24,7 @@
               "name": "Oronde Gadsden",
               "position": "TE",
               "valueDynasty": 1876,
-              "age": 23.08351263423074
+              "age": 23.08473302250488
             }
           ],
           "valueGive": 1770,
@@ -32,7 +32,7 @@
           "archetype": "age_arb_sell",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.6404104665654359,
+            "total": 0.3455776587676121,
             "myFit": -0.1472507615372614,
             "theirFit": 0.11777466422841457,
             "balance": 0.9355674189967756,
@@ -49,7 +49,7 @@
               "name": "TreVeyon Henderson",
               "position": "RB",
               "valueDynasty": 4127,
-              "age": 23.757023927611733
+              "age": 23.758244315664054
             },
             {
               "id": "5967",
@@ -57,7 +57,7 @@
               "name": "Tony Pollard",
               "position": "RB",
               "valueDynasty": 1770,
-              "age": 29.235463352663068
+              "age": 29.23668374071539
             }
           ],
           "receive": [
@@ -67,7 +67,7 @@
               "name": "Jonathan Taylor",
               "position": "RB",
               "valueDynasty": 5687,
-              "age": 27.51335520781048
+              "age": 27.51457559608462
             }
           ],
           "valueGive": 5897,
@@ -75,7 +75,7 @@
           "archetype": "consolidate_RB",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.5246479197612706,
+            "total": 0.2689351851052928,
             "myFit": -0.12873931826486648,
             "theirFit": 0.5481250916325513,
             "balance": 0.9361594325282891,
@@ -83,130 +83,134 @@
           }
         },
         {
-          "counterTeam": "Daneo29",
-          "counterRosterId": 5,
-          "give": [
-            {
-              "id": "9224",
-              "kind": "player",
-              "name": "Chase Brown",
-              "position": "RB",
-              "valueDynasty": 4346,
-              "age": 26.34429292145157
-            }
-          ],
-          "receive": [
-            {
-              "id": "8136",
-              "kind": "player",
-              "name": "Rachaad White",
-              "position": "RB",
-              "valueDynasty": 1770,
-              "age": 27.532520163320406
-            },
-            {
-              "id": "8146",
-              "kind": "player",
-              "name": "Garrett Wilson",
-              "position": "WR",
-              "valueDynasty": 3966,
-              "age": 26.007537274887824
-            }
-          ],
-          "valueGive": 4346,
-          "valueReceive": 5736,
-          "archetype": "tier_down_RB",
-          "fairness": "UNDERPAY",
-          "scores": {
-            "total": 0.5059445058154005,
-            "myFit": -0.11458732534310259,
-            "theirFit": 0.41814966276203447,
-            "balance": 0.8180973615756224,
-            "archMatch": 0.084
-          }
-        },
-        {
-          "counterTeam": "Daneo29",
-          "counterRosterId": 5,
-          "give": [
-            {
-              "id": "9224",
-              "kind": "player",
-              "name": "Chase Brown",
-              "position": "RB",
-              "valueDynasty": 4346,
-              "age": 26.34429292145157
-            }
-          ],
-          "receive": [
-            {
-              "id": "8151",
-              "kind": "player",
-              "name": "Kenneth Walker",
-              "position": "RB",
-              "valueDynasty": 4628,
-              "age": 25.761130704045936
-            }
-          ],
-          "valueGive": 4346,
-          "valueReceive": 4628,
-          "archetype": "age_arb_buy",
-          "fairness": "SLIGHT_UNDERPAY",
-          "scores": {
-            "total": 0.49305071683993384,
-            "myFit": -0.12139445432800548,
-            "theirFit": -0.15019419666335843,
-            "balance": 0.9305612059182493,
-            "archMatch": 0.3
-          }
-        },
-        {
           "counterTeam": "starknet",
           "counterRosterId": 14,
           "give": [
             {
-              "id": "5846",
+              "id": "9224",
               "kind": "player",
-              "name": "DK Metcalf",
-              "position": "WR",
-              "valueDynasty": 1994,
-              "age": 28.61123337319695
+              "name": "Chase Brown",
+              "position": "RB",
+              "valueDynasty": 4346,
+              "age": 26.34551330950389
             }
           ],
           "receive": [
             {
-              "id": "2028-2-14",
-              "kind": "pick",
-              "name": "2028 mid 2nd",
-              "valueDynasty": 1196
-            },
-            {
-              "id": "2028-3-14",
-              "kind": "pick",
-              "name": "2028 mid 3rd",
-              "valueDynasty": 885
+              "id": "4866",
+              "kind": "player",
+              "name": "Saquon Barkley",
+              "position": "RB",
+              "valueDynasty": 4259,
+              "age": 29.45571180419297
             }
           ],
-          "valueGive": 1994,
-          "valueReceive": 2081,
-          "archetype": "capital_convert_production_to_picks",
-          "fairness": "SLIGHT_OVERPAY",
+          "valueGive": 4346,
+          "valueReceive": 4259,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
           "scores": {
-            "total": 0.4909704327027071,
-            "myFit": -0.07675084511660832,
-            "theirFit": 0.1899168060590705,
-            "balance": 0.9007900837394144,
-            "archMatch": 0.066
+            "total": 0.2144963922428051,
+            "myFit": -0.116656116514948,
+            "theirFit": -0.16050684203448876,
+            "balance": 0.9770477512301992,
+            "archMatch": 0.18
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "12529",
+              "kind": "player",
+              "name": "TreVeyon Henderson",
+              "position": "RB",
+              "valueDynasty": 4127,
+              "age": 23.758244315664054
+            },
+            {
+              "id": "5967",
+              "kind": "player",
+              "name": "Tony Pollard",
+              "position": "RB",
+              "valueDynasty": 1770,
+              "age": 29.23668374071539
+            }
+          ],
+          "receive": [
+            {
+              "id": "8138",
+              "kind": "player",
+              "name": "James Cook",
+              "position": "RB",
+              "valueDynasty": 5470,
+              "age": 26.832850750120414
+            }
+          ],
+          "valueGive": 5897,
+          "valueReceive": 5470,
+          "archetype": "consolidate_RB",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.2062028078194464,
+            "myFit": -0.1429543317040387,
+            "theirFit": 0.009888694582236051,
+            "balance": 0.9773514709642155,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "7569",
+              "kind": "player",
+              "name": "Nico Collins",
+              "position": "WR",
+              "valueDynasty": 4276,
+              "age": 27.353042399168505
+            }
+          ],
+          "receive": [
+            {
+              "id": "7526",
+              "kind": "player",
+              "name": "Jaylen Waddle",
+              "position": "WR",
+              "valueDynasty": 3233,
+              "age": 27.665157389376887
+            },
+            {
+              "id": "6806",
+              "kind": "player",
+              "name": "J.K. Dobbins",
+              "position": "RB",
+              "valueDynasty": 1694,
+              "age": 27.60492467205998
+            }
+          ],
+          "valueGive": 4276,
+          "valueReceive": 4927,
+          "archetype": "tier_down_WR",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.20503839309507227,
+            "myFit": -0.03248586713508002,
+            "theirFit": -0.05688629816672596,
+            "balance": 0.9660542260581492,
+            "archMatch": 0
           }
         }
       ],
       "diagnostics": {
-        "rawCandidates": 343,
-        "afterDedup": 338,
+        "rawCandidates": 339,
+        "afterDedup": 334,
         "rejected": {
-          "myFit": 179,
-          "theirFit": 196,
-          "balance": 9
+          "myFit": 178,
+          "theirFit": 195,
+          "balance": 130
         },
         "forced": false
       }
@@ -225,7 +229,7 @@
               "name": "Tetairoa McMillan",
               "position": "WR",
               "valueDynasty": 4898,
-              "age": 23.30527854798844
+              "age": 23.30649893626258
             }
           ],
           "receive": [
@@ -235,7 +239,7 @@
               "name": "Kenneth Walker",
               "position": "RB",
               "valueDynasty": 4628,
-              "age": 25.761130704045936
+              "age": 25.762351092320074
             }
           ],
           "valueGive": 4898,
@@ -243,54 +247,11 @@
           "archetype": "age_arb_buy",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.6043715870214299,
+            "total": 0.365395312632305,
             "myFit": 0.2005372514745804,
             "theirFit": 0.2685916311780279,
             "balance": 0.9371266578920725,
             "archMatch": 0.3
-          }
-        },
-        {
-          "counterTeam": "Daneo29",
-          "counterRosterId": 5,
-          "give": [
-            {
-              "id": "12526",
-              "kind": "player",
-              "name": "Tetairoa McMillan",
-              "position": "WR",
-              "valueDynasty": 4898,
-              "age": 23.30527854798844
-            }
-          ],
-          "receive": [
-            {
-              "id": "9754",
-              "kind": "player",
-              "name": "Quentin Johnston",
-              "position": "WR",
-              "valueDynasty": 2046,
-              "age": 24.882280601376532
-            },
-            {
-              "id": "4034",
-              "kind": "player",
-              "name": "Christian McCaffrey",
-              "position": "RB",
-              "valueDynasty": 4596,
-              "age": 30.13074056030877
-            }
-          ],
-          "valueGive": 4898,
-          "valueReceive": 6642,
-          "archetype": "tier_down_WR",
-          "fairness": "UNDERPAY",
-          "scores": {
-            "total": 0.5424156447611914,
-            "myFit": 0.44256793475631245,
-            "theirFit": 0.0740347136665138,
-            "balance": 0.7931106404826082,
-            "archMatch": 0.084
           }
         },
         {
@@ -303,7 +264,7 @@
               "name": "Quinshon Judkins",
               "position": "RB",
               "valueDynasty": 4182,
-              "age": 22.738543435052094
+              "age": 22.739763823326236
             },
             {
               "id": "9756",
@@ -311,7 +272,7 @@
               "name": "Jordan Addison",
               "position": "WR",
               "valueDynasty": 1982,
-              "age": 24.49076793881664
+              "age": 24.49198832709078
             }
           ],
           "receive": [
@@ -321,7 +282,7 @@
               "name": "Josh Allen",
               "position": "QB",
               "valueDynasty": 5447,
-              "age": 30.177284023721704
+              "age": 30.178504411995842
             }
           ],
           "valueGive": 6164,
@@ -329,53 +290,10 @@
           "archetype": "consolidate_flex",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.5107354516535954,
+            "total": 0.30782061284717366,
             "myFit": 0.3774111408353171,
             "theirFit": -0.18261897543891387,
             "balance": 0.9773129204521811,
-            "archMatch": 0
-          }
-        },
-        {
-          "counterTeam": "buzzy5",
-          "counterRosterId": 9,
-          "give": [
-            {
-              "id": "12526",
-              "kind": "player",
-              "name": "Tetairoa McMillan",
-              "position": "WR",
-              "valueDynasty": 4898,
-              "age": 23.30527854798844
-            }
-          ],
-          "receive": [
-            {
-              "id": "7526",
-              "kind": "player",
-              "name": "Jaylen Waddle",
-              "position": "WR",
-              "valueDynasty": 3233,
-              "age": 27.663937001102745
-            },
-            {
-              "id": "5850",
-              "kind": "player",
-              "name": "Josh Jacobs",
-              "position": "RB",
-              "valueDynasty": 2989,
-              "age": 28.44970017700966
-            }
-          ],
-          "valueGive": 4898,
-          "valueReceive": 6222,
-          "archetype": "tier_down_WR",
-          "fairness": "SLIGHT_UNDERPAY",
-          "scores": {
-            "total": 0.5106148117447867,
-            "myFit": 0.48713962871068284,
-            "theirFit": -0.22913542973998824,
-            "balance": 0.9152857295259769,
             "archMatch": 0
           }
         },
@@ -389,7 +307,7 @@
               "name": "Tetairoa McMillan",
               "position": "WR",
               "valueDynasty": 4898,
-              "age": 23.30527854798844
+              "age": 23.30649893626258
             }
           ],
           "receive": [
@@ -399,7 +317,50 @@
               "name": "Michael Pittman",
               "position": "WR",
               "valueDynasty": 1818,
-              "age": 28.802882928581386
+              "age": 28.804103316855528
+            },
+            {
+              "id": "12481",
+              "kind": "player",
+              "name": "Cam Skattebo",
+              "position": "RB",
+              "valueDynasty": 3471,
+              "age": 24.46734767003828
+            }
+          ],
+          "valueGive": 4898,
+          "valueReceive": 5289,
+          "archetype": "tier_down_WR",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.2923011668331166,
+            "myFit": 0.38950177317079293,
+            "theirFit": -0.10841224207066837,
+            "balance": 0.9634882287927543,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "kwescoe3",
+          "counterRosterId": 16,
+          "give": [
+            {
+              "id": "12526",
+              "kind": "player",
+              "name": "Tetairoa McMillan",
+              "position": "WR",
+              "valueDynasty": 4898,
+              "age": 23.30649893626258
+            }
+          ],
+          "receive": [
+            {
+              "id": "6819",
+              "kind": "player",
+              "name": "Michael Pittman",
+              "position": "WR",
+              "valueDynasty": 1818,
+              "age": 28.804103316855528
             },
             {
               "id": "11584",
@@ -407,7 +368,7 @@
               "name": "Bucky Irving",
               "position": "RB",
               "valueDynasty": 3401,
-              "age": 23.93224637827338
+              "age": 23.933466766547518
             }
           ],
           "valueGive": 4898,
@@ -415,11 +376,50 @@
           "archetype": "tier_down_WR",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.5057015825767043,
+            "total": 0.2625138979194297,
             "myFit": 0.3081716502827079,
             "theirFit": -0.10156117574898246,
             "balance": 0.9478482396462699,
             "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "2026-2-2",
+              "kind": "pick",
+              "name": "2026 2.14",
+              "valueDynasty": 1332
+            },
+            {
+              "id": "2028-3-2",
+              "kind": "pick",
+              "name": "2028 mid 3rd",
+              "valueDynasty": 885
+            }
+          ],
+          "receive": [
+            {
+              "id": "2216",
+              "kind": "player",
+              "name": "Mike Evans",
+              "position": "WR",
+              "valueDynasty": 1948,
+              "age": 32.927306602244784
+            }
+          ],
+          "valueGive": 2217,
+          "valueReceive": 1948,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.2510073036514537,
+            "myFit": -0.13183899885585953,
+            "theirFit": -0.21942916219130393,
+            "balance": 0.9998039600078416,
+            "archMatch": 0.27
           }
         }
       ],
@@ -429,7 +429,7 @@
         "rejected": {
           "myFit": 200,
           "theirFit": 143,
-          "balance": 0
+          "balance": 98
         },
         "forced": false
       }
@@ -462,7 +462,7 @@
               "name": "Terry McLaurin",
               "position": "WR",
               "valueDynasty": 2144,
-              "age": 30.859008869432405
+              "age": 30.860229257484725
             }
           ],
           "valueGive": 2443,
@@ -470,7 +470,7 @@
           "archetype": "age_arb_buy",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.554601910735661,
+            "total": 0.35481294038036176,
             "myFit": 0.2477126536438934,
             "theirFit": -0.21295546704561974,
             "balance": 0.9932313974390271,
@@ -478,46 +478,46 @@
           }
         },
         {
-          "counterTeam": "Daneo29",
-          "counterRosterId": 5,
+          "counterTeam": "kwescoe3",
+          "counterRosterId": 16,
           "give": [
             {
-              "id": "7525",
+              "id": "11564",
               "kind": "player",
-              "name": "DeVonta Smith",
-              "position": "WR",
-              "valueDynasty": 3499,
-              "age": 27.6940533597612
+              "name": "Drake Maye",
+              "position": "QB",
+              "valueDynasty": 4742,
+              "age": 23.903350407857378
             }
           ],
           "receive": [
             {
-              "id": "9754",
+              "id": "3163",
               "kind": "player",
-              "name": "Quentin Johnston",
-              "position": "WR",
-              "valueDynasty": 2046,
-              "age": 24.882280601376532
+              "name": "Jared Goff",
+              "position": "QB",
+              "valueDynasty": 1854,
+              "age": 31.780147122468122
             },
             {
-              "id": "8136",
+              "id": "11584",
               "kind": "player",
-              "name": "Rachaad White",
+              "name": "Bucky Irving",
               "position": "RB",
-              "valueDynasty": 1770,
-              "age": 27.532520163320406
+              "valueDynasty": 3401,
+              "age": 23.933466766547518
             }
           ],
-          "valueGive": 3499,
-          "valueReceive": 3816,
-          "archetype": "tier_down_WR",
-          "fairness": "SLIGHT_OVERPAY",
+          "valueGive": 4742,
+          "valueReceive": 5255,
+          "archetype": "tier_down_QB",
+          "fairness": "FAIR",
           "scores": {
-            "total": 0.49681749081447063,
-            "myFit": -0.07828032166664041,
-            "theirFit": 0.16577682382033165,
-            "balance": 0.931408816368259,
-            "archMatch": 0.084
+            "total": 0.28495543140698043,
+            "myFit": -0.10126216513996386,
+            "theirFit": 0.2378660272492676,
+            "balance": 0.9880744059961766,
+            "archMatch": 0
           }
         },
         {
@@ -530,7 +530,7 @@
               "name": "Rome Odunze",
               "position": "WR",
               "valueDynasty": 3327,
-              "age": 24.14306088885086
+              "age": 24.144281277125003
             },
             {
               "id": "11618",
@@ -538,7 +538,7 @@
               "name": "Jalen McMillan",
               "position": "WR",
               "valueDynasty": 1452,
-              "age": 24.63039832896038
+              "age": 24.631618717234517
             }
           ],
           "receive": [
@@ -548,7 +548,7 @@
               "name": "Nico Collins",
               "position": "WR",
               "valueDynasty": 4276,
-              "age": 27.35182201111618
+              "age": 27.353042399168505
             }
           ],
           "valueGive": 4779,
@@ -556,7 +556,7 @@
           "archetype": "consolidate_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.4373670049069208,
+            "total": 0.18894270972797497,
             "myFit": -0.07254468626631798,
             "theirFit": -0.2014907753146004,
             "balance": 0.9843492402976429,
@@ -564,92 +564,80 @@
           }
         },
         {
-          "counterTeam": "Daneo29",
-          "counterRosterId": 5,
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
           "give": [
             {
-              "id": "12527",
+              "id": "12489",
               "kind": "player",
-              "name": "Ashton Jeanty",
+              "name": "RJ Harvey",
               "position": "RB",
-              "valueDynasty": 7764,
-              "age": 22.645456508289605
+              "valueDynasty": 2119,
+              "age": 25.469401058096942
             }
           ],
           "receive": [
             {
-              "id": "4034",
+              "id": "2216",
               "kind": "player",
-              "name": "Christian McCaffrey",
-              "position": "RB",
-              "valueDynasty": 4596,
-              "age": 30.13074056030877
-            },
-            {
-              "id": "2026-1-5",
-              "kind": "pick",
-              "name": "2026 1.09",
-              "valueDynasty": 2491
-            },
-            {
-              "id": "2028-3-5",
-              "kind": "pick",
-              "name": "2028 late 3rd",
-              "valueDynasty": 849
+              "name": "Mike Evans",
+              "position": "WR",
+              "valueDynasty": 1948,
+              "age": 32.927306602244784
             }
           ],
-          "valueGive": 7764,
-          "valueReceive": 7936,
-          "archetype": "tier_down_RB",
-          "fairness": "OVERPAY",
+          "valueGive": 2119,
+          "valueReceive": 1948,
+          "archetype": "age_arb_buy",
+          "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.4342320546147786,
-            "myFit": -0.03423169260057876,
-            "theirFit": -0.24704009903004248,
-            "balance": 0.8656374405282066,
-            "archMatch": 0.084
+            "total": 0.18321370985796448,
+            "myFit": -0.0036141457574628486,
+            "theirFit": -0.06865991208096181,
+            "balance": 0.9083067167136829,
+            "archMatch": 0.27
           }
         },
         {
-          "counterTeam": "kwescoe3",
-          "counterRosterId": 16,
+          "counterTeam": "BMcFarland",
+          "counterRosterId": 12,
           "give": [
             {
-              "id": "11620",
+              "id": "7525",
               "kind": "player",
-              "name": "Rome Odunze",
+              "name": "DeVonta Smith",
               "position": "WR",
-              "valueDynasty": 3327,
-              "age": 24.14306088885086
-            },
-            {
-              "id": "11618",
-              "kind": "player",
-              "name": "Jalen McMillan",
-              "position": "WR",
-              "valueDynasty": 1452,
-              "age": 24.63039832896038
+              "valueDynasty": 3499,
+              "age": 27.695273748035337
             }
           ],
           "receive": [
             {
-              "id": "8137",
+              "id": "6801",
               "kind": "player",
-              "name": "George Pickens",
+              "name": "Tee Higgins",
               "position": "WR",
-              "valueDynasty": 4730,
-              "age": 25.39152084781479
+              "valueDynasty": 3293,
+              "age": 27.51731344690344
+            },
+            {
+              "id": "6865",
+              "kind": "player",
+              "name": "Colby Parkinson",
+              "position": "TE",
+              "valueDynasty": 571,
+              "age": 27.544691954774763
             }
           ],
-          "valueGive": 4779,
-          "valueReceive": 4730,
-          "archetype": "consolidate_WR",
+          "valueGive": 3499,
+          "valueReceive": 3864,
+          "archetype": "tier_down_WR",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.4329738087917592,
-            "myFit": -0.07757938535446403,
-            "theirFit": -0.12964870819291954,
-            "balance": 0.9085407199749012,
+            "total": 0.09571787514839745,
+            "myFit": -0.14759899674701157,
+            "theirFit": -0.23654258327855957,
+            "balance": 0.9413568723665262,
             "archMatch": 0
           }
         }
@@ -660,7 +648,7 @@
         "rejected": {
           "myFit": 176,
           "theirFit": 168,
-          "balance": 0
+          "balance": 105
         },
         "forced": false
       }
@@ -693,7 +681,7 @@
               "name": "Terry McLaurin",
               "position": "WR",
               "valueDynasty": 2144,
-              "age": 30.859008869432405
+              "age": 30.860229257484725
             }
           ],
           "valueGive": 2482,
@@ -701,7 +689,7 @@
           "archetype": "age_arb_buy",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.6345232104883143,
+            "total": 0.4082069647968398,
             "myFit": 0.029221052300385977,
             "theirFit": -0.2170488768782571,
             "balance": 0.9929704715733805,
@@ -732,7 +720,7 @@
               "name": "George Pickens",
               "position": "WR",
               "valueDynasty": 4730,
-              "age": 25.39152084781479
+              "age": 25.39274123608893
             }
           ],
           "valueGive": 5043,
@@ -740,53 +728,10 @@
           "archetype": "capital_convert_picks_to_production",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.4935178181728714,
+            "total": 0.22999937020445763,
             "myFit": 0.24459169113644635,
             "theirFit": -0.13172032558310318,
             "balance": 0.9601332954037469,
-            "archMatch": 0
-          }
-        },
-        {
-          "counterTeam": "BMcFarland",
-          "counterRosterId": 12,
-          "give": [
-            {
-              "id": "12518",
-              "kind": "player",
-              "name": "Tyler Warren",
-              "position": "TE",
-              "valueDynasty": 4344,
-              "age": 24.170439396722184
-            }
-          ],
-          "receive": [
-            {
-              "id": "8698",
-              "kind": "player",
-              "name": "Jake Tonges",
-              "position": "TE",
-              "valueDynasty": 625,
-              "age": 27.047920573998024
-            },
-            {
-              "id": "6801",
-              "kind": "player",
-              "name": "Tee Higgins",
-              "position": "WR",
-              "valueDynasty": 3293,
-              "age": 27.516093058597612
-            }
-          ],
-          "valueGive": 4344,
-          "valueReceive": 3918,
-          "archetype": "tier_down_TE",
-          "fairness": "OVERPAY",
-          "scores": {
-            "total": 0.4823808895616033,
-            "myFit": -0.020679520874142758,
-            "theirFit": 0.24303730841212962,
-            "balance": 0.842579942909822,
             "archMatch": 0
           }
         },
@@ -800,7 +745,7 @@
               "name": "Tyler Warren",
               "position": "TE",
               "valueDynasty": 4344,
-              "age": 24.170439396722184
+              "age": 24.171659784996326
             }
           ],
           "receive": [
@@ -810,7 +755,7 @@
               "name": "T.J. Hockenson",
               "position": "TE",
               "valueDynasty": 1302,
-              "age": 29.060240902286612
+              "age": 29.061461290338936
             },
             {
               "id": "11635",
@@ -818,7 +763,7 @@
               "name": "Ladd McConkey",
               "position": "WR",
               "valueDynasty": 3674,
-              "age": 24.701582449172307
+              "age": 24.70280283722463
             }
           ],
           "valueGive": 4344,
@@ -826,7 +771,7 @@
           "archetype": "tier_down_TE",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.48133564009658725,
+            "total": 0.2119077811607388,
             "myFit": 0.13016322915560816,
             "theirFit": -0.07944479009718908,
             "balance": 0.9425099669183136,
@@ -834,8 +779,51 @@
           }
         },
         {
-          "counterTeam": "BMcFarland",
-          "counterRosterId": 12,
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
+          "give": [
+            {
+              "id": "11632",
+              "kind": "player",
+              "name": "Malik Nabers",
+              "position": "WR",
+              "valueDynasty": 6581,
+              "age": 22.99438394652952
+            }
+          ],
+          "receive": [
+            {
+              "id": "9754",
+              "kind": "player",
+              "name": "Quentin Johnston",
+              "position": "WR",
+              "valueDynasty": 2046,
+              "age": 24.88350098965067
+            },
+            {
+              "id": "4034",
+              "kind": "player",
+              "name": "Christian McCaffrey",
+              "position": "RB",
+              "valueDynasty": 4596,
+              "age": 30.131960948582908
+            }
+          ],
+          "valueGive": 6581,
+          "valueReceive": 6642,
+          "archetype": "tier_down_WR",
+          "fairness": "SLIGHT_OVERPAY",
+          "scores": {
+            "total": 0.14300884498108274,
+            "myFit": -0.11460850514962811,
+            "theirFit": 0.08722540545982684,
+            "balance": 0.9060948573505361,
+            "archMatch": 0.084
+          }
+        },
+        {
+          "counterTeam": "FinalShellShock",
+          "counterRosterId": 6,
           "give": [
             {
               "id": "12518",
@@ -843,37 +831,37 @@
               "name": "Tyler Warren",
               "position": "TE",
               "valueDynasty": 4344,
-              "age": 24.170439396722184
+              "age": 24.171659784996326
             }
           ],
           "receive": [
             {
-              "id": "6865",
+              "id": "12487",
               "kind": "player",
-              "name": "Colby Parkinson",
+              "name": "Terrance Ferguson",
               "position": "TE",
-              "valueDynasty": 571,
-              "age": 27.543471566468934
+              "valueDynasty": 1234,
+              "age": 23.38589660908941
             },
             {
-              "id": "6801",
+              "id": "8144",
               "kind": "player",
-              "name": "Tee Higgins",
+              "name": "Chris Olave",
               "position": "WR",
-              "valueDynasty": 3293,
-              "age": 27.516093058597612
+              "valueDynasty": 3932,
+              "age": 26.077203932840266
             }
           ],
           "valueGive": 4344,
-          "valueReceive": 3864,
+          "valueReceive": 5166,
           "archetype": "tier_down_TE",
-          "fairness": "OVERPAY",
+          "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.48065352292936847,
-            "myFit": -0.020679520874142758,
-            "theirFit": 0.24303730841212962,
-            "balance": 0.8329834616196284,
-            "archMatch": 0
+            "total": 0.08826206173060823,
+            "myFit": 0.0036761249225234238,
+            "theirFit": -0.17808100410005503,
+            "balance": 0.8956334363311108,
+            "archMatch": 0.027
           }
         }
       ],
@@ -883,7 +871,7 @@
         "rejected": {
           "myFit": 173,
           "theirFit": 142,
-          "balance": 0
+          "balance": 91
         },
         "forced": false
       }
@@ -902,7 +890,7 @@
               "name": "Christian McCaffrey",
               "position": "RB",
               "valueDynasty": 4596,
-              "age": 30.13074056030877
+              "age": 30.131960948582908
             }
           ],
           "receive": [
@@ -912,7 +900,7 @@
               "name": "Emeka Egbuka",
               "position": "WR",
               "valueDynasty": 4540,
-              "age": 23.77892673419398
+              "age": 23.780147122468122
             }
           ],
           "valueGive": 4596,
@@ -920,11 +908,89 @@
           "archetype": "age_arb_sell",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.6980665102337892,
+            "total": 0.5130133093930233,
             "myFit": 0.19907343781370035,
             "theirFit": 0.14437394323031819,
             "balance": 0.9860133785075146,
             "archMatch": 0.766
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "8112",
+              "kind": "player",
+              "name": "Drake London",
+              "position": "WR",
+              "valueDynasty": 5702,
+              "age": 25.00396642428448
+            }
+          ],
+          "receive": [
+            {
+              "id": "10229",
+              "kind": "player",
+              "name": "Rashee Rice",
+              "position": "WR",
+              "valueDynasty": 3559,
+              "age": 26.257902084790985
+            },
+            {
+              "id": "5850",
+              "kind": "player",
+              "name": "Josh Jacobs",
+              "position": "RB",
+              "valueDynasty": 2989,
+              "age": 28.4509205652838
+            }
+          ],
+          "valueGive": 5702,
+          "valueReceive": 6548,
+          "archetype": "tier_down_WR",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.47089786832731295,
+            "myFit": 0.9474849340802228,
+            "theirFit": -0.23325016287068742,
+            "balance": 0.9878391951456392,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "8112",
+              "kind": "player",
+              "name": "Drake London",
+              "position": "WR",
+              "valueDynasty": 5702,
+              "age": 25.00396642428448
+            }
+          ],
+          "receive": [
+            {
+              "id": "8138",
+              "kind": "player",
+              "name": "James Cook",
+              "position": "RB",
+              "valueDynasty": 5470,
+              "age": 26.832850750120414
+            }
+          ],
+          "valueGive": 5702,
+          "valueReceive": 5470,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.43406953476435917,
+            "myFit": 0.725546886823548,
+            "theirFit": -0.1571462423200578,
+            "balance": 0.9534932366476084,
+            "archMatch": 0.27
           }
         },
         {
@@ -937,7 +1003,7 @@
               "name": "Drake London",
               "position": "WR",
               "valueDynasty": 5702,
-              "age": 25.002746036010343
+              "age": 25.00396642428448
             }
           ],
           "receive": [
@@ -947,32 +1013,32 @@
               "name": "Brian Thomas",
               "position": "WR",
               "valueDynasty": 3261,
-              "age": 23.795353838916775
+              "age": 23.796574227190913
             },
             {
-              "id": "6819",
+              "id": "12481",
               "kind": "player",
-              "name": "Michael Pittman",
-              "position": "WR",
-              "valueDynasty": 1818,
-              "age": 28.802882928581386
+              "name": "Cam Skattebo",
+              "position": "RB",
+              "valueDynasty": 3471,
+              "age": 24.46734767003828
             }
           ],
           "valueGive": 5702,
-          "valueReceive": 5079,
+          "valueReceive": 6732,
           "archetype": "tier_down_WR",
-          "fairness": "OVERPAY",
+          "fairness": "FAIR",
           "scores": {
-            "total": 0.4606236580203698,
-            "myFit": 0.062353829460115126,
-            "theirFit": 0.07695551830713658,
-            "balance": 0.7770737374652901,
+            "total": 0.41755045319852346,
+            "myFit": 0.7417254584890689,
+            "theirFit": -0.2497140128980901,
+            "balance": 0.9929027270633901,
             "archMatch": 0
           }
         },
         {
-          "counterTeam": "buzzy5",
-          "counterRosterId": 9,
+          "counterTeam": "kwescoe3",
+          "counterRosterId": 16,
           "give": [
             {
               "id": "8112",
@@ -980,125 +1046,47 @@
               "name": "Drake London",
               "position": "WR",
               "valueDynasty": 5702,
-              "age": 25.002746036010343
+              "age": 25.00396642428448
             }
           ],
           "receive": [
             {
-              "id": "8138",
+              "id": "11631",
               "kind": "player",
-              "name": "James Cook",
-              "position": "RB",
-              "valueDynasty": 5470,
-              "age": 26.831630361814586
-            }
-          ],
-          "valueGive": 5702,
-          "valueReceive": 5470,
-          "archetype": "age_arb_buy",
-          "fairness": "FAIR",
-          "scores": {
-            "total": 0.6251158105635292,
-            "myFit": 0.725546886823548,
-            "theirFit": -0.1571462423200578,
-            "balance": 0.9534932366476084,
-            "archMatch": 0.27
-          }
-        },
-        {
-          "counterTeam": "buzzy5",
-          "counterRosterId": 9,
-          "give": [
-            {
-              "id": "8112",
-              "kind": "player",
-              "name": "Drake London",
+              "name": "Brian Thomas",
               "position": "WR",
-              "valueDynasty": 5702,
-              "age": 25.002746036010343
-            }
-          ],
-          "receive": [
-            {
-              "id": "10229",
-              "kind": "player",
-              "name": "Rashee Rice",
-              "position": "WR",
-              "valueDynasty": 3559,
-              "age": 26.256681696516846
+              "valueDynasty": 3261,
+              "age": 23.796574227190913
             },
             {
-              "id": "5850",
+              "id": "11584",
               "kind": "player",
-              "name": "Josh Jacobs",
+              "name": "Bucky Irving",
               "position": "RB",
-              "valueDynasty": 2989,
-              "age": 28.44970017700966
+              "valueDynasty": 3401,
+              "age": 23.933466766547518
             }
           ],
           "valueGive": 5702,
-          "valueReceive": 6548,
+          "valueReceive": 6662,
           "archetype": "tier_down_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.5967536217771545,
-            "myFit": 0.9474849340802228,
-            "theirFit": -0.23325016287068742,
-            "balance": 0.9878391951456392,
+            "total": 0.41391177845370786,
+            "myFit": 0.6642872207384728,
+            "theirFit": -0.17592766395484713,
+            "balance": 0.9938235367073747,
             "archMatch": 0
-          }
-        },
-        {
-          "counterTeam": "pickoff90",
-          "counterRosterId": 1,
-          "give": [
-            {
-              "id": "8112",
-              "kind": "player",
-              "name": "Drake London",
-              "position": "WR",
-              "valueDynasty": 5702,
-              "age": 25.002746036010343
-            }
-          ],
-          "receive": [
-            {
-              "id": "5927",
-              "kind": "player",
-              "name": "Terry McLaurin",
-              "position": "WR",
-              "valueDynasty": 2144,
-              "age": 30.859008869432405
-            },
-            {
-              "id": "12529",
-              "kind": "player",
-              "name": "TreVeyon Henderson",
-              "position": "RB",
-              "valueDynasty": 4127,
-              "age": 23.757023927611733
-            }
-          ],
-          "valueGive": 5702,
-          "valueReceive": 6271,
-          "archetype": "tier_down_WR",
-          "fairness": "FAIR",
-          "scores": {
-            "total": 0.5943161368276563,
-            "myFit": 0.903040603970331,
-            "theirFit": -0.20884925708928298,
-            "balance": 0.9838252010272386,
-            "archMatch": 0.009
           }
         }
       ],
       "diagnostics": {
-        "rawCandidates": 250,
-        "afterDedup": 246,
+        "rawCandidates": 249,
+        "afterDedup": 245,
         "rejected": {
-          "myFit": 103,
+          "myFit": 102,
           "theirFit": 149,
-          "balance": 2
+          "balance": 109
         },
         "forced": false
       }
@@ -1117,7 +1105,7 @@
               "name": "Jonathan Taylor",
               "position": "RB",
               "valueDynasty": 5687,
-              "age": 27.51335520781048
+              "age": 27.51457559608462
             }
           ],
           "receive": [
@@ -1127,7 +1115,7 @@
               "name": "Rachaad White",
               "position": "RB",
               "valueDynasty": 1770,
-              "age": 27.532520163320406
+              "age": 27.533740551594544
             },
             {
               "id": "8146",
@@ -1135,7 +1123,7 @@
               "name": "Garrett Wilson",
               "position": "WR",
               "valueDynasty": 3966,
-              "age": 26.007537274887824
+              "age": 26.008757663161965
             }
           ],
           "valueGive": 5687,
@@ -1143,7 +1131,7 @@
           "archetype": "tier_down_RB",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.5948398545076727,
+            "total": 0.34259606100839185,
             "myFit": 0.31476667372296124,
             "theirFit": 0.4503396821428758,
             "balance": 0.9052757289555352,
@@ -1160,7 +1148,7 @@
               "name": "Najee Harris",
               "position": "RB",
               "valueDynasty": 335,
-              "age": 28.378516056544225
+              "age": 28.379736444818363
             },
             {
               "id": "2027-1-15",
@@ -1182,7 +1170,7 @@
               "name": "Chase Brown",
               "position": "RB",
               "valueDynasty": 4346,
-              "age": 26.34429292145157
+              "age": 26.34551330950389
             }
           ],
           "valueGive": 4977,
@@ -1190,7 +1178,7 @@
           "archetype": "age_arb_buy",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.601515538115059,
+            "total": 0.3937403040259903,
             "myFit": 0.5392203838599904,
             "theirFit": -0.16579377816004115,
             "balance": 0.9580633646659238,
@@ -1198,8 +1186,86 @@
           }
         },
         {
-          "counterTeam": "kwescoe3",
-          "counterRosterId": 16,
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
+          "give": [
+            {
+              "id": "2026-2-1",
+              "kind": "pick",
+              "name": "2026 2.10 (via pickoff90)",
+              "valueDynasty": 1378
+            },
+            {
+              "id": "2028-2-6",
+              "kind": "pick",
+              "name": "2028 late 2nd",
+              "valueDynasty": 1127
+            }
+          ],
+          "receive": [
+            {
+              "id": "5927",
+              "kind": "player",
+              "name": "Terry McLaurin",
+              "position": "WR",
+              "valueDynasty": 2144,
+              "age": 30.860229257484725
+            }
+          ],
+          "valueGive": 2505,
+          "valueReceive": 2144,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.393070556930012,
+            "myFit": 0.399397994578108,
+            "theirFit": -0.21510980406312785,
+            "balance": 0.9909194595543078,
+            "archMatch": 0.3
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "2026-2-1",
+              "kind": "pick",
+              "name": "2026 2.10 (via pickoff90)",
+              "valueDynasty": 1378
+            },
+            {
+              "id": "2028-3-6",
+              "kind": "pick",
+              "name": "2028 late 3rd",
+              "valueDynasty": 849
+            }
+          ],
+          "receive": [
+            {
+              "id": "2216",
+              "kind": "player",
+              "name": "Mike Evans",
+              "position": "WR",
+              "valueDynasty": 1948,
+              "age": 32.927306602244784
+            }
+          ],
+          "valueGive": 2227,
+          "valueReceive": 1948,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.3857149004439813,
+            "myFit": 0.41274479664840014,
+            "theirFit": -0.2187240448039842,
+            "balance": 0.9884794866809257,
+            "archMatch": 0.27
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
           "give": [
             {
               "id": "7528",
@@ -1207,137 +1273,45 @@
               "name": "Najee Harris",
               "position": "RB",
               "valueDynasty": 335,
-              "age": 28.378516056544225
+              "age": 28.379736444818363
             },
             {
-              "id": "2027-1-15",
+              "id": "2028-1-6",
               "kind": "pick",
-              "name": "2027 mid 1st (via jde5011)",
-              "valueDynasty": 2503
-            },
-            {
-              "id": "2027-1-6",
-              "kind": "pick",
-              "name": "2027 late 1st",
-              "valueDynasty": 2139
+              "name": "2028 late 1st",
+              "valueDynasty": 1683
             }
           ],
           "receive": [
             {
-              "id": "8137",
+              "id": "2216",
               "kind": "player",
-              "name": "George Pickens",
+              "name": "Mike Evans",
               "position": "WR",
-              "valueDynasty": 4730,
-              "age": 25.39152084781479
+              "valueDynasty": 1948,
+              "age": 32.927306602244784
             }
           ],
-          "valueGive": 4977,
-          "valueReceive": 4730,
-          "archetype": "push_in",
-          "fairness": "UNDERPAY",
-          "scores": {
-            "total": 0.5189062960220608,
-            "myFit": 0.44806603432984,
-            "theirFit": -0.160838622690713,
-            "balance": 0.8745174316999238,
-            "archMatch": 0.055999999999999994
-          }
-        },
-        {
-          "counterTeam": "pickoff90",
-          "counterRosterId": 1,
-          "give": [
-            {
-              "id": "6813",
-              "kind": "player",
-              "name": "Jonathan Taylor",
-              "position": "RB",
-              "valueDynasty": 5687,
-              "age": 27.51335520781048
-            }
-          ],
-          "receive": [
-            {
-              "id": "12529",
-              "kind": "player",
-              "name": "TreVeyon Henderson",
-              "position": "RB",
-              "valueDynasty": 4127,
-              "age": 23.757023927611733
-            },
-            {
-              "id": "5927",
-              "kind": "player",
-              "name": "Terry McLaurin",
-              "position": "WR",
-              "valueDynasty": 2144,
-              "age": 30.859008869432405
-            }
-          ],
-          "valueGive": 5687,
-          "valueReceive": 6271,
-          "archetype": "tier_down_RB",
+          "valueGive": 2018,
+          "valueReceive": 1948,
+          "archetype": "age_arb_buy",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.5150705039691661,
-            "myFit": 0.4369698842597603,
-            "theirFit": -0.24592240156210815,
-            "balance": 0.9866914372572201,
-            "archMatch": 0.009
-          }
-        },
-        {
-          "counterTeam": "kwescoe3",
-          "counterRosterId": 16,
-          "give": [
-            {
-              "id": "6813",
-              "kind": "player",
-              "name": "Jonathan Taylor",
-              "position": "RB",
-              "valueDynasty": 5687,
-              "age": 27.51335520781048
-            }
-          ],
-          "receive": [
-            {
-              "id": "12481",
-              "kind": "player",
-              "name": "Cam Skattebo",
-              "position": "RB",
-              "valueDynasty": 3471,
-              "age": 24.466127281764138
-            },
-            {
-              "id": "11631",
-              "kind": "player",
-              "name": "Brian Thomas",
-              "position": "WR",
-              "valueDynasty": 3261,
-              "age": 23.795353838916775
-            }
-          ],
-          "valueGive": 5687,
-          "valueReceive": 6732,
-          "archetype": "tier_down_RB",
-          "fairness": "FAIR",
-          "scores": {
-            "total": 0.5026544885941537,
-            "myFit": 0.30614820108853663,
-            "theirFit": -0.17529290615969242,
-            "balance": 0.9900654626796933,
-            "archMatch": 0
+            "total": 0.36147135561644567,
+            "myFit": 0.38485320220688746,
+            "theirFit": -0.24564732504481737,
+            "balance": 0.9815117595271035,
+            "archMatch": 0.27
           }
         }
       ],
       "diagnostics": {
-        "rawCandidates": 219,
-        "afterDedup": 216,
+        "rawCandidates": 216,
+        "afterDedup": 213,
         "rejected": {
-          "myFit": 125,
+          "myFit": 122,
           "theirFit": 121,
-          "balance": 0
+          "balance": 69
         },
         "forced": false
       }
@@ -1346,49 +1320,6 @@
       "owner": "mtakacs12",
       "windowLabel": "STUCK",
       "packages": [
-        {
-          "counterTeam": "FustinJerguson",
-          "counterRosterId": 4,
-          "give": [
-            {
-              "id": "7021",
-              "kind": "player",
-              "name": "Rico Dowdle",
-              "position": "RB",
-              "valueDynasty": 1803,
-              "age": 28.11294453019241
-            },
-            {
-              "id": "8167",
-              "kind": "player",
-              "name": "Christian Watson",
-              "position": "WR",
-              "valueDynasty": 2234,
-              "age": 27.20397806886455
-            }
-          ],
-          "receive": [
-            {
-              "id": "4881",
-              "kind": "player",
-              "name": "Lamar Jackson",
-              "position": "QB",
-              "valueDynasty": 3849,
-              "age": 29.544840491862498
-            }
-          ],
-          "valueGive": 4037,
-          "valueReceive": 3849,
-          "archetype": "consolidate_flex",
-          "fairness": "SLIGHT_UNDERPAY",
-          "scores": {
-            "total": 0.5673374916752685,
-            "myFit": 0.31641921554252134,
-            "theirFit": -0.014412170010375393,
-            "balance": 0.8986006721662084,
-            "archMatch": 0.259
-          }
-        },
         {
           "counterTeam": "starknet",
           "counterRosterId": 14,
@@ -1399,7 +1330,7 @@
               "name": "A.J. Brown",
               "position": "WR",
               "valueDynasty": 4003,
-              "age": 29.068454454901513
+              "age": 29.069674843175655
             }
           ],
           "receive": [
@@ -1409,7 +1340,7 @@
               "name": "DJ Moore",
               "position": "WR",
               "valueDynasty": 2292,
-              "age": 29.279268965542375
+              "age": 29.280489353816513
             },
             {
               "id": "12508",
@@ -1417,7 +1348,7 @@
               "name": "Jaxson Dart",
               "position": "QB",
               "valueDynasty": 2746,
-              "age": 23.20124021810911
+              "age": 23.202460606383248
             }
           ],
           "valueGive": 4003,
@@ -1425,11 +1356,54 @@
           "archetype": "tier_down_WR",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.5302161910838855,
+            "total": 0.2506322636256373,
             "myFit": 0.17777430897248228,
             "theirFit": 0.16074647915055187,
             "balance": 0.915265525373395,
             "archMatch": 0.066
+          }
+        },
+        {
+          "counterTeam": "FustinJerguson",
+          "counterRosterId": 4,
+          "give": [
+            {
+              "id": "7021",
+              "kind": "player",
+              "name": "Rico Dowdle",
+              "position": "RB",
+              "valueDynasty": 1803,
+              "age": 28.11416491846655
+            },
+            {
+              "id": "8167",
+              "kind": "player",
+              "name": "Christian Watson",
+              "position": "WR",
+              "valueDynasty": 2234,
+              "age": 27.205198457138692
+            }
+          ],
+          "receive": [
+            {
+              "id": "4881",
+              "kind": "player",
+              "name": "Lamar Jackson",
+              "position": "QB",
+              "valueDynasty": 3849,
+              "age": 29.54606088013664
+            }
+          ],
+          "valueGive": 4037,
+          "valueReceive": 3849,
+          "archetype": "consolidate_flex",
+          "fairness": "SLIGHT_UNDERPAY",
+          "scores": {
+            "total": 0.21733756533244375,
+            "myFit": 0.31641921554252134,
+            "theirFit": -0.014412170010375393,
+            "balance": 0.8986006721662084,
+            "archMatch": 0.259
           }
         },
         {
@@ -1442,7 +1416,7 @@
               "name": "Rico Dowdle",
               "position": "RB",
               "valueDynasty": 1803,
-              "age": 28.11294453019241
+              "age": 28.11416491846655
             },
             {
               "id": "8167",
@@ -1450,7 +1424,7 @@
               "name": "Christian Watson",
               "position": "WR",
               "valueDynasty": 2234,
-              "age": 27.20397806886455
+              "age": 27.205198457138692
             }
           ],
           "receive": [
@@ -1460,7 +1434,7 @@
               "name": "Justin Herbert",
               "position": "QB",
               "valueDynasty": 3235,
-              "age": 28.375778205757094
+              "age": 28.37699859406292
             }
           ],
           "valueGive": 4037,
@@ -1468,97 +1442,11 @@
           "archetype": "consolidate_flex",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.48363886591599037,
+            "total": 0.15260626157191864,
             "myFit": -0.033717048193742286,
             "theirFit": -0.24061808988167205,
             "balance": 0.9207784789467958,
             "archMatch": 0.259
-          }
-        },
-        {
-          "counterTeam": "kwescoe3",
-          "counterRosterId": 16,
-          "give": [
-            {
-              "id": "5859",
-              "kind": "player",
-              "name": "A.J. Brown",
-              "position": "WR",
-              "valueDynasty": 4003,
-              "age": 29.068454454901513
-            }
-          ],
-          "receive": [
-            {
-              "id": "11631",
-              "kind": "player",
-              "name": "Brian Thomas",
-              "position": "WR",
-              "valueDynasty": 3261,
-              "age": 23.795353838916775
-            },
-            {
-              "id": "3163",
-              "kind": "player",
-              "name": "Jared Goff",
-              "position": "QB",
-              "valueDynasty": 1854,
-              "age": 31.77892673419398
-            }
-          ],
-          "valueGive": 4003,
-          "valueReceive": 5115,
-          "archetype": "tier_down_WR",
-          "fairness": "UNDERPAY",
-          "scores": {
-            "total": 0.46138171487440366,
-            "myFit": 0.11441605225048075,
-            "theirFit": -0.0930412622732285,
-            "balance": 0.8672273512921042,
-            "archMatch": 0
-          }
-        },
-        {
-          "counterTeam": "kwescoe3",
-          "counterRosterId": 16,
-          "give": [
-            {
-              "id": "5859",
-              "kind": "player",
-              "name": "A.J. Brown",
-              "position": "WR",
-              "valueDynasty": 4003,
-              "age": 29.068454454901513
-            }
-          ],
-          "receive": [
-            {
-              "id": "6819",
-              "kind": "player",
-              "name": "Michael Pittman",
-              "position": "WR",
-              "valueDynasty": 1818,
-              "age": 28.802882928581386
-            },
-            {
-              "id": "3163",
-              "kind": "player",
-              "name": "Jared Goff",
-              "position": "QB",
-              "valueDynasty": 1854,
-              "age": 31.77892673419398
-            }
-          ],
-          "valueGive": 4003,
-          "valueReceive": 3672,
-          "archetype": "tier_down_WR",
-          "fairness": "OVERPAY",
-          "scores": {
-            "total": 0.42202630112032286,
-            "myFit": 0.05438949905899141,
-            "theirFit": -0.173967949100702,
-            "balance": 0.764886078583236,
-            "archMatch": 0
           }
         }
       ],
@@ -1568,7 +1456,7 @@
         "rejected": {
           "myFit": 191,
           "theirFit": 109,
-          "balance": 0
+          "balance": 52
         },
         "forced": false
       }
@@ -1601,7 +1489,7 @@
               "name": "Mike Evans",
               "position": "WR",
               "valueDynasty": 1948,
-              "age": 32.92608621397064
+              "age": 32.927306602244784
             }
           ],
           "valueGive": 2220,
@@ -1609,7 +1497,7 @@
           "archetype": "age_arb_buy",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.5700360782949412,
+            "total": 0.3511662941265369,
             "myFit": 0.09424755582136793,
             "theirFit": -0.23290436226147665,
             "balance": 0.9937948893340499,
@@ -1640,7 +1528,7 @@
               "name": "George Pickens",
               "position": "WR",
               "valueDynasty": 4730,
-              "age": 25.39152084781479
+              "age": 25.39274123608893
             }
           ],
           "valueGive": 4968,
@@ -1648,53 +1536,10 @@
           "archetype": "capital_convert_picks_to_production",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.459407893305695,
+            "total": 0.17666672026948077,
             "myFit": 0.03411193087453958,
             "theirFit": -0.1393020324905098,
             "balance": 0.9636237161913335,
-            "archMatch": 0
-          }
-        },
-        {
-          "counterTeam": "kwescoe3",
-          "counterRosterId": 16,
-          "give": [
-            {
-              "id": "7523",
-              "kind": "player",
-              "name": "Trevor Lawrence",
-              "position": "QB",
-              "valueDynasty": 2719,
-              "age": 26.801514003156132
-            }
-          ],
-          "receive": [
-            {
-              "id": "3163",
-              "kind": "player",
-              "name": "Jared Goff",
-              "position": "QB",
-              "valueDynasty": 1854,
-              "age": 31.77892673419398
-            },
-            {
-              "id": "6819",
-              "kind": "player",
-              "name": "Michael Pittman",
-              "position": "WR",
-              "valueDynasty": 1818,
-              "age": 28.802882928581386
-            }
-          ],
-          "valueGive": 2719,
-          "valueReceive": 3672,
-          "archetype": "tier_down_QB",
-          "fairness": "UNDERPAY",
-          "scores": {
-            "total": 0.44740745742994814,
-            "myFit": -0.09839117035224187,
-            "theirFit": 0.05827289807800408,
-            "balance": 0.8610657719743683,
             "archMatch": 0
           }
         },
@@ -1716,7 +1561,7 @@
               "name": "Terry McLaurin",
               "position": "WR",
               "valueDynasty": 2144,
-              "age": 30.859008869432405
+              "age": 30.860229257484725
             }
           ],
           "valueGive": 2283,
@@ -1724,7 +1569,7 @@
           "archetype": "age_arb_buy",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.5638454743988842,
+            "total": 0.26056031769472926,
             "myFit": 0.08668410067034873,
             "theirFit": -0.23439205261637128,
             "balance": 0.9306161425440025,
@@ -1741,7 +1586,7 @@
               "name": "Baker Mayfield",
               "position": "QB",
               "valueDynasty": 1708,
-              "age": 31.280637890904252
+              "age": 31.28185827917839
             },
             {
               "id": "11571",
@@ -1749,7 +1594,7 @@
               "name": "Isaiah Davis",
               "position": "RB",
               "valueDynasty": 442,
-              "age": 24.422321669138338
+              "age": 24.423542057412476
             }
           ],
           "receive": [
@@ -1759,7 +1604,7 @@
               "name": "Mike Evans",
               "position": "WR",
               "valueDynasty": 1948,
-              "age": 32.92608621397064
+              "age": 32.927306602244784
             }
           ],
           "valueGive": 2150,
@@ -1767,11 +1612,52 @@
           "archetype": "age_arb_buy",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.5289945284901963,
+            "total": 0.2420037045312607,
             "myFit": -0.1481605441128341,
             "theirFit": -0.20860331651466374,
             "balance": 0.9623593325572372,
             "archMatch": 0.494
+          }
+        },
+        {
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
+          "give": [
+            {
+              "id": "4892",
+              "kind": "player",
+              "name": "Baker Mayfield",
+              "position": "QB",
+              "valueDynasty": 1708,
+              "age": 31.28185827917839
+            },
+            {
+              "id": "2028-3-8",
+              "kind": "pick",
+              "name": "2028 early 3rd",
+              "valueDynasty": 930
+            }
+          ],
+          "receive": [
+            {
+              "id": "5927",
+              "kind": "player",
+              "name": "Terry McLaurin",
+              "position": "WR",
+              "valueDynasty": 2144,
+              "age": 30.860229257484725
+            }
+          ],
+          "valueGive": 2638,
+          "valueReceive": 2144,
+          "archetype": "age_arb_buy",
+          "fairness": "SLIGHT_OVERPAY",
+          "scores": {
+            "total": 0.16077303731010334,
+            "myFit": -0.10543584258024469,
+            "theirFit": -0.2432944742009428,
+            "balance": 0.9010603588907015,
+            "archMatch": 0.524
           }
         }
       ],
@@ -1781,7 +1667,7 @@
         "rejected": {
           "myFit": 189,
           "theirFit": 113,
-          "balance": 0
+          "balance": 57
         },
         "forced": false
       }
@@ -1791,16 +1677,67 @@
       "windowLabel": "CONTEND",
       "packages": [
         {
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
+          "give": [
+            {
+              "id": "8138",
+              "kind": "player",
+              "name": "James Cook",
+              "position": "RB",
+              "valueDynasty": 5470,
+              "age": 26.832850750120414
+            }
+          ],
+          "receive": [
+            {
+              "id": "8136",
+              "kind": "player",
+              "name": "Rachaad White",
+              "position": "RB",
+              "valueDynasty": 1770,
+              "age": 27.533740551594544
+            },
+            {
+              "id": "8146",
+              "kind": "player",
+              "name": "Garrett Wilson",
+              "position": "WR",
+              "valueDynasty": 3966,
+              "age": 26.008757663161965
+            }
+          ],
+          "valueGive": 5470,
+          "valueReceive": 5736,
+          "archetype": "tier_down_RB",
+          "fairness": "SLIGHT_OVERPAY",
+          "scores": {
+            "total": 0.29474360968899116,
+            "myFit": -0.06603000966335847,
+            "theirFit": 0.4441433780709326,
+            "balance": 0.9449399536484303,
+            "archMatch": 0.084
+          }
+        },
+        {
           "counterTeam": "starknet",
           "counterRosterId": 14,
           "give": [
             {
-              "id": "10229",
+              "id": "5850",
               "kind": "player",
-              "name": "Rashee Rice",
-              "position": "WR",
-              "valueDynasty": 3559,
-              "age": 26.256681696516846
+              "name": "Josh Jacobs",
+              "position": "RB",
+              "valueDynasty": 2989,
+              "age": 28.4509205652838
+            },
+            {
+              "id": "6806",
+              "kind": "player",
+              "name": "J.K. Dobbins",
+              "position": "RB",
+              "valueDynasty": 1694,
+              "age": 27.60492467205998
             }
           ],
           "receive": [
@@ -1810,139 +1747,57 @@
               "name": "Saquon Barkley",
               "position": "RB",
               "valueDynasty": 4259,
-              "age": 29.454491415918827
-            }
-          ],
-          "valueGive": 3559,
-          "valueReceive": 4259,
-          "archetype": "age_arb_buy",
-          "fairness": "UNDERPAY",
-          "scores": {
-            "total": 0.5214528724882534,
-            "myFit": -0.0102064296587568,
-            "theirFit": 0.26206703054810276,
-            "balance": 0.8155362053162236,
-            "archMatch": 0.18
-          }
-        },
-        {
-          "counterTeam": "starknet",
-          "counterRosterId": 14,
-          "give": [
-            {
-              "id": "8138",
-              "kind": "player",
-              "name": "James Cook",
-              "position": "RB",
-              "valueDynasty": 5470,
-              "age": 26.831630361814586
-            }
-          ],
-          "receive": [
-            {
-              "id": "7611",
-              "kind": "player",
-              "name": "Rhamondre Stevenson",
-              "position": "RB",
-              "valueDynasty": 1734,
-              "age": 28.416845967595762
-            },
-            {
-              "id": "12508",
-              "kind": "player",
-              "name": "Jaxson Dart",
-              "position": "QB",
-              "valueDynasty": 2746,
-              "age": 23.20124021810911
-            }
-          ],
-          "valueGive": 5470,
-          "valueReceive": 4480,
-          "archetype": "tier_down_RB",
-          "fairness": "OVERPAY",
-          "scores": {
-            "total": 0.48338512172592796,
-            "myFit": 0.028943885011599113,
-            "theirFit": 0.269124549807012,
-            "balance": 0.7030925730616132,
-            "archMatch": 0.066
-          }
-        },
-        {
-          "counterTeam": "Daneo29",
-          "counterRosterId": 5,
-          "give": [
-            {
-              "id": "5850",
-              "kind": "player",
-              "name": "Josh Jacobs",
-              "position": "RB",
-              "valueDynasty": 2989,
-              "age": 28.44970017700966
-            },
-            {
-              "id": "6806",
-              "kind": "player",
-              "name": "J.K. Dobbins",
-              "position": "RB",
-              "valueDynasty": 1694,
-              "age": 27.603704283785838
-            }
-          ],
-          "receive": [
-            {
-              "id": "8151",
-              "kind": "player",
-              "name": "Kenneth Walker",
-              "position": "RB",
-              "valueDynasty": 4628,
-              "age": 25.761130704045936
+              "age": 29.45571180419297
             }
           ],
           "valueGive": 4683,
-          "valueReceive": 4628,
+          "valueReceive": 4259,
           "archetype": "consolidate_RB",
-          "fairness": "SLIGHT_UNDERPAY",
+          "fairness": "FAIR",
           "scores": {
-            "total": 0.4935858608727743,
-            "myFit": -0.04035049592100269,
-            "theirFit": 0.282877587741436,
-            "balance": 0.8913282107574093,
+            "total": 0.29163003338579685,
+            "myFit": -0.0226031046275765,
+            "theirFit": 0.24856621920980285,
+            "balance": 0.9763344195977076,
             "archMatch": 0
           }
         },
         {
-          "counterTeam": "Daneo29",
-          "counterRosterId": 5,
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
           "give": [
             {
-              "id": "8138",
-              "kind": "player",
-              "name": "James Cook",
-              "position": "RB",
-              "valueDynasty": 5470,
-              "age": 26.831630361814586
+              "id": "2027-2-9",
+              "kind": "pick",
+              "name": "2027 late 2nd",
+              "valueDynasty": 1292
+            },
+            {
+              "id": "2028-2-9",
+              "kind": "pick",
+              "name": "2028 late 2nd",
+              "valueDynasty": 1127
             }
           ],
           "receive": [
             {
-              "id": "8151",
+              "id": "5927",
               "kind": "player",
-              "name": "Kenneth Walker",
-              "position": "RB",
-              "valueDynasty": 4628,
-              "age": 25.761130704045936
+              "name": "Terry McLaurin",
+              "position": "WR",
+              "valueDynasty": 2144,
+              "age": 30.860229257484725
             }
           ],
-          "valueGive": 5470,
-          "valueReceive": 4628,
+          "valueGive": 2419,
+          "valueReceive": 2144,
           "archetype": "age_arb_buy",
-          "fairness": "OVERPAY",
+          "fairness": "FAIR",
           "scores": {
-            "total": 0.48306619170450776,
-            "myFit": -0.08623939728927217,
-            "theirFit": -0.12850713241155592,
-            "balance": 0.8269749656022729,
+            "total": 0.24259727437534007,
+            "myFit": 0.002876752848459001,
+            "theirFit": -0.22459498891755386,
+            "balance": 0.9655779558059687,
             "archMatch": 0.3
           }
         },
@@ -1956,39 +1811,90 @@
               "name": "James Cook",
               "position": "RB",
               "valueDynasty": 5470,
-              "age": 26.831630361814586
+              "age": 26.832850750120414
             }
           ],
           "receive": [
             {
-              "id": "9224",
+              "id": "12529",
               "kind": "player",
-              "name": "Chase Brown",
+              "name": "TreVeyon Henderson",
               "position": "RB",
-              "valueDynasty": 4346,
-              "age": 26.34429292145157
+              "valueDynasty": 4127,
+              "age": 23.758244315664054
+            },
+            {
+              "id": "5967",
+              "kind": "player",
+              "name": "Tony Pollard",
+              "position": "RB",
+              "valueDynasty": 1770,
+              "age": 29.23668374071539
             }
           ],
           "valueGive": 5470,
-          "valueReceive": 4346,
-          "archetype": "age_arb_buy",
-          "fairness": "OVERPAY",
+          "valueReceive": 5897,
+          "archetype": "tier_down_RB",
+          "fairness": "FAIR",
           "scores": {
-            "total": 0.47489156122483794,
-            "myFit": -0.09067624511262859,
-            "theirFit": -0.10954860979536202,
-            "balance": 0.7707586989678288,
-            "archMatch": 0.3
+            "total": 0.216476203332719,
+            "myFit": 0.009888694582236051,
+            "theirFit": -0.1429543317040387,
+            "balance": 0.9773514709642155,
+            "archMatch": 0.009
+          }
+        },
+        {
+          "counterTeam": "kwescoe3",
+          "counterRosterId": 16,
+          "give": [
+            {
+              "id": "8138",
+              "kind": "player",
+              "name": "James Cook",
+              "position": "RB",
+              "valueDynasty": 5470,
+              "age": 26.832850750120414
+            }
+          ],
+          "receive": [
+            {
+              "id": "11584",
+              "kind": "player",
+              "name": "Bucky Irving",
+              "position": "RB",
+              "valueDynasty": 3401,
+              "age": 23.933466766547518
+            },
+            {
+              "id": "11631",
+              "kind": "player",
+              "name": "Brian Thomas",
+              "position": "WR",
+              "valueDynasty": 3261,
+              "age": 23.796574227190913
+            }
+          ],
+          "valueGive": 5470,
+          "valueReceive": 6662,
+          "archetype": "tier_down_RB",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.17222844337795862,
+            "myFit": -0.034200588758537764,
+            "theirFit": -0.1728796463915333,
+            "balance": 0.9618206928683151,
+            "archMatch": 0
           }
         }
       ],
       "diagnostics": {
-        "rawCandidates": 211,
-        "afterDedup": 206,
+        "rawCandidates": 208,
+        "afterDedup": 203,
         "rejected": {
           "myFit": 98,
-          "theirFit": 122,
-          "balance": 5
+          "theirFit": 121,
+          "balance": 79
         },
         "forced": false
       }
@@ -1998,8 +1904,8 @@
       "windowLabel": "REBUILD",
       "packages": [
         {
-          "counterTeam": "buzzy5",
-          "counterRosterId": 9,
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
           "give": [
             {
               "id": "9481",
@@ -2007,7 +1913,7 @@
               "name": "Luke Musgrave",
               "position": "TE",
               "valueDynasty": 155,
-              "age": 25.892547541828275
+              "age": 25.893767930134103
             },
             {
               "id": "5857",
@@ -2015,87 +1921,34 @@
               "name": "Noah Fant",
               "position": "TE",
               "valueDynasty": 57,
-              "age": 28.676941792341623
+              "age": 28.67816218064745
             },
             {
-              "id": "2026-1-10",
+              "id": "2027-2-10",
               "kind": "pick",
-              "name": "2026 1.02",
-              "valueDynasty": 4178
-            },
-            {
-              "id": "2027-1-10",
-              "kind": "pick",
-              "name": "2027 early 1st",
-              "valueDynasty": 3382
+              "name": "2027 early 2nd",
+              "valueDynasty": 1589
             }
           ],
           "receive": [
             {
-              "id": "11604",
+              "id": "8110",
               "kind": "player",
-              "name": "Brock Bowers",
+              "name": "Jake Ferguson",
               "position": "TE",
-              "valueDynasty": 7115,
-              "age": 23.614655686934366
+              "valueDynasty": 1759,
+              "age": 27.517313446396432
             }
           ],
-          "valueGive": 7772,
-          "valueReceive": 7115,
+          "valueGive": 1801,
+          "valueReceive": 1759,
           "archetype": "consolidate_TE",
-          "fairness": "SLIGHT_UNDERPAY",
+          "fairness": "FAIR",
           "scores": {
-            "total": 0.5201864805230976,
-            "myFit": 0.7530366737574655,
-            "theirFit": -0.48106940834318124,
-            "balance": 0.9280573882774914,
-            "archMatch": 0
-          }
-        },
-        {
-          "counterTeam": "buzzy5",
-          "counterRosterId": 9,
-          "give": [
-            {
-              "id": "12511",
-              "kind": "player",
-              "name": "Will Howard",
-              "position": "QB",
-              "valueDynasty": 202,
-              "age": 24.832999287208153
-            },
-            {
-              "id": "2026-1-10",
-              "kind": "pick",
-              "name": "2026 1.02",
-              "valueDynasty": 4178
-            },
-            {
-              "id": "2027-1-10",
-              "kind": "pick",
-              "name": "2027 early 1st",
-              "valueDynasty": 3382
-            }
-          ],
-          "receive": [
-            {
-              "id": "11604",
-              "kind": "player",
-              "name": "Brock Bowers",
-              "position": "TE",
-              "valueDynasty": 7115,
-              "age": 23.614655686934366
-            }
-          ],
-          "valueGive": 7762,
-          "valueReceive": 7115,
-          "archetype": "push_in",
-          "fairness": "SLIGHT_UNDERPAY",
-          "scores": {
-            "total": 0.4932428393881789,
-            "myFit": 0.6333932451860367,
-            "theirFit": -0.5369411116398844,
-            "balance": 0.9281759765999827,
+            "total": 0.3421045813370161,
+            "myFit": 0.5383519004015321,
+            "theirFit": -0.4753381245979051,
+            "balance": 0.9803754553096106,
             "archMatch": 0
           }
         },
@@ -2123,7 +1976,7 @@
               "name": "Jake Ferguson",
               "position": "TE",
               "valueDynasty": 1759,
-              "age": 27.516093058344108
+              "age": 27.517313446396432
             }
           ],
           "valueGive": 1992,
@@ -2131,10 +1984,57 @@
           "archetype": "capital_convert_picks_to_production",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.4931752128474699,
+            "total": 0.32282141967569167,
             "myFit": 0.5267394984291104,
             "theirFit": -0.4688890193287799,
             "balance": 0.9696741989157855,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "12511",
+              "kind": "player",
+              "name": "Will Howard",
+              "position": "QB",
+              "valueDynasty": 202,
+              "age": 24.83421967551398
+            },
+            {
+              "id": "2026-1-10",
+              "kind": "pick",
+              "name": "2026 1.02",
+              "valueDynasty": 4178
+            },
+            {
+              "id": "2027-1-10",
+              "kind": "pick",
+              "name": "2027 early 1st",
+              "valueDynasty": 3382
+            }
+          ],
+          "receive": [
+            {
+              "id": "11604",
+              "kind": "player",
+              "name": "Brock Bowers",
+              "position": "TE",
+              "valueDynasty": 7115,
+              "age": 23.615876075208508
+            }
+          ],
+          "valueGive": 7762,
+          "valueReceive": 7115,
+          "archetype": "push_in",
+          "fairness": "SLIGHT_UNDERPAY",
+          "scores": {
+            "total": 0.2902516505169582,
+            "myFit": 0.6333932451860367,
+            "theirFit": -0.5369411116398844,
+            "balance": 0.9281759765999827,
             "archMatch": 0
           }
         },
@@ -2162,7 +2062,7 @@
               "name": "Harold Fannin",
               "position": "TE",
               "valueDynasty": 2961,
-              "age": 22.01301297646209
+              "age": 22.014233364736228
             }
           ],
           "valueGive": 3191,
@@ -2170,7 +2070,7 @@
           "archetype": "push_in",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.47205271221134715,
+            "total": 0.2805420734977131,
             "myFit": 0.534415023747791,
             "theirFit": -0.5904659289274133,
             "balance": 0.9400641025641026,
@@ -2187,7 +2087,7 @@
               "name": "Luke Musgrave",
               "position": "TE",
               "valueDynasty": 155,
-              "age": 25.892547541828275
+              "age": 25.893767930134103
             },
             {
               "id": "5857",
@@ -2195,7 +2095,7 @@
               "name": "Noah Fant",
               "position": "TE",
               "valueDynasty": 57,
-              "age": 28.676941792341623
+              "age": 28.67816218064745
             },
             {
               "id": "2026-2-10",
@@ -2217,7 +2117,7 @@
               "name": "Harold Fannin",
               "position": "TE",
               "valueDynasty": 2961,
-              "age": 22.01301297646209
+              "age": 22.014233364736228
             }
           ],
           "valueGive": 3178,
@@ -2225,7 +2125,7 @@
           "archetype": "consolidate_TE",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.4690733405631535,
+            "total": 0.25570546461314503,
             "myFit": 0.5343387490304128,
             "theirFit": -0.5903896542100351,
             "balance": 0.9235205128205128,
@@ -2234,10 +2134,10 @@
         }
       ],
       "diagnostics": {
-        "rawCandidates": 184,
-        "afterDedup": 181,
+        "rawCandidates": 183,
+        "afterDedup": 180,
         "rejected": {
-          "myFit": 142,
+          "myFit": 141,
           "theirFit": 79,
           "balance": 0
         },
@@ -2250,49 +2150,6 @@
       "windowLabel": "CONTEND",
       "packages": [
         {
-          "counterTeam": "pickoff90",
-          "counterRosterId": 1,
-          "give": [
-            {
-              "id": "8150",
-              "kind": "player",
-              "name": "Kyren Williams",
-              "position": "RB",
-              "valueDynasty": 3659,
-              "age": 25.9117124973382
-            }
-          ],
-          "receive": [
-            {
-              "id": "5967",
-              "kind": "player",
-              "name": "Tony Pollard",
-              "position": "RB",
-              "valueDynasty": 1770,
-              "age": 29.235463352663068
-            },
-            {
-              "id": "5844",
-              "kind": "player",
-              "name": "T.J. Hockenson",
-              "position": "TE",
-              "valueDynasty": 1302,
-              "age": 29.060240902286612
-            }
-          ],
-          "valueGive": 3659,
-          "valueReceive": 3072,
-          "archetype": "tier_down_RB",
-          "fairness": "OVERPAY",
-          "scores": {
-            "total": 0.42229378798401834,
-            "myFit": 0.11322832839239516,
-            "theirFit": -0.1869636312120703,
-            "balance": 0.713178687838472,
-            "archMatch": 0.009
-          }
-        },
-        {
           "counterTeam": "buzzy5",
           "counterRosterId": 9,
           "give": [
@@ -2302,7 +2159,7 @@
               "name": "Kyren Williams",
               "position": "RB",
               "valueDynasty": 3659,
-              "age": 25.9117124973382
+              "age": 25.91293288564403
             }
           ],
           "receive": [
@@ -2312,7 +2169,7 @@
               "name": "Josh Jacobs",
               "position": "RB",
               "valueDynasty": 2989,
-              "age": 28.44970017700966
+              "age": 28.4509205652838
             },
             {
               "id": "7002",
@@ -2320,7 +2177,7 @@
               "name": "Juwan Johnson",
               "position": "TE",
               "valueDynasty": 1188,
-              "age": 29.86243118316982
+              "age": 29.863651571443963
             }
           ],
           "valueGive": 3659,
@@ -2328,7 +2185,7 @@
           "archetype": "tier_down_RB",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.41838428536643557,
+            "total": 0.12087385962685473,
             "myFit": -0.13170652509870842,
             "theirFit": -0.2308759793580737,
             "balance": 0.9543331471797736,
@@ -2337,12 +2194,12 @@
         }
       ],
       "diagnostics": {
-        "rawCandidates": 159,
-        "afterDedup": 157,
+        "rawCandidates": 158,
+        "afterDedup": 156,
         "rejected": {
-          "myFit": 133,
+          "myFit": 132,
           "theirFit": 90,
-          "balance": 0
+          "balance": 39
         },
         "forced": false
       }
@@ -2375,7 +2232,7 @@
               "name": "Terry McLaurin",
               "position": "WR",
               "valueDynasty": 2144,
-              "age": 30.859008869432405
+              "age": 30.860229257484725
             }
           ],
           "valueGive": 2528,
@@ -2383,7 +2240,7 @@
           "archetype": "age_arb_buy",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.5696149591540384,
+            "total": 0.36227203180050316,
             "myFit": 0.22192640045234566,
             "theirFit": -0.21503183435203,
             "balance": 0.989951066060818,
@@ -2400,7 +2257,7 @@
               "name": "Tucker Kraft",
               "position": "TE",
               "valueDynasty": 3121,
-              "age": 25.722800793026085
+              "age": 25.724021181331914
             }
           ],
           "receive": [
@@ -2410,7 +2267,7 @@
               "name": "T.J. Hockenson",
               "position": "TE",
               "valueDynasty": 1302,
-              "age": 29.060240902286612
+              "age": 29.061461290338936
             },
             {
               "id": "5927",
@@ -2418,7 +2275,7 @@
               "name": "Terry McLaurin",
               "position": "WR",
               "valueDynasty": 2144,
-              "age": 30.859008869432405
+              "age": 30.860229257484725
             }
           ],
           "valueGive": 3121,
@@ -2426,7 +2283,7 @@
           "archetype": "tier_down_TE",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.46691699427068967,
+            "total": 0.22415153573492508,
             "myFit": -0.04806113487720296,
             "theirFit": -0.020420233088415455,
             "balance": 0.9749200471301128,
@@ -2443,7 +2300,7 @@
               "name": "Tee Higgins",
               "position": "WR",
               "valueDynasty": 3293,
-              "age": 27.516093058597612
+              "age": 27.51731344690344
             },
             {
               "id": "11624",
@@ -2451,7 +2308,7 @@
               "name": "Xavier Worthy",
               "position": "WR",
               "valueDynasty": 1758,
-              "age": 23.245045830671533
+              "age": 23.24626621897736
             }
           ],
           "receive": [
@@ -2461,7 +2318,7 @@
               "name": "George Pickens",
               "position": "WR",
               "valueDynasty": 4730,
-              "age": 25.39152084781479
+              "age": 25.39274123608893
             }
           ],
           "valueGive": 5051,
@@ -2469,7 +2326,7 @@
           "archetype": "consolidate_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.4370657492609506,
+            "total": 0.1087388951573955,
             "myFit": -0.1377923149425325,
             "theirFit": -0.08520369457139533,
             "balance": 0.9502279827319509,
@@ -2477,99 +2334,89 @@
           }
         },
         {
-          "counterTeam": "Daneo29",
-          "counterRosterId": 5,
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
           "give": [
             {
-              "id": "6801",
+              "id": "11596",
               "kind": "player",
-              "name": "Tee Higgins",
-              "position": "WR",
-              "valueDynasty": 3293,
-              "age": 27.516093058597612
+              "name": "Ben Sinnott",
+              "position": "TE",
+              "valueDynasty": 227,
+              "age": 24.11416491849824
             },
             {
-              "id": "11624",
-              "kind": "player",
-              "name": "Xavier Worthy",
-              "position": "WR",
-              "valueDynasty": 1758,
-              "age": 23.245045830671533
+              "id": "2028-1-12",
+              "kind": "pick",
+              "name": "2028 mid 1st",
+              "valueDynasty": 1859
             }
           ],
           "receive": [
             {
-              "id": "8112",
+              "id": "2216",
               "kind": "player",
-              "name": "Drake London",
+              "name": "Mike Evans",
               "position": "WR",
-              "valueDynasty": 5702,
-              "age": 25.002746036010343
+              "valueDynasty": 1948,
+              "age": 32.927306602244784
             }
           ],
-          "valueGive": 5051,
-          "valueReceive": 5702,
-          "archetype": "consolidate_WR",
-          "fairness": "UNDERPAY",
+          "valueGive": 2086,
+          "valueReceive": 1948,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
           "scores": {
-            "total": 0.4033923319943997,
-            "myFit": -0.0945657906097226,
-            "theirFit": -0.14990113428903934,
-            "balance": 0.7750500960690047,
-            "archMatch": 0
+            "total": 0.31667956568101485,
+            "myFit": 0.2582642436826867,
+            "theirFit": -0.24147086051992364,
+            "balance": 0.9611633833186317,
+            "archMatch": 0.361
           }
         },
         {
-          "counterTeam": "starknet",
-          "counterRosterId": 14,
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
           "give": [
             {
-              "id": "9488",
+              "id": "11586",
               "kind": "player",
-              "name": "Jaxon Smith-Njigba",
-              "position": "WR",
-              "valueDynasty": 8643,
-              "age": 24.441486624648263
+              "name": "Blake Corum",
+              "position": "RB",
+              "valueDynasty": 1868,
+              "age": 25.663788464015006
             }
           ],
           "receive": [
             {
-              "id": "12514",
+              "id": "2216",
               "kind": "player",
-              "name": "Emeka Egbuka",
+              "name": "Mike Evans",
               "position": "WR",
-              "valueDynasty": 4540,
-              "age": 23.77892673419398
-            },
-            {
-              "id": "12508",
-              "kind": "player",
-              "name": "Jaxson Dart",
-              "position": "QB",
-              "valueDynasty": 2746,
-              "age": 23.20124021810911
+              "valueDynasty": 1948,
+              "age": 32.927306602244784
             }
           ],
-          "valueGive": 8643,
-          "valueReceive": 7286,
-          "archetype": "tier_down_WR",
-          "fairness": "OVERPAY",
+          "valueGive": 1868,
+          "valueReceive": 1948,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
           "scores": {
-            "total": 0.3990760591086332,
-            "myFit": -0.0965628726349176,
-            "theirFit": -0.22120514621947227,
-            "balance": 0.727637995560812,
-            "archMatch": 0.066
+            "total": 0.27828932223021524,
+            "myFit": 0.10743604764249401,
+            "theirFit": -0.17123612937014168,
+            "balance": 0.9530612244897959,
+            "archMatch": 0.361
           }
         }
       ],
       "diagnostics": {
-        "rawCandidates": 224,
-        "afterDedup": 219,
+        "rawCandidates": 223,
+        "afterDedup": 218,
         "rejected": {
-          "myFit": 153,
-          "theirFit": 131,
-          "balance": 0
+          "myFit": 152,
+          "theirFit": 130,
+          "balance": 83
         },
         "forced": false
       }
@@ -2578,55 +2425,6 @@
       "owner": "Gibbs16",
       "windowLabel": "REBUILD",
       "packages": [
-        {
-          "counterTeam": "pickoff90",
-          "counterRosterId": 1,
-          "give": [
-            {
-              "id": "11597",
-              "kind": "player",
-              "name": "Theo Johnson",
-              "position": "TE",
-              "valueDynasty": 758,
-              "age": 25.407947952505893
-            },
-            {
-              "id": "9479",
-              "kind": "player",
-              "name": "Darnell Washington",
-              "position": "TE",
-              "valueDynasty": 286,
-              "age": 24.93703761715086
-            },
-            {
-              "id": "2026-3-9",
-              "kind": "pick",
-              "name": "2026 3.12 (via buzzy5)",
-              "valueDynasty": 930
-            }
-          ],
-          "receive": [
-            {
-              "id": "8110",
-              "kind": "player",
-              "name": "Jake Ferguson",
-              "position": "TE",
-              "valueDynasty": 1759,
-              "age": 27.516093058344108
-            }
-          ],
-          "valueGive": 1974,
-          "valueReceive": 1759,
-          "archetype": "consolidate_TE",
-          "fairness": "SLIGHT_UNDERPAY",
-          "scores": {
-            "total": 0.39654048969828726,
-            "myFit": -0.07211766018403983,
-            "theirFit": -0.4018220628041709,
-            "balance": 0.9129689117795419,
-            "archMatch": 0
-          }
-        },
         {
           "counterTeam": "pickoff90",
           "counterRosterId": 1,
@@ -2651,7 +2449,7 @@
               "name": "Jake Ferguson",
               "position": "TE",
               "valueDynasty": 1759,
-              "age": 27.516093058344108
+              "age": 27.517313446396432
             }
           ],
           "valueGive": 1995,
@@ -2659,10 +2457,59 @@
           "archetype": "capital_convert_picks_to_production",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.39335404807649554,
+            "total": 0.1495759384383793,
             "myFit": -0.10280552147592374,
             "theirFit": -0.4640735421716276,
             "balance": 0.9709623745370619,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
+          "give": [
+            {
+              "id": "11597",
+              "kind": "player",
+              "name": "Theo Johnson",
+              "position": "TE",
+              "valueDynasty": 758,
+              "age": 25.40916834081172
+            },
+            {
+              "id": "9479",
+              "kind": "player",
+              "name": "Darnell Washington",
+              "position": "TE",
+              "valueDynasty": 286,
+              "age": 24.938258005425002
+            },
+            {
+              "id": "2026-3-9",
+              "kind": "pick",
+              "name": "2026 3.12 (via buzzy5)",
+              "valueDynasty": 930
+            }
+          ],
+          "receive": [
+            {
+              "id": "8110",
+              "kind": "player",
+              "name": "Jake Ferguson",
+              "position": "TE",
+              "valueDynasty": 1759,
+              "age": 27.517313446396432
+            }
+          ],
+          "valueGive": 1974,
+          "valueReceive": 1759,
+          "archetype": "consolidate_TE",
+          "fairness": "SLIGHT_UNDERPAY",
+          "scores": {
+            "total": 0.07112497527027563,
+            "myFit": -0.07211766018403983,
+            "theirFit": -0.4018220628041709,
+            "balance": 0.9129689117795419,
             "archMatch": 0
           }
         }
@@ -2688,55 +2535,12 @@
           "counterRosterId": 5,
           "give": [
             {
-              "id": "4866",
-              "kind": "player",
-              "name": "Saquon Barkley",
-              "position": "RB",
-              "valueDynasty": 4259,
-              "age": 29.454491415918827
-            }
-          ],
-          "receive": [
-            {
-              "id": "8136",
-              "kind": "player",
-              "name": "Rachaad White",
-              "position": "RB",
-              "valueDynasty": 1770,
-              "age": 27.532520163320406
-            },
-            {
-              "id": "8146",
-              "kind": "player",
-              "name": "Garrett Wilson",
-              "position": "WR",
-              "valueDynasty": 3966,
-              "age": 26.007537274887824
-            }
-          ],
-          "valueGive": 4259,
-          "valueReceive": 5736,
-          "archetype": "tier_down_RB",
-          "fairness": "UNDERPAY",
-          "scores": {
-            "total": 0.61666667598753,
-            "myFit": 0.5858427212572749,
-            "theirFit": 0.4324319239207698,
-            "balance": 0.7995076179858789,
-            "archMatch": 0.084
-          }
-        },
-        {
-          "counterTeam": "Daneo29",
-          "counterRosterId": 5,
-          "give": [
-            {
               "id": "12514",
               "kind": "player",
               "name": "Emeka Egbuka",
               "position": "WR",
               "valueDynasty": 4540,
-              "age": 23.77892673419398
+              "age": 23.780147122468122
             }
           ],
           "receive": [
@@ -2746,7 +2550,7 @@
               "name": "Kenneth Walker",
               "position": "RB",
               "valueDynasty": 4628,
-              "age": 25.761130704045936
+              "age": 25.762351092320074
             }
           ],
           "valueGive": 4540,
@@ -2754,7 +2558,7 @@
           "archetype": "age_arb_buy",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.5934072672402444,
+            "total": 0.39612597668941407,
             "myFit": 0.13308204089667494,
             "theirFit": 0.21456419799355908,
             "balance": 0.9781952943204344,
@@ -2762,47 +2566,8 @@
           }
         },
         {
-          "counterTeam": "pickoff90",
-          "counterRosterId": 1,
-          "give": [
-            {
-              "id": "12522",
-              "kind": "player",
-              "name": "Cam Ward",
-              "position": "QB",
-              "valueDynasty": 2037,
-              "age": 24.16770154596674
-            }
-          ],
-          "receive": [
-            {
-              "id": "2026-3-1",
-              "kind": "pick",
-              "name": "2026 3.10",
-              "valueDynasty": 976
-            },
-            {
-              "id": "2028-2-1",
-              "kind": "pick",
-              "name": "2028 late 2nd",
-              "valueDynasty": 1127
-            }
-          ],
-          "valueGive": 2037,
-          "valueReceive": 2103,
-          "archetype": "capital_convert_production_to_picks",
-          "fairness": "OVERPAY",
-          "scores": {
-            "total": 0.4614858039935724,
-            "myFit": -0.09126703511155265,
-            "theirFit": -0.14419521144164063,
-            "balance": 0.8777547734069474,
-            "archMatch": 0.174
-          }
-        },
-        {
-          "counterTeam": "buzzy5",
-          "counterRosterId": 9,
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
           "give": [
             {
               "id": "6786",
@@ -2810,37 +2575,37 @@
               "name": "CeeDee Lamb",
               "position": "WR",
               "valueDynasty": 6287,
-              "age": 27.297064995658733
+              "age": 27.29828538393287
             }
           ],
           "receive": [
             {
-              "id": "10229",
+              "id": "9754",
               "kind": "player",
-              "name": "Rashee Rice",
+              "name": "Quentin Johnston",
               "position": "WR",
-              "valueDynasty": 3559,
-              "age": 26.256681696516846
+              "valueDynasty": 2046,
+              "age": 24.88350098965067
             },
             {
-              "id": "6806",
+              "id": "4034",
               "kind": "player",
-              "name": "J.K. Dobbins",
+              "name": "Christian McCaffrey",
               "position": "RB",
-              "valueDynasty": 1694,
-              "age": 27.603704283785838
+              "valueDynasty": 4596,
+              "age": 30.131960948582908
             }
           ],
           "valueGive": 6287,
-          "valueReceive": 5253,
+          "valueReceive": 6642,
           "archetype": "tier_down_WR",
-          "fairness": "OVERPAY",
+          "fairness": "FAIR",
           "scores": {
-            "total": 0.4583340877579354,
-            "myFit": 0.21894656992195324,
-            "theirFit": -0.06282548844028214,
-            "balance": 0.7338789164003465,
-            "archMatch": 0
+            "total": 0.33362393276178776,
+            "myFit": 0.3139466745639833,
+            "theirFit": 0.09217191488231943,
+            "balance": 0.9529328124880555,
+            "archMatch": 0.084
           }
         },
         {
@@ -2853,7 +2618,7 @@
               "name": "Cam Ward",
               "position": "QB",
               "valueDynasty": 2037,
-              "age": 24.16770154596674
+              "age": 24.16892193424088
             }
           ],
           "receive": [
@@ -2875,21 +2640,103 @@
           "archetype": "capital_convert_production_to_picks",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.45758983953492616,
+            "total": 0.13212567805030886,
             "myFit": -0.09372138601741553,
             "theirFit": -0.0362960019497717,
             "balance": 0.917370564281559,
             "archMatch": 0.056999999999999995
           }
+        },
+        {
+          "counterTeam": "mtakacs12",
+          "counterRosterId": 7,
+          "give": [
+            {
+              "id": "12522",
+              "kind": "player",
+              "name": "Cam Ward",
+              "position": "QB",
+              "valueDynasty": 2037,
+              "age": 24.16892193424088
+            }
+          ],
+          "receive": [
+            {
+              "id": "2028-2-7",
+              "kind": "pick",
+              "name": "2028 early 2nd",
+              "valueDynasty": 1290
+            },
+            {
+              "id": "2028-3-7",
+              "kind": "pick",
+              "name": "2028 early 3rd",
+              "valueDynasty": 930
+            }
+          ],
+          "valueGive": 2037,
+          "valueReceive": 2220,
+          "archetype": "capital_convert_production_to_picks",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.12785891497869284,
+            "myFit": -0.098416518620482,
+            "theirFit": -0.18835636096927155,
+            "balance": 0.9464647169679625,
+            "archMatch": 0
+          }
+        },
+        {
+          "counterTeam": "kwescoe3",
+          "counterRosterId": 16,
+          "give": [
+            {
+              "id": "4866",
+              "kind": "player",
+              "name": "Saquon Barkley",
+              "position": "RB",
+              "valueDynasty": 4259,
+              "age": 29.45571180419297
+            }
+          ],
+          "receive": [
+            {
+              "id": "12481",
+              "kind": "player",
+              "name": "Cam Skattebo",
+              "position": "RB",
+              "valueDynasty": 3471,
+              "age": 24.46734767003828
+            },
+            {
+              "id": "6819",
+              "kind": "player",
+              "name": "Michael Pittman",
+              "position": "WR",
+              "valueDynasty": 1818,
+              "age": 28.804103316855528
+            }
+          ],
+          "valueGive": 4259,
+          "valueReceive": 5289,
+          "archetype": "tier_down_RB",
+          "fairness": "SLIGHT_UNDERPAY",
+          "scores": {
+            "total": 0.12179120533921227,
+            "myFit": 0.12333595121665764,
+            "theirFit": -0.10409190441636786,
+            "balance": 0.8886993949729971,
+            "archMatch": 0
+          }
         }
       ],
       "diagnostics": {
-        "rawCandidates": 276,
-        "afterDedup": 273,
+        "rawCandidates": 274,
+        "afterDedup": 271,
         "rejected": {
-          "myFit": 102,
-          "theirFit": 156,
-          "balance": 3
+          "myFit": 101,
+          "theirFit": 155,
+          "balance": 108
         },
         "forced": false
       }
@@ -2908,7 +2755,7 @@
               "name": "Derrick Henry",
               "position": "RB",
               "valueDynasty": 3106,
-              "age": 32.553738506952364
+              "age": 32.554958895226505
             }
           ],
           "receive": [
@@ -2918,7 +2765,7 @@
               "name": "Garrett Wilson",
               "position": "WR",
               "valueDynasty": 3966,
-              "age": 26.007537274887824
+              "age": 26.008757663161965
             }
           ],
           "valueGive": 3106,
@@ -2926,10 +2773,129 @@
           "archetype": "need_fill_WR",
           "fairness": "UNDERPAY",
           "scores": {
-            "total": 0.5564990009490363,
+            "total": 0.2689335717743662,
             "myFit": -0.19744971210884446,
             "theirFit": 0.7305963025641348,
             "balance": 0.7584859584859585,
+            "archMatch": 0.22399999999999998
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "421",
+              "kind": "player",
+              "name": "Matthew Stafford",
+              "position": "QB",
+              "valueDynasty": 1491,
+              "age": 38.46324089385758
+            },
+            {
+              "id": "11435",
+              "kind": "player",
+              "name": "Emanuel Wilson",
+              "position": "RB",
+              "valueDynasty": 639,
+              "age": 27.216149860318907
+            }
+          ],
+          "receive": [
+            {
+              "id": "2216",
+              "kind": "player",
+              "name": "Mike Evans",
+              "position": "WR",
+              "valueDynasty": 1948,
+              "age": 32.927306602244784
+            }
+          ],
+          "valueGive": 2130,
+          "valueReceive": 1948,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.23584320525228428,
+            "myFit": -0.2863845045179192,
+            "theirFit": -0.21822599783334504,
+            "balance": 0.9928838858446357,
+            "archMatch": 0.27
+          }
+        },
+        {
+          "counterTeam": "starknet",
+          "counterRosterId": 14,
+          "give": [
+            {
+              "id": "3198",
+              "kind": "player",
+              "name": "Derrick Henry",
+              "position": "RB",
+              "valueDynasty": 3106,
+              "age": 32.554958895226505
+            }
+          ],
+          "receive": [
+            {
+              "id": "12514",
+              "kind": "player",
+              "name": "Emeka Egbuka",
+              "position": "WR",
+              "valueDynasty": 4540,
+              "age": 23.780147122468122
+            }
+          ],
+          "valueGive": 3106,
+          "valueReceive": 4540,
+          "archetype": "age_arb_sell",
+          "fairness": "UNDERPAY",
+          "scores": {
+            "total": 0.19209803063017122,
+            "myFit": -0.22006749910907827,
+            "theirFit": 0.1302590653132643,
+            "balance": 0.6531934133877311,
+            "archMatch": 0.486
+          }
+        },
+        {
+          "counterTeam": "pickoff90",
+          "counterRosterId": 1,
+          "give": [
+            {
+              "id": "3198",
+              "kind": "player",
+              "name": "Derrick Henry",
+              "position": "RB",
+              "valueDynasty": 3106,
+              "age": 32.554958895226505
+            },
+            {
+              "id": "2026-3-10",
+              "kind": "pick",
+              "name": "2026 3.02 (via Numlckr)",
+              "valueDynasty": 1212
+            }
+          ],
+          "receive": [
+            {
+              "id": "7569",
+              "kind": "player",
+              "name": "Nico Collins",
+              "position": "WR",
+              "valueDynasty": 4276,
+              "age": 27.353042399168505
+            }
+          ],
+          "valueGive": 4318,
+          "valueReceive": 4276,
+          "archetype": "need_fill_WR",
+          "fairness": "SLIGHT_UNDERPAY",
+          "scores": {
+            "total": 0.16609465051147376,
+            "myFit": -0.21591857286974114,
+            "theirFit": 0.03339205158757254,
+            "balance": 0.9155565539705717,
             "archMatch": 0.22399999999999998
           }
         },
@@ -2943,7 +2909,13 @@
               "name": "Derrick Henry",
               "position": "RB",
               "valueDynasty": 3106,
-              "age": 32.553738506952364
+              "age": 32.554958895226505
+            },
+            {
+              "id": "2026-2-5",
+              "kind": "pick",
+              "name": "2026 2.09 (via Daneo29)",
+              "valueDynasty": 1427
             }
           ],
           "receive": [
@@ -2953,131 +2925,18 @@
               "name": "Emeka Egbuka",
               "position": "WR",
               "valueDynasty": 4540,
-              "age": 23.77892673419398
+              "age": 23.780147122468122
             }
           ],
-          "valueGive": 3106,
+          "valueGive": 4533,
           "valueReceive": 4540,
-          "archetype": "age_arb_sell",
-          "fairness": "UNDERPAY",
-          "scores": {
-            "total": 0.5075202836961961,
-            "myFit": -0.22006749910907827,
-            "theirFit": 0.1302590653132643,
-            "balance": 0.6531934133877311,
-            "archMatch": 0.486
-          }
-        },
-        {
-          "counterTeam": "pickoff90",
-          "counterRosterId": 1,
-          "give": [
-            {
-              "id": "2026-2-5",
-              "kind": "pick",
-              "name": "2026 2.09 (via Daneo29)",
-              "valueDynasty": 1427
-            },
-            {
-              "id": "2027-3-15",
-              "kind": "pick",
-              "name": "2027 mid 3rd",
-              "valueDynasty": 989
-            }
-          ],
-          "receive": [
-            {
-              "id": "5927",
-              "kind": "player",
-              "name": "Terry McLaurin",
-              "position": "WR",
-              "valueDynasty": 2144,
-              "age": 30.859008869432405
-            }
-          ],
-          "valueGive": 2416,
-          "valueReceive": 2144,
-          "archetype": "age_arb_buy",
-          "fairness": "FAIR",
-          "scores": {
-            "total": 0.47875191289061114,
-            "myFit": -0.21840443099441975,
-            "theirFit": -0.21169439171829788,
-            "balance": 0.9851879816126666,
-            "archMatch": 0.3
-          }
-        },
-        {
-          "counterTeam": "buzzy5",
-          "counterRosterId": 9,
-          "give": [
-            {
-              "id": "2026-3-10",
-              "kind": "pick",
-              "name": "2026 3.02 (via Numlckr)",
-              "valueDynasty": 1212
-            },
-            {
-              "id": "2027-3-15",
-              "kind": "pick",
-              "name": "2027 mid 3rd",
-              "valueDynasty": 989
-            }
-          ],
-          "receive": [
-            {
-              "id": "2216",
-              "kind": "player",
-              "name": "Mike Evans",
-              "position": "WR",
-              "valueDynasty": 1948,
-              "age": 32.92608621397064
-            }
-          ],
-          "valueGive": 2201,
-          "valueReceive": 1948,
-          "archetype": "age_arb_buy",
-          "fairness": "FAIR",
-          "scores": {
-            "total": 0.4729669339450448,
-            "myFit": -0.1960374333336672,
-            "theirFit": -0.21600018989671785,
-            "balance": 0.9731830547998446,
-            "archMatch": 0.27
-          }
-        },
-        {
-          "counterTeam": "buzzy5",
-          "counterRosterId": 9,
-          "give": [
-            {
-              "id": "3198",
-              "kind": "player",
-              "name": "Derrick Henry",
-              "position": "RB",
-              "valueDynasty": 3106,
-              "age": 32.553738506952364
-            }
-          ],
-          "receive": [
-            {
-              "id": "10229",
-              "kind": "player",
-              "name": "Rashee Rice",
-              "position": "WR",
-              "valueDynasty": 3559,
-              "age": 26.256681696516846
-            }
-          ],
-          "valueGive": 3106,
-          "valueReceive": 3559,
           "archetype": "need_fill_WR",
-          "fairness": "UNDERPAY",
+          "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.4632556959676276,
-            "myFit": -0.2351460237759009,
-            "theirFit": -0.018192755740798785,
-            "balance": 0.8563669198637974,
+            "total": 0.16520278725386678,
+            "myFit": -0.2684426198641387,
+            "theirFit": 0.1786341860683247,
+            "balance": 0.8932724863830414,
             "archMatch": 0.22399999999999998
           }
         }
@@ -3099,104 +2958,84 @@
       "windowLabel": "JUGGERNAUT",
       "packages": [
         {
-          "counterTeam": "starknet",
-          "counterRosterId": 14,
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
           "give": [
             {
-              "id": "11631",
+              "id": "7594",
               "kind": "player",
-              "name": "Brian Thomas",
-              "position": "WR",
-              "valueDynasty": 3261,
-              "age": 23.795353838916775
-            },
-            {
-              "id": "6819",
-              "kind": "player",
-              "name": "Michael Pittman",
-              "position": "WR",
-              "valueDynasty": 1818,
-              "age": 28.802882928581386
-            },
-            {
-              "id": "2027-3-16",
-              "kind": "pick",
-              "name": "2027 late 3rd",
-              "valueDynasty": 927
-            },
-            {
-              "id": "2028-3-16",
-              "kind": "pick",
-              "name": "2028 late 3rd",
-              "valueDynasty": 849
+              "name": "Chuba Hubbard",
+              "position": "RB",
+              "valueDynasty": 1949,
+              "age": 27.12306293355642
             }
           ],
           "receive": [
             {
-              "id": "6786",
+              "id": "2216",
               "kind": "player",
-              "name": "CeeDee Lamb",
+              "name": "Mike Evans",
               "position": "WR",
-              "valueDynasty": 6287,
-              "age": 27.297064995658733
+              "valueDynasty": 1948,
+              "age": 32.927306602244784
             }
           ],
-          "valueGive": 6855,
-          "valueReceive": 6287,
-          "archetype": "consolidate_WR",
-          "fairness": "UNDERPAY",
+          "valueGive": 1949,
+          "valueReceive": 1948,
+          "archetype": "age_arb_buy",
+          "fairness": "FAIR",
           "scores": {
-            "total": 0.47580678452310887,
-            "myFit": 0.0351184017334771,
-            "theirFit": 0.12017574201896836,
-            "balance": 0.8520179797949828,
+            "total": 0.30017200082956996,
+            "myFit": -0.09522175685063022,
+            "theirFit": -0.042793033875353305,
+            "balance": 0.9994099992304337,
+            "archMatch": 0.27
+          }
+        },
+        {
+          "counterTeam": "buzzy5",
+          "counterRosterId": 9,
+          "give": [
+            {
+              "id": "8137",
+              "kind": "player",
+              "name": "George Pickens",
+              "position": "WR",
+              "valueDynasty": 4730,
+              "age": 25.39274123608893
+            }
+          ],
+          "receive": [
+            {
+              "id": "10229",
+              "kind": "player",
+              "name": "Rashee Rice",
+              "position": "WR",
+              "valueDynasty": 3559,
+              "age": 26.257902084790985
+            },
+            {
+              "id": "6806",
+              "kind": "player",
+              "name": "J.K. Dobbins",
+              "position": "RB",
+              "valueDynasty": 1694,
+              "age": 27.60492467205998
+            }
+          ],
+          "valueGive": 4730,
+          "valueReceive": 5253,
+          "archetype": "tier_down_WR",
+          "fairness": "FAIR",
+          "scores": {
+            "total": 0.2225229143795669,
+            "myFit": -0.13113640739364002,
+            "theirFit": -0.07194777415456792,
+            "balance": 0.9982601440722803,
             "archMatch": 0
           }
         },
         {
-          "counterTeam": "pickoff90",
-          "counterRosterId": 1,
-          "give": [
-            {
-              "id": "11576",
-              "kind": "player",
-              "name": "Braelon Allen",
-              "position": "RB",
-              "valueDynasty": 1317,
-              "age": 22.511301819751818
-            },
-            {
-              "id": "12481",
-              "kind": "player",
-              "name": "Cam Skattebo",
-              "position": "RB",
-              "valueDynasty": 3471,
-              "age": 24.466127281764138
-            }
-          ],
-          "receive": [
-            {
-              "id": "9224",
-              "kind": "player",
-              "name": "Chase Brown",
-              "position": "RB",
-              "valueDynasty": 4346,
-              "age": 26.34429292145157
-            }
-          ],
-          "valueGive": 4788,
-          "valueReceive": 4346,
-          "archetype": "age_arb_buy",
-          "fairness": "FAIR",
-          "scores": {
-            "total": 0.5207953885240232,
-            "myFit": -0.0822873811332465,
-            "theirFit": -0.07253520048516833,
-            "balance": 0.9895349865181452,
-            "archMatch": 0.3
-          }
-        },
-        {
           "counterTeam": "starknet",
           "counterRosterId": 14,
           "give": [
@@ -3206,7 +3045,7 @@
               "name": "Brian Thomas",
               "position": "WR",
               "valueDynasty": 3261,
-              "age": 23.795353838916775
+              "age": 23.796574227190913
             }
           ],
           "receive": [
@@ -3228,7 +3067,7 @@
           "archetype": "capital_convert_production_to_picks",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.5058129333398147,
+            "total": 0.19096408706413717,
             "myFit": -0.0967163489622868,
             "theirFit": 0.3155363272157687,
             "balance": 0.9032914631309609,
@@ -3236,95 +3075,97 @@
           }
         },
         {
-          "counterTeam": "pickoff90",
-          "counterRosterId": 1,
+          "counterTeam": "Daneo29",
+          "counterRosterId": 5,
           "give": [
             {
-              "id": "11576",
+              "id": "8137",
               "kind": "player",
-              "name": "Braelon Allen",
-              "position": "RB",
-              "valueDynasty": 1317,
-              "age": 22.511301819751818
-            },
-            {
-              "id": "2027-3-16",
-              "kind": "pick",
-              "name": "2027 late 3rd",
-              "valueDynasty": 927
+              "name": "George Pickens",
+              "position": "WR",
+              "valueDynasty": 4730,
+              "age": 25.39274123608893
             }
           ],
           "receive": [
             {
-              "id": "5927",
+              "id": "8146",
               "kind": "player",
-              "name": "Terry McLaurin",
+              "name": "Garrett Wilson",
               "position": "WR",
-              "valueDynasty": 2144,
-              "age": 30.859008869432405
-            }
-          ],
-          "valueGive": 2244,
-          "valueReceive": 2144,
-          "archetype": "age_arb_buy",
-          "fairness": "SLIGHT_UNDERPAY",
-          "scores": {
-            "total": 0.4939674632237834,
-            "myFit": -0.06396193086872978,
-            "theirFit": -0.17982841731949217,
-            "balance": 0.9076519477083838,
-            "archMatch": 0.3
-          }
-        },
-        {
-          "counterTeam": "buzzy5",
-          "counterRosterId": 9,
-          "give": [
-            {
-              "id": "11576",
-              "kind": "player",
-              "name": "Braelon Allen",
-              "position": "RB",
-              "valueDynasty": 1317,
-              "age": 22.511301819751818
+              "valueDynasty": 3966,
+              "age": 26.008757663161965
             },
             {
-              "id": "2028-3-16",
+              "id": "2028-3-5",
               "kind": "pick",
               "name": "2028 late 3rd",
               "valueDynasty": 849
             }
           ],
-          "receive": [
-            {
-              "id": "2216",
-              "kind": "player",
-              "name": "Mike Evans",
-              "position": "WR",
-              "valueDynasty": 1948,
-              "age": 32.92608621397064
-            }
-          ],
-          "valueGive": 2166,
-          "valueReceive": 1948,
-          "archetype": "age_arb_buy",
+          "valueGive": 4730,
+          "valueReceive": 4815,
+          "archetype": "tier_down_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.49339875006300665,
-            "myFit": -0.0569699023375084,
-            "theirFit": -0.23423466652998287,
-            "balance": 0.9772599319511419,
-            "archMatch": 0.27
+            "total": 0.17627578615578415,
+            "myFit": -0.08588478803128426,
+            "theirFit": -0.15315234478051823,
+            "balance": 0.9588407711678981,
+            "archMatch": 0.084
+          }
+        },
+        {
+          "counterTeam": "starknet",
+          "counterRosterId": 14,
+          "give": [
+            {
+              "id": "8137",
+              "kind": "player",
+              "name": "George Pickens",
+              "position": "WR",
+              "valueDynasty": 4730,
+              "age": 25.39274123608893
+            }
+          ],
+          "receive": [
+            {
+              "id": "4983",
+              "kind": "player",
+              "name": "DJ Moore",
+              "position": "WR",
+              "valueDynasty": 2292,
+              "age": 29.280489353816513
+            },
+            {
+              "id": "12508",
+              "kind": "player",
+              "name": "Jaxson Dart",
+              "position": "QB",
+              "valueDynasty": 2746,
+              "age": 23.202460606383248
+            }
+          ],
+          "valueGive": 4730,
+          "valueReceive": 5038,
+          "archetype": "tier_down_WR",
+          "fairness": "SLIGHT_OVERPAY",
+          "scores": {
+            "total": 0.1677201672450252,
+            "myFit": -0.09406280223114306,
+            "theirFit": 0.157576869165426,
+            "balance": 0.9108918768398441,
+            "archMatch": 0.066
           }
         }
       ],
       "diagnostics": {
-        "rawCandidates": 231,
-        "afterDedup": 228,
+        "rawCandidates": 230,
+        "afterDedup": 227,
         "rejected": {
           "myFit": 125,
-          "theirFit": 115,
-          "balance": 0
+          "theirFit": 114,
+          "balance": 86
         },
         "forced": false
       }
@@ -3337,9 +3178,9 @@
         "fairness": [
           "FAIR",
           "FAIR",
-          "UNDERPAY",
-          "SLIGHT_OVERPAY",
-          "UNDERPAY"
+          "FAIR",
+          "FAIR",
+          "FAIR"
         ],
         "diagnostics": {
           "rawCandidates": 89,
@@ -3356,11 +3197,11 @@
       "tier_down": {
         "count": 5,
         "fairness": [
-          "UNDERPAY",
           "OVERPAY",
           "FAIR",
           "FAIR",
-          "SLIGHT_UNDERPAY"
+          "FAIR",
+          "UNDERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 197,
@@ -3377,11 +3218,11 @@
       "consolidate": {
         "count": 5,
         "fairness": [
-          "SLIGHT_UNDERPAY",
           "FAIR",
           "SLIGHT_UNDERPAY",
-          "SLIGHT_UNDERPAY",
-          "FAIR"
+          "FAIR",
+          "FAIR",
+          "SLIGHT_UNDERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 27,
@@ -3413,15 +3254,15 @@
       "age_arb_buy": {
         "count": 5,
         "fairness": [
-          "SLIGHT_UNDERPAY",
           "FAIR",
           "FAIR",
-          "FAIR",
-          "SLIGHT_UNDERPAY"
+          "SLIGHT_OVERPAY",
+          "OVERPAY",
+          "UNDERPAY"
         ],
         "diagnostics": {
-          "rawCandidates": 26,
-          "afterDedup": 26,
+          "rawCandidates": 22,
+          "afterDedup": 22,
           "rejected": {
             "myFit": 11,
             "theirFit": 11,
@@ -3435,9 +3276,9 @@
         "count": 5,
         "fairness": [
           "FAIR",
+          "FAIR",
           "UNDERPAY",
           "OVERPAY",
-          "FAIR",
           "OVERPAY"
         ],
         "diagnostics": {
@@ -3490,10 +3331,10 @@
         "count": 5,
         "fairness": [
           "SLIGHT_OVERPAY",
-          "OVERPAY",
           "SLIGHT_OVERPAY",
           "SLIGHT_OVERPAY",
-          "SLIGHT_OVERPAY"
+          "SLIGHT_OVERPAY",
+          "OVERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 69,
@@ -3515,7 +3356,7 @@
           "FAIR",
           "FAIR",
           "FAIR",
-          "SLIGHT_UNDERPAY",
+          "FAIR",
           "SLIGHT_UNDERPAY"
         ],
         "diagnostics": {
@@ -3536,8 +3377,8 @@
           "UNDERPAY",
           "OVERPAY",
           "FAIR",
-          "SLIGHT_UNDERPAY",
-          "SLIGHT_OVERPAY"
+          "SLIGHT_OVERPAY",
+          "FAIR"
         ],
         "diagnostics": {
           "rawCandidates": 199,
@@ -3588,8 +3429,8 @@
         "fairness": [
           "SLIGHT_OVERPAY",
           "FAIR",
-          "OVERPAY",
-          "SLIGHT_UNDERPAY",
+          "FAIR",
+          "FAIR",
           "FAIR"
         ],
         "diagnostics": {
@@ -3676,9 +3517,9 @@
         "fairness": [
           "FAIR",
           "SLIGHT_UNDERPAY",
-          "SLIGHT_UNDERPAY",
           "FAIR",
-          "SLIGHT_UNDERPAY"
+          "FAIR",
+          "FAIR"
         ],
         "diagnostics": {
           "rawCandidates": 101,
@@ -3695,10 +3536,10 @@
       "tier_down": {
         "count": 5,
         "fairness": [
-          "SLIGHT_OVERPAY",
           "FAIR",
           "FAIR",
           "SLIGHT_OVERPAY",
+          "FAIR",
           "FAIR"
         ],
         "diagnostics": {
@@ -3717,7 +3558,7 @@
         "count": 5,
         "fairness": [
           "FAIR",
-          "SLIGHT_UNDERPAY",
+          "FAIR",
           "SLIGHT_UNDERPAY",
           "SLIGHT_UNDERPAY",
           "UNDERPAY"
@@ -3858,11 +3699,11 @@
       "tier_down": {
         "count": 5,
         "fairness": [
-          "OVERPAY",
+          "FAIR",
           "SLIGHT_UNDERPAY",
-          "OVERPAY",
-          "SLIGHT_OVERPAY",
-          "FAIR"
+          "FAIR",
+          "FAIR",
+          "SLIGHT_OVERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 135,
@@ -3880,8 +3721,8 @@
         "count": 4,
         "fairness": [
           "SLIGHT_UNDERPAY",
-          "UNDERPAY",
           "SLIGHT_UNDERPAY",
+          "UNDERPAY",
           "SLIGHT_UNDERPAY"
         ],
         "diagnostics": {
@@ -4003,9 +3844,9 @@
       "need_fill": {
         "count": 5,
         "fairness": [
-          "SLIGHT_UNDERPAY",
-          "SLIGHT_UNDERPAY",
           "FAIR",
+          "SLIGHT_UNDERPAY",
+          "SLIGHT_UNDERPAY",
           "SLIGHT_OVERPAY",
           "UNDERPAY"
         ],
@@ -4027,8 +3868,8 @@
           "OVERPAY",
           "FAIR",
           "FAIR",
-          "SLIGHT_OVERPAY",
-          "UNDERPAY"
+          "FAIR",
+          "FAIR"
         ],
         "diagnostics": {
           "rawCandidates": 152,
@@ -4084,8 +3925,8 @@
           "FAIR"
         ],
         "diagnostics": {
-          "rawCandidates": 27,
-          "afterDedup": 27,
+          "rawCandidates": 26,
+          "afterDedup": 26,
           "rejected": {
             "myFit": 4,
             "theirFit": 8,
@@ -4099,8 +3940,8 @@
         "count": 4,
         "fairness": [
           "FAIR",
-          "SLIGHT_OVERPAY",
           "FAIR",
+          "SLIGHT_OVERPAY",
           "UNDERPAY"
         ],
         "diagnostics": {
@@ -4155,10 +3996,10 @@
         "count": 5,
         "fairness": [
           "FAIR",
-          "OVERPAY",
-          "OVERPAY",
           "SLIGHT_OVERPAY",
-          "OVERPAY"
+          "FAIR",
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 16,
@@ -4178,7 +4019,7 @@
         "count": 5,
         "fairness": [
           "SLIGHT_UNDERPAY",
-          "UNDERPAY",
+          "SLIGHT_UNDERPAY",
           "SLIGHT_UNDERPAY",
           "SLIGHT_UNDERPAY",
           "SLIGHT_UNDERPAY"
@@ -4201,7 +4042,7 @@
           "SLIGHT_OVERPAY",
           "OVERPAY",
           "OVERPAY",
-          "SLIGHT_OVERPAY",
+          "FAIR",
           "FAIR"
         ],
         "diagnostics": {
@@ -4220,10 +4061,10 @@
         "count": 5,
         "fairness": [
           "FAIR",
+          "FAIR",
           "SLIGHT_UNDERPAY",
           "SLIGHT_UNDERPAY",
-          "SLIGHT_OVERPAY",
-          "UNDERPAY"
+          "SLIGHT_OVERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 16,
@@ -4262,10 +4103,10 @@
           "SLIGHT_UNDERPAY"
         ],
         "diagnostics": {
-          "rawCandidates": 38,
-          "afterDedup": 38,
+          "rawCandidates": 35,
+          "afterDedup": 35,
           "rejected": {
-            "myFit": 13,
+            "myFit": 10,
             "theirFit": 17,
             "balance": 0
           },
@@ -4302,7 +4143,7 @@
             "balance": 0
           },
           "forced": true,
-          "myArchetypeScore": 8
+          "myArchetypeScore": 9
         }
       },
       "capital_convert_picks_to_production": {
@@ -4344,10 +4185,10 @@
         "count": 5,
         "fairness": [
           "UNDERPAY",
-          "UNDERPAY",
-          "SLIGHT_UNDERPAY",
           "FAIR",
-          "SLIGHT_UNDERPAY"
+          "FAIR",
+          "SLIGHT_UNDERPAY",
+          "FAIR"
         ],
         "diagnostics": {
           "rawCandidates": 93,
@@ -4366,9 +4207,9 @@
         "fairness": [
           "SLIGHT_UNDERPAY",
           "SLIGHT_OVERPAY",
+          "FAIR",
           "UNDERPAY",
-          "OVERPAY",
-          "FAIR"
+          "OVERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 120,
@@ -4505,9 +4346,9 @@
         "count": 5,
         "fairness": [
           "FAIR",
-          "UNDERPAY",
-          "UNDERPAY",
           "FAIR",
+          "FAIR",
+          "SLIGHT_UNDERPAY",
           "FAIR"
         ],
         "diagnostics": {
@@ -4525,9 +4366,9 @@
       "tier_down": {
         "count": 5,
         "fairness": [
+          "FAIR",
+          "FAIR",
           "UNDERPAY",
-          "FAIR",
-          "FAIR",
           "OVERPAY",
           "OVERPAY"
         ],
@@ -4579,8 +4420,8 @@
         "count": 5,
         "fairness": [
           "FAIR",
-          "SLIGHT_OVERPAY",
           "FAIR",
+          "SLIGHT_OVERPAY",
           "FAIR",
           "FAIR"
         ],
@@ -4614,9 +4455,9 @@
       "push_in": {
         "count": 3,
         "fairness": [
-          "UNDERPAY",
           "SLIGHT_UNDERPAY",
-          "SLIGHT_UNDERPAY"
+          "SLIGHT_UNDERPAY",
+          "UNDERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 7,
@@ -4634,10 +4475,10 @@
         "count": 5,
         "fairness": [
           "FAIR",
-          "SLIGHT_UNDERPAY",
           "FAIR",
           "FAIR",
-          "FAIR"
+          "FAIR",
+          "SLIGHT_UNDERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 29,
@@ -4672,10 +4513,10 @@
         "count": 5,
         "fairness": [
           "FAIR",
-          "SLIGHT_OVERPAY",
           "FAIR",
           "FAIR",
-          "UNDERPAY"
+          "FAIR",
+          "FAIR"
         ],
         "diagnostics": {
           "rawCandidates": 97,
@@ -4695,8 +4536,8 @@
           "OVERPAY",
           "SLIGHT_OVERPAY",
           "FAIR",
-          "SLIGHT_OVERPAY",
-          "SLIGHT_OVERPAY"
+          "FAIR",
+          "FAIR"
         ],
         "diagnostics": {
           "rawCandidates": 108,
@@ -4714,8 +4555,8 @@
         "count": 3,
         "fairness": [
           "FAIR",
-          "SLIGHT_UNDERPAY",
-          "FAIR"
+          "FAIR",
+          "SLIGHT_UNDERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 10,
@@ -4750,12 +4591,12 @@
           "UNDERPAY",
           "FAIR",
           "FAIR",
-          "OVERPAY",
-          "FAIR"
+          "FAIR",
+          "SLIGHT_UNDERPAY"
         ],
         "diagnostics": {
-          "rawCandidates": 22,
-          "afterDedup": 22,
+          "rawCandidates": 19,
+          "afterDedup": 19,
           "rejected": {
             "myFit": 7,
             "theirFit": 8,
@@ -4768,10 +4609,10 @@
       "age_arb_sell": {
         "count": 5,
         "fairness": [
-          "OVERPAY",
           "FAIR",
           "FAIR",
           "OVERPAY",
+          "FAIR",
           "OVERPAY"
         ],
         "diagnostics": {
@@ -4804,8 +4645,8 @@
       "capital_convert_picks_to_production": {
         "count": 2,
         "fairness": [
-          "SLIGHT_UNDERPAY",
-          "FAIR"
+          "FAIR",
+          "SLIGHT_UNDERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 22,
@@ -4845,11 +4686,11 @@
       "need_fill": {
         "count": 5,
         "fairness": [
-          "SLIGHT_UNDERPAY",
           "FAIR",
           "FAIR",
+          "FAIR",
           "SLIGHT_UNDERPAY",
-          "FAIR"
+          "SLIGHT_UNDERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 128,
@@ -4866,10 +4707,10 @@
       "tier_down": {
         "count": 4,
         "fairness": [
-          "OVERPAY",
           "SLIGHT_UNDERPAY",
-          "UNDERPAY",
-          "OVERPAY"
+          "OVERPAY",
+          "OVERPAY",
+          "UNDERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 121,
@@ -4886,8 +4727,8 @@
       "consolidate": {
         "count": 3,
         "fairness": [
-          "SLIGHT_UNDERPAY",
           "FAIR",
+          "SLIGHT_UNDERPAY",
           "SLIGHT_UNDERPAY"
         ],
         "diagnostics": {
@@ -4924,10 +4765,10 @@
         "count": 0,
         "fairness": [],
         "diagnostics": {
-          "rawCandidates": 28,
-          "afterDedup": 28,
+          "rawCandidates": 27,
+          "afterDedup": 27,
           "rejected": {
-            "myFit": 28,
+            "myFit": 27,
             "theirFit": 12,
             "balance": 0
           },
@@ -5011,7 +4852,7 @@
           "SLIGHT_UNDERPAY",
           "FAIR",
           "FAIR",
-          "SLIGHT_OVERPAY"
+          "FAIR"
         ],
         "diagnostics": {
           "rawCandidates": 113,
@@ -5029,8 +4870,8 @@
         "count": 5,
         "fairness": [
           "SLIGHT_UNDERPAY",
+          "FAIR",
           "SLIGHT_OVERPAY",
-          "OVERPAY",
           "FAIR",
           "FAIR"
         ],
@@ -5082,10 +4923,10 @@
         "count": 0,
         "fairness": [],
         "diagnostics": {
-          "rawCandidates": 26,
-          "afterDedup": 26,
+          "rawCandidates": 25,
+          "afterDedup": 25,
           "rejected": {
-            "myFit": 26,
+            "myFit": 25,
             "theirFit": 7,
             "balance": 0
           },
@@ -5184,8 +5025,8 @@
           "FAIR",
           "FAIR",
           "FAIR",
-          "OVERPAY",
-          "UNDERPAY"
+          "FAIR",
+          "FAIR"
         ],
         "diagnostics": {
           "rawCandidates": 132,
@@ -5202,10 +5043,10 @@
       "consolidate": {
         "count": 5,
         "fairness": [
-          "FAIR",
           "SLIGHT_OVERPAY",
-          "UNDERPAY",
+          "FAIR",
           "SLIGHT_UNDERPAY",
+          "UNDERPAY",
           "OVERPAY"
         ],
         "diagnostics": {
@@ -5240,13 +5081,13 @@
         "fairness": [
           "FAIR",
           "FAIR",
-          "SLIGHT_UNDERPAY",
-          "SLIGHT_OVERPAY",
+          "FAIR",
+          "FAIR",
           "FAIR"
         ],
         "diagnostics": {
-          "rawCandidates": 29,
-          "afterDedup": 29,
+          "rawCandidates": 28,
+          "afterDedup": 28,
           "rejected": {
             "myFit": 9,
             "theirFit": 14,
@@ -5470,9 +5311,9 @@
         "count": 5,
         "fairness": [
           "SLIGHT_OVERPAY",
+          "FAIR",
+          "FAIR",
           "UNDERPAY",
-          "FAIR",
-          "FAIR",
           "OVERPAY"
         ],
         "diagnostics": {
@@ -5493,7 +5334,7 @@
           "UNDERPAY",
           "FAIR",
           "OVERPAY",
-          "UNDERPAY",
+          "OVERPAY",
           "OVERPAY"
         ],
         "diagnostics": {
@@ -5546,14 +5387,14 @@
         "count": 5,
         "fairness": [
           "FAIR",
-          "SLIGHT_UNDERPAY",
+          "FAIR",
           "FAIR",
           "FAIR",
           "FAIR"
         ],
         "diagnostics": {
-          "rawCandidates": 27,
-          "afterDedup": 27,
+          "rawCandidates": 25,
+          "afterDedup": 25,
           "rejected": {
             "myFit": 2,
             "theirFit": 7,
@@ -5618,10 +5459,10 @@
       "capital_convert_production_to_picks": {
         "count": 5,
         "fairness": [
-          "OVERPAY",
+          "FAIR",
           "SLIGHT_OVERPAY",
           "SLIGHT_OVERPAY",
-          "SLIGHT_OVERPAY",
+          "FAIR",
           "SLIGHT_OVERPAY"
         ],
         "diagnostics": {
@@ -5797,7 +5638,7 @@
           "FAIR",
           "FAIR",
           "FAIR",
-          "UNDERPAY"
+          "FAIR"
         ],
         "diagnostics": {
           "rawCandidates": 99,
@@ -5814,8 +5655,8 @@
       "tier_down": {
         "count": 5,
         "fairness": [
-          "SLIGHT_OVERPAY",
-          "OVERPAY",
+          "FAIR",
+          "FAIR",
           "FAIR",
           "FAIR",
           "FAIR"
@@ -5838,8 +5679,8 @@
           "UNDERPAY",
           "UNDERPAY",
           "FAIR",
-          "SLIGHT_UNDERPAY",
-          "UNDERPAY"
+          "SLIGHT_OVERPAY",
+          "SLIGHT_OVERPAY"
         ],
         "diagnostics": {
           "rawCandidates": 18,
@@ -5880,14 +5721,14 @@
           "FAIR",
           "FAIR",
           "FAIR",
-          "SLIGHT_OVERPAY"
+          "FAIR"
         ],
         "diagnostics": {
-          "rawCandidates": 29,
-          "afterDedup": 29,
+          "rawCandidates": 28,
+          "afterDedup": 28,
           "rejected": {
             "myFit": 6,
-            "theirFit": 9,
+            "theirFit": 8,
             "balance": 0
           },
           "forced": true,

@@ -8,7 +8,16 @@
 //   4. Value balance (is the dynasty-value gap acceptable)
 
 import type { ArchetypeFamily } from "../../src/algo/archetypes";
-import { AGING_LOSS_RATE, DECLINING_LOSS_RATE, PICK_DECAY, POSITIONS } from "../../src/algo/constants";
+import {
+  AGING_LOSS_RATE,
+  DECLINING_LOSS_RATE,
+  LATERAL_SWAP_MIN_AGE_GAP,
+  PICK_DECAY,
+  POSITIONS,
+  TANK_MAX_PENALTY,
+  TANK_PRODUCTION_SCALE,
+  TANK_SURPLUS_SCALE,
+} from "../../src/algo/constants";
 import { fairnessLabel, packageValue, tradeEffectiveValues, type FairnessLabel } from "../../src/algo/fairness";
 import {
   depthByPosition,
@@ -223,6 +232,52 @@ function isAging(p: Player): boolean {
 }
 function isDeclining(p: Player): boolean {
   return playerLossRate(p) >= DECLINING_LOSS_RATE[p.position];
+}
+
+// A rebuilding team does not actually want current production. Most leagues
+// break draft order on points for, so taking on a productive veteran costs
+// them draft position on top of not helping them win now. The symmetric
+// fitScore treats "receives good player" as a gain for everyone, which is how
+// the engine kept proposing win-now pieces to teams that are tanking.
+//
+// Johnny's exception, and it is a real one: enough surplus value and they take
+// it anyway to flip later. So the penalty is offset by whatever dynasty-value
+// surplus the deal hands them.
+//
+// Applies to LONG-window (rebuilding) teams only. Bounded, and tunable via
+// TANK_* in src/algo/constants.ts.
+function tankAdjustment(them: TeamProfile, theyReceive: Asset[], theySend: Asset[]): number {
+  if (them.windowTier !== "LONG") return 0;
+  const redraft = (assets: Asset[]) =>
+    assets.reduce((sum, a) => sum + (a.kind === "player" ? a.player.valueRedraft : 0), 0);
+  const netProduction = redraft(theyReceive) - redraft(theySend);
+  if (netProduction <= 0) return 0; // shedding production helps a rebuild
+
+  const dynasty = (assets: Asset[]) => assets.reduce((sum, a) => sum + assetValue(a), 0);
+  const surplus = Math.max(0, dynasty(theyReceive) - dynasty(theySend));
+
+  const cost = Math.min(TANK_MAX_PENALTY, netProduction / TANK_PRODUCTION_SCALE);
+  const offset = Math.min(cost, surplus / TANK_SURPLUS_SCALE);
+  return -(cost - offset);
+}
+
+// A one-for-one swap at the same position is churn unless it actually changes
+// something. Four of fourteen downvoted packages were exactly this, all of
+// them age_arb_buy, and a user put it plainly: "it'd be very rare for a trade
+// like this 1 wr for 1 wr to make any sense for anyone."
+//
+// The engine liked them precisely because they are pointless: equal-value
+// same-position swaps score perfectly on balance. So require a real timeline
+// gap, measured on effective age so a flagged rushing QB counts as older than
+// his birthday. Value gaps are not an escape hatch here: the balance gate
+// already forces these swaps to be close on value.
+function lateralSwapOk(give: Asset[], receive: Asset[]): boolean {
+  if (give.length !== 1 || receive.length !== 1) return true;
+  const g = give[0]!, r = receive[0]!;
+  if (g.kind !== "player" || r.kind !== "player") return true;
+  if (g.player.position !== r.player.position) return true;
+  if (g.player.age == null || r.player.age == null) return true;
+  return Math.abs(effectiveAge(r.player) - effectiveAge(g.player)) >= LATERAL_SWAP_MIN_AGE_GAP;
 }
 
 function topPlayersByPos(profile: TeamProfile, pos: Position, n: number): Player[] {
@@ -441,6 +496,7 @@ function scoreCandidate(
 
   const myFit = fitScore(myImpact);
   const theirFit = fitScore(theirImpact);
+  const tankAdjust = tankAdjustment(them, cand.receive, cand.give);
 
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
@@ -464,14 +520,28 @@ function scoreCandidate(
   const theirArch = counterArchetypeScore(cand.archetype, them);
   const archMatch = myArch * 0.7 + theirArch * 0.3;
 
-  // Combined score, normalised to [0, 1]. The partner's fit weighs nearly
-  // as much as ours: the founding philosophy is surfacing trades the other
-  // manager would actually accept, not fantasy heists.
+  // Combined score. The partner's fit weighs nearly as much as ours: the
+  // founding philosophy is surfacing trades the other manager would actually
+  // accept, not fantasy heists.
+  //
+  // Terms are scaled from their ACCEPTANCE GATE to 1, not from -1 to 1. The
+  // old mapping ((fit + 1) / 2) handed a trade that helped nobody half credit
+  // on both fit terms, and an even 1-for-1 swap is by definition perfectly
+  // balanced, so it collected the balance weight for free too. A package that
+  // accomplished nothing scored 0.48 out of 1.
+  //
+  // That is not theoretical. Across 14 real thumbs-down packages the average
+  // margin over a do-nothing trade of the same shape was +0.04, and six sat
+  // within +/-0.02 of it. The engine could not tell "good trade" from "no
+  // trade". Scaling from the gate puts a package sitting exactly at the
+  // acceptance bar at zero, so score measures merit ABOVE the bar.
+  const norm = (v: number, floor: number) =>
+    Math.max(0, Math.min(1, (v - floor) / (1 - floor)));
   const total =
-    ((myFit + 1) / 2) * 0.32 +
-    ((theirFit + 1) / 2) * 0.28 +
+    norm(myFit, DEFAULT_GATES.myFit) * 0.32 +
+    norm(theirFit + tankAdjust, DEFAULT_GATES.theirFit) * 0.28 +
     archMatch * 0.22 +
-    balance * 0.18;
+    norm(balance, DEFAULT_GATES.balance) * 0.18;
 
   return {
     ...cand,
@@ -1042,7 +1112,19 @@ const GENERATORS: Record<ArchetypeFamily, (ctx: GenContext) => Candidate[]> = {
 // FAIR bundle-giving trade read slightly negative on raw roster value.
 // theirFit tightened from -0.40: auto mode should only surface deals the
 // partner could plausibly say yes to.
-const DEFAULT_GATES = { myFit: -0.15, theirFit: -0.25, balance: 0.55 };
+// Auto-mode balance gate aligned with the fairness label. It was 0.55, which
+// permits a ~45% value delta, while fairness.ts calls anything past 12% a flat
+// OVERPAY. The engine was therefore labelling a package OVERPAY on the card and
+// surfacing it anyway: 24% of auto-mode packages carried a flat OVERPAY or
+// UNDERPAY badge. All three "unbalanced" thumbs-down in real feedback were in
+// that band, every one of them one stud out for two or three lesser pieces in.
+// The user was not disagreeing with the engine, he was agreeing with a label
+// the engine had already printed.
+//
+// 0.88 is the fairness cutoff itself, so auto mode now refuses to surface what
+// it would badge as a flat overpay. Forced mode stays loose on purpose: the
+// user asked for that shape and gets an honest label instead of silence.
+const DEFAULT_GATES = { myFit: -0.15, theirFit: -0.25, balance: 0.88 };
 const FORCED_GATES = { myFit: -0.30, theirFit: -0.60, balance: 0.40 };
 
 // ── Top-level orchestration ──────────────────────────────────────────────────
@@ -1118,7 +1200,7 @@ export function generatePackages(
     return true;
   };
   const shapeFilter = (cands: Candidate[]) =>
-    cands.filter((c) => sideOk(c.give) && sideOk(c.receive));
+    cands.filter((c) => sideOk(c.give) && sideOk(c.receive) && lateralSwapOk(c.give, c.receive));
 
   let degraded: GenerateDiagnostics["degraded"];
   const rawCandidates = shapeFilter(generators.flatMap((g) => g(ctx)));

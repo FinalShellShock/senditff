@@ -78,6 +78,44 @@ export const VALUE_LOSS_RATE: Record<Position, Record<number, number>> = {
 export const AGING_LOSS_RATE: Record<Position, number> = { QB: 6, RB: 8.5, WR: 7, TE: 7 };
 export const DECLINING_LOSS_RATE: Record<Position, number> = { QB: 10, RB: 10.5, WR: 10, TE: 10 };
 
+// A one-for-one swap at the same position needs a real timeline gap to be
+// anything but churn. Measured on effective age, so a flagged rushing QB
+// counts as older than his birthday. 2.5 years is the smallest gap that still
+// reads as a deliberate timeline move rather than a sideways shuffle: it
+// rejects DJ Moore (29.3) for Terry McLaurin (30.9), which a user flagged with
+// "it'd be very rare for a trade like this 1 wr for 1 wr to make any sense."
+export const LATERAL_SWAP_MIN_AGE_GAP = 2.5;
+
+// Stance cuts for the rationale writer, derived from the real archMatch
+// distribution across 80 auto-mode packages rather than guessed: min 0.00,
+// median 0.08, p75 0.27, p90 0.51, max 0.81.
+//
+// The first shipped guess (confident >= 0.60, caution < 0.30) fired confident
+// on 2.5% of packages and cautionary on 76%, so nearly every trade hedged.
+// These sit at roughly the top decile and the bottom third.
+export const STANCE_CONFIDENT_ARCH_MATCH = 0.50;
+export const STANCE_CAUTION_ARCH_MATCH = 0.05;
+
+// Tanking adjustment for rebuilding (LONG-window) counter-teams.
+//
+// Most leagues break draft order on points for, so a rebuilding team taking on
+// a productive veteran loses draft position on top of not helping itself win.
+// The symmetric fit score treats "receives good player" as a gain for both
+// sides, which is why the engine kept offering win-now pieces to teams that
+// are tanking.
+//
+// PRODUCTION_SCALE: redraft points of incoming production that map to the full
+// penalty. Roughly one elite starter's redraft value.
+// SURPLUS_SCALE: dynasty-value surplus that fully cancels the penalty, i.e.
+// the point where a rebuilder takes the production anyway to flip it later.
+// MAX_PENALTY is in fit-score units, where meaningful trades move ~0.3.
+//
+// These are a first calibration from one league's feedback, not a fitted
+// result. Expect to tune them once there is more data.
+export const TANK_PRODUCTION_SCALE = 3000;
+export const TANK_SURPLUS_SCALE = 2500;
+export const TANK_MAX_PENALTY = 0.25;
+
 export const PICK_DECAY: Record<number, number> = {
   0: 1.0,
   1: 0.85,

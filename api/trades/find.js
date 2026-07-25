@@ -54,6 +54,11 @@ var VALUE_LOSS_RATE = {
 };
 var AGING_LOSS_RATE = { QB: 6, RB: 8.5, WR: 7, TE: 7 };
 var DECLINING_LOSS_RATE = { QB: 10, RB: 10.5, WR: 10, TE: 10 };
+var LATERAL_SWAP_MIN_AGE_GAP = 2.5;
+var STANCE_CAUTION_ARCH_MATCH = 0.05;
+var TANK_PRODUCTION_SCALE = 3e3;
+var TANK_SURPLUS_SCALE = 2500;
+var TANK_MAX_PENALTY = 0.25;
 var PICK_DECAY = {
   0: 1,
   1: 0.85,
@@ -492,6 +497,25 @@ function isAging(p) {
 function isDeclining(p) {
   return playerLossRate(p) >= DECLINING_LOSS_RATE[p.position];
 }
+function tankAdjustment(them, theyReceive, theySend) {
+  if (them.windowTier !== "LONG") return 0;
+  const redraft = (assets) => assets.reduce((sum, a) => sum + (a.kind === "player" ? a.player.valueRedraft : 0), 0);
+  const netProduction = redraft(theyReceive) - redraft(theySend);
+  if (netProduction <= 0) return 0;
+  const dynasty = (assets) => assets.reduce((sum, a) => sum + assetValue(a), 0);
+  const surplus = Math.max(0, dynasty(theyReceive) - dynasty(theySend));
+  const cost = Math.min(TANK_MAX_PENALTY, netProduction / TANK_PRODUCTION_SCALE);
+  const offset = Math.min(cost, surplus / TANK_SURPLUS_SCALE);
+  return -(cost - offset);
+}
+function lateralSwapOk(give, receive) {
+  if (give.length !== 1 || receive.length !== 1) return true;
+  const g = give[0], r = receive[0];
+  if (g.kind !== "player" || r.kind !== "player") return true;
+  if (g.player.position !== r.player.position) return true;
+  if (g.player.age == null || r.player.age == null) return true;
+  return Math.abs(effectiveAge(r.player) - effectiveAge(g.player)) >= LATERAL_SWAP_MIN_AGE_GAP;
+}
 function topPlayersByPos(profile, pos, n) {
   return profile.players.filter((p) => p.position === pos).sort((a, b) => {
     if (b.valueDynasty !== a.valueDynasty) return b.valueDynasty - a.valueDynasty;
@@ -645,6 +669,7 @@ function scoreCandidate(cand, myProfile, others, ctx) {
   const theirImpact = simulateImpact(them, cand.receive, cand.give, ctx.format, ctx.averages, ctx.thisYear);
   const myFit = fitScore(myImpact);
   const theirFit = fitScore(theirImpact);
+  const tankAdjust = tankAdjustment(them, cand.receive, cand.give);
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
   const { give: adjGive, receive: adjReceive } = tradeEffectiveValues(
@@ -658,7 +683,8 @@ function scoreCandidate(cand, myProfile, others, ctx) {
   const myArch = Math.max(myArchScore, myArchScoreFallback);
   const theirArch = counterArchetypeScore(cand.archetype, them);
   const archMatch = myArch * 0.7 + theirArch * 0.3;
-  const total = (myFit + 1) / 2 * 0.32 + (theirFit + 1) / 2 * 0.28 + archMatch * 0.22 + balance * 0.18;
+  const norm = (v, floor) => Math.max(0, Math.min(1, (v - floor) / (1 - floor)));
+  const total = norm(myFit, DEFAULT_GATES.myFit) * 0.32 + norm(theirFit + tankAdjust, DEFAULT_GATES.theirFit) * 0.28 + archMatch * 0.22 + norm(balance, DEFAULT_GATES.balance) * 0.18;
   return {
     ...cand,
     total,
@@ -1104,7 +1130,7 @@ var GENERATORS = {
   capital_convert_picks_to_production: genCapitalConvertPicksToProduction,
   capital_convert_production_to_picks: genCapitalConvertProductionToPicks
 };
-var DEFAULT_GATES = { myFit: -0.15, theirFit: -0.25, balance: 0.55 };
+var DEFAULT_GATES = { myFit: -0.15, theirFit: -0.25, balance: 0.88 };
 var FORCED_GATES = { myFit: -0.3, theirFit: -0.6, balance: 0.4 };
 function candidateKey(c) {
   const g = c.give.map(assetId).sort().join("|");
@@ -1147,7 +1173,7 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
     }
     return true;
   };
-  const shapeFilter = (cands) => cands.filter((c) => sideOk(c.give) && sideOk(c.receive));
+  const shapeFilter = (cands) => cands.filter((c) => sideOk(c.give) && sideOk(c.receive) && lateralSwapOk(c.give, c.receive));
   let degraded;
   const rawCandidates = shapeFilter(generators.flatMap((g) => g(ctx)));
   const seen = /* @__PURE__ */ new Set();
@@ -1296,7 +1322,7 @@ function buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics) {
   const fitNote = pkg.scores ? `Fit grades: you ${pkg.scores.myFit >= 0.05 ? "gain" : pkg.scores.myFit <= -0.05 ? "lose" : "roughly break even"}, they ${pkg.scores.theirFit >= 0.05 ? "gain" : pkg.scores.theirFit <= -0.05 ? "lose" : "roughly break even"}.` : "";
   const archMatch = pkg.scores?.archMatch ?? 0;
   const rosterFit = diagnostics?.myArchetypeScore;
-  const weak = diagnostics?.degraded != null || archMatch < 0.3 || rosterFit != null && rosterFit < 30;
+  const weak = diagnostics?.degraded != null || archMatch < STANCE_CAUTION_ARCH_MATCH || rosterFit != null && rosterFit < 30;
   const stance = weak ? `IMPORTANT: this roster is a weak match for ${archetypeLabel}${rosterFit != null ? ` (archetype fit ${rosterFit}/100)` : ""} and this was the closest package available, not a strong one. Open by saying plainly that this is an idea to consider rather than a recommendation, and name what is imperfect about it. Do not oversell.` : archMatch >= 0.6 ? `This is a textbook ${archetypeLabel} for this roster. Lead with why the shape fits, and recommend it directly.` : `This is a reasonable ${archetypeLabel} fit. Be measured, neither overselling nor hedging.`;
   const theirs = counterProfile ? `${pkg.counterTeam} is ${counterProfile.windowLabel} (${counterProfile.competitiveness}, ${counterProfile.windowTier}).` : "";
   return `Dynasty fantasy football trade. You are ${myProfile.windowLabel} (${myProfile.competitiveness}, ${myProfile.windowTier} window). ${theirs}

@@ -1,7 +1,11 @@
 import { createHash } from "crypto";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { ARCHETYPE_FAMILIES, type ArchetypeFamily } from "../../src/algo/archetypes";
-import { POSITIONS } from "../../src/algo/constants";
+import {
+  POSITIONS,
+  STANCE_CAUTION_ARCH_MATCH,
+  STANCE_CONFIDENT_ARCH_MATCH,
+} from "../../src/algo/constants";
 import { fairnessText } from "../../src/algo/fairness";
 import type { LeagueFormat, Position, TeamProfile } from "../../src/algo/types";
 import { adminDb } from "../_lib/admin";
@@ -132,7 +136,9 @@ export function buildRationalePrompt(
   const archMatch = pkg.scores?.archMatch ?? 0;
   const rosterFit = diagnostics?.myArchetypeScore;
   const weak =
-    diagnostics?.degraded != null || archMatch < 0.3 || (rosterFit != null && rosterFit < 30);
+    diagnostics?.degraded != null ||
+    archMatch < STANCE_CAUTION_ARCH_MATCH ||
+    (rosterFit != null && rosterFit < 30);
   const stance = weak
     ? `IMPORTANT: this roster is a weak match for ${archetypeLabel}${rosterFit != null ? ` (archetype fit ${rosterFit}/100)` : ""} and this was the closest package available, not a strong one. Open by saying plainly that this is an idea to consider rather than a recommendation, and name what is imperfect about it. Do not oversell.`
     : archMatch >= 0.6
