@@ -39,6 +39,68 @@ var ALGO_FINGERPRINT_BUILD = "87c6b1ff3fe3";
 // src/algo/version.ts
 var ALGO_VERSION = "shotgun";
 
+// src/data/patchNotes.ts
+function currentRelease() {
+  const latest = PATCH_NOTES[0];
+  return latest ? `${latest.branch} ${latest.release}` : "unreleased";
+}
+var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.0",
+    algo: "Shotgun",
+    date: "2026-07-25",
+    title: "Depth grading rebuilt, and the trade cards now show their work",
+    changes: [
+      "Depth grading now counts the starters in front of a backup. Two elite QBs and a fine QB3 used to read as a CRITICAL need at QB, which was simply wrong. Depth is now judged half on how good your backups are and half on how strong your lineup still is if your best starter at that position goes down, measured against what the same injury would do to everyone else in the league.",
+      "A position where your starters are a surplus can no longer be graded a critical need on the strength of the bench alone.",
+      "Your fourth QB no longer drags your QB room down. One injury promotes one player, so the grade looks at the backup who would actually play. Deeper stashes still count toward the depth score and your needs urgency, they just no longer decide the label.",
+      "Every trade card now shows what each individual player is worth, so you can see the math instead of taking the verdict on faith.",
+      "Packages with several pieces now also show their trade-effective total. A bundle is worth less than the sum of its parts, and the side holding the single best asset charges a premium, so the raw sum was never the number the engine actually judged.",
+      "Trade cards carry a confidence badge: RECOMMENDED, WORTH A LOOK, or INSPIRATION. It tells you how strongly the engine stands behind a trade rather than leaving that hidden, and the written rationale takes its tone from the same reading, so the badge and the prose cannot disagree.",
+      "The rationale writer gets more of the math: each player's value, what the trade does for the other manager's positional needs, and the bundle adjustment. It was previously asked to explain why the other team says yes without being told anything about that team's needs.",
+      "Bar colors on the overview go red, amber, green, bright green in one ramp. Cyan used to mean 'best' next to a label and 'middling' inside a bar on the same screen.",
+      "These patch notes, plus a copyright, privacy policy, and terms in the footer."
+    ],
+    knownIssues: []
+  },
+  {
+    branch: "barkley",
+    release: "1.0",
+    algo: "Shotgun",
+    date: "2026-07-25",
+    title: "The trade-focused rebuild, then aging rebuilt from real data",
+    changes: [
+      "Send It trade finder: pick an angle, scan the league, and get ranked packages with a written rationale for both sides.",
+      "Trade Grades: your league's real Sleeper trade history, graded at today's values, with a power-rankings ledger.",
+      "The Window Map, showing every team's competitiveness against its timeline, with projected drift arrows a year and two years out.",
+      "Thumbs up and thumbs down on every trade, with reason chips and a comment box. This is what the tuning actually runs on, so it matters more than it looks.",
+      "Leagues refresh themselves when you look at them instead of waiting for a manual sync.",
+      "Age curves rebuilt from real NFL data (1999 to 2024) instead of hand-set breakpoints, with one aging model shared by the window math, the projection arrows, and the trade engine rather than two that could drift apart.",
+      "Aging is judged by how fast a player's remaining value is draining, not by his birthday. A 27 year old RB and a 27 year old WR are in completely different places, and the old flat cutoff labelled half the league's best players as aging assets to buy at a discount.",
+      "One-for-one swaps at the same position now need a real age gap to be suggested at all. Trading a WR for a WR of the same age is churn, not a trade.",
+      "Rebuilding teams are no longer offered win-now production for nothing. Most leagues break draft order on points scored, so a team that is tanking loses draft position by taking your productive veteran.",
+      "Trade scoring is measured against the acceptance bar rather than from zero. A package that helped nobody used to score 0.48 out of 1.",
+      "Every piece of feedback is automatically stamped with a content hash of the algorithm that produced the trade, so old feedback can never be mistaken for a description of the current engine."
+    ],
+    knownIssues: []
+  }
+];
+
+// src/data/feedbackCategories.ts
+var FEEDBACK_CATEGORIES = [
+  { key: "overview", label: "League overview / shape" },
+  { key: "scouting", label: "Scouting report / team deep dive" },
+  { key: "trade_finder", label: "Trade finder (not one specific trade)" },
+  { key: "calc", label: "Trade calculator" },
+  { key: "grades", label: "Trade grades" },
+  { key: "ui", label: "Look, layout, or wording" },
+  { key: "idea", label: "Idea or feature request" },
+  { key: "bug", label: "Something is broken" },
+  { key: "other", label: "Something else" }
+];
+var DEFAULT_FEEDBACK_CATEGORY = "other";
+
 // api/_lib/admin.ts
 var admin = __toESM(require("firebase-admin"));
 if (!admin.apps.length) {
@@ -95,11 +157,42 @@ async function ensureLeagueAccess(uid, leagueRef, members) {
 var MAX_REASONS = 12;
 var MAX_REASON_LENGTH = 40;
 var MAX_COMMENT_LENGTH = 2e3;
+var MAX_ROUTE_LENGTH = 200;
+async function summarize(uid) {
+  const col = adminDb.collection("feedback");
+  const [totalSnap, mineSnap, reviewedSnap] = await Promise.all([
+    col.count().get(),
+    col.where("userId", "==", uid).count().get(),
+    col.where("pulledAt", ">=", "").count().get()
+  ]);
+  const total = totalSnap.data().count;
+  const mine = mineSnap.data().count;
+  const reviewed = reviewedSnap.data().count;
+  return {
+    total,
+    mine,
+    others: Math.max(0, total - mine),
+    unreviewed: Math.max(0, total - reviewed)
+  };
+}
 async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST" && req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
   const user = await requireApprovedUser(req, res);
   if (!user) return;
+  if (req.method === "GET") {
+    try {
+      return res.status(200).json(await summarize(user.uid));
+    } catch (err) {
+      console.error("feedback summary error", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
   const {
+    kind: rawKind,
+    category: rawCategory,
+    route: rawRoute,
     verdict,
     reasons: rawReasons,
     comment: rawComment,
@@ -110,6 +203,33 @@ async function handler(req, res) {
     package: pkg,
     diagnostics
   } = req.body;
+  const kind = rawKind === "site" ? "site" : "trade";
+  const comment = typeof rawComment === "string" ? rawComment.slice(0, MAX_COMMENT_LENGTH) : "";
+  if (kind === "site") {
+    if (comment.trim().length === 0) {
+      return res.status(400).json({ error: "comment required" });
+    }
+    const route = typeof rawRoute === "string" ? rawRoute.slice(0, MAX_ROUTE_LENGTH) : null;
+    const category = typeof rawCategory === "string" && FEEDBACK_CATEGORIES.some((c) => c.key === rawCategory) ? rawCategory : DEFAULT_FEEDBACK_CATEGORY;
+    try {
+      const docRef = await adminDb.collection("feedback").add({
+        createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+        userId: user.uid,
+        userEmail: user.email,
+        algoVersion: ALGO_VERSION,
+        algoFingerprint: ALGO_FINGERPRINT_BUILD,
+        release: currentRelease(),
+        kind,
+        category,
+        comment,
+        route
+      });
+      return res.status(200).json({ ok: true, id: docRef.id });
+    } catch (err) {
+      console.error("site feedback error", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
   if (verdict !== "up" && verdict !== "down") {
     return res.status(400).json({ error: 'verdict must be "up" or "down"' });
   }
@@ -123,7 +243,6 @@ async function handler(req, res) {
     return res.status(400).json({ error: "package must be an object" });
   }
   const reasons = Array.isArray(rawReasons) ? rawReasons.filter((r) => typeof r === "string").slice(0, MAX_REASONS).map((r) => r.slice(0, MAX_REASON_LENGTH)) : [];
-  const comment = typeof rawComment === "string" ? rawComment.slice(0, MAX_COMMENT_LENGTH) : "";
   const packageIndex = typeof rawPackageIndex === "number" && Number.isFinite(rawPackageIndex) ? rawPackageIndex : 0;
   const pkgRecord = pkg;
   const prompt = typeof pkgRecord["prompt"] === "string" ? pkgRecord["prompt"] : null;
@@ -147,6 +266,8 @@ async function handler(req, res) {
       userEmail: user.email,
       algoVersion: ALGO_VERSION,
       algoFingerprint: ALGO_FINGERPRINT_BUILD,
+      release: currentRelease(),
+      kind,
       verdict,
       reasons,
       comment,

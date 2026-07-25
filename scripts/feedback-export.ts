@@ -108,6 +108,16 @@ type FeedbackDiagnostics = { forced?: boolean; degraded?: string } | null;
 
 type FeedbackDoc = {
   createdAt?: string;
+  // "trade" (thumbs on a Send It package) or "site" (the footer Feedback
+  // button). Absent on entries written before site feedback existed, which
+  // were all trade feedback.
+  kind?: string;
+  // App feedback only: what it is about, and the page the person was on.
+  category?: string;
+  route?: string | null;
+  // Human-readable release ("daniels 1.0"), alongside the exact-code
+  // fingerprint. The hash says what ran; this says what to go read.
+  release?: string;
   // Set by this script once an entry has been exported. Absent = never pulled.
   pulledAt?: string;
   userId?: string;
@@ -265,21 +275,34 @@ async function main(): Promise<void> {
     entries = entries.filter((e) => e.leagueId === league);
   }
 
+  // Split the two kinds. Site feedback is free-form prose about the app, and
+  // folding it into the algorithm tuning data would poison the exact signal
+  // this export exists to produce: reason tallies and verdict splits only mean
+  // something across comparable trade judgments. Entries written before site
+  // feedback existed have no `kind` and were all trade feedback.
+  const siteEntries = entries.filter((e) => e.kind === "site");
+  const tradeEntries = entries.filter((e) => e.kind !== "site");
+
   const jsonPath = resolve("feedback-export.json");
-  writeFileSync(jsonPath, JSON.stringify(entries, null, 2));
+  writeFileSync(jsonPath, JSON.stringify(tradeEntries, null, 2));
+
+  if (siteEntries.length > 0) {
+    const sitePath = resolve("feedback-site.json");
+    writeFileSync(sitePath, JSON.stringify(siteEntries, null, 2));
+  }
 
   const csvLines = [CSV_COLUMNS.join(",")];
-  for (const entry of entries) {
+  for (const entry of tradeEntries) {
     csvLines.push(toRow(entry).join(","));
   }
   const csvPath = resolve("feedback-export.csv");
   writeFileSync(csvPath, csvLines.join("\n") + "\n");
 
-  const upCount = entries.filter((e) => e.verdict === "up").length;
-  const downCount = entries.filter((e) => e.verdict === "down").length;
+  const upCount = tradeEntries.filter((e) => e.verdict === "up").length;
+  const downCount = tradeEntries.filter((e) => e.verdict === "down").length;
 
   const reasonTally = new Map<string, number>();
-  for (const entry of entries) {
+  for (const entry of tradeEntries) {
     for (const reason of entry.reasons ?? []) {
       reasonTally.set(reason, (reasonTally.get(reason) ?? 0) + 1);
     }
@@ -294,7 +317,26 @@ async function main(): Promise<void> {
   if (!all && entries.length === 0) {
     console.log("Nothing new. Re-run with --all to re-export everything.");
   }
-  console.log(`Up: ${upCount}, Down: ${downCount}`);
+  console.log(`Trade feedback: ${tradeEntries.length} (up ${upCount}, down ${downCount})`);
+  if (siteEntries.length > 0) {
+    console.log(`App feedback: ${siteEntries.length} -> feedback-site.json`);
+    // Grouped by category so a pile of comments is readable without sorting it
+    // by hand every time.
+    const byCategory = new Map<string, typeof siteEntries>();
+    for (const entry of siteEntries) {
+      const key = entry.category ?? "other";
+      const bucket = byCategory.get(key) ?? [];
+      bucket.push(entry);
+      byCategory.set(key, bucket);
+    }
+    for (const [category, group] of [...byCategory.entries()].sort((a, b) => b[1].length - a[1].length)) {
+      console.log(`  ${category} (${group.length}):`);
+      for (const entry of group) {
+        const where = entry.route ? ` ${entry.route}` : "";
+        console.log(`    ${(entry.createdAt ?? "?").slice(0, 10)}${where}: ${(entry.comment ?? "").slice(0, 90)}`);
+      }
+    }
+  }
   console.log("Reasons by frequency:");
   if (sortedReasons.length === 0) {
     console.log("  (none)");

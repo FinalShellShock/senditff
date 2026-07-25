@@ -3202,6 +3202,144 @@ body {
   color: #64748b;
 }
 
+/* ── Feedback bell ────────────────────────────────────────────────────── */
+
+.feedback-bell-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.feedback-bell {
+  position: relative;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.feedback-bell:hover {
+  color: #94a3b8;
+}
+
+.feedback-bell-dot {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 0 2px #0a0c0f;
+}
+
+.feedback-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  background: #0f1318;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #cbd5e1;
+  white-space: normal;
+  width: max-content;
+  max-width: min(240px, calc(100vw - 32px));
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  z-index: 50;
+}
+
+.feedback-bell-wrap:hover .feedback-tooltip,
+.feedback-tooltip.feedback-tooltip-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Clamp to the left edge on narrow screens instead of centering, which is
+   how a centered tooltip on a left-hand bell clips off the viewport. */
+@media (max-width: 480px) {
+  .feedback-tooltip {
+    left: 0;
+    transform: none;
+  }
+}
+
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feedback-form-hint {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.feedback-form-comment {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-height: 100px;
+  resize: vertical;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 8px;
+}
+
+.feedback-form-comment:focus {
+  outline: none;
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.feedback-form-submit {
+  align-self: flex-start;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 5px;
+  color: #f59e0b;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 7px 16px;
+  cursor: pointer;
+}
+
+.feedback-form-submit:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.22);
+}
+
+.feedback-form-submit:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.feedback-form-sent {
+  font-size: 12px;
+  color: #4ade80;
+}
+
+.feedback-form-error {
+  font-size: 11px;
+  color: #ef4444;
+}
+
 .patch-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -3364,5 +3502,33 @@ body {
 .patch-release-algo {
   font-size: 10px;
   letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+/* Fairness reads as a word in the score strip rather than a bordered chip in
+   the header. It is a measurement, so it lives with the measurements. */
+.trade-fairness-inline {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.feedback-form-label {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.feedback-form-category {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 8px;
   margin-bottom: 12px;
 }

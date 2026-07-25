@@ -35,13 +35,15 @@ be traced to a human-readable release rather than a hash.
 
 ---
 
-## 2. General site feedback (HIGH PRIORITY)
+## 2. General site feedback — SHIPPED 2026-07-25
 
 Feedback about the **site**, not just about a specific trade. A small button in
 the footer, next to Recent updates / Privacy / Terms.
 
-**Johnny (2026-07-25):** high priority, deferred only because he was about to
-hit a session limit.
+Shipped as a Feedback button in the footer. Posts to the existing
+`POST /api/feedback` with `kind: "site"` plus the current route, so site
+reports and trade tuning data live in one collection but split cleanly on
+export.
 
 **Why it matters:** the trade thumbs only capture "was this trade good." They
 cannot capture "the overview page confused me", "this label is wrong", "I
@@ -62,7 +64,7 @@ the loop between users noticing something and Johnny hearing about it.
 
 ---
 
-## 3. New-feedback notification
+## 3. New-feedback notification — SHIPPED 2026-07-25
 
 Some way for Johnny to see that someone has submitted feedback without going
 looking for it. A small bell or badge in the footer:
@@ -71,7 +73,12 @@ looking for it. A small bell or badge in the footer:
 
 It clears every time the feedback is pulled and acted on.
 
-**Johnny's note (2026-07-25):** "probably sooner than later."
+Shipped as a bell in the footer: outline icon, amber dot when there is
+unreviewed feedback, and a tooltip with the total plus a you/everyone-else
+split. `GET /api/feedback` returns the counts. Unreviewed is derived as total
+minus stamped, because Firestore cannot query for an ABSENT field and
+`pulledAt` is missing on everything written before the export started stamping
+it.
 
 **Why it matters:** feedback is the only tuning signal this app has, and right
 now it sits silently in Firestore until someone remembers to run the export.

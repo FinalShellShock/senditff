@@ -25,6 +25,17 @@ npm run feedback:export
 This writes `feedback-export.json` and `feedback-export.csv` to the repo root
 (both gitignored) and prints a verdict split plus a reason tally.
 
+**App feedback is exported separately** to `feedback-site.json` (also
+gitignored) and printed inline, grouped by category. It covers anything in the
+app that is not a verdict on one trade: the overview, scouting reports, the
+calculator, grades, ideas, bugs. Each entry carries a `category` and the
+`route` the person was on.
+
+It never enters the reason tallies or the verdict split, because those only
+mean something across comparable trade judgments. Read it and give it its own
+heading in the plan. It is where product and UI problems surface, and those are
+invisible to the trade thumbs.
+
 Optional filters: `npm run feedback:export -- --since 2026-07-01 --league <id>`
 
 Then delete the pulled secrets once the export succeeds, so a service account
@@ -111,5 +122,9 @@ Then stop and let Johnny pick what to implement.
   identical inputs producing identical outputs, and must be checked with
   `npm run validate:trades`.
 - Don't commit, deploy, or edit env vars from this skill.
-- `feedback-export.json` / `.csv` are gitignored on purpose. Leave them
-  untracked; they hold user emails.
+- `feedback-export.json` / `.csv` / `feedback-site.json` are gitignored on
+  purpose. Leave them untracked; they hold user emails.
+- Pulling marks entries reviewed, which clears the footer bell for everyone.
+  Johnny is fine with that and considers it a feature: a cleared bell tells the
+  others he is not sitting on a backlog. Still, only pull when actually about
+  to act on it, or the signal becomes a lie.

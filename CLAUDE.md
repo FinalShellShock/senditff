@@ -54,24 +54,40 @@ senditff/
   formation engine it runs. One engine spans many branches. "Shotgun 1.4" was
   briefly used as a release label and was wrong on both counts.
 
-### When to cut a new branch
+### Versioning: release = `<branch> <major>.<minor>`
 
-**One branch per patch-notes release.** If you are writing a new entry in
-`src/data/patchNotes.ts`, you are starting a new branch. If you are not, stay
-on the current one.
+Three independent axes. Don't collapse them.
 
-That is the whole rule, and it works because the patch note already forces the
-question it depends on: "is there enough user-visible change here to be worth
-telling people about?" If yes, that is a release, and a release gets its own
-branch and its own name. If you can't fill in the `changes` list, there is
-nothing to cut.
+| Axis | Example | Changes when |
+|------|---------|--------------|
+| **Branch** | `daniels` | A paradigm shift |
+| **Release** | `1.2` | Every deploy users would notice |
+| **Algo** (`ALGO_VERSION`) | `Shotgun` | The scoring engine is rewritten |
 
-Two consequences worth knowing:
-- The branch name and the patch-notes `version` refer to the same body of work,
-  so "what shipped in daniels" has an answer a human can read.
-- Pick the player name for its mnemonic value where you can. `daniels` is the
-  release where Jayden Daniels plus Mahomes stopped grading as a CRITICAL need
-  at QB, so the name recalls the work.
+So a release reads `daniels 1.2`, running the `Shotgun` engine. One engine
+spans many branches; one branch spans many releases.
+
+**Cut a new BRANCH on a paradigm shift**, not on volume of work: a new data
+model, a rewritten scoring approach, a different product shape, or anything
+where the old branch name stops describing what the code is. Refactors, new
+pages, tuning, and bug fixes are point releases, however many of them there
+are.
+
+**Bump the release on every deploy** that users would notice. Minor for
+ordinary work, major for something big that still fits the branch's paradigm.
+Every such deploy adds an entry to `src/data/patchNotes.ts`.
+
+Pick the player surname for mnemonic value where you can. `daniels` is the
+release where Jayden Daniels plus Mahomes stopped grading as a CRITICAL need
+at QB, so the name recalls the work.
+
+### Patch notes: `knownIssues` is not filler
+
+`knownIssues` is for problems we ACTUALLY know about: trends visible in user
+feedback that aren't fixed yet, and bugs that have been reported or reproduced.
+It is NOT a list of every theoretical limitation of the model. An empty array
+is the correct and common answer, and it carries meaning precisely because it
+is not padded. Don't invent entries to fill the section.
 
 Do NOT wait for a deploy to cut the branch. `vercel --prod` uploads the working
 tree, so uncommitted work on a stale branch is exactly how work has been lost
@@ -130,6 +146,10 @@ npx vercel --prod --yes                                # deploy
 npx vercel alias set <that-url> senditff.com
 npx vercel alias set <that-url> www.senditff.com
 npx vercel inspect senditff.com                        # verify name=senditff
+
+# Tag the release so its name maps to a commit. Without this, nothing connects
+# "daniels 1.2" in the patch notes to code you can check out.
+git tag daniels-1.2 && git push origin --tags
 ```
 
 ## CRITICAL: Commit before deploying or ending a session

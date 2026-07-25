@@ -6,25 +6,34 @@
 // "the app got better." These notes are the difference.
 //
 // ── Naming ───────────────────────────────────────────────────────────────────
-// A release IS a branch. Branches are dynasty player surnames (`daniels`,
-// `barkley`), and one branch produces one release, so `branch` is the release
-// identity. See CLAUDE.md, Branch Strategy.
+// A release is `<branch> <major>.<minor>`, e.g. "daniels 1.1".
 //
-// `algo` is a DIFFERENT axis: the formation name of the scoring engine
-// (Shotgun, West Coast, Audible, ...). One engine spans many branches, so a
-// release is labelled by its branch and merely reports which engine it runs.
-// These were briefly conflated as "Shotgun 1.4", which implied the formation
-// was the release number. It is not.
+// The BRANCH is a dynasty player surname and changes only on a paradigm shift:
+// a new data model, a rewritten scoring approach, a different product shape.
+// Point releases within a branch are ordinary deploys. Bump minor for normal
+// work, bump major for a big change that still fits the branch's paradigm.
+//
+// `algo` is a THIRD, independent axis: the formation name of the scoring
+// engine (Shotgun, West Coast, Audible, ...). One engine spans many branches,
+// so a release reports its engine rather than being named after it. These were
+// briefly conflated as "Shotgun 1.4", which implied the formation was the
+// version number. It is not.
 //
 // ── Writing an entry ─────────────────────────────────────────────────────────
-// One entry per branch, added when the branch is cut. Keep `changes` in plain
-// language (what a manager notices) and be honest in `knownIssues` about what
-// is still wrong. A patch note that only lists wins is marketing, not
-// transparency.
+// One entry per deploy that users would notice. Keep `changes` in plain
+// language (what a manager notices).
+//
+// `knownIssues` is for problems we ACTUALLY KNOW ABOUT: trends visible in user
+// feedback that have not been fixed yet, and bugs that have been reported or
+// reproduced. It is NOT a place to list every theoretical limitation of the
+// model. An empty array is the correct and common answer, and it means
+// something precisely because it is not padded. Do not invent entries.
 
 export type PatchNote = {
-  /** Branch name, which is the release identity. Lowercase player surname. */
+  /** Branch name. Lowercase player surname. Changes only on a paradigm shift. */
   branch: string;
+  /** Point release within the branch, e.g. "1.1". */
+  release: string;
   /** Formation name of the scoring engine this release runs. */
   algo: string;
   /** ISO date or range end, YYYY-MM-DD. */
@@ -35,9 +44,18 @@ export type PatchNote = {
   knownIssues: string[];
 };
 
+// The current release, e.g. "daniels 1.0". Stamped on every piece of feedback
+// alongside the algo fingerprint: the fingerprint says exactly which code ran,
+// this says which release a human can look up in the notes above.
+export function currentRelease(): string {
+  const latest = PATCH_NOTES[0];
+  return latest ? `${latest.branch} ${latest.release}` : "unreleased";
+}
+
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "1.0",
     algo: "Shotgun",
     date: "2026-07-25",
     title: "Depth grading rebuilt, and the trade cards now show their work",
@@ -52,16 +70,11 @@ export const PATCH_NOTES: PatchNote[] = [
       "Bar colors on the overview go red, amber, green, bright green in one ramp. Cyan used to mean 'best' next to a label and 'middling' inside a bar on the same screen.",
       "These patch notes, plus a copyright, privacy policy, and terms in the footer.",
     ],
-    knownIssues: [
-      "Your league's grades do not change the moment a release ships. Profiles are cached and recomputed when a league syncs, so a release lands for you within the hour, or immediately if you hit Refresh Data.",
-      "Depth still counts a player who is already starting in your FLEX as depth at his own position, so some RB and WR rooms read a little deeper than they play.",
-      "TE age curves are built on a thin sample above age 30 and never show acceleration. Treat TE age arbitrage as unsupported by data rather than as a finding.",
-      "The window tier cutoffs are calibrated on one league. If your league's teams cluster differently, the LONG and SHORT labels may not split where you would split them.",
-      "There is no way yet to see that new feedback has come in, and no way to leave feedback about the site itself rather than about a specific trade. Both are on the list.",
-    ],
+    knownIssues: [],
   },
   {
     branch: "barkley",
+    release: "1.0",
     algo: "Shotgun",
     date: "2026-07-25",
     title: "The trade-focused rebuild, then aging rebuilt from real data",
@@ -78,9 +91,6 @@ export const PATCH_NOTES: PatchNote[] = [
       "Trade scoring is measured against the acceptance bar rather than from zero. A package that helped nobody used to score 0.48 out of 1.",
       "Every piece of feedback is automatically stamped with a content hash of the algorithm that produced the trade, so old feedback can never be mistaken for a description of the current engine.",
     ],
-    knownIssues: [
-      "Depth grading ignored the starters in front of a backup. Fixed in daniels.",
-      "Rationales occasionally stated a player's age with more confidence than the data supported.",
-    ],
+    knownIssues: [],
   },
 ];

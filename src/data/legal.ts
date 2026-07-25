@@ -17,7 +17,7 @@ export const PRIVACY_POLICY: LegalSection[] = [
   {
     heading: "The short version",
     body: [
-      "Send It is a personal project run for a small group of friends. It is not a business, there is nothing to buy, and your data is not sold, rented, or shared with advertisers. There are no ads and no tracking pixels.",
+      "Send It is a hobby project one person builds and shares with friends. No money changes hands: there is nothing to buy, no subscription, and no payment details are ever collected. Your data is not sold, rented, or shared with advertisers, and there are no ads and no tracking pixels.",
     ],
   },
   {
@@ -25,7 +25,9 @@ export const PRIVACY_POLICY: LegalSection[] = [
     body: [
       "When you sign in with Google, we receive your email address and your Google account identifier. We do not receive or store your Google password.",
       "When you connect a league, we store your Sleeper username and league IDs, and we fetch and cache public Sleeper data for that league: rosters, league settings, draft picks, and trade history. This is the same data anyone can read from Sleeper's public API.",
-      "When you leave feedback on a trade, we store your verdict, any reasons you select, your comment, the trade package you were looking at, the engine scores behind it, and the exact prompt used to write the rationale. Your user ID and email are attached so we can tell distinct users apart.",
+      "When you leave feedback on a trade, we store your verdict, any reasons you select, your comment, the trade package you were looking at, the engine scores behind it, and the exact prompt used to write the rationale.",
+      "When you leave feedback about the app, we store your comment, the category you picked, and the page you were on.",
+      "Either way, your user ID and email are attached, along with the release and a hash of the algorithm that was running, so a comment can be traced back to the exact version it was about.",
       "Basic server logs are produced by our host as a side effect of serving the site.",
     ],
   },
@@ -44,7 +46,8 @@ export const PRIVACY_POLICY: LegalSection[] = [
       "Vercel hosts the site and runs the server code.",
       "Sleeper and FantasyCalc provide league data and player values. We read from them; we do not send them anything about you.",
       "Anthropic's API writes the trade rationales. The text sent contains player names, team names, and engine numbers. It does not contain your email, your account ID, or anything else that identifies you.",
-      "That is the complete list.",
+      "That is the complete list of companies. If it ever grows, this page changes first.",
+      "Other people in your league are not third parties: everyone in a synced league can see that league's rosters and grades, the same way they can on Sleeper.",
     ],
   },
   {
@@ -57,7 +60,7 @@ export const PRIVACY_POLICY: LegalSection[] = [
   {
     heading: "Children",
     body: [
-      "Access is granted manually to people known to the operator. The app is not directed at children under 13 and is not intended for them.",
+      "Access is granted manually, one person at a time, to people known to the operator. The app is not directed at children under 13 and is not intended for them.",
     ],
   },
   {
@@ -72,7 +75,7 @@ export const TERMS_OF_SERVICE: LegalSection[] = [
   {
     heading: "What this is",
     body: [
-      "Send It is a free, personal dynasty fantasy football tool provided as-is to a small invited group. Access is granted manually and can be revoked at any time, for any reason, without notice.",
+      "Send It is a free, personal dynasty fantasy football tool provided as-is to an invited group. It is a hobby, not a business, and no money changes hands in either direction. Access is granted manually and can be revoked at any time, for any reason, without notice.",
     ],
   },
   {

@@ -275,14 +275,11 @@ function TradeCard({
   return (
     <div className="trade-card">
       <div className="trade-card-header">
+        {/* Confidence leads: how strongly we stand behind the trade is the
+            first thing worth knowing, and the archetype is what it IS. Fairness
+            moved down to the score strip, where it sits with the other
+            measurements it belongs with instead of crowding the headline. */}
         <span className="trade-header-badges">
-          <span className="trade-arch-tag">{pkg.archetype.replace(/_/g, " ")}</span>
-          <span
-            className="fairness-badge"
-            style={{ borderColor: fairnessColor(fairness), color: fairnessColor(fairness), marginTop: 0 }}
-          >
-            {fairnessText(fairness)}
-          </span>
           {confidenceMeta && (
             <span
               className="fairness-badge"
@@ -292,6 +289,7 @@ function TradeCard({
               {confidenceMeta.label}
             </span>
           )}
+          <span className="trade-arch-tag">{pkg.archetype.replace(/_/g, " ")}</span>
         </span>
         <span className="trade-counter-team">{pkg.counterTeam}</span>
       </div>
@@ -308,13 +306,18 @@ function TradeCard({
           <span className="trade-val" title={receiveValue.title}>{receiveValue.text}</span>
         </div>
       </div>
-      {pkg.scores && (
-        <div className="trade-score-strip">
-          fit for you <FitGrade fit={pkg.scores.myFit} />
-          {" · "}fit for them <FitGrade fit={pkg.scores.theirFit} />
-          {" · "}value balance {Math.round(pkg.scores.balance * 100)}%
-        </div>
-      )}
+      <div className="trade-score-strip">
+        <span className="trade-fairness-inline" style={{ color: fairnessColor(fairness) }}>
+          {fairnessText(fairness)}
+        </span>
+        {pkg.scores && (
+          <>
+            {" · "}fit for you <FitGrade fit={pkg.scores.myFit} />
+            {" · "}fit for them <FitGrade fit={pkg.scores.theirFit} />
+            {" · "}value balance {Math.round(pkg.scores.balance * 100)}%
+          </>
+        )}
+      </div>
       {pkg.rationale && <p className="trade-rationale">{pkg.rationale}</p>}
 
       {pkg.prompt && promptOpen && (

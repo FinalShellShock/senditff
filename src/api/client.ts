@@ -88,6 +88,23 @@ export type FeedbackPayload = {
   diagnostics: TradeDiagnostics | null;
 };
 
+// ── Site feedback (footer bell + form) ──────────────────────────────────
+
+export type SiteFeedbackPayload = {
+  kind: "site";
+  comment: string;
+  /** Key from src/data/feedbackCategories.ts. */
+  category?: string;
+  route?: string;
+};
+
+export type FeedbackSummary = {
+  total: number;
+  mine: number;
+  others: number;
+  unreviewed: number;
+};
+
 // ── Trade Grades (league trade history, graded at today's values) ───────────
 
 export type GradedAsset = {
@@ -230,6 +247,14 @@ export function makeApiClient(getToken: GetTokenFn) {
       }),
 
     submitFeedback: (payload: FeedbackPayload) =>
+      apiFetch<{ ok: true; id: string }>(getToken, "/api/feedback", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+
+    getFeedbackSummary: () => apiFetch<FeedbackSummary>(getToken, "/api/feedback"),
+
+    submitSiteFeedback: (payload: SiteFeedbackPayload) =>
       apiFetch<{ ok: true; id: string }>(getToken, "/api/feedback", {
         method: "POST",
         body: JSON.stringify(payload),

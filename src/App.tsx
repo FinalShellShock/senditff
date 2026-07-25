@@ -76,7 +76,7 @@ function AuthGate() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <Footer />
+      <Footer authed />
     </>
   );
 }
