@@ -5,7 +5,16 @@ started. Newest thinking at the top of each entry.
 
 ---
 
-## 1. Patch notes / product updates
+## 1. Patch notes / product updates — SHIPPED 2026-07-25
+
+Content lives in `src/data/patchNotes.ts`, newest first. **Every deploy should
+add an entry**, covering what changed and what is still broken. A patch note
+that only lists wins is marketing, not transparency.
+
+Still open: historical per-release algo fingerprints are not recorded, only the
+live build's, so feedback still traces to a hash rather than to a release name.
+
+Original ask below.
 
 A link in the footer that opens a popup, most recent release at the top.
 
@@ -26,7 +35,35 @@ be traced to a human-readable release rather than a hash.
 
 ---
 
-## 2. Trade scenario simulation builder
+## 2. New-feedback notification
+
+Some way for Johnny to see that someone has submitted feedback without going
+looking for it. A small bell or badge in the footer:
+
+> "3 new feedback submissions"
+
+It clears every time the feedback is pulled and acted on.
+
+**Johnny's note (2026-07-25):** "probably sooner than later."
+
+**Why it matters:** feedback is the only tuning signal this app has, and right
+now it sits silently in Firestore until someone remembers to run the export.
+The whole loop depends on Johnny knowing there is something to look at.
+
+**Implementation notes:** the clearing mechanism already exists.
+`scripts/feedback-export.ts` stamps `pulledAt` on every entry it pulls, so the
+unread count is just a count of feedback documents missing that field. No new
+data model, no new write path, and the count cannot drift out of sync with what
+was actually acted on because the export is what sets it.
+
+The read side needs a tiny authed endpoint (count only, no payload) since the
+client cannot query the feedback collection directly. Worth restricting to
+Johnny's uid, since it is an admin signal and not something the other users
+should see.
+
+---
+
+## 3. Trade scenario simulation builder
 
 "The move after the move." Chain hypothetical trades and see where the roster
 lands.
@@ -50,7 +87,7 @@ age" part of the answer.
 
 ---
 
-## 3. Trade Tinder
+## 4. Trade Tinder
 
 Managers opt in to trade archetypes they'd be interested in. When two managers
 in the same league mark **complementary** archetypes, both get a nudge.
@@ -71,7 +108,7 @@ matchmaking logic, already written and already tested in scoring.
 
 ---
 
-## 4. Saved trades / drafts
+## 5. Saved trades / drafts
 
 Draft a trade, save it, come back to it.
 
@@ -98,7 +135,7 @@ later. Every day not retained is history that can't be recovered.
 
 ---
 
-## 5. Additional fantasy platforms — MyFantasyLeague (MFL) first
+## 6. Additional fantasy platforms — MyFantasyLeague (MFL) first
 
 Support leagues hosted somewhere other than Sleeper. MFL is the first target.
 

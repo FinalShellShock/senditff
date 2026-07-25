@@ -75,6 +75,43 @@ function posColor(pos?: string) {
   return pos ? map[pos] ?? "#94a3b8" : "#475569";
 }
 
+type ConfidenceTier = "recommended" | "measured" | "inspiration";
+
+// Badge copy + color per confidence tier. Same tiers the server used to pick
+// the rationale-writing bucket, so the badge and the prose never disagree.
+const CONFIDENCE_META: Record<ConfidenceTier, { label: string; color: string; title: string }> = {
+  recommended: {
+    label: "RECOMMENDED",
+    color: "#22c55e",
+    title: "Strong archetype fit for this roster.",
+  },
+  measured: {
+    label: "WORTH A LOOK",
+    color: "#94a3b8",
+    title: "Reasonable fit. Neither a standout nor a stretch.",
+  },
+  inspiration: {
+    label: "INSPIRATION",
+    color: "#f59e0b",
+    title:
+      "This was the closest package available, not a strong fit. Treat it as an idea to consider rather than a recommendation.",
+  },
+};
+
+// A package is not the plain sum of its parts: bundles decay and the side
+// holding the single best asset charges a premium. When the adjusted figure
+// differs meaningfully from the raw total, surface both; otherwise keep the
+// simple 1-for-1 case free of extra noise.
+const ADJ_VALUE_TOOLTIP =
+  "Bundles decay and the side with the single best asset charges a premium, so a package is not the plain sum of its parts. Fairness is judged on the adjusted figures.";
+
+function sideValueDisplay(raw: number, adj?: number): { text: string; title?: string } {
+  if (adj == null || raw === 0 || Math.abs(adj - raw) / Math.abs(raw) <= 0.01) {
+    return { text: raw.toLocaleString() };
+  }
+  return { text: `${raw.toLocaleString()} → adj ${adj.toLocaleString()}`, title: ADJ_VALUE_TOOLTIP };
+}
+
 const DOWN_REASONS: Array<{ key: string; label: string }> = [
   { key: "fit_me", label: "Doesn't fit for me" },
   { key: "fit_them", label: "Doesn't fit for them" },
@@ -153,6 +190,7 @@ function AssetList({ assets }: { assets: TradeAssetWire[] }) {
             {a.kind === "pick" ? "PICK" : a.position}
           </span>
           <span className="trade-asset-name">{a.name}</span>
+          <span className="trade-asset-value">{a.valueDynasty.toLocaleString()}</span>
           {i < assets.length - 1 && <span className="trade-asset-sep"> + </span>}
         </span>
       ))}
@@ -227,11 +265,14 @@ function TradeCard({
   }
 
   const reasonOptions = verdict === "down" ? DOWN_REASONS : UP_REASONS;
+  const giveValue = sideValueDisplay(pkg.valueGive, pkg.adjValueGive);
+  const receiveValue = sideValueDisplay(pkg.valueReceive, pkg.adjValueReceive);
+  const confidenceMeta = pkg.confidence ? CONFIDENCE_META[pkg.confidence.tier] : null;
 
   return (
     <div className="trade-card">
       <div className="trade-card-header">
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span className="trade-header-badges">
           <span className="trade-arch-tag">{pkg.archetype.replace(/_/g, " ")}</span>
           <span
             className="fairness-badge"
@@ -239,6 +280,15 @@ function TradeCard({
           >
             {fairnessText(fairness)}
           </span>
+          {confidenceMeta && pkg.confidence && (
+            <span
+              className="fairness-badge"
+              style={{ borderColor: confidenceMeta.color, color: confidenceMeta.color, marginTop: 0 }}
+              title={confidenceMeta.title}
+            >
+              {confidenceMeta.label} {Math.round(pkg.confidence.archMatch * 100)}%
+            </span>
+          )}
         </span>
         <span className="trade-counter-team">{pkg.counterTeam}</span>
       </div>
@@ -246,13 +296,13 @@ function TradeCard({
         <div className="trade-side">
           <span className="trade-dir">SEND</span>
           <AssetList assets={pkg.give} />
-          <span className="trade-val">{pkg.valueGive.toLocaleString()}</span>
+          <span className="trade-val" title={giveValue.title}>{giveValue.text}</span>
         </div>
         <div className="trade-arrow">⇄</div>
         <div className="trade-side trade-side-receive">
           <span className="trade-dir">GET</span>
           <AssetList assets={pkg.receive} />
-          <span className="trade-val" style={{ color: deltaColor }}>{pkg.valueReceive.toLocaleString()}</span>
+          <span className="trade-val" style={{ color: deltaColor }} title={receiveValue.title}>{receiveValue.text}</span>
         </div>
       </div>
       {pkg.scores && (

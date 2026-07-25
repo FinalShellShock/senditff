@@ -11,9 +11,12 @@ import type { ArchetypeFamily } from "../../src/algo/archetypes";
 import {
   AGING_LOSS_RATE,
   DECLINING_LOSS_RATE,
+  DEPTH_RESILIENCE_WEIGHT,
   LATERAL_SWAP_MIN_AGE_GAP,
   PICK_DECAY,
   POSITIONS,
+  STANCE_CAUTION_ARCH_MATCH,
+  STANCE_CONFIDENT_ARCH_MATCH,
   TANK_MAX_PENALTY,
   TANK_PRODUCTION_SCALE,
   TANK_SURPLUS_SCALE,
@@ -26,6 +29,7 @@ import {
   fillStarters,
   flexStrengthValue,
   positionScoreFromPool,
+  postInjuryValues,
   score0to100,
   topNStats,
   valueLossRate,
@@ -70,11 +74,32 @@ export type TradePackage = {
     balance: number;
     archMatch: number;
   };
+  // Trade-effective totals: raw sums after per-side bundle decay and the
+  // cross-side best-asset premium. These, not valueGive/valueReceive, are what
+  // `balance` is judged on, so showing only the raw sums made a package the
+  // engine called lopsided look even on screen. Present on every package;
+  // identical to the raw totals for a straight 1-for-1.
+  adjValueGive: number;
+  adjValueReceive: number;
+  // How strongly this is a recommendation versus an idea worth a look. Set by
+  // api/trades/find.ts, which owns the diagnostics the tier depends on.
+  confidence?: { tier: ConfidenceTier; archMatch: number };
   rationale: string;
   // The exact prompt sent to Haiku to write `rationale`, echoed back so the UI
   // can show what the model was actually asked. Filled in by api/trades/find.ts.
   prompt?: string;
 };
+
+// "Recommend versus inspiration" as a scale rather than a hidden threshold.
+// The same call drives BOTH the badge on the card and the stance in the Haiku
+// prompt, so the label and the prose can never contradict each other.
+export type ConfidenceTier = "recommended" | "measured" | "inspiration";
+
+export function confidenceTier(archMatch: number, weak: boolean): ConfidenceTier {
+  if (weak || archMatch < STANCE_CAUTION_ARCH_MATCH) return "inspiration";
+  if (archMatch >= STANCE_CONFIDENT_ARCH_MATCH) return "recommended";
+  return "measured";
+}
 
 export type GenerateOptions = {
   limit?: number; // default 5
@@ -313,6 +338,7 @@ export function computeLeagueAverages(
     : { QB: [], RB: [], WR: [], TE: [] };
   const startersInUse: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depthSlotsTotal: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const resiliencePool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
   let flex = 0;
   let cap = 0;
   for (const p of profiles) {
@@ -325,8 +351,12 @@ export function computeLeagueAverages(
     // Rebuild starting-slot usage from each profile's roster (the threshold
     // is league-specific even when the pool is global).
     const { starters } = fillStarters(p.players, format);
+    const depthByPos = depthByPosition(p.players, format, (pl) => pl.valueDynasty);
     for (const pos of POSITIONS) {
       startersInUse[pos] += starters[pos].length;
+      resiliencePool[pos].push(
+        postInjuryValues(starters[pos], depthByPos[pos]).reduce((a, v) => a + v, 0),
+      );
     }
     if (!globalPlayerPools) {
       for (const pl of p.players) {
@@ -348,9 +378,11 @@ export function computeLeagueAverages(
   // Reference distributions for z-score classification (matches profile.ts).
   const starterStats = {} as Record<Position, { mean: number; std: number }>;
   const depthStats = {} as Record<Position, { mean: number; std: number }>;
+  const resilienceStats = {} as Record<Position, { mean: number; std: number }>;
   for (const pos of POSITIONS) {
     starterStats[pos] = topNStats(starterPlayerPool[pos], startersInUse[pos]);
     depthStats[pos] = topNStats(depthPlayerPool[pos], depthSlotsTotal[pos]);
+    resilienceStats[pos] = topNStats(resiliencePool[pos], resiliencePool[pos].length);
   }
   const variance = profiles.reduce((s, p) => s + (p.pickCapital.value - cap) ** 2, 0) / n;
   return {
@@ -359,6 +391,7 @@ export function computeLeagueAverages(
     starterPlayerPool, depthPlayerPool,
     starterStats, depthStats,
     startersInUse, depthSlotsTotal,
+    resiliencePool, resilienceStats,
   };
 }
 
@@ -412,7 +445,17 @@ function simulateImpact(
       positionScoreFromPool(p.valueDynasty, averages.depthPlayerPool[pos], averages.depthSlotsTotal[pos]),
     );
     const newStarterScore = weightedSlotAverage(starterPlayerScores);
-    const newDepthScore = weightedSlotAverage(depthPlayerScores);
+    // Depth is the resilience blend (see computePositionScores). Scoring the
+    // post-trade roster on isolated depth alone would diff it against a
+    // pre-trade number computed a different way, so the delta would be junk.
+    const postInjuryTotal = postInjuryValues(starters[pos], depth[pos]).reduce((a, v) => a + v, 0);
+    const rMean = averages.resilienceStats[pos].mean;
+    const newResilienceScore = starters[pos].length > 0 && rMean > 0
+      ? Math.max(0, Math.min(100, 50 + ((postInjuryTotal - rMean) / rMean) * 50))
+      : 0;
+    const newDepthScore =
+      weightedSlotAverage(depthPlayerScores) * (1 - DEPTH_RESILIENCE_WEIGHT) +
+      newResilienceScore * DEPTH_RESILIENCE_WEIGHT;
     perPosition[pos] = {
       starterScoreDelta: newStarterScore - team.positionScores[pos].starterScore,
       depthScoreDelta: newDepthScore - team.positionScores[pos].depthScore,
@@ -1299,6 +1342,8 @@ export function generatePackages(
       counterRosterId: s.counterRosterId,
       give: s.give.map(toWire),
       receive: s.receive.map(toWire),
+      adjValueGive: s.adjGive,
+      adjValueReceive: s.adjReceive,
       valueGive: s.valueGive,
       valueReceive: s.valueReceive,
       archetype: s.archetype,

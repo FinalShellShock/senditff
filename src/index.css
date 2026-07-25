@@ -2726,7 +2726,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 6px;
   margin-bottom: 10px;
+}
+
+.trade-header-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
 }
 
 .trade-arch-tag {
@@ -2799,6 +2808,12 @@ body {
 .trade-asset-name {
   font-size: 13px;
   font-weight: 700;
+}
+
+.trade-asset-value {
+  font-size: 9px;
+  font-weight: 400;
+  color: #475569;
 }
 
 .trade-asset-sep {
@@ -3151,4 +3166,169 @@ body {
 .scout-caveat {
   color: #64748b;
   font-size: 12px;
+}
+
+/* ── App footer + patch notes modal ──────────────────────────────────── */
+
+.app-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 64px;
+  padding: 16px 24px 24px;
+}
+
+.app-footer-version {
+  background: none;
+  border: none;
+  color: #334155;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.app-footer-version:hover {
+  color: #64748b;
+}
+
+.patch-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+}
+
+.patch-modal {
+  background: #0f1318;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 560px;
+  max-height: min(80vh, 720px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.patch-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+
+.patch-modal-title {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: #e2e8f0;
+}
+
+.patch-modal-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.patch-modal-close:hover {
+  color: #e2e8f0;
+}
+
+.patch-modal-body {
+  overflow-y: auto;
+  padding: 16px 18px;
+}
+
+.patch-release {
+  padding-bottom: 4px;
+}
+
+.patch-release-divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  margin: 18px 0;
+}
+
+.patch-release-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.patch-release-version {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.patch-release-date {
+  flex-shrink: 0;
+}
+
+.patch-release-title {
+  font-size: 13px;
+  color: #e2e8f0;
+  margin-bottom: 12px;
+}
+
+.patch-release-heading {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  margin-top: 12px;
+}
+
+.patch-release-heading-muted {
+  color: #475569;
+}
+
+.patch-release-list {
+  list-style: disc;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.patch-release-list li {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+
+.patch-release-list-muted li {
+  color: #64748b;
+}
+
+.patch-modal-footer {
+  flex-shrink: 0;
+  padding: 8px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 10px;
+  color: #334155;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .patch-modal-backdrop {
+    padding: 12px;
+  }
+  .patch-modal {
+    max-height: min(85vh, 720px);
+  }
 }

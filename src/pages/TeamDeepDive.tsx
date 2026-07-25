@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import type { Pick as DraftPick, Player, Position, TeamProfile, WindowLabel } from "../algo/types.ts";
+import type { Pick as DraftPick, Player, Position, SubClassification, TeamProfile, WindowLabel } from "../algo/types.ts";
 import { makeApiClient, type LedgerRow } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
@@ -22,7 +22,7 @@ const POS_CLASS_COLOR: Record<string, string> = {
   CRITICAL:      "#ef4444",
   NEED:          "#eab308",
   HEALTHY:       "#22c55e",
-  SURPLUS:       "#06b6d4",
+  SURPLUS:       "#4ade80",
 };
 
 const ARCHETYPE_LABELS: Record<string, string> = {
@@ -54,9 +54,11 @@ function posColor(pos: string) {
   return map[pos] ?? "#94a3b8";
 }
 
-function MiniBar({ score }: { score: number }) {
+function MiniBar({ score, kind }: { score: number; kind?: SubClassification }) {
   const pct = Math.min(100, Math.max(0, score));
-  const color = pct >= 70 ? "#22c55e" : pct >= 50 ? "#06b6d4" : pct >= 30 ? "#eab308" : "#ef4444";
+  const color = kind
+    ? POS_CLASS_COLOR[kind] ?? "#22c55e"
+    : pct >= 70 ? "#4ade80" : pct >= 50 ? "#22c55e" : pct >= 30 ? "#eab308" : "#ef4444";
   return (
     <div className="mini-bar-track">
       <div className="mini-bar-fill" style={{ width: `${pct}%`, background: color }} />
@@ -358,11 +360,11 @@ export default function TeamDeepDive() {
                   <span style={{ color: "#475569", fontSize: 10 }}> · {ps.urgency.toFixed(0)}</span>
                 </div>
                 <div className="pos-dash-metric">
-                  <MiniBar score={ps.starterScore} />
+                  <MiniBar score={ps.starterScore} kind={ps.starterClassification} />
                   <span className="pos-dash-num">{ps.starterScore.toFixed(0)}</span>
                 </div>
                 <div className="pos-dash-metric">
-                  <MiniBar score={ps.depthScore} />
+                  <MiniBar score={ps.depthScore} kind={ps.depthClassification} />
                   <span className="pos-dash-num">{ps.depthScore.toFixed(0)}</span>
                 </div>
                 <span className="pos-dash-player">

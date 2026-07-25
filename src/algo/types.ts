@@ -165,6 +165,14 @@ export type LeagueAverages = {
   // depthSlotsFor(pos, format).
   startersInUse: Record<Position, number>;
   depthSlotsTotal: Record<Position, number>;
+  // Reference distribution for RESILIENCE: every team's post-injury lineup
+  // total at each position (drop the best starter, promote everyone behind
+  // him). A team's depth is thin when losing a starter hurts it more than it
+  // hurts the rest of the league, so the comparison has to be against other
+  // post-injury lineups. Grading them against the healthy starter pool instead
+  // is biased negative for every team, because everyone's lineup gets worse.
+  resiliencePool: Record<Position, number[]>;
+  resilienceStats: Record<Position, { mean: number; std: number }>;
 };
 
 // Input row for `computeAllProfiles`. The pipeline owns producing the full profile.

@@ -84,6 +84,36 @@ export const DECLINING_LOSS_RATE: Record<Position, number> = { QB: 10, RB: 10.5,
 // reads as a deliberate timeline move rather than a sideways shuffle: it
 // rejects DJ Moore (29.3) for Terry McLaurin (30.9), which a user flagged with
 // "it'd be very rare for a trade like this 1 wr for 1 wr to make any sense."
+// RESILIENCE: how much the lineup you are left with after losing your best
+// starter counts toward "depth".
+//
+// Grading backups in isolation is blind to the cushion in front of them, which
+// read a roster with two elite QBs and a weak QB3 as critically thin at QB.
+//
+// Two knobs because the score and the label are on different scales and must
+// not be conflated:
+//
+// WEIGHT blends resilience into the 0-100 depthScore that feeds urgency. Both
+// halves are 0-100, so a straight blend is meaningful. 0.5 splits it evenly.
+//
+// CREDIT is in z-units and applies to the CLASSIFICATION, one-sided. The two
+// z-scores are centered differently (backups are measured against the global
+// player pool and sit negative for nearly everyone, resilience is measured
+// against the other rosters in the league and is zero-centered by
+// construction), so blending them 50/50 is arithmetically incoherent: it
+// dragged the whole league toward HEALTHY. Instead, above-average resilience
+// EARNS relief and below-average resilience costs nothing, which keeps the
+// existing need calibration intact for every team that is not actually
+// cushioned. 1.0 caps the relief at exactly one classification step, earned in
+// full at one standard deviation above the league.
+// How many depth slots the CLASSIFICATION judges. One injury promotes exactly
+// one player, so coverage is the top backup; slots behind him are pipeline and
+// trade fodder, which depthScore still counts in full.
+export const DEPTH_COVER_SLOTS = 1;
+
+export const DEPTH_RESILIENCE_WEIGHT = 0.5;
+export const DEPTH_RESILIENCE_CREDIT = 1.0;
+
 export const LATERAL_SWAP_MIN_AGE_GAP = 2.5;
 
 // Stance cuts for the rationale writer, derived from the real archMatch

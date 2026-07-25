@@ -8,6 +8,7 @@ export type TradeAssetWire = {
   name: string;
   position?: string;
   valueDynasty: number;
+  age?: number;
 };
 
 export type TradePackage = {
@@ -27,6 +28,18 @@ export type TradePackage = {
     theirFit: number;
     balance: number;
     archMatch: number;
+  };
+  // Consolidation-adjusted side values. The engine does not treat a package as
+  // the plain sum of its parts: bundles decay and the side holding the single
+  // best asset charges a premium. These are what `balance` and the fairness
+  // label are actually computed from, and they will differ from the raw sums.
+  adjValueGive?: number;
+  adjValueReceive?: number;
+  // How strongly this package fits its archetype, and the bucket the rationale
+  // writer was told to use. Same source, so badge and prose never disagree.
+  confidence?: {
+    tier: "recommended" | "measured" | "inspiration";
+    archMatch: number; // 0-1
   };
   rationale: string;
   // The exact prompt sent to Haiku to write `rationale`. Optional: responses

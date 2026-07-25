@@ -47,7 +47,32 @@ senditff/
 - `prod` — default branch, deploys to senditff.com. Merge features here when ready.
 - `legacy` — v1 single-file app frozen in time
 - `main` — original deployment branch (kept for reference, superseded by prod)
-- feature branches — named after football players (kelce, gronk, pickens, etc.)
+- working branches — named after dynasty football players (kelce, gronk,
+  pickens, harrison, barkley, daniels, ...). Formations name the ALGORITHM
+  (`ALGO_VERSION`), players name the BRANCH. Don't mix the two.
+
+### When to cut a new branch
+
+**One branch per patch-notes release.** If you are writing a new entry in
+`src/data/patchNotes.ts`, you are starting a new branch. If you are not, stay
+on the current one.
+
+That is the whole rule, and it works because the patch note already forces the
+question it depends on: "is there enough user-visible change here to be worth
+telling people about?" If yes, that is a release, and a release gets its own
+branch and its own name. If you can't fill in the `changes` list, there is
+nothing to cut.
+
+Two consequences worth knowing:
+- The branch name and the patch-notes `version` refer to the same body of work,
+  so "what shipped in daniels" has an answer a human can read.
+- Pick the player name for its mnemonic value where you can. `daniels` is the
+  release where Jayden Daniels plus Mahomes stopped grading as a CRITICAL need
+  at QB, so the name recalls the work.
+
+Do NOT wait for a deploy to cut the branch. `vercel --prod` uploads the working
+tree, so uncommitted work on a stale branch is exactly how work has been lost
+here before.
 
 ## Environment Variables
 
@@ -79,6 +104,9 @@ npm run validate             # team profiles + HTML report
 npm run validate:trades      # engine sweep: default mode + every forced archetype, determinism check
 npm run validate:history     # trade history chain walk + hindsight grading + ledger
 npm run validate:projection  # Shotgun projection table + invariants
+npm run validate:prompt      # render the real Haiku prompt for sample packages
+                             # (no API call, no Firebase creds; run
+                             #  validate:trades first)
 
 # Pull down Send It feedback for algo tuning (JSON + CSV in repo root).
 # Needs the service account, which lives only in Vercel:
@@ -192,7 +220,33 @@ Value-weighted average age of top 10 players with position multipliers:
 - Draft picks count as age 22
 
 **3. Depth**
-Players ranked starter+1 through starter+3 per position. Compare to league average → 0-100.
+Two halves, because "do I have depth" is really two questions.
+- **Asset quality:** players ranked starter+1 through starter+3 per position
+  (position-aware count via `depthSlotsFor`), compared to the league pool.
+- **Resilience:** drop your best starter at the position, promote everyone
+  behind him, and compare the lineup you are left with to *the other teams'
+  post-injury lineups*. Padded with zeros so an empty bench is charged for the
+  empty slot rather than flattered by a shorter average.
+
+`depthScore` (which feeds urgency) blends the two 50/50
+(`DEPTH_RESILIENCE_WEIGHT`).
+
+The **classification** is not a blend. The two z-scores are centered
+differently (backups against the global player pool, which is negative for
+nearly everyone; resilience against the league, which is zero-centered by
+construction), so averaging them is arithmetically meaningless and dragged the
+whole league toward HEALTHY when tried. Instead resilience is a **one-sided
+credit** (`DEPTH_RESILIENCE_CREDIT`): above-average resilience earns up to one
+classification step of relief, below-average costs nothing.
+
+The label also judges only `DEPTH_COVER_SLOTS` (1) deep, because one injury
+promotes one player. A superflex QB4 nobody would ever start was outvoting the
+QB3 and pushing whole rooms to CRITICAL. Deeper slots still count toward
+`depthScore` and urgency.
+
+**Why:** a roster with two elite QBs and Aaron Rodgers behind them graded
+CRITICAL_NEED at QB. Real user feedback caught it. Don't reintroduce depth
+scoring that is blind to the starters in front of the backup.
 
 **4. Future Capital**
 Sum pick values weighted by year: current 1.0x, next 0.85x, +2yr 0.70x, +3yr 0.55x.
@@ -315,7 +369,7 @@ To see what produced a given entry, match its `algoFingerprint` against
 
 - `POST /api/leagues/sync` — add/join a league, verify via Sleeper
 - `GET /api/leagues/overview?leagueId=` — all team profiles (+ upcomingDraftYear)
-- `POST /api/trades/find` — body: `{ leagueId, rosterId, archetype?, position?, targetRosterId? }` → `{ packages (fairness + scores), diagnostics }` with rationales
+- `POST /api/trades/find` — body: `{ leagueId, rosterId, archetype?, position?, targetRosterId? }` → `{ packages (fairness + scores + adjValue* + confidence), diagnostics }` with rationales. The Haiku prompt lives in `api/_lib/rationalePrompt.ts`, split out so it can be rendered without Firebase credentials (`buildRationalePrompt` is pure). `confidenceTier()` in `tradeEngine.ts` drives BOTH the card badge and the prompt's stance, so the label and the prose cannot disagree.
 - `GET /api/leagues/trades?leagueId=` — graded trade history + power-rankings ledger (`{ needsBackfill: true }` before first backfill)
 - `POST /api/leagues/trades` — backfill full league chain / refresh current season (maxDuration 60s in vercel.json)
 - `POST /api/feedback` — log a thumbs up/down on a Send It package

@@ -25,20 +25,10 @@ const POS_CLASS_COLOR: Record<string, string> = {
   CRITICAL:      "#ef4444",
   NEED:          "#eab308",
   HEALTHY:       "#22c55e",
-  SURPLUS:       "#06b6d4",
+  SURPLUS:       "#4ade80",
 };
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
-
-function MiniBar({ score }: { score: number }) {
-  const pct = Math.max(0, Math.min(100, score));
-  const color = pct >= 70 ? "#22c55e" : pct >= 50 ? "#06b6d4" : pct >= 30 ? "#eab308" : "#ef4444";
-  return (
-    <div className="mini-bar-track">
-      <div className="mini-bar-fill" style={{ width: `${pct}%`, background: color }} />
-    </div>
-  );
-}
 
 // Rich grid team card. Three responsive density modes (controlled entirely
 // via CSS media queries — same markup):

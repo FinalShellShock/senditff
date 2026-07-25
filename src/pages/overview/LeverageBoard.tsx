@@ -28,7 +28,7 @@ const CLASS_COLOR: Record<string, string> = {
   CRITICAL: "#ef4444",
   NEED: "#eab308",
   HEALTHY: "#22c55e",
-  SURPLUS: "#06b6d4",
+  SURPLUS: "#4ade80",
 };
 
 function classOf(p: TeamProfile, pos: Position): SubClassification {

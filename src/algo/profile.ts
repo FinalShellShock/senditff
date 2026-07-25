@@ -3,6 +3,9 @@ import {
   PICK_ADJUSTMENT_BY_FLAG,
   PICK_DECAY,
   POSITIONS,
+  DEPTH_COVER_SLOTS,
+  DEPTH_RESILIENCE_CREDIT,
+  DEPTH_RESILIENCE_WEIGHT,
   PRESSURE_REFERENCE_AGE,
   REMAINING_VALUE,
   STD_THRESHOLD,
@@ -136,6 +139,20 @@ export function depthByPosition(
     depth[pos] = sorted.slice(baseN, baseN + depthN);
   }
   return depth;
+}
+
+// ── Post-injury lineup (resilience) ──────────────────────────────────────────
+// Drop the best starter at a position, promote everyone behind him, and report
+// the redraft values of the lineup you are left with.
+//
+// Padded back to full starter length with zeros: a team with NO backup is
+// charged for the empty slot instead of being flattered by a shorter average.
+export function postInjuryValues(
+  starters: Player[],
+  depth: Player[],
+): number[] {
+  const promoted = [...starters.slice(1), ...depth].slice(0, starters.length);
+  return Array.from({ length: starters.length }, (_, i) => promoted[i]?.valueRedraft ?? 0);
 }
 
 // ── FLEX strength: total starter value minus position-specific value ─────────
@@ -466,6 +483,20 @@ export function combineClassifications(args: {
   const sIsBad = starterSub === "CRITICAL" || starterSub === "NEED";
   const dIsBad = depthSub === "CRITICAL" || depthSub === "NEED";
 
+  // Elite starters lift the depth floor by one step. You cannot be in critical
+  // need of a position your starters dominate, and a merely thin bench behind a
+  // surplus starting group is not a need at all. Before this, SURPLUS starters
+  // plus a weak bench combined to CRITICAL_NEED, so the team with the best QB
+  // room in the league was told it urgently needed a QB.
+  //
+  // Only SURPLUS earns this. "Worst of the two halves" still governs everywhere
+  // else, so the case the rule was built for (a strong WR1 hiding a
+  // replacement-level WR3) is untouched.
+  if (starterSub === "SURPLUS" && dIsBad) {
+    return depthSub === "CRITICAL"
+      ? { classification: "NEED", needKind: "depth" }
+      : { classification: "HEALTHY", needKind: null };
+  }
   if (starterSub === "CRITICAL" || depthSub === "CRITICAL") {
     return {
       classification: "CRITICAL_NEED",
@@ -555,7 +586,41 @@ export function computePositionScores(
     const minStarterSlotScore = starterPlayerScores.length > 0
       ? Math.min(...starterPlayerScores)
       : 0;
-    const depthScore = weightedSlotAverage(depthPlayerScores);
+
+    // Depth used to be scored purely on the backups in isolation, blind to who
+    // was ahead of them. That reads a roster with two elite QBs and a weak QB3
+    // as critically thin at QB, which is wrong: if one starter goes down you
+    // still start the other elite one, and the backup only fills the vacated
+    // slot. Real feedback flagged exactly this (Daniels + Mahomes + Rodgers
+    // grading CRITICAL_NEED).
+    //
+    // So depth now also measures RESILIENCE: drop the best starter, promote
+    // everyone behind him, and score the lineup you are left with against the
+    // STARTER pool. Deep rooms with elite starters survive a loss; thin ones
+    // do not. This is what makes starters "play into" depth, and it self-scales
+    // to thin positions because every team's QB3 is bad, so the comparison
+    // stays league-relative.
+    //
+    // The promoted lineup is padded back to full starter length with zeros, so
+    // a team with NO backup at all is charged for the empty slot rather than
+    // being flattered by a short average.
+    const postInjuryRedraft = postInjuryValues(starters[pos], depth[pos]);
+    const hasLineup = starters[pos].length > 0;
+    const postInjuryTotal = postInjuryRedraft.reduce((s, v) => s + v, 0);
+    const rStats = averages.resilienceStats[pos];
+    // Scored against the LEAGUE's post-injury lineups, the same 50-centered
+    // shape as starter strength. Comparing against healthy starters instead
+    // would sit every team below the mean by construction.
+    const resilienceScore = hasLineup && rStats.mean > 0
+      ? Math.max(0, Math.min(100, 50 + ((postInjuryTotal - rStats.mean) / rStats.mean) * 50))
+      : 0;
+    const isolatedDepthScore = weightedSlotAverage(depthPlayerScores);
+    // Depth still has to mean asset quality too (the future-starter pipeline
+    // and trade fodder), not only injury insurance, so this blends rather than
+    // replaces.
+    const depthScore =
+      isolatedDepthScore * (1 - DEPTH_RESILIENCE_WEIGHT) +
+      resilienceScore * DEPTH_RESILIENCE_WEIGHT;
 
     // Format-aware gap weights. Depth carries less weight in formats where
     // the position has only 1 depth slot. The dead pickFactor was removed —
@@ -622,11 +687,45 @@ export function computePositionScores(
       minSlotValue: baseValues.length > 0 ? Math.min(...baseValues) : 0,
       worstTopN: sWorstTopN,
     });
+    // Same resilience blend applied to the depth LABEL, not just its score.
+    // Fixing only the score would leave the roster still reading "NEED at QB"
+    // on screen, which is the thing that got reported.
+    //
+    // Both halves are compared to their own pool (backups to the depth pool,
+    // the post-injury lineup to the starter pool), so the blend happens on
+    // normalized quantities: z-scores, and the absolute floor as a RATIO of
+    // its pool's worst startable value.
+    // Resilience relief for the depth LABEL. One-sided on purpose: a team whose
+    // post-injury lineup beats the league's earns up to one classification step
+    // of relief, and a team below average is left exactly where it was. See
+    // DEPTH_RESILIENCE_CREDIT for why this is not a blend.
+    //
+    // The absolute-value floor is deliberately left alone. It exists to catch a
+    // genuinely worthless bench player, and that stays true no matter how good
+    // the starters are.
+    const resilienceZ = hasLineup && rStats.std > 0
+      ? (postInjuryTotal - rStats.mean) / rStats.std
+      : -3;
+    const resilienceCredit =
+      Math.max(0, Math.min(1, resilienceZ)) * DEPTH_RESILIENCE_CREDIT;
+    // Judge the depth LABEL on the slots that can actually enter the lineup.
+    // One injury promotes exactly one player, so the top backup is the coverage
+    // and everything behind him is asset accumulation. This is the same rule
+    // the starter side already applies ("a fifth startable WR is a luxury, not
+    // a hole"), and it matters most at thin positions: a superflex roster gets
+    // two depth slots at QB, so a QB4 nobody would ever start was dragging the
+    // whole room to CRITICAL. Bagent at 200 was outvoting Rodgers at 1356
+    // behind Daniels and Mahomes.
+    //
+    // depthScore, and therefore urgency, still counts every depth slot, so
+    // stockpiled assets keep their value in the numbers.
+    const coverZs = depthPlayerZs.slice(0, DEPTH_COVER_SLOTS);
+    const coverValues = depthValues.slice(0, DEPTH_COVER_SLOTS);
     const depthSub = classifySide({
-      weightedZ: depthWeightedZ,
-      minSlotZ: minDepthZ,
+      weightedZ: (coverZs.length > 0 ? weightedSlotAverage(coverZs) : -3) + resilienceCredit,
+      minSlotZ: (coverZs.length > 0 ? Math.min(...coverZs) : -3) + resilienceCredit,
       weightedValue: depthValue,
-      minSlotValue: depthMinValue,
+      minSlotValue: coverValues.length > 0 ? Math.min(...coverValues) : 0,
       worstTopN: dWorstTopN,
     });
     const { classification, needKind } = combineClassifications({
@@ -771,6 +870,7 @@ export function computeAllProfiles(
   //   league (data-driven, captures format + actual FLEX usage).
   const starterPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
   const depthPool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
+  const resiliencePool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
   const startersInUse: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depthSlotsTotal: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   // Prefer the FantasyCalc-global pool when available; only fall back to
@@ -787,6 +887,9 @@ export function computeAllProfiles(
       starterPool[pos].push(t.starters[pos].reduce((s, p) => s + p.valueRedraft, 0));
       depthPool[pos].push(t.depth[pos].reduce((s, p) => s + p.valueDynasty, 0));
       startersInUse[pos] += t.starters[pos].length;
+      resiliencePool[pos].push(
+        postInjuryValues(t.starters[pos], t.depth[pos]).reduce((s, v) => s + v, 0),
+      );
     }
     if (!globalPlayerPools) {
       for (const p of t.players) {
@@ -803,9 +906,13 @@ export function computeAllProfiles(
   // league-aware startable count for starters and depth-slot count for depth.
   const starterStats = {} as Record<Position, { mean: number; std: number }>;
   const depthStats = {} as Record<Position, { mean: number; std: number }>;
+  const resilienceStats = {} as Record<Position, { mean: number; std: number }>;
   for (const pos of POSITIONS) {
     starterStats[pos] = topNStats(starterPlayerPool[pos], startersInUse[pos]);
     depthStats[pos] = topNStats(depthPlayerPool[pos], depthSlotsTotal[pos]);
+    // Every team counts here, not a top-N slice: the question is how this
+    // team's post-injury lineup compares to the other rosters it plays.
+    resilienceStats[pos] = topNStats(resiliencePool[pos], resiliencePool[pos].length);
   }
   const avgStarter: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const avgDepth: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
@@ -830,6 +937,8 @@ export function computeAllProfiles(
     depthStats,
     startersInUse,
     depthSlotsTotal,
+    resiliencePool,
+    resilienceStats,
   };
 
   return stage2.map((t) => {
