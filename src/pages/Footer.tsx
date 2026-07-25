@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PATCH_NOTES } from "../data/patchNotes.ts";
 import { LEGAL_UPDATED, PRIVACY_POLICY, TERMS_OF_SERVICE, type LegalSection } from "../data/legal.ts";
 import { ALGO_VERSION, ALGO_FINGERPRINT } from "../algo/version.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
-import { makeApiClient, type FeedbackSummary } from "../api/client.ts";
+import { makeApiClient, type FeedbackSummary, type PendingUser } from "../api/client.ts";
 import {
   categoryForRoute,
   FEEDBACK_CATEGORIES,
@@ -27,13 +27,14 @@ function formatDate(iso: string): string {
 const FINGERPRINT_DISPLAY =
   ALGO_FINGERPRINT.length > 12 ? ALGO_FINGERPRINT.slice(0, 12) : ALGO_FINGERPRINT;
 
-type Panel = "updates" | "privacy" | "terms" | "feedback";
+type Panel = "updates" | "privacy" | "terms" | "feedback" | "admin";
 
 const PANEL_TITLE: Record<Panel, string> = {
   updates: "Recent updates",
   privacy: "Privacy policy",
   terms: "Terms of service",
   feedback: "Feedback",
+  admin: "Join requests",
 };
 
 function LegalBody({ sections }: { sections: LegalSection[] }) {
@@ -164,6 +165,76 @@ function FeedbackBell({ summary }: { summary: FeedbackSummary | null }) {
   );
 }
 
+// Join requests. There is no separate request record: signing in creates an
+// unapproved user doc, so this is that collection filtered. Admin-gated
+// server-side; this component only ever renders for an admin.
+function JoinRequests({ onChanged }: { onChanged: () => void }) {
+  const { getToken } = useAuth();
+  const [pending, setPending] = useState<PendingUser[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    makeApiClient(getToken)
+      .getPendingUsers()
+      .then((r) => setPending(r.pending))
+      .catch((e) => setError(e instanceof Error ? e.message : "Could not load requests"));
+  }, [getToken]);
+
+  useEffect(load, [load]);
+
+  function decide(uid: string, action: "approve" | "deny") {
+    setBusy(uid);
+    setError(null);
+    makeApiClient(getToken)
+      .decideUser(uid, action)
+      .then(() => {
+        setPending((prev) => (prev ?? []).filter((p) => p.uid !== uid));
+        onChanged();
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : "Failed"))
+      .finally(() => setBusy(null));
+  }
+
+  if (error) return <p className="feedback-form-error">{error}</p>;
+  if (pending === null) return <p className="dim-text">Loading...</p>;
+  if (pending.length === 0) {
+    return <p className="dim-text">Nobody is waiting. Everyone who has signed in has been let in or turned down.</p>;
+  }
+
+  return (
+    <div className="join-requests">
+      {pending.map((u) => (
+        <div className="join-request" key={u.uid}>
+          <div className="join-request-who">
+            <span className="join-request-name">{u.displayName ?? u.email}</span>
+            {u.displayName && <span className="join-request-email dim-text">{u.email}</span>}
+            {u.createdAt && (
+              <span className="join-request-when dim-text">asked {formatDate(u.createdAt.slice(0, 10))}</span>
+            )}
+          </div>
+          <div className="join-request-actions">
+            <button
+              className="join-approve"
+              onClick={() => decide(u.uid, "approve")}
+              disabled={busy === u.uid}
+            >
+              Approve
+            </button>
+            <button
+              className="join-deny"
+              onClick={() => decide(u.uid, "deny")}
+              disabled={busy === u.uid}
+            >
+              Deny
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function FeedbackForm({
   onSubmitted,
   onRequestClose,
@@ -263,7 +334,22 @@ function FeedbackForm({
 export default function Footer({ authed = false }: { authed?: boolean }) {
   const [panel, setPanel] = useState<Panel | null>(null);
   const [summary, setSummary] = useState<FeedbackSummary | null>(null);
-  const { getToken } = useAuth();
+  const [pendingCount, setPendingCount] = useState(0);
+  const { getToken, isAdmin } = useAuth();
+
+  // Join requests, for the admin only. Same shape as the feedback bell: a
+  // count that is quiet at zero and impossible to miss above it.
+  const refreshPending = useCallback(() => {
+    if (!authed || !isAdmin) return;
+    makeApiClient(getToken)
+      .getPendingUsers()
+      .then((r) => setPendingCount(r.pending.length))
+      .catch(() => {
+        // Ambient info only.
+      });
+  }, [authed, isAdmin, getToken]);
+
+  useEffect(refreshPending, [refreshPending]);
 
   function refreshSummary() {
     if (!authed) return;
@@ -323,6 +409,15 @@ export default function Footer({ authed = false }: { authed?: boolean }) {
           Feedback
         </button>
         <span className="app-footer-sep">&middot;</span>
+        {authed && isAdmin && (
+          <>
+            <button className="app-footer-link" onClick={() => setPanel("admin")}>
+              Join requests
+              {pendingCount > 0 && <span className="join-count">{pendingCount}</span>}
+            </button>
+            <span className="app-footer-sep">&middot;</span>
+          </>
+        )}
         <span className="app-footer-copy">&copy; 2026 Send It</span>
       </div>
 
@@ -346,6 +441,7 @@ export default function Footer({ authed = false }: { authed?: boolean }) {
               {panel === "updates" && <UpdatesBody />}
               {panel === "privacy" && <LegalBody sections={PRIVACY_POLICY} />}
               {panel === "terms" && <LegalBody sections={TERMS_OF_SERVICE} />}
+              {panel === "admin" && <JoinRequests onChanged={refreshPending} />}
               {panel === "feedback" && (
                 <FeedbackForm onSubmitted={refreshSummary} onRequestClose={() => setPanel(null)} />
               )}

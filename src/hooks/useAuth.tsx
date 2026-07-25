@@ -24,6 +24,10 @@ type AuthState =
 
 type AuthContextValue = {
   authState: AuthState;
+  // Whether this account can approve join requests. Read from the user doc,
+  // which is Admin SDK only (firestore.rules), so this is a UI hint rather
+  // than the gate. Every admin endpoint re-checks server-side.
+  isAdmin: boolean;
   signIn: () => Promise<void>;
   signOutUser: () => Promise<void>;
   getToken: () => Promise<string>;
@@ -31,11 +35,14 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function checkApproval(user: User): Promise<boolean> {
+async function readAccess(user: User): Promise<{ approved: boolean; admin: boolean }> {
   const snap = await getDoc(doc(db, "users", user.uid));
-  if (!snap.exists()) return false;
+  if (!snap.exists()) return { approved: false, admin: false };
   const d = snap.data();
-  return d?.["approved"] === true || d?.["subscribed"] === true;
+  return {
+    approved: d?.["approved"] === true || d?.["subscribed"] === true,
+    admin: d?.["admin"] === true,
+  };
 }
 
 async function ensureUserDoc(user: User): Promise<void> {
@@ -43,47 +50,42 @@ async function ensureUserDoc(user: User): Promise<void> {
   const snap = await getDoc(ref);
   if (snap.exists()) return;
 
-  // New sign-in — check for a V1 email-keyed doc to migrate approval + leagues
-  let approved = false;
-  let leagueIds: string[] = [];
-  if (user.email) {
-    try {
-      const v1Snap = await getDoc(doc(db, "users", user.email));
-      if (v1Snap.exists()) {
-        const v1 = v1Snap.data();
-        approved = v1["subscribed"] === true || v1["approved"] === true;
-        const saved = v1["savedLeagues"] as Array<{ id: string }> | undefined;
-        leagueIds = saved?.map((l) => l.id) ?? [];
-      }
-    } catch {
-      // V1 doc unreadable — proceed with defaults
-    }
-  }
-
+  // Always created UNAPPROVED. Access is granted server-side, never here.
+  //
+  // This used to migrate approval from a V1 email-keyed doc, which meant the
+  // client wrote `approved` itself. That was the loophole the Firestore rules
+  // had to leave open, and with it open the approval gate was decorative:
+  // anyone who could sign in could set the flag in devtools. All three V1
+  // users were verified migrated on 2026-07-25, so the path was dead code
+  // keeping a hole propped open.
   await setDoc(ref, {
     email: user.email,
     displayName: user.displayName,
-    approved,
-    leagueIds,
+    approved: false,
+    leagueIds: [],
     createdAt: new Date().toISOString(),
   });
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({ status: "loading" });
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (user) => {
       if (!user) {
         setAuthState({ status: "signed_out" });
+        setIsAdmin(false);
         return;
       }
       try {
         await ensureUserDoc(user);
-        const approved = await checkApproval(user);
+        const { approved, admin } = await readAccess(user);
+        setIsAdmin(admin);
         setAuthState(approved ? { status: "approved", user } : { status: "pending", user });
       } catch (err) {
         console.error("Auth state error:", err);
+        setIsAdmin(false);
         setAuthState({ status: "pending", user });
       }
     });
@@ -105,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ authState, signIn, signOutUser, getToken }}>
+    <AuthContext.Provider value={{ authState, isAdmin, signIn, signOutUser, getToken }}>
       {children}
     </AuthContext.Provider>
   );

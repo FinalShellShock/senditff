@@ -55,6 +55,19 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "1.1",
+    algo: "Shotgun",
+    date: "2026-07-25",
+    title: "Access control fixed, and value history is now being kept",
+    changes: [
+      "Fixed a real hole in access control. Anyone who could sign in with Google could grant themselves access by editing their own account record from the browser, which made the manual approval step decorative. Approval can now only be granted by the server. Nothing suggests this was ever used, and every current account was approved deliberately.",
+      "Join requests can be reviewed and approved from inside the app instead of the database console.",
+      "Player values are now archived once a day and kept. Until now each refresh overwrote the last one, so there was no history of what anything used to be worth. This is the groundwork for showing how a player has moved over the last week or month, and for checking the engine's own calls against what the market actually did.",
+    ],
+    knownIssues: [],
+  },
+  {
+    branch: "daniels",
     release: "1.0",
     algo: "Shotgun",
     date: "2026-07-25",

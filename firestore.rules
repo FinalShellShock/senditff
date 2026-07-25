@@ -2,10 +2,46 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Each user manages their own doc (client writes on sign-up before approval)
+    // A user manages their own doc, EXCEPT the fields that grant access.
+    //
+    // This used to be a blanket `allow read, write` for the owner, which meant
+    // the manual approval gate was decorative: anyone who could sign in with
+    // Google (so, anyone) could open devtools, set approved to true on their
+    // own doc, and read every league in the database. The server trusts these
+    // fields (api/_lib/auth.ts) and so does isApproved() below, so they have
+    // to be Admin SDK only.
+    //
+    // `subscribed` is protected too, not just `approved`: the server accepts
+    // EITHER as proof of access, so leaving one writable would leave the hole
+    // wide open.
     match /users/{uid} {
-      allow read, write: if request.auth != null
+      allow read: if isSelf(uid);
+      // Sign-up creates the doc, but only ever as an unapproved one.
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && !grantsAccess(request.resource.data);
+      // Later self-edits must leave the access fields exactly as they were.
+      allow update: if request.auth != null
+        && request.auth.uid == uid
+        && sameAccess(request.resource.data, resource.data);
+      allow delete: if false;
+    }
+
+    function isSelf(uid) {
+      return request.auth != null
         && (request.auth.uid == uid || request.auth.token.email == uid);
+    }
+
+    function grantsAccess(d) {
+      return d.get('approved', false) == true
+        || d.get('subscribed', false) == true
+        || d.get('admin', false) == true;
+    }
+
+    function sameAccess(next, prev) {
+      return next.get('approved', false) == prev.get('approved', false)
+        && next.get('subscribed', false) == prev.get('subscribed', false)
+        && next.get('admin', false) == prev.get('admin', false);
     }
 
     // League data and value snapshots: Admin SDK writes only;
@@ -15,7 +51,8 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    match /valueSnapshots/{formatKey} {
+    // Includes the daily/{YYYY-MM-DD} history subcollection.
+    match /valueSnapshots/{formatKey}/{document=**} {
       allow read: if isApproved();
       allow write: if false;
     }

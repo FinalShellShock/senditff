@@ -105,6 +105,15 @@ export type FeedbackSummary = {
   unreviewed: number;
 };
 
+// ── Admin: join requests ────────────────────────────────────────────────
+
+export type PendingUser = {
+  uid: string;
+  email: string;
+  displayName: string | null;
+  createdAt: string | null;
+};
+
 // ── Trade Grades (league trade history, graded at today's values) ───────────
 
 export type GradedAsset = {
@@ -253,6 +262,14 @@ export function makeApiClient(getToken: GetTokenFn) {
       }),
 
     getFeedbackSummary: () => apiFetch<FeedbackSummary>(getToken, "/api/feedback"),
+
+    getPendingUsers: () => apiFetch<{ pending: PendingUser[] }>(getToken, "/api/admin/users"),
+
+    decideUser: (uid: string, action: "approve" | "deny") =>
+      apiFetch<{ ok: true }>(getToken, "/api/admin/users", {
+        method: "POST",
+        body: JSON.stringify({ uid, action }),
+      }),
 
     submitSiteFeedback: (payload: SiteFeedbackPayload) =>
       apiFetch<{ ok: true; id: string }>(getToken, "/api/feedback", {

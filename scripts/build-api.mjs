@@ -37,6 +37,7 @@ const entries = [
   "api/trades/find.ts",
   "api/user/leagues.ts",
   "api/feedback.ts",
+  "api/admin/users.ts",
 ];
 
 await Promise.all(

@@ -3532,3 +3532,67 @@ body {
   padding: 8px;
   margin-bottom: 12px;
 }
+
+/* Join requests (admin only). */
+.join-count {
+  display: inline-block;
+  min-width: 15px;
+  margin-left: 5px;
+  padding: 0 4px;
+  border-radius: 7px;
+  background: #f59e0b;
+  color: #0b0f19;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+
+.join-request {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #1e293b;
+}
+
+.join-request:last-child { border-bottom: none; }
+
+.join-request-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.join-request-name {
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.join-request-email,
+.join-request-when { font-size: 10px; }
+
+.join-request-actions { display: flex; gap: 6px; }
+
+.join-approve,
+.join-deny {
+  background: none;
+  border: 1px solid #1e293b;
+  border-radius: 4px;
+  color: #94a3b8;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  padding: 5px 10px;
+}
+
+.join-approve { border-color: #22c55e; color: #22c55e; }
+.join-deny { border-color: #475569; }
+.join-approve:disabled,
+.join-deny:disabled { opacity: 0.5; cursor: default; }
