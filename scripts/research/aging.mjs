@@ -327,5 +327,19 @@ for (const pos of POSITIONS) {
 }
 console.log("};");
 
+// Raw remaining value, in discounted PPG-years. Comparable ACROSS positions
+// (a QB really does have more fantasy value left than an RB), which is what
+// window classification needs. Ages 21-22 are dropped: a startable 21-year-old
+// WR is a generational outlier and the bucket reads 65.4 against 46.4 at 22.
+console.log("\n// Raw remaining value (discounted PPG-years), for window math");
+console.log("export const REMAINING_VALUE: Record<Position, Record<number, number>> = {");
+for (const pos of POSITIONS) {
+  const body = out[pos].filter((r) => r.age >= 23).map((r) => `${r.age}: ${r.rv.toFixed(1)}`).join(", ");
+  console.log(`  ${pos}: { ${body} },`);
+}
+console.log("};");
+const globalMax = Math.max(...POSITIONS.flatMap((p) => out[p].filter((r) => r.age >= 23).map((r) => r.rv)));
+console.log(`// global max remaining value (all positions, age>=23): ${globalMax.toFixed(1)}`);
+
 writeFileSync(join(HERE, "aging-output.json"), JSON.stringify({ level: out, lossRateFitted: fitted }, null, 2));
 console.log(`\nwrote ${join(HERE, "aging-output.json")}`);

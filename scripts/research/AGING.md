@@ -130,7 +130,33 @@ unchanged at 74 packages.
   other (22.3 to 6.8 rush yds/game).
 - **Aging identifiers beyond calendar age** (RB career touches and the claimed
   1,500-touch cliff, WR usage trend, games missed) were not tested. Still open.
-- **Window classification still uses the old `POSITION_CURVES`.** Only the
-  age-arb gates moved to the data-driven curve. Porting window math needs its
-  own validation pass, since remaining-value level is monotonic and would
-  reclassify rosters wholesale.
+## Tested and rejected: porting window classification
+
+Window math still uses the old `POSITION_CURVES`, **on purpose**. The port was
+built and measured, and the data says not to do it.
+
+Two variants of a remaining-value window pressure were computed for all 16
+teams in Johnny's league and compared against the current metric:
+
+**Variant 1, normalized across positions** (`1 - rv(age,pos) / global_max`).
+Worse. 14 of 16 teams compressed into a 19-point band with no clean breaks
+(largest interior gap 3.6). Because every roster starts roughly the same
+position mix, the measure ends up driven by position mix rather than timeline,
+and discriminating power collapses.
+
+**Variant 2, normalized within position** (`1 - rv(age,pos) / rv(23,pos)`).
+Good, and that is the problem: **Spearman rank correlation 0.95** with the
+existing hand-tuned metric. It reproduces the current ordering almost exactly,
+with only minor reshuffling inside the SHORT group (jde5011 and starknet swap
+extremity).
+
+So the existing window curve is already right. Replacing it would mean
+recalibrating `WINDOW_LONG_THRESHOLD` / `WINDOW_SHORT_THRESHOLD`, churning the
+profile math, and changing essentially no classifications. The hand-set curve
+was wrong for the age-arb gates, where absolute pressure was compared across
+positions, and that is fixed. It was not wrong for ranking rosters by timeline.
+
+Worth redoing if the curves are ever refit with 2025+ data or if TE gets
+resolved.
+
+## Still open
