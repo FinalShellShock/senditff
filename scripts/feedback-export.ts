@@ -1,7 +1,13 @@
 // Pulls the `feedback` collection down to local JSON/CSV for algo tuning.
 //
 // Usage:
-//   npm run feedback:export -- [--env-file <path>] [--since <ISO date>] [--league <leagueId>]
+//   npm run feedback:export -- [--env-file <path>] [--since <ISO date>]
+//                              [--league <leagueId>] [--all] [--no-mark]
+//
+// By default this exports only entries not yet pulled, then stamps them
+// `pulledAt` so the next run returns just what is new. Use --all to re-export
+// everything (does not re-stamp what is already marked), and --no-mark to
+// look without claiming.
 //
 // Server secrets live only in the Vercel dashboard (see CLAUDE.md), so this
 // reads FIREBASE_SERVICE_ACCOUNT_JSON from process.env first, then falls
@@ -102,6 +108,8 @@ type FeedbackDiagnostics = { forced?: boolean; degraded?: string } | null;
 
 type FeedbackDoc = {
   createdAt?: string;
+  // Set by this script once an entry has been exported. Absent = never pulled.
+  pulledAt?: string;
   userId?: string;
   userEmail?: string;
   algoVersion?: string;
@@ -214,6 +222,8 @@ async function main(): Promise<void> {
   const envFile = flagValue("--env-file") ?? DEFAULT_ENV_FILE;
   const since = flagValue("--since");
   const league = flagValue("--league");
+  const all = process.argv.includes("--all");
+  const noMark = process.argv.includes("--no-mark");
 
   const serviceAccountJson = loadServiceAccountJson(envFile);
   if (!serviceAccountJson) {
@@ -240,6 +250,13 @@ async function main(): Promise<void> {
     id: doc.id,
     ...(doc.data() as FeedbackDoc),
   }));
+
+  // Incremental by default: only what has not been pulled before. Filtering
+  // client-side rather than with a `where` keeps this working on entries
+  // written before the field existed (Firestore can't match a missing field).
+  const totalCount = entries.length;
+  const alreadyPulled = entries.filter((e) => e.pulledAt).length;
+  if (!all) entries = entries.filter((e) => !e.pulledAt);
 
   if (since) {
     entries = entries.filter((e) => (e.createdAt ?? "") >= since);
@@ -269,7 +286,14 @@ async function main(): Promise<void> {
   }
   const sortedReasons = [...reasonTally.entries()].sort((a, b) => b[1] - a[1]);
 
-  console.log(`Total entries: ${entries.length}`);
+  console.log(
+    all
+      ? `Total entries: ${entries.length} (--all: full history, ${alreadyPulled} previously pulled)`
+      : `New since last pull: ${entries.length}  (of ${totalCount} total, ${alreadyPulled} already pulled)`,
+  );
+  if (!all && entries.length === 0) {
+    console.log("Nothing new. Re-run with --all to re-export everything.");
+  }
   console.log(`Up: ${upCount}, Down: ${downCount}`);
   console.log("Reasons by frequency:");
   if (sortedReasons.length === 0) {
@@ -281,6 +305,25 @@ async function main(): Promise<void> {
 
   console.log(`\nWrote: ${jsonPath}`);
   console.log(`Wrote: ${csvPath}`);
+
+  // Claim what was just exported so the next run only returns new entries.
+  // Done last, on purpose: if anything above threw, nothing is marked and the
+  // pull is safely repeatable. --no-mark looks without claiming.
+  const toMark = entries.filter((e) => !e.pulledAt);
+  if (noMark) {
+    console.log(`\n--no-mark: left ${toMark.length} entries unclaimed.`);
+  } else if (toMark.length > 0) {
+    const pulledAt = new Date().toISOString();
+    // Firestore caps a batch at 500 writes.
+    for (let i = 0; i < toMark.length; i += 400) {
+      const batch = db.batch();
+      for (const entry of toMark.slice(i, i + 400)) {
+        batch.update(db.collection("feedback").doc(entry.id), { pulledAt });
+      }
+      await batch.commit();
+    }
+    console.log(`\nMarked ${toMark.length} entries pulled at ${pulledAt}.`);
+  }
 }
 
 main().catch((err) => {
