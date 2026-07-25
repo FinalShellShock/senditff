@@ -106,6 +106,7 @@ type FeedbackDoc = {
   userEmail?: string;
   algoVersion?: string;
   algoFingerprint?: string;
+  prompt?: string | null;
   verdict?: string;
   reasons?: string[];
   comment?: string;
@@ -146,6 +147,7 @@ const CSV_COLUMNS = [
   "archMatch",
   "give",
   "receive",
+  "prompt",
   "forced",
   "degraded",
 ] as const;
@@ -200,6 +202,7 @@ function toRow(entry: FeedbackEntry): string[] {
     archMatch: scores.archMatch ?? "",
     give: assetNames(pkg.give),
     receive: assetNames(pkg.receive),
+    prompt: entry.prompt ?? "",
     forced: diagnostics.forced ?? "",
     degraded: diagnostics.degraded ?? "",
   };

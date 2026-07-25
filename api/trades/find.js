@@ -1256,10 +1256,15 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
 
 // api/trades/find.ts
 var MODEL_HAIKU = "claude-haiku-4-5-20251001";
-var PROMPT_VERSION = 2;
-function rationaleHash(pkg, myProfile, counterProfile) {
+var PROMPT_VERSION = 3;
+function rationaleHash(pkg, myProfile, counterProfile, diagnostics) {
   const key = JSON.stringify({
     promptVersion: PROMPT_VERSION,
+    // These shape the prompt's stance (recommendation vs "closest we found"),
+    // so the same package under different diagnostics is a different prompt
+    // and must not share a cache entry.
+    degraded: diagnostics?.degraded ?? null,
+    myArchetypeScore: diagnostics?.myArchetypeScore ?? null,
     give: pkg.give.map((a) => a.id).sort(),
     receive: pkg.receive.map((a) => a.id).sort(),
     archetype: pkg.archetype,
@@ -1276,21 +1281,35 @@ function describeAsset(a) {
 function sanitizeRationale(text) {
   return text.replace(/^#{1,6}[^\n]*$/gm, "").replace(/\*\*/g, "").replace(/\s*[—–]\s*/g, ", ").trim();
 }
-function buildRationalePrompt(pkg, myProfile, counterProfile) {
+function buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics) {
   const giveNames = pkg.give.map(describeAsset).join(", ");
   const receiveNames = pkg.receive.map(describeAsset).join(", ");
   const archetypeLabel = pkg.archetype.replace(/_/g, " ");
-  const fairnessNote = pkg.fairness === "FAIR" ? "The value is even." : `On raw value this is a ${fairnessText(pkg.fairness).toLowerCase()} for this team. Acknowledge that lean and why the deal can still make sense (or what it costs).`;
-  const counterNote = counterProfile ? `${pkg.counterTeam} profiles as ${counterProfile.windowLabel} (${counterProfile.competitiveness}, ${counterProfile.windowTier} window).` : "";
-  const prompt = `You are analyzing a dynasty fantasy football trade for a team classified as ${myProfile.windowLabel} (${myProfile.competitiveness} competitiveness, ${myProfile.windowTier} window).
+  const fairnessNote = pkg.fairness === "FAIR" ? "Value is even." : `Raw value is a ${fairnessText(pkg.fairness).toLowerCase()} for you; acknowledge the lean and what it buys or costs.`;
+  const inbound = [...new Set(pkg.receive.filter((a) => a.kind === "player" && a.position).map((a) => a.position))];
+  const needNotes = inbound.map((pos) => {
+    const ps = myProfile.positionScores?.[pos];
+    if (!ps) return null;
+    return `${pos} ${ps.classification} (urgency ${Math.round(ps.urgency)})`;
+  }).filter(Boolean);
+  const needNote = needNotes.length ? `Your need at what you're getting: ${needNotes.join(", ")}.` : "";
+  const fitNote = pkg.scores ? `Fit grades: you ${pkg.scores.myFit >= 0.05 ? "gain" : pkg.scores.myFit <= -0.05 ? "lose" : "roughly break even"}, they ${pkg.scores.theirFit >= 0.05 ? "gain" : pkg.scores.theirFit <= -0.05 ? "lose" : "roughly break even"}.` : "";
+  const archMatch = pkg.scores?.archMatch ?? 0;
+  const rosterFit = diagnostics?.myArchetypeScore;
+  const weak = diagnostics?.degraded != null || archMatch < 0.3 || rosterFit != null && rosterFit < 30;
+  const stance = weak ? `IMPORTANT: this roster is a weak match for ${archetypeLabel}${rosterFit != null ? ` (archetype fit ${rosterFit}/100)` : ""} and this was the closest package available, not a strong one. Open by saying plainly that this is an idea to consider rather than a recommendation, and name what is imperfect about it. Do not oversell.` : archMatch >= 0.6 ? `This is a textbook ${archetypeLabel} for this roster. Lead with why the shape fits, and recommend it directly.` : `This is a reasonable ${archetypeLabel} fit. Be measured, neither overselling nor hedging.`;
+  const theirs = counterProfile ? `${pkg.counterTeam} is ${counterProfile.windowLabel} (${counterProfile.competitiveness}, ${counterProfile.windowTier}).` : "";
+  return `Dynasty fantasy football trade. You are ${myProfile.windowLabel} (${myProfile.competitiveness}, ${myProfile.windowTier} window). ${theirs}
 
-Trade: Send ${giveNames} and receive ${receiveNames} from ${pkg.counterTeam}. ${counterNote}
-Trade type: ${archetypeLabel}. ${fairnessNote}
+Send: ${giveNames}
+Get: ${receiveNames}
 
-Write 3-4 sentences explaining why this trade makes sense for this team right now, and end with one sentence on why ${pkg.counterTeam} says yes given their situation (a trade nobody accepts is worthless). Be specific about the players, picks, and both teams' timelines. Plain prose only: no markdown, no headings, no bullet points, no em dashes.
+Shape: ${archetypeLabel}. ${fairnessNote} ${fitNote} ${needNote}
+${stance}
 
-Use only the facts given above. Ages are stated where they matter: cite them only as given, and never estimate one that is not listed. Do not invent stats, injuries, contracts, team situations, or draft capital that does not appear in this prompt. If you are unsure of a detail, argue from the roster timelines instead of guessing.`;
-  return prompt;
+Write 2-3 sentences on why this fits your roster now, then one sentence on why ${pkg.counterTeam} accepts (a trade nobody takes is worthless). Be concrete about the players and both timelines.
+
+Use only the facts above. Never invent an age, stat, injury, contract, or team situation not stated here. Plain prose: no markdown, no bullets, no em dashes.`;
 }
 async function generateRationale(prompt) {
   const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -1310,9 +1329,9 @@ async function generateRationale(prompt) {
   const data = await apiRes.json();
   return data.content?.[0]?.text?.trim() ?? "Rationale unavailable.";
 }
-async function addRationale(pkg, myProfile, counterProfile) {
-  const hash = rationaleHash(pkg, myProfile, counterProfile);
-  const prompt = buildRationalePrompt(pkg, myProfile, counterProfile);
+async function addRationale(pkg, myProfile, counterProfile, diagnostics) {
+  const hash = rationaleHash(pkg, myProfile, counterProfile, diagnostics);
+  const prompt = buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics);
   const cacheRef = adminDb.collection("rationaleCache").doc(hash);
   const cached = await cacheRef.get();
   if (cached.exists) {
@@ -1377,7 +1396,12 @@ async function handler(req, res) {
     });
     const withRationales = await Promise.all(
       packages.map(
-        (pkg) => addRationale(pkg, myProfile, profiles.find((p) => p.rosterId === pkg.counterRosterId))
+        (pkg) => addRationale(
+          pkg,
+          myProfile,
+          profiles.find((p) => p.rosterId === pkg.counterRosterId),
+          diagnostics
+        )
       )
     );
     return res.status(200).json({ packages: withRationales, diagnostics });

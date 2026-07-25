@@ -69,6 +69,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     typeof rawPackageIndex === "number" && Number.isFinite(rawPackageIndex) ? rawPackageIndex : 0;
 
   const pkgRecord = pkg as Record<string, unknown>;
+  // Hoisted out of the package blob: the prompt is the thing being tuned, so
+  // it should be a first-class column in the export rather than something you
+  // have to dig for.
+  const prompt = typeof pkgRecord["prompt"] === "string" ? (pkgRecord["prompt"] as string) : null;
   const counterRosterId =
     typeof pkgRecord["counterRosterId"] === "number" ? (pkgRecord["counterRosterId"] as number) : null;
 
@@ -102,6 +106,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       packageIndex,
       search,
       package: pkg,
+      prompt,
       diagnostics: diagnostics ?? null,
     });
 

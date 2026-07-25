@@ -21,15 +21,21 @@ const MODEL_HAIKU = "claude-haiku-4-5-20251001";
 // better prompt would keep serving the old text forever: that is exactly how
 // rationales with invented ages would have survived the fix that added real
 // ages to the prompt.
-const PROMPT_VERSION = 2;
+const PROMPT_VERSION = 3;
 
 function rationaleHash(
   pkg: Omit<TradePackage, "rationale">,
   myProfile: TeamProfile,
   counterProfile?: TeamProfile,
+  diagnostics?: { degraded?: string; myArchetypeScore?: number },
 ): string {
   const key = JSON.stringify({
     promptVersion: PROMPT_VERSION,
+    // These shape the prompt's stance (recommendation vs "closest we found"),
+    // so the same package under different diagnostics is a different prompt
+    // and must not share a cache entry.
+    degraded: diagnostics?.degraded ?? null,
+    myArchetypeScore: diagnostics?.myArchetypeScore ?? null,
     give: pkg.give.map((a) => a.id).sort(),
     receive: pkg.receive.map((a) => a.id).sort(),
     archetype: pkg.archetype,
@@ -72,10 +78,26 @@ function sanitizeRationale(text: string): string {
 // UI for inspection, including for cache hits where no API call happens. It is
 // deterministic from the same inputs, so rebuilding it always matches what the
 // cached rationale was written from.
+//
+// Token economics drove the rewrite. Output is billed at 5x input on Haiku
+// ($5 vs $1 per Mtok), and rationales run longer than the prompt, so ~78% of
+// the spend is the response. The lever is therefore asking for less prose, not
+// trimming the input. Note max_tokens is a CAP, not a budget: unused tokens
+// cost nothing, so lowering it truncates rather than saves. The ask is what
+// controls length.
+//
+// Prompt caching does NOT apply here: Haiku 4.5's minimum cacheable prefix is
+// 4096 tokens and this prompt is roughly 300. A cache_control marker would
+// silently do nothing.
+//
+// The instruction boilerplate was cut hard to make room for signal the engine
+// already knows and was throwing away: positional need, the two-sided fit
+// grades, and how well the package actually matches its archetype.
 export function buildRationalePrompt(
   pkg: Omit<TradePackage, "rationale">,
   myProfile: TeamProfile,
   counterProfile?: TeamProfile,
+  diagnostics?: { degraded?: string; myArchetypeScore?: number },
 ): string {
   const giveNames = pkg.give.map(describeAsset).join(", ");
   const receiveNames = pkg.receive.map(describeAsset).join(", ");
@@ -83,23 +105,55 @@ export function buildRationalePrompt(
 
   const fairnessNote =
     pkg.fairness === "FAIR"
-      ? "The value is even."
-      : `On raw value this is a ${fairnessText(pkg.fairness).toLowerCase()} for this team. Acknowledge that lean and why the deal can still make sense (or what it costs).`;
+      ? "Value is even."
+      : `Raw value is a ${fairnessText(pkg.fairness).toLowerCase()} for you; acknowledge the lean and what it buys or costs.`;
 
-  const counterNote = counterProfile
-    ? `${pkg.counterTeam} profiles as ${counterProfile.windowLabel} (${counterProfile.competitiveness}, ${counterProfile.windowTier} window).`
+  // Positional need on what's coming back. The engine computes urgency and a
+  // classification per position and previously told the writer none of it, so
+  // rationales argued from vibes where hard numbers existed.
+  const inbound = [...new Set(pkg.receive.filter((a) => a.kind === "player" && a.position).map((a) => a.position!))];
+  const needNotes = inbound
+    .map((pos) => {
+      const ps = myProfile.positionScores?.[pos as keyof typeof myProfile.positionScores];
+      if (!ps) return null;
+      return `${pos} ${ps.classification} (urgency ${Math.round(ps.urgency)})`;
+    })
+    .filter(Boolean);
+  const needNote = needNotes.length ? `Your need at what you're getting: ${needNotes.join(", ")}.` : "";
+
+  const fitNote = pkg.scores
+    ? `Fit grades: you ${pkg.scores.myFit >= 0.05 ? "gain" : pkg.scores.myFit <= -0.05 ? "lose" : "roughly break even"}, they ${pkg.scores.theirFit >= 0.05 ? "gain" : pkg.scores.theirFit <= -0.05 ? "lose" : "roughly break even"}.`
     : "";
 
-  const prompt = `You are analyzing a dynasty fantasy football trade for a team classified as ${myProfile.windowLabel} (${myProfile.competitiveness} competitiveness, ${myProfile.windowTier} window).
+  // Johnny's ask: lead with confidence when the shape genuinely fits, and say
+  // plainly when it does not. A forced-intent search that found nothing clean,
+  // or a roster that scores badly for this archetype, produces inspiration
+  // rather than a recommendation, and the copy should admit that.
+  const archMatch = pkg.scores?.archMatch ?? 0;
+  const rosterFit = diagnostics?.myArchetypeScore;
+  const weak =
+    diagnostics?.degraded != null || archMatch < 0.3 || (rosterFit != null && rosterFit < 30);
+  const stance = weak
+    ? `IMPORTANT: this roster is a weak match for ${archetypeLabel}${rosterFit != null ? ` (archetype fit ${rosterFit}/100)` : ""} and this was the closest package available, not a strong one. Open by saying plainly that this is an idea to consider rather than a recommendation, and name what is imperfect about it. Do not oversell.`
+    : archMatch >= 0.6
+      ? `This is a textbook ${archetypeLabel} for this roster. Lead with why the shape fits, and recommend it directly.`
+      : `This is a reasonable ${archetypeLabel} fit. Be measured, neither overselling nor hedging.`;
 
-Trade: Send ${giveNames} and receive ${receiveNames} from ${pkg.counterTeam}. ${counterNote}
-Trade type: ${archetypeLabel}. ${fairnessNote}
+  const theirs = counterProfile
+    ? `${pkg.counterTeam} is ${counterProfile.windowLabel} (${counterProfile.competitiveness}, ${counterProfile.windowTier}).`
+    : "";
 
-Write 3-4 sentences explaining why this trade makes sense for this team right now, and end with one sentence on why ${pkg.counterTeam} says yes given their situation (a trade nobody accepts is worthless). Be specific about the players, picks, and both teams' timelines. Plain prose only: no markdown, no headings, no bullet points, no em dashes.
+  return `Dynasty fantasy football trade. You are ${myProfile.windowLabel} (${myProfile.competitiveness}, ${myProfile.windowTier} window). ${theirs}
 
-Use only the facts given above. Ages are stated where they matter: cite them only as given, and never estimate one that is not listed. Do not invent stats, injuries, contracts, team situations, or draft capital that does not appear in this prompt. If you are unsure of a detail, argue from the roster timelines instead of guessing.`;
+Send: ${giveNames}
+Get: ${receiveNames}
 
-  return prompt;
+Shape: ${archetypeLabel}. ${fairnessNote} ${fitNote} ${needNote}
+${stance}
+
+Write 2-3 sentences on why this fits your roster now, then one sentence on why ${pkg.counterTeam} accepts (a trade nobody takes is worthless). Be concrete about the players and both timelines.
+
+Use only the facts above. Never invent an age, stat, injury, contract, or team situation not stated here. Plain prose: no markdown, no bullets, no em dashes.`;
 }
 
 async function generateRationale(prompt: string): Promise<string> {
@@ -126,9 +180,10 @@ async function addRationale(
   pkg: Omit<TradePackage, "rationale">,
   myProfile: TeamProfile,
   counterProfile?: TeamProfile,
+  diagnostics?: { degraded?: string; myArchetypeScore?: number },
 ): Promise<TradePackage> {
-  const hash = rationaleHash(pkg, myProfile, counterProfile);
-  const prompt = buildRationalePrompt(pkg, myProfile, counterProfile);
+  const hash = rationaleHash(pkg, myProfile, counterProfile, diagnostics);
+  const prompt = buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics);
   const cacheRef = adminDb.collection("rationaleCache").doc(hash);
   const cached = await cacheRef.get();
 
@@ -223,7 +278,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const withRationales = await Promise.all(
       packages.map((pkg) =>
-        addRationale(pkg, myProfile, profiles.find((p) => p.rosterId === pkg.counterRosterId)),
+        addRationale(
+          pkg,
+          myProfile,
+          profiles.find((p) => p.rosterId === pkg.counterRosterId),
+          diagnostics,
+        ),
       ),
     );
 

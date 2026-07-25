@@ -124,6 +124,7 @@ async function handler(req, res) {
   const comment = typeof rawComment === "string" ? rawComment.slice(0, MAX_COMMENT_LENGTH) : "";
   const packageIndex = typeof rawPackageIndex === "number" && Number.isFinite(rawPackageIndex) ? rawPackageIndex : 0;
   const pkgRecord = pkg;
+  const prompt = typeof pkgRecord["prompt"] === "string" ? pkgRecord["prompt"] : null;
   const counterRosterId = typeof pkgRecord["counterRosterId"] === "number" ? pkgRecord["counterRosterId"] : null;
   const search = {
     archetype: rawSearch?.archetype ?? null,
@@ -153,6 +154,7 @@ async function handler(req, res) {
       packageIndex,
       search,
       package: pkg,
+      prompt,
       diagnostics: diagnostics ?? null
     });
     return res.status(200).json({ ok: true, id: docRef.id });
