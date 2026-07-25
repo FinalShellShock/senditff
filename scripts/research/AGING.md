@@ -130,33 +130,38 @@ unchanged at 74 packages.
   other (22.3 to 6.8 rush yds/game).
 - **Aging identifiers beyond calendar age** (RB career touches and the claimed
   1,500-touch cliff, WR usage trend, games missed) were not tested. Still open.
-## Tested and rejected: porting window classification
+## Window classification: measured, rejected, then reversed
 
-Window math still uses the old `POSITION_CURVES`, **on purpose**. The port was
-built and measured, and the data says not to do it.
+The port was first measured and skipped, then shipped anyway. Both variants
+were computed for all 16 teams in Johnny's league:
 
-Two variants of a remaining-value window pressure were computed for all 16
-teams in Johnny's league and compared against the current metric:
+**Variant 1, normalized across positions** (`1 - rv / global_max`). Worse. 14
+of 16 teams compressed into a 19-point band with no clean breaks. Every roster
+starts roughly the same position mix, so the measure tracks mix rather than
+timeline and discriminating power collapses. Rejected.
 
-**Variant 1, normalized across positions** (`1 - rv(age,pos) / global_max`).
-Worse. 14 of 16 teams compressed into a 19-point band with no clean breaks
-(largest interior gap 3.6). Because every roster starts roughly the same
-position mix, the measure ends up driven by position mix rather than timeline,
-and discriminating power collapses.
+**Variant 2, normalized within position** (`1 - rv(age) / rv(23)`). Spearman
+**0.95** against the old hand-tuned metric.
 
-**Variant 2, normalized within position** (`1 - rv(age,pos) / rv(23,pos)`).
-Good, and that is the problem: **Spearman rank correlation 0.95** with the
-existing hand-tuned metric. It reproduces the current ordering almost exactly,
-with only minor reshuffling inside the SHORT group (jde5011 and starknet swap
-extremity).
+The first call was to skip it, on the grounds that 0.95 meant it changed
+nothing. That was wrong. 0.95 means the swap is *safe*, not pointless, and
+skipping it left two aging models in the codebase, a hand curve driving window
+math and the projection arrows and a data curve driving the trade engine, that
+could be refit independently and drift apart. Shipped, and `POSITION_CURVES`
+deleted so there is exactly one model.
 
-So the existing window curve is already right. Replacing it would mean
-recalibrating `WINDOW_LONG_THRESHOLD` / `WINDOW_SHORT_THRESHOLD`, churning the
-profile math, and changing essentially no classifications. The hand-set curve
-was wrong for the age-arb gates, where absolute pressure was compared across
-positions, and that is fixed. It was not wrong for ranking rosters by timeline.
+`REMAINING_VALUE` ships isotonic **non-increasing**. The raw series broke the
+projection invariant that value retention cannot increase with horizon (15
+failures), because QB read 59.1 at age 30 against 55.2 at 23. That rise is real
+in principle, young QBs carry bust risk, but it is 7% on n=52 vs 56 and the
+200-attempt volume floor already removes most of that effect.
 
-Worth redoing if the curves are ever refit with 2025+ data or if TE gets
-resolved.
+Window cuts moved 9/14 to 14/19 for the new scale. The LONG cut sits on a real
+4.9-point gap between 11.5 and 16.4. The SHORT cut has no natural break up
+there and is a judgment call, chosen to keep tier sizes near what the league
+had before. Re-derive it if a second league disagrees.
 
-## Still open
+Result: 8 LONG / 2 MID / 6 SHORT, projection invariants hold, engine
+deterministic, default mode unchanged at 74 packages.
+
+## Still open## Still open
