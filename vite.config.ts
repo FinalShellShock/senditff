@@ -1,8 +1,17 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+// @ts-expect-error -- plain .mjs helper, shared with scripts/build-api.mjs so
+// the frontend and the API bundles can never disagree about the hash.
+import { algoFingerprint } from "./scripts/algo-fingerprint.mjs";
 
 export default defineConfig({
   plugins: [react()],
+  // Same fingerprint the API bundles are stamped with. Without this the
+  // frontend fell back to "dev" in production, so the patch-notes modal showed
+  // a different build id than the one attached to logged feedback.
+  define: {
+    __ALGO_FINGERPRINT__: JSON.stringify(algoFingerprint()),
+  },
   resolve: {
     dedupe: ["react", "react-dom"],
   },
