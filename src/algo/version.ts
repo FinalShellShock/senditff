@@ -7,11 +7,13 @@
 // remembering to: attribution is handled by the fingerprint below.
 export const ALGO_VERSION = "shotgun";
 
-// Content hash of every file that decides which trades get suggested,
-// injected at bundle time by scripts/build-api.mjs. It changes by itself the
-// moment the algorithm's code changes, so a thumbs-down stays pinned to the
-// exact engine that produced it with no manual bookkeeping. Falls back to
-// "dev" outside a bundled build (local tsx runs, vite).
-declare const __ALGO_FINGERPRINT__: string | undefined;
-export const ALGO_FINGERPRINT =
-  typeof __ALGO_FINGERPRINT__ === "string" ? __ALGO_FINGERPRINT__ : "dev";
+// Content hash of every file that decides which trades get suggested, written
+// to src/algoFingerprint.generated.ts by scripts/build-api.mjs. It changes by
+// itself the moment the algorithm's code changes, so a thumbs-down stays
+// pinned to the exact engine that produced it with no manual bookkeeping.
+//
+// A generated file rather than a build-time define because BOTH the API
+// bundles and the frontend need it, and .vercelignore excludes api/**/*.ts, so
+// Vercel's builder cannot compute it. The frontend used to fall back to "dev"
+// in production while the server stamped the real hash.
+export { ALGO_FINGERPRINT_BUILD as ALGO_FINGERPRINT } from "../algoFingerprint.generated";
