@@ -72,8 +72,45 @@ export async function getValueMaps(format: LeagueFormat): Promise<ValueMaps> {
     updatedAt: new Date(now).toISOString(),
   };
   await ref.set(stored);
+  await retainDailySnapshot(ref, stored, now);
 
   return { dynastyValues, redraftValues, dynastyByPos, redraftByPos };
+}
+
+// Keep one dated copy of the values per day, forever.
+//
+// The document above is a CACHE: every refresh overwrites it, so the day
+// before is gone the moment the TTL expires. That makes a whole class of
+// question permanently unanswerable, and the loss is silent and cumulative.
+// Two we actually want:
+//
+//   1. "How has this player moved over the last 7 / 15 / 30 days", which the
+//      saved-drafts feature needs (see WISHLIST.md).
+//   2. "The engine said buy this player in July. Did he go up?" That is
+//      objective validation of the algorithm against the market, as opposed
+//      to the thumbs, which only tell us whether a trade LOOKED right.
+//
+// Neither can be backfilled. Every day without this is a datapoint that
+// cannot be recovered at any price, which is why it ships ahead of the
+// features that consume it.
+//
+// First write of a given day wins, so the cost is at most one extra document
+// per format per day (a few tens of KB) regardless of how often the cache
+// refreshes. Failures are swallowed: history is valuable, but not more
+// valuable than serving the request.
+async function retainDailySnapshot(
+  ref: FirebaseFirestore.DocumentReference,
+  stored: StoredSnapshot,
+  now: number,
+): Promise<void> {
+  try {
+    const day = new Date(now).toISOString().slice(0, 10); // YYYY-MM-DD, UTC
+    const dailyRef = ref.collection("daily").doc(day);
+    if ((await dailyRef.get()).exists) return;
+    await dailyRef.set(stored);
+  } catch (err) {
+    console.error("daily snapshot retention failed", err);
+  }
 }
 
 type StoredSnapshot = {

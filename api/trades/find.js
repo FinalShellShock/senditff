@@ -205,7 +205,18 @@ async function getValueMaps(format) {
     updatedAt: new Date(now).toISOString()
   };
   await ref.set(stored);
+  await retainDailySnapshot(ref, stored, now);
   return { dynastyValues, redraftValues, dynastyByPos, redraftByPos };
+}
+async function retainDailySnapshot(ref, stored, now) {
+  try {
+    const day = new Date(now).toISOString().slice(0, 10);
+    const dailyRef = ref.collection("daily").doc(day);
+    if ((await dailyRef.get()).exists) return;
+    await dailyRef.set(stored);
+  } catch (err) {
+    console.error("daily snapshot retention failed", err);
+  }
 }
 function deserializeSnapshot(data) {
   const empty = { QB: [], RB: [], WR: [], TE: [] };
