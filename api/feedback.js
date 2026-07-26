@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "98115421c99a";
+var ALGO_FINGERPRINT_BUILD = "7a883247a604";
 
 // src/algo/version.ts
 var ALGO_VERSION = "shotgun";
@@ -45,6 +45,21 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.11",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "The engine now cares most about who you end up with",
+    changes: [
+      "Followed 19,933 real trades into the following season to find what actually predicts a team getting better. One thing dominates: the quality of the player you end up with. Landing a top-24 dynasty player beat expectations 60% of the time, versus 48% for a trade whose best piece was outside the top 100. Ending up with the better of the two headliners beat giving him away, 54% to 46%.",
+      "Trade suggestions now weigh that directly, so packages that land you a genuinely better player rank above ones that just balance on value. Trades landing a top-24 player went from 13% to 18% of what gets suggested.",
+      "Almost nothing else turned out to matter. Trade shape, whether picks are involved, whether the player had been rising or falling, which position you get, and even whether you are filling a positional hole all came out flat once the quality of the player was accounted for."
+    ],
+    knownIssues: [
+      "61% of suggested trades still have you giving away the best player in the deal, which is the shape that underperforms. Fixing it needs changes to how packages are built, not how they are ranked, and four attempts at the ranking approach did not move it."
+    ]
+  },
   {
     branch: "daniels",
     release: "1.10",

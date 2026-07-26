@@ -71,6 +71,17 @@ var PICK_DECAY = {
   2: 0.7,
   3: 0.55
 };
+var BEST_PLAYER_EDGE = 0.05;
+var ACQUIRED_QUALITY_BONUS = [
+  { maxRank: 24, bonus: 0.08 },
+  { maxRank: 60, bonus: 0.02 },
+  { maxRank: 100, bonus: 0 },
+  { maxRank: Infinity, bonus: -0.02 }
+];
+var FRINGE_RANK_MIN = 61;
+var FRINGE_RANK_MAX = 100;
+var YOUNG_ASSET_MAX_AGE = 25;
+var YOUNG_ASSET_BONUS = 0.05;
 var SHAPE_FIT_BY_COMPETITIVENESS = {
   STRONG: 0.06,
   AVERAGE: 0.02,
@@ -558,6 +569,66 @@ function timelinePenalty(team, receives, sends) {
   const offset = Math.min(cost, surplus / TANK_SURPLUS_SCALE);
   return -(cost - offset);
 }
+var overallCache = null;
+function overallRankOf(value, averages) {
+  if (overallCache?.pools !== averages.depthPlayerPool) {
+    const all = [];
+    for (const pos of POSITIONS) all.push(...averages.depthPlayerPool[pos]);
+    all.sort((a, b) => b - a);
+    overallCache = { pools: averages.depthPlayerPool, sorted: all };
+  }
+  const arr = overallCache.sorted;
+  if (arr.length < FRINGE_RANK_MAX) return null;
+  let lo = 0, hi = arr.length;
+  while (lo < hi) {
+    const mid = lo + hi >> 1;
+    if (arr[mid] > value) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo + 1;
+}
+function bestPlayerEdge(receives, gives, averages) {
+  const bestOf = (assets) => {
+    let best = null;
+    for (const a of assets) {
+      if (a.kind !== "player") continue;
+      if (best == null || a.player.valueDynasty > best) best = a.player.valueDynasty;
+    }
+    return best;
+  };
+  const mine = bestOf(receives);
+  const theirs = bestOf(gives);
+  let adj = 0;
+  if (mine != null && theirs != null) {
+    if (mine > theirs) adj += BEST_PLAYER_EDGE;
+    else if (mine < theirs) adj -= BEST_PLAYER_EDGE;
+  }
+  if (mine != null) {
+    const rank = overallRankOf(mine, averages);
+    if (rank != null) {
+      for (const tier of ACQUIRED_QUALITY_BONUS) {
+        if (rank <= tier.maxRank) {
+          adj += tier.bonus;
+          break;
+        }
+      }
+    }
+  }
+  return adj;
+}
+function youngAssetQuality(team, receives, averages) {
+  if (team.windowTier !== "LONG") return 0;
+  let score = 0;
+  for (const a of receives) {
+    if (a.kind !== "player") continue;
+    if ((a.player.age ?? 99) > YOUNG_ASSET_MAX_AGE) continue;
+    const rank = overallRankOf(a.player.valueDynasty, averages);
+    if (rank == null) continue;
+    if (rank >= FRINGE_RANK_MIN && rank <= FRINGE_RANK_MAX) score += YOUNG_ASSET_BONUS;
+    else if (rank > FRINGE_RANK_MAX) score -= YOUNG_ASSET_BONUS;
+  }
+  return Math.max(-YOUNG_ASSET_BONUS, Math.min(YOUNG_ASSET_BONUS, score));
+}
 function shapeFitAdjustment(team, give, receive) {
   const w = SHAPE_FIT_BY_COMPETITIVENESS[team.competitiveness];
   if (w === 0) return 0;
@@ -753,8 +824,8 @@ function scoreCandidate(cand, myProfile, others, ctx) {
   const theirImpact = simulateImpact(them, cand.receive, cand.give, ctx.format, ctx.averages, ctx.thisYear);
   const myFit = fitScore(myImpact);
   const theirFit = fitScore(theirImpact);
-  const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give) + shapeFitAdjustment(myProfile, cand.give, cand.receive);
-  const theirTimeline = timelinePenalty(them, cand.give, cand.receive) + shapeFitAdjustment(them, cand.receive, cand.give);
+  const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give) + shapeFitAdjustment(myProfile, cand.give, cand.receive) + youngAssetQuality(myProfile, cand.receive, ctx.averages) + bestPlayerEdge(cand.receive, cand.give, ctx.averages);
+  const theirTimeline = timelinePenalty(them, cand.give, cand.receive) + shapeFitAdjustment(them, cand.receive, cand.give) + youngAssetQuality(them, cand.give, ctx.averages) + bestPlayerEdge(cand.give, cand.receive, ctx.averages);
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
   const { give: adjGive, receive: adjReceive } = tradeEffectiveValues(

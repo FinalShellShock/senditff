@@ -230,6 +230,44 @@ export const URGENCY_SEVERE = 45;
 // tell "one real hole plus a surplus" apart from "evenly mediocre everywhere".
 export const URGENCY_SPREAD_FULL = 30;
 
+// NOTE: gating generation on archetype score was tried here and reverted. It
+// cut packages 80 -> 67, top-24 landings 14 -> 7, and recommendations 29 -> 23
+// while tripling inspiration, and it contradicted the research: archetype fit
+// does not predict outcomes, so gating on it discarded good candidates
+// alongside bad ones. Left as a comment so it is not retried.
+
+// The strongest thing measured in the whole trade study: what predicts a good
+// outcome is WHO YOU END UP WITH, not how the trade is shaped.
+//
+// 19,933 trade-sides followed into the next season, baseline-controlled:
+//
+//   got the better player in the trade   54%   (n=4,500)
+//   gave up the better player            46%   (n=4,431)
+//
+//   best player acquired, top 24         60%   (n=1,584)
+//   top 25-60                            51%   (n=2,672)
+//   top 61-100                           48%   (n=2,284)
+//   nothing better than 100              48%   (n=5,105)
+//
+// Monotonic, symmetric on the give/get split, and on the largest samples in
+// the study. For contrast, everything else tested came back flat: trade shape
+// (51 vs 52), picks (51), momentum before the trade (48/51/49), position
+// acquired (49-51), and positional need once quality is held constant (57 vs
+// 56). See scripts/research/REBUILD.md.
+//
+// Applied to BOTH sides on purpose. Only one side can end up with the best
+// player, so this correctly makes taking the stud help you and hurt them,
+// which is the actual negotiation. The balance gate and fairness labels still
+// apply, so it cannot manufacture a fleece: it chooses among trades that are
+// already close on value.
+export const BEST_PLAYER_EDGE = 0.05;
+export const ACQUIRED_QUALITY_BONUS: Array<{ maxRank: number; bonus: number }> = [
+  { maxRank: 24, bonus: 0.08 },
+  { maxRank: 60, bonus: 0.02 },
+  { maxRank: 100, bonus: 0 },
+  { maxRank: Infinity, bonus: -0.02 },
+];
+
 // Young assets are not interchangeable, and the difference is measurable.
 //
 // Tracked 19,615 real acquisitions from rank at the trade to rank 12 months

@@ -17,6 +17,8 @@ import {
   DEPTH_RESILIENCE_WEIGHT,
   LATERAL_SWAP_MIN_AGE_GAP,
   PICK_DECAY,
+  ACQUIRED_QUALITY_BONUS,
+  BEST_PLAYER_EDGE,
   FRINGE_RANK_MAX,
   FRINGE_RANK_MIN,
   POSITIONS,
@@ -358,6 +360,44 @@ function overallRankOf(value: number, averages: LeagueAverages): number | null {
   return lo + 1;
 }
 
+// Who you end up with, which is the strongest measured predictor of a good
+// outcome. See BEST_PLAYER_EDGE in constants.ts for the numbers.
+//
+// Two separate measured effects, so both apply:
+//   1. ending up with the better player of the two headliners (54% vs 46%)
+//   2. the absolute quality of the best piece acquired (60% at top-24, 48%
+//      at nothing-better-than-100)
+function bestPlayerEdge(
+  receives: Asset[],
+  gives: Asset[],
+  averages: LeagueAverages,
+): number {
+  const bestOf = (assets: Asset[]): number | null => {
+    let best: number | null = null;
+    for (const a of assets) {
+      if (a.kind !== "player") continue;
+      if (best == null || a.player.valueDynasty > best) best = a.player.valueDynasty;
+    }
+    return best;
+  };
+  const mine = bestOf(receives);
+  const theirs = bestOf(gives);
+  let adj = 0;
+  if (mine != null && theirs != null) {
+    if (mine > theirs) adj += BEST_PLAYER_EDGE;
+    else if (mine < theirs) adj -= BEST_PLAYER_EDGE;
+  }
+  if (mine != null) {
+    const rank = overallRankOf(mine, averages);
+    if (rank != null) {
+      for (const tier of ACQUIRED_QUALITY_BONUS) {
+        if (rank <= tier.maxRank) { adj += tier.bonus; break; }
+      }
+    }
+  }
+  return adj;
+}
+
 // Among YOUNG players, the fringe band rises and deep fliers do not.
 // See FRINGE_RANK_MIN in constants.ts for the measurement.
 //
@@ -694,10 +734,12 @@ function scoreCandidate(
   const theirFit = fitScore(theirImpact);
   const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give)
     + shapeFitAdjustment(myProfile, cand.give, cand.receive)
-    + youngAssetQuality(myProfile, cand.receive, ctx.averages);
+    + youngAssetQuality(myProfile, cand.receive, ctx.averages)
+    + bestPlayerEdge(cand.receive, cand.give, ctx.averages);
   const theirTimeline = timelinePenalty(them, cand.give, cand.receive)
     + shapeFitAdjustment(them, cand.receive, cand.give)
-    + youngAssetQuality(them, cand.give, ctx.averages);
+    + youngAssetQuality(them, cand.give, ctx.averages)
+    + bestPlayerEdge(cand.give, cand.receive, ctx.averages);
 
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
@@ -1386,6 +1428,13 @@ export function generatePackages(
   // forced. Auto mode never goes silent: a roster where no archetype fires
   // (well-balanced juggernauts score below every generation threshold)
   // reruns all generators with the score gates skipped.
+  // Auto mode runs every generator. Gating generation on archetype score was
+  // tried and reverted: it cut packages 80 -> 67 (below the five we promise),
+  // top-24 landings 14 -> 7, and recommendations 29 -> 23 while tripling
+  // inspiration. It also contradicted the research, which found archetype fit
+  // does not predict outcomes at all (positional need is 57% vs 56% once
+  // player quality is held constant). Gating on a signal with no predictive
+  // power just threw away good candidates along with bad ones.
   const generators = forced
     ? [GENERATORS[forced.family as ArchetypeFamily]]
     : Object.values(GENERATORS);
