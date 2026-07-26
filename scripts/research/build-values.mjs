@@ -54,14 +54,61 @@ const idLines = idsCsv.split("\n");
 const idHdr = parseCsvLine(idLines[0]);
 const iSleeper = idHdr.indexOf("sleeper_id");
 const iFp = idHdr.indexOf("fantasypros_id");
+// The file writes missing values as the literal string "NA", not as empty, so
+// a truthiness check silently accepts them and collapses every missing row
+// onto a single "NA" key.
+const NA = (v) => !v || v === "NA" || v === "";
 const fpToSleeper = new Map();
 for (let i = 1; i < idLines.length; i++) {
   if (!idLines[i]) continue;
   const p = parseCsvLine(idLines[i]);
   const sl = p[iSleeper], fp = p[iFp];
-  if (sl && fp) fpToSleeper.set(fp, sl);
+  if (!NA(sl) && !NA(fp)) fpToSleeper.set(fp, sl);
 }
-console.log(`  crosswalk: ${fpToSleeper.size.toLocaleString()} fantasypros -> sleeper`);
+console.log(`  crosswalk: ${fpToSleeper.size.toLocaleString()} fantasypros -> sleeper (id match)`);
+
+// ── Fallback: match on name ──────────────────────────────────────────────────
+// The id crosswalk covers well under half the file, so a large share of ECR
+// rows would go unpriced. Sleeper's own player DB has names, positions and
+// teams, so anything the ids miss can usually be recovered by name.
+//
+// Matched on normalised name PLUS position, never name alone: shared names are
+// common in a 12,000 player pool and a silent wrong match is worse than a miss.
+// Where the ECR row also carries a team, that is used to break remaining ties.
+const norm = (n) =>
+  (n ?? "")
+    .toLowerCase()
+    .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, "")
+    .replace(/[^a-z]/g, "");
+console.log("fetching sleeper player DB for the name fallback...");
+const sleeperDb = await (await fetch("https://api.sleeper.app/v1/players/nfl")).json();
+const byNamePos = new Map();   // "name|POS" -> [sleeperId]
+const byNamePosTeam = new Map(); // "name|POS|TEAM" -> sleeperId
+for (const [sid, p] of Object.entries(sleeperDb)) {
+  if (!p?.position || !["QB", "RB", "WR", "TE"].includes(p.position)) continue;
+  const n = norm(p.full_name ?? `${p.first_name ?? ""} ${p.last_name ?? ""}`);
+  if (!n) continue;
+  const k = `${n}|${p.position}`;
+  byNamePos.set(k, [...(byNamePos.get(k) ?? []), sid]);
+  if (p.team) byNamePosTeam.set(`${k}|${p.team}`, sid);
+}
+console.log(`  sleeper name index: ${byNamePos.size.toLocaleString()} name+position keys`);
+
+let hitId = 0, hitNameTeam = 0, hitName = 0, ambiguous = 0, missed = 0;
+const resolve = (fpId, name, pos, team) => {
+  const viaId = fpToSleeper.get(fpId);
+  if (viaId) { hitId++; return viaId; }
+  const k = `${norm(name)}|${pos}`;
+  if (team) {
+    const t = byNamePosTeam.get(`${k}|${team}`);
+    if (t) { hitNameTeam++; return t; }
+  }
+  const cands = byNamePos.get(k);
+  if (cands?.length === 1) { hitName++; return cands[0]; }
+  if (cands?.length > 1) { ambiguous++; return null; }
+  missed++;
+  return null;
+};
 
 // ── Historical ECR ───────────────────────────────────────────────────────────
 if (!existsSync(ECR_GZ)) {
@@ -77,7 +124,7 @@ const rl = createInterface({
   crlfDelay: Infinity,
 });
 
-let hdr = null, iType, iId, iEcr, iDate, iPos;
+let hdr = null, iType, iId, iEcr, iDate, iPos, iPlayer, iTeam;
 // index[sleeperId] = [[yyyymm, ecr, pos], ...] ascending by date
 const index = new Map();
 let rows = 0, kept = 0;
@@ -89,12 +136,14 @@ for await (const line of rl) {
     iEcr = hdr.indexOf("ecr");
     iDate = hdr.indexOf("scrape_date");
     iPos = hdr.indexOf("pos");
+    iPlayer = hdr.indexOf("player");
+    iTeam = hdr.indexOf("team");
     continue;
   }
   rows++;
   const p = parseCsvLine(line);
   if (p[iType] !== "dynasty-overall") continue;
-  const sl = fpToSleeper.get(p[iId]);
+  const sl = resolve(p[iId], p[iPlayer], p[iPos], p[iTeam]);
   const ecr = Number(p[iEcr]);
   const date = p[iDate];
   if (!sl || !date || !Number.isFinite(ecr)) continue;
@@ -106,6 +155,9 @@ for await (const line of rl) {
   kept++;
 }
 console.log(`  scanned ${rows.toLocaleString()} rows, kept ${kept.toLocaleString()} dynasty-overall`);
+const tot = hitId + hitNameTeam + hitName + ambiguous + missed;
+console.log(`  resolution: id ${hitId.toLocaleString()} · name+team ${hitNameTeam.toLocaleString()} · name+pos ${hitName.toLocaleString()} · ambiguous ${ambiguous.toLocaleString()} · unmatched ${missed.toLocaleString()}`);
+console.log(`  resolved ${(100 * (hitId + hitNameTeam + hitName) / Math.max(1, tot)).toFixed(1)}% of dynasty-overall rows`);
 console.log(`  players with history: ${index.size.toLocaleString()}`);
 
 const obj = {};
