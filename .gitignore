@@ -17,3 +17,4 @@ scripts/research/aging-output.json
 scripts/research/trades-crawl.json
 scripts/research/outcomes-cache.json
 scripts/research/trades-ancestors.json
+scripts/research/roster-ages.json
