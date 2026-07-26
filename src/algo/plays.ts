@@ -67,6 +67,11 @@ function rankOf(value: number, ranking: number[]): number {
 }
 
 const fmt = (n: number) => n.toLocaleString();
+const ordinal = (n: number) => {
+  const t = n % 100;
+  const suffix = t >= 11 && t <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th";
+  return `${n}${suffix}`;
+};
 
 export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
   const ranking = leagueRanking(league);
@@ -76,8 +81,11 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
   const isRebuild = me.windowTier === "LONG";
   const plays: Play[] = [];
 
-  // Spare pieces: everything past the top man at each position, which is what
-  // a consolidation would actually package.
+  // What a consolidation would actually package: everything past the top man at
+  // each position. These are NOT junk, and the copy must not call them junk. On
+  // a contender the top two are routinely a team's 3rd and 4th best assets, and
+  // labelling a genuinely good RB2 a "spare part" makes the whole report read
+  // as though it has not looked at the roster.
   const spares: Player[] = [];
   for (const pos of POSITIONS) {
     const atPos = roster.filter((p) => p.position === pos);
@@ -91,13 +99,13 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
     const combined = pair.reduce((s, p) => s + p.valueDynasty, 0);
     plays.push({
       key: "land_a_difference_maker",
-      title: "Turn spare parts into one difference-maker",
+      title: "Package depth into one difference-maker",
       evidence: isContender
         ? "Contending teams that packaged pieces into one better player beat expectations 61% of the time. Landing a top-24 dynasty player specifically ran 60%, against 48% when the best piece coming back was outside the top 100."
         : "Landing a top-24 dynasty player beat expectations 60% of the time, against 48% for a trade whose best piece was outside the top 100. It is the strongest single signal in 19,933 trades.",
       hitRate: isContender ? 61 : 60,
       rateLabel: "of teams beat expectations",
-      detail: `${pair[0]!.name} and ${pair[1]!.name} are worth ${fmt(combined)} together, enough to headline an offer for a genuine starter.`,
+      detail: `${pair[0]!.name} and ${pair[1]!.name} are worth ${fmt(combined)} together. One player at that value would be the ${ordinal(rankOf(combined, ranking))} most valuable in this league.`,
       kind: "do",
       archetype: "consolidate",
       ...(pair[0]!.position ? { position: pair[0]!.position } : {}),
@@ -110,7 +118,7 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
       key: "avoid_tier_down",
       title: "Do not break up your best player",
       evidence:
-        "Contending teams that packaged pieces into one better player beat expectations 61% of the time. Ones that split a star into multiple pieces managed 47%, the only trade shape measured to underperform.",
+        "Splitting one star into several lesser pieces is the only trade shape measured to lose ground: 47%, against 61% for contenders going the other direction.",
       hitRate: 47,
       rateLabel: "of teams beat expectations",
       detail: best
