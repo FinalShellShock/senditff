@@ -1,82 +1,87 @@
 # What real dynasty trades look like
 
-Regenerate with `node scripts/research/trades.mjs`.
+**5,791 completed trades across 400 dynasty leagues.**
 
-Source: Sleeper's public API, no auth. Walks `previous_league_id` back through
-every season of every league we know about, pulls all transactions, keeps
-completed two-team trades. **220 trades across 9 league-seasons.**
+Regenerate with `node scripts/research/crawl-trades.mjs [maxLeagues]` (writes
+`trades-crawl.json`, gitignored, resumable).
 
-This exists because the archetype buckets were designed from intuition and had
-never been checked against trades people actually make.
+## Where the data comes from
 
-## What the data says
+There is no public trade API to call. Checked directly: FantasyCalc serves
+values only, Dynasty Daddy and RosterAudit expose none. The big trade
+databases build their own by crawling Sleeper. Tradabase says it aggregates
+"daily from thousands of Sleeper leagues"; AOD cites 6,500.
 
-### Shape (assets per side)
+We can do the same because two Sleeper endpoints are public and link together:
 
-| Shape | Real | Engine |
-|-------|-----:|-------:|
-| 1 for 2 | 23% | 78% |
-| 1 for 1 | 23% | 10% |
-| 2 for 3 | 14% | 0% |
-| 2 for 2 | 13% | 0% |
-| 1 for 3 | 8% | 12% |
-| 2 for 4 | 6% | 0% |
-| 3 for 4 | 4% | 0% |
-| 3 for 3 | 4% | 0% |
+```
+league/{id}/rosters         -> owner_id per team
+user/{id}/leagues/nfl/{yr}  -> every league that user is in (settings.type 2 = dynasty)
+league/{id}/transactions/{w}-> the trades
+```
 
-**Roughly 41% of real trades have two or more assets on BOTH sides, and the
-engine has never produced one.** Every package it builds has exactly one asset
-on at least one side. Directional breakdown of its 80 packages: give 1/get 2
-(44%), give 2/get 1 (34%), give 1/get 1 (10%), give 1/get 3 (8%),
-give 3/get 1 (5%).
+So leagues snowball outward through shared managers. From 5 seed leagues the
+crawler found 10,000+ reachable dynasty leagues within two hops. It is capped
+at 400 on purpose: this is someone else's free API, and 400 is already enough
+to stabilise every distribution below.
 
-### Picks
+## An earlier reading of this that was WRONG
 
-| | Real | Engine |
+A first pass over our own 9 leagues (220 trades) concluded that picks are
+mostly sweeteners riding along with a player, and that argued against making
+picks a first-class part of package generation.
+
+**That does not survive the larger sample.** It was an artifact of one friend
+group.
+
+| | 220 trades | 5,791 trades |
 |---|---:|---:|
-| Trade includes picks | 88% | 30% |
-| Players only | 10% | 70% |
-| Picks only | 2% | 0% |
+| Picks-only trades | 2% | **30%** |
+| Pick stands ALONE on its side | 34% | **68%** |
+| Pick rides with a player | 66% | **32%** |
 
-**This is the biggest gap.** Picks are the currency real managers balance with.
-The engine reaches for them only in a few hard-coded gap-closing branches
-(`genTierDown` when the pair is light, `genConsolidate` likewise,
-`genAgeArbSell`, and the two `capital_convert_*` generators which are
-pick-centric by design). There is no general "balance this package with a pick"
-step.
+Picks are not garnish. They are a primary trading currency, and across all
+assets moved they are **55%** of everything traded (59% in superflex, 49% in
+1QB). The engine produces **zero** picks-only packages and 70% of its packages
+contain no pick at all.
 
-Likely knock-on effect: without picks as a balancing currency, the engine has
-to find two player groups that happen to land near each other in value. That is
-hard, so packages settle further from even, score worse on `balance`, and land
-as INSPIRATION rather than RECOMMENDED.
+## What held up
 
-### One-for-one, same position
+| Shape | 5,791 | 220 | Engine |
+|-------|-----:|----:|------:|
+| 1 for 2 | 24% | 23% | 78% |
+| 1 for 1 | 18% | 23% | 10% |
+| 2 for 2 | 12% | 13% | **0%** |
+| 2 for 3 | 11% | 14% | **0%** |
+| 1 for 3 | 9% | 8% | 12% |
+| 3 for 3 | 6% | 4% | **0%** |
+| 2 for 4 | 4% | 6% | **0%** |
 
-3 of 220, **1.4%**. Two RB-for-RB, one WR-for-WR.
+**44% of real trades carry two or more assets on BOTH sides. The engine has
+never produced one** (every package it builds has exactly one asset on at least
+one side). That number barely moved between samples, so it is real.
 
-This independently confirms the `lateralSwapOk` gate and the user report that
-prompted it ("it'd be very rare for a trade like this 1 wr for 1 wr to make any
-sense"). Note that most 1-for-1s in the data (46 of 51) involve a pick on one
-side, so a true player-for-player swap is rarer still.
+**1-for-1 at the same position is 1.8%** (104 of 5,791), up from 1.4%.
+Independently confirms the `lateralSwapOk` gate and the user report behind it.
 
-## Two things worth understanding about the archetypes
+## Who and what gets traded
 
-**`tier_down` and `consolidate` are the same trade seen from opposite sides.**
-A 1-for-2 is a tier-down for the manager giving the single player and a
-consolidation for the manager giving the pair. The shape tally cannot separate
-them and neither can the market. That is not a bug, but it does mean their
-scores should be roughly mirror images, and today they are not.
+- **Superflex dominates dynasty trading: 89%** of trades happen in superflex
+  leagues. Our default assumptions should lean that way.
+- **12-team is the norm** (77%), then 10-team (15%) and 14-team (7%).
+- **Positions moved:** WR 39%, RB 32%, QB 18%, TE 12%.
+- **Traded player ages:** median 26, mean 26.4, p25 24, p75 28, p90 31.
+  By band: under 24 20%, 24-26 39%, 27-29 25%, **30+ 16%**.
 
-**The archetype concepts hold up.** 1-for-2 in both directions is 23% of real
-trades, the single most common non-trivial shape, and that is exactly
-tier_down/consolidate. The problem is not that the buckets are wrong. It is
-that generation reaches only a narrow slice of the space the buckets describe.
+That last number is worth holding onto. Real managers trade thirty-somethings
+routinely, so the aging work should keep discouraging *bad* age trades rather
+than suppressing old players outright.
 
 ## Caveats
 
-- 9 league-seasons from one social circle. Shapes look stable across leagues,
-  but this is not a representative sample of dynasty at large.
-- Only completed two-team trades. Vetoed and multi-team trades are dropped.
+- Snowballed from one social circle, so it over-represents whatever leagues
+  those managers join. Superflex at 89% is high enough to be suspicious as a
+  sampling effect rather than a fact about dynasty at large.
+- Completed two-team trades only. Vetoed and multi-team trades dropped.
 - Says nothing about whether a trade was GOOD, only that it happened. For
-  quality signal, `npm run validate:history` grades real trades at today's
-  values.
+  quality, `npm run validate:history` grades real trades at today's values.
