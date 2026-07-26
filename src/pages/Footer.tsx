@@ -149,16 +149,22 @@ function FeedbackBell({ summary }: { summary: FeedbackSummary | null }) {
         aria-label="Feedback activity"
       >
         <BellIcon />
-        {summary && summary.unreviewed > 0 && <span className="feedback-bell-dot" />}
+        {summary && summary.queued > 0 && <span className="feedback-bell-dot" />}
       </button>
       {summary && (
         <div
           className={`feedback-tooltip${tapOpen ? " feedback-tooltip-open" : ""}`}
           role="status"
         >
-          {summary.total} feedback log{summary.total === 1 ? "" : "s"}
-          <br />
-          you {summary.mine} &middot; everyone else {summary.others}
+          {summary.queued === 0 ? (
+            "Nothing in the queue, all feedback has been reviewed"
+          ) : (
+            <>
+              {summary.queued} waiting to be reviewed
+              <br />
+              you {summary.mine} &middot; everyone else {summary.others}
+            </>
+          )}
         </div>
       )}
     </div>

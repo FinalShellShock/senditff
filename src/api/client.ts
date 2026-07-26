@@ -98,11 +98,13 @@ export type SiteFeedbackPayload = {
   route?: string;
 };
 
+// Scoped to the unreviewed queue, not lifetime: the counts reset when feedback
+// is pulled and acted on, so the widget answers "is anything waiting" rather
+// than "how much has ever been sent".
 export type FeedbackSummary = {
-  total: number;
+  queued: number;
   mine: number;
   others: number;
-  unreviewed: number;
 };
 
 // ── Admin: join requests ────────────────────────────────────────────────

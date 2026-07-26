@@ -124,7 +124,9 @@ Then stop and let Johnny pick what to implement.
 - Don't commit, deploy, or edit env vars from this skill.
 - `feedback-export.json` / `.csv` / `feedback-site.json` are gitignored on
   purpose. Leave them untracked; they hold user emails.
-- Pulling marks entries reviewed, which clears the footer bell for everyone.
-  Johnny is fine with that and considers it a feature: a cleared bell tells the
-  others he is not sitting on a backlog. Still, only pull when actually about
-  to act on it, or the signal becomes a lie.
+- Pulling marks entries reviewed, which RESETS the footer bell for everyone:
+  not just the dot, but the counts too, since they are scoped to the unreviewed
+  queue. Johnny considers that a feature. A cleared bell tells the others he is
+  not sitting on a backlog, and each person can see whether they have
+  contributed since the last clear.
+  So only pull when actually about to act on it, or the signal becomes a lie.

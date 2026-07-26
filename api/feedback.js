@@ -47,6 +47,17 @@ function currentRelease() {
 var PATCH_NOTES = [
   {
     branch: "daniels",
+    release: "1.6",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "The feedback counter is a queue, not a lifetime total",
+    changes: [
+      "The feedback bell now counts only what is waiting to be reviewed, and resets when it gets reviewed. So it answers two useful questions instead of one vanity number: is there a backlog, or is the app caught up, and have you said anything since the last time it was cleared."
+    ],
+    knownIssues: []
+  },
+  {
+    branch: "daniels",
     release: "1.5",
     algo: "Shotgun",
     date: "2026-07-26",
@@ -223,21 +234,15 @@ var MAX_REASON_LENGTH = 40;
 var MAX_COMMENT_LENGTH = 2e3;
 var MAX_ROUTE_LENGTH = 200;
 async function summarize(uid) {
-  const col = adminDb.collection("feedback");
-  const [totalSnap, mineSnap, reviewedSnap] = await Promise.all([
-    col.count().get(),
-    col.where("userId", "==", uid).count().get(),
-    col.where("pulledAt", ">=", "").count().get()
-  ]);
-  const total = totalSnap.data().count;
-  const mine = mineSnap.data().count;
-  const reviewed = reviewedSnap.data().count;
-  return {
-    total,
-    mine,
-    others: Math.max(0, total - mine),
-    unreviewed: Math.max(0, total - reviewed)
-  };
+  const snap = await adminDb.collection("feedback").select("userId", "pulledAt").get();
+  let queued = 0;
+  let mine = 0;
+  for (const d of snap.docs) {
+    if (d.get("pulledAt")) continue;
+    queued++;
+    if (d.get("userId") === uid) mine++;
+  }
+  return { queued, mine, others: queued - mine };
 }
 async function handler(req, res) {
   if (req.method !== "POST" && req.method !== "GET") {

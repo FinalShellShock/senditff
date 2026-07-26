@@ -44,31 +44,34 @@ type FeedbackBody = {
   diagnostics?: unknown;
 };
 
-// Aggregate counts for the footer bell. Deliberately counts only: no content
-// crosses this boundary, so every approved user can see how much feedback the
-// group has left without seeing anyone's words.
+// Aggregate counts for the footer bell, scoped to the CURRENT QUEUE.
 //
-// "Unreviewed" is derived as total minus reviewed rather than queried
-// directly. Firestore cannot ask for documents where a field is ABSENT, and
-// the field is absent on everything written before scripts/feedback-export.ts
-// started stamping it. A range filter on pulledAt matches exactly the stamped
-// documents, so the subtraction needs no backfill.
+// Everything here counts only feedback that has not been reviewed yet, so the
+// whole widget resets when Johnny pulls. That is the point: a lifetime total
+// only ever grows and answers nothing. A queue answers two real questions at a
+// glance. "Is he sitting on a backlog, or is the app current?" is the queue
+// size. "Have I said anything since the last time he cleared it?" is your own
+// share of it.
+//
+// Counts only, never content, so any approved user can see the state of the
+// queue without seeing anyone's words.
+//
+// Counted in memory rather than with count() aggregations because "unreviewed
+// AND mine" is an equality plus a range on two different fields, which
+// Firestore needs a composite index for. At this app's scale (tens of
+// documents) one projected read of the collection is cheaper than the index is
+// worth. Revisit if this ever reaches thousands: switch to writing an explicit
+// `pulledAt: null` on create and add the composite index.
 async function summarize(uid: string) {
-  const col = adminDb.collection("feedback");
-  const [totalSnap, mineSnap, reviewedSnap] = await Promise.all([
-    col.count().get(),
-    col.where("userId", "==", uid).count().get(),
-    col.where("pulledAt", ">=", "").count().get(),
-  ]);
-  const total = totalSnap.data().count;
-  const mine = mineSnap.data().count;
-  const reviewed = reviewedSnap.data().count;
-  return {
-    total,
-    mine,
-    others: Math.max(0, total - mine),
-    unreviewed: Math.max(0, total - reviewed),
-  };
+  const snap = await adminDb.collection("feedback").select("userId", "pulledAt").get();
+  let queued = 0;
+  let mine = 0;
+  for (const d of snap.docs) {
+    if (d.get("pulledAt")) continue;
+    queued++;
+    if (d.get("userId") === uid) mine++;
+  }
+  return { queued, mine, others: queued - mine };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

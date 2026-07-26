@@ -55,6 +55,17 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "1.6",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "The feedback counter is a queue, not a lifetime total",
+    changes: [
+      "The feedback bell now counts only what is waiting to be reviewed, and resets when it gets reviewed. So it answers two useful questions instead of one vanity number: is there a backlog, or is the app caught up, and have you said anything since the last time it was cleared.",
+    ],
+    knownIssues: [],
+  },
+  {
+    branch: "daniels",
     release: "1.5",
     algo: "Shotgun",
     date: "2026-07-26",
