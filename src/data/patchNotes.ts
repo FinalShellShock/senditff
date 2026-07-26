@@ -55,6 +55,17 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "1.2",
+    algo: "Shotgun",
+    date: "2026-07-25",
+    title: "Depth no longer counts a flex starter twice when it simulates an injury",
+    changes: [
+      "Fixed a bug in the new depth math: when a player was filling your FLEX, the injury simulation could put him in the resulting lineup twice, which made rosters that flex look more injury-proof than they are. Depth scores move slightly for those teams. No position grades changed on the test league.",
+    ],
+    knownIssues: [],
+  },
+  {
+    branch: "daniels",
     release: "1.1",
     algo: "Shotgun",
     date: "2026-07-25",

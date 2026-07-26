@@ -118,8 +118,29 @@ export function fillStarters(
   return { starters };
 }
 
-// ── Position depth (Spread: base starter slots only, no FLEX share) ──────────
-
+// ── Position depth ───────────────────────────────────────────────────────────
+// Depth counts from the BASE starter slots, so a player filling your FLEX is
+// counted as depth at his own position as well as a starter.
+//
+// That looks like a double-count and it was nearly "fixed" into one. Measured
+// on a real league, excluding flex starters from the depth pool is clearly
+// WORSE:
+//
+//   Roster 10 starts five RBs (Achane, Henderson, Warren, White, Dobbins).
+//   Its only true bench RB is Jaleel McLaughlin at 21, so the strict reading
+//   grades the deepest RB room in the league as CRITICAL_NEED at RB.
+//
+//   Roster 2 is the room a user described as "pretty darn strong". Strict
+//   reading drops it from SURPLUS to merely HEALTHY, away from his read.
+//
+// The reason is that in dynasty a fifth startable RB IS depth: he covers byes,
+// he slides up on an injury, and he is a tradeable asset. "Who is my best
+// benchwarmer" is the wrong question when the lineup itself is stacked at that
+// position.
+//
+// The genuinely broken part of this was never the pool, it was that the same
+// player could enter the post-injury lineup twice. That is fixed in
+// postInjuryValues below, where it belongs.
 export function depthByPosition(
   players: Player[],
   format: LeagueFormat,
@@ -151,7 +172,17 @@ export function postInjuryValues(
   starters: Player[],
   depth: Player[],
 ): number[] {
-  const promoted = [...starters.slice(1), ...depth].slice(0, starters.length);
+  // Dedupe by id. A player filling the FLEX appears in BOTH lists by design
+  // (see depthByPosition), so without this he is promoted twice and inflates
+  // resilience for exactly the rosters that flex. Measured: one roster's
+  // post-injury RB lineup read Javonte, Croskey-Merritt, Pacheco,
+  // Croskey-Merritt, with the same player in two slots.
+  const seen = new Set<string>();
+  const promoted = [...starters.slice(1), ...depth].filter((p) => {
+    if (seen.has(p.id)) return false;
+    seen.add(p.id);
+    return true;
+  });
   return Array.from({ length: starters.length }, (_, i) => promoted[i]?.valueRedraft ?? 0);
 }
 

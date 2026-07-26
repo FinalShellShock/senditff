@@ -347,7 +347,12 @@ function depthByPosition(players, format, getValue = REDRAFT) {
   return depth;
 }
 function postInjuryValues(starters, depth) {
-  const promoted = [...starters.slice(1), ...depth].slice(0, starters.length);
+  const seen = /* @__PURE__ */ new Set();
+  const promoted = [...starters.slice(1), ...depth].filter((p) => {
+    if (seen.has(p.id)) return false;
+    seen.add(p.id);
+    return true;
+  });
   return Array.from({ length: starters.length }, (_, i) => promoted[i]?.valueRedraft ?? 0);
 }
 function flexStrengthValue(players, format, totalStarterValue, getValue = REDRAFT) {

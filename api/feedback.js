@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "87c6b1ff3fe3";
+var ALGO_FINGERPRINT_BUILD = "d329a3795f53";
 
 // src/algo/version.ts
 var ALGO_VERSION = "shotgun";
@@ -45,6 +45,17 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.2",
+    algo: "Shotgun",
+    date: "2026-07-25",
+    title: "Depth no longer counts a flex starter twice when it simulates an injury",
+    changes: [
+      "Fixed a bug in the new depth math: when a player was filling your FLEX, the injury simulation could put him in the resulting lineup twice, which made rosters that flex look more injury-proof than they are. Depth scores move slightly for those teams. No position grades changed on the test league."
+    ],
+    knownIssues: []
+  },
   {
     branch: "daniels",
     release: "1.1",

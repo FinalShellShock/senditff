@@ -271,6 +271,17 @@ QB3 and pushing whole rooms to CRITICAL. Deeper slots still count toward
 CRITICAL_NEED at QB. Real user feedback caught it. Don't reintroduce depth
 scoring that is blind to the starters in front of the backup.
 
+**A flex starter counts as depth at his own position, on purpose.** It looks
+like a double-count and it was nearly "fixed" into one. Measured on a real
+league, excluding flex starters from the depth pool is clearly worse: a roster
+starting five RBs has one true bench RB worth 21, so the strict reading grades
+the deepest RB room in the league as CRITICAL_NEED. It also pushed the room a
+user called "pretty darn strong" from SURPLUS down to HEALTHY. In dynasty a
+fifth startable RB IS depth: he covers byes, slides up on an injury, and is a
+tradeable asset. The genuinely broken part was that the same player could enter
+the post-injury lineup twice; that is fixed in `postInjuryValues`, which
+dedupes by id.
+
 **4. Future Capital**
 Sum pick values weighted by year: current 1.0x, next 0.85x, +2yr 0.70x, +3yr 0.55x.
 Flag teams 1.5+ std dev above average as PICK_RICH, below as PICK_POOR.
