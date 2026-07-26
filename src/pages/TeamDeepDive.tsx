@@ -4,6 +4,7 @@ import type { Pick as DraftPick, Player, Position, SubClassification, TeamProfil
 import { makeApiClient, type LedgerRow } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
+import { scoutingPlays, type Play } from "../algo/plays.ts";
 
 const LABEL_COLOR: Record<WindowLabel, string> = {
   JUGGERNAUT: "#16a34a",
@@ -31,25 +32,16 @@ const POS_CLASS_COLOR: Record<string, string> = {
   SURPLUS:       "#22c55e",
 };
 
-const ARCHETYPE_LABELS: Record<string, string> = {
-  tier_down_QB:      "Trade elite QB for two mid-tier QBs",
-  tier_down_RB:      "Trade elite RB for two mid-tier RBs",
-  tier_down_WR:      "Trade elite WR for two mid-tier WRs",
-  tier_down_TE:      "Trade elite TE for two mid-tier TEs",
-  consolidate_QB:    "Consolidate QB depth into a true starter",
-  consolidate_RB:    "Consolidate RB depth into a true starter",
-  consolidate_WR:    "Consolidate WR depth into a true starter",
-  consolidate_TE:    "Consolidate TE depth into a true starter",
-  consolidate_flex:  "Consolidate two positions into one better starter",
-  age_arb_buy:       "Buy young players before their breakout",
-  age_arb_sell:      "Sell aging veterans at peak value",
-  push_in:           "Aggressive push into contention",
-  need_fill:         "Fill critical positional needs",
-  capital_convert_picks_to_production: "Convert pick capital into proven production",
-  capital_convert_production_to_picks: "Trade production for future pick capital",
-};
-
 const POSITIONS = ["QB", "RB", "WR", "TE"] as const;
+
+// Deep-links a play into the trade finder. Plays without an archetype are
+// guidance rather than a searchable shape, and render without the button.
+function playLink(leagueId: string | undefined, rosterId: number, play: Play): string {
+  const params = new URLSearchParams();
+  if (play.archetype) params.set("archetype", play.archetype);
+  if (play.position) params.set("pos", play.position);
+  return `/league/${leagueId}/sendit/${rosterId}?${params.toString()}`;
+}
 
 const pickFlagText = (flag: string) => (flag === "NEUTRAL" ? "FINE" : flag.replace("_", " "));
 
@@ -79,97 +71,6 @@ function PickRow({ pick }: { pick: DraftPick }) {
       <span className="dive-pick-value">{pick.value.toLocaleString()}</span>
     </div>
   );
-}
-
-// Position with the highest urgency score. Deterministic: iterates QB/RB/WR/TE
-// in fixed order, first strictly-greater win keeps ties on the earlier position.
-function mostUrgentPosition(profile: TeamProfile): (typeof POSITIONS)[number] {
-  return POSITIONS.reduce((best, pos) =>
-    profile.positionScores[pos].urgency > profile.positionScores[best].urgency ? pos : best
-  , POSITIONS[0]);
-}
-
-function topPlayerAt(profile: TeamProfile, pos: string): Player | undefined {
-  return [...profile.players]
-    .filter((p) => p.position === pos)
-    .sort((a, b) => b.valueDynasty - a.valueDynasty || a.id.localeCompare(b.id))[0];
-}
-
-// Family + optional position for the Send It deep link. Mirrors ArchetypeFamily
-// in src/algo/archetypes.ts (tier_down_WR -> archetype=tier_down&pos=WR, etc).
-function scoutLink(leagueId: string | undefined, rosterId: number, key: string, profile: TeamProfile): string {
-  const params = new URLSearchParams();
-  const tierDownMatch = key.match(/^tier_down_(QB|RB|WR|TE)$/);
-  const consolidateMatch = key.match(/^consolidate_(QB|RB|WR|TE)$/);
-  if (tierDownMatch) {
-    params.set("archetype", "tier_down");
-    params.set("pos", tierDownMatch[1] as string);
-  } else if (consolidateMatch) {
-    params.set("archetype", "consolidate");
-    params.set("pos", consolidateMatch[1] as string);
-  } else if (key === "need_fill") {
-    params.set("archetype", "need_fill");
-    params.set("pos", mostUrgentPosition(profile));
-  } else {
-    params.set("archetype", key);
-  }
-  return `/league/${leagueId}/sendit/${rosterId}?${params.toString()}`;
-}
-
-// One supporting data line per archetype family, built from real profile numbers.
-function buildScoutData(key: string, profile: TeamProfile): string {
-  const tierDownMatch = key.match(/^tier_down_(QB|RB|WR|TE)$/);
-  if (tierDownMatch) {
-    const pos = tierDownMatch[1] as string;
-    const top = topPlayerAt(profile, pos);
-    const ps = profile.positionScores[pos as Position];
-    if (!top) return `no clear ${pos} centerpiece to build around`;
-    return ps.depthScore < 35
-      ? `${top.name} (${top.valueDynasty.toLocaleString()}) carries the room with little behind him; split him into two starters`
-      : `${top.name} (${top.valueDynasty.toLocaleString()}) headlines a room with support; trading him down adds depth elsewhere`;
-  }
-
-  const consolidateMatch = key.match(/^consolidate_(QB|RB|WR|TE)$/);
-  if (consolidateMatch) {
-    const pos = consolidateMatch[1] as string;
-    return `no true ${pos}1 here but plenty of bodies; two spares could become one stud`;
-  }
-
-  if (key === "consolidate_flex") {
-    return "enough startable depth to package two positions into one better player";
-  }
-
-  if (key === "age_arb_sell") {
-    const candidates = [...profile.players]
-      .filter((p) => p.valueDynasty >= 1500 && p.age != null)
-      .sort((a, b) => (b.age as number) - (a.age as number) || b.valueDynasty - a.valueDynasty || a.id.localeCompare(b.id));
-    const oldest = candidates[0];
-    if (!oldest) return "no aging studs to move";
-    return `${oldest.name} is ${Number(oldest.age).toFixed(1)} and still worth ${oldest.valueDynasty.toLocaleString()}; cash out before the cliff`;
-  }
-
-  if (key === "age_arb_buy") {
-    return "young roster with time to spare; buy a proven vet at an age discount";
-  }
-
-  if (key === "push_in") {
-    return "your best players are peaking now; convert future picks into this year's lineup";
-  }
-
-  if (key === "need_fill") {
-    const pos = mostUrgentPosition(profile);
-    return `${pos} is the thinnest spot on this roster; trade from strength to fix it`;
-  }
-
-  if (key === "capital_convert_picks_to_production") {
-    return "sitting on a pile of picks; turn some into players who help now";
-  }
-
-  if (key === "capital_convert_production_to_picks") {
-    return "light on future draft capital; selling a vet restocks the shelf";
-  }
-
-  return "";
 }
 
 export default function TeamDeepDive() {
@@ -219,14 +120,13 @@ export default function TeamDeepDive() {
     return items;
   }, [profile, rosterSort]);
 
-  // Top 4 archetype angles by score, always shown regardless of threshold.
-  // Deterministic tiebreak: score descending, then key ascending.
-  const scoutEntries = useMemo(() => {
-    if (!profile) return [] as Array<[string, number]>;
-    return Object.entries(profile.archetypeScores)
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .slice(0, 4);
-  }, [profile]);
+  // What the outcome research says THIS team should do, ranked by how far the
+  // measured hit rate sits from a coin flip. No padding: a roster sees only the
+  // plays that actually apply to it.
+  const plays = useMemo(
+    () => (profile ? scoutingPlays(profile, overview.profiles as TeamProfile[]) : []),
+    [profile, overview.profiles],
+  );
 
   if (!profile) {
     return <p className="dim-text" style={{ marginTop: 48, textAlign: "center" }}>Team not found.</p>;
@@ -297,38 +197,43 @@ export default function TeamDeepDive() {
         </div>
       </div>
 
-      {/* Scouting Report — main focus */}
+      {/* Scouting Report — what the outcome data says to do */}
       <section className="dive-pos-section">
         <h2 className="section-title">SCOUTING REPORT</h2>
-        <p className="dim-text scout-intro">Your best trade angles by the numbers. Send one to the trade finder.</p>
-        {(scoutEntries[0]?.[1] ?? 0) < 35 && (
-          <p className="scout-caveat">No screaming angles on this roster. These are the closest fits:</p>
+        <p className="dim-text scout-intro">
+          What worked for teams in your situation, across 14,343 real dynasty trades. Each
+          percentage says what it counts, and none of them are a prediction for this roster.
+        </p>
+        {plays.length === 0 && (
+          <p className="scout-caveat">Nothing stands out for this roster right now.</p>
         )}
         <div className="scout-list">
-          {scoutEntries.map(([key, score]) => {
-            const strength = score >= 60 ? "strong angle" : score >= 35 ? "worth a look" : score >= 15 ? "situational" : "a stretch";
-            return (
-              <div key={key} className="scout-row">
-                <div className="scout-row-main">
-                  <span className="scout-title">{ARCHETYPE_LABELS[key] ?? key.replace(/_/g, " ")}</span>
-                  <span className="scout-data">{buildScoutData(key, profile)}</span>
-                </div>
-                <div className="scout-row-meter">
-                  <div className="scout-meter-bar">
-                    <MiniBar score={score} />
-                  </div>
-                  <span className="scout-score">{score}</span>
-                  <span className="scout-strength">{strength}</span>
+          {plays.map((play) => (
+            <div key={play.key} className={`scout-row${play.kind === "avoid" ? " scout-row-avoid" : ""}`}>
+              <div className="scout-row-main">
+                <span className="scout-title">
+                  {play.kind === "avoid" && <span className="scout-avoid-tag">AVOID</span>}
+                  {play.title}
+                </span>
+                <span className="scout-data">{play.detail}</span>
+                <span className="scout-evidence">{play.evidence}</span>
+              </div>
+              <div className="scout-row-meter">
+                <span className={`scout-rate${play.kind === "avoid" ? " scout-rate-avoid" : ""}`}>
+                  {play.hitRate}%
+                </span>
+                <span className="scout-strength">{play.rateLabel}</span>
+                {play.archetype && (
                   <button
                     className="sendit-reset-btn scout-cta"
-                    onClick={() => navigate(scoutLink(leagueId, rosterId, key, profile))}
+                    onClick={() => navigate(playLink(leagueId, rosterId, play))}
                   >
                     Find these trades
                   </button>
-                </div>
+                )}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </section>
 

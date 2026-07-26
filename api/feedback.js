@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "7a883247a604";
+var ALGO_FINGERPRINT_BUILD = "ffaae21803a4";
 
 // src/algo/version.ts
 var ALGO_VERSION = "shotgun";
@@ -45,6 +45,22 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.12",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "The scouting report now tells you what actually worked",
+    changes: [
+      `Rewrote the scouting report. It used to list trade angles scored 0 to 100 by the same math that picks your packages, which meant it mostly restated your window badge back to you. Every team in a 16 team league had "fill a need" in its top four, and one rebuilding team's number one angle was breaking up its best player.`,
+      "It now shows plays drawn from a study of 14,343 real dynasty trades, with the measured success rate next to each one. Landing one genuine difference-maker beat expectations 60% of the time. Splitting a star into pieces managed 47%, the only shape measured to lose.",
+      'Each play names your own players, so "turn spare parts into a difference-maker" points at the two specific guys worth packaging.',
+      "Rebuilders get the plays the data supports for a rebuild: sell a veteran who still has value, bank picks and expect to wait, and buy the fringe rather than the deep fliers. Contenders get the contender version, including the finding that standing pat is its own decision (active contenders 56%, ones who stood pat 43%).",
+      "No more padding. The report used to always show four rows, so some teams were handed an angle scoring literally zero. You now see only the plays that apply to you, between two and five.",
+      "Every percentage says what it counts, and none of them are predictions for your roster. They are how often teams in that spot beat expectations."
+    ],
+    knownIssues: []
+  },
   {
     branch: "daniels",
     release: "1.11",

@@ -3725,3 +3725,38 @@ body {
     text-align: right;
   }
 }
+
+/* Scouting report: measured plays rather than archetype scores. */
+.scout-evidence {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.55;
+  margin-top: 5px;
+}
+
+.scout-rate {
+  font-size: 18px;
+  font-weight: 700;
+  color: #22c55e;
+  line-height: 1.1;
+}
+
+/* An AVOID play's number is how often it went WRONG, so it must not read as a
+   score to chase. */
+.scout-rate-avoid { color: #ef4444; }
+
+.scout-avoid-tag {
+  display: inline-block;
+  margin-right: 7px;
+  padding: 1px 5px;
+  border: 1px solid #ef4444;
+  border-radius: 3px;
+  color: #ef4444;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  vertical-align: 1px;
+}
+
+.scout-row-avoid { opacity: 0.88; }
