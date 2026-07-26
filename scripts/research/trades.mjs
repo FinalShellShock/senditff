@@ -75,3 +75,45 @@ tally("1-for-1 same position?", t => {
   if (a.players.length !== 1 || b.players.length !== 1) return "1-for-1 involving a pick";
   return a.players[0] === b.players[0] ? `1-for-1 SAME pos (${a.players[0]})` : "1-for-1 different pos";
 });
+
+// ── What ROLE do picks play? ─────────────────────────────────────────────────
+// Johnny's concern: balancing with picks could open the floodgates to junk
+// trades held together by a pick. So: are picks the POINT of real trades, or
+// the sweetener on top of a real player move?
+const withPicks = trades.filter(t => t.sides.some(s => s.picks > 0));
+const pickCounts = new Map();
+for (const t of withPicks) {
+  const n = t.sides.reduce((s, x) => s + x.picks, 0);
+  pickCounts.set(n, (pickCounts.get(n) ?? 0) + 1);
+}
+console.log(`\nPICKS PER TRADE (of the ${withPicks.length} trades containing any)`);
+for (const [k, v] of [...pickCounts.entries()].sort((a,b)=>a[0]-b[0])) {
+  console.log(`   ${k} pick(s)`.padEnd(29) + `${String(v).padStart(3)}  ${(100*v/withPicks.length).toFixed(0)}%`);
+}
+
+const role = new Map();
+for (const t of withPicks) {
+  const players = t.sides.reduce((s, x) => s + x.players.length, 0);
+  const picks = t.sides.reduce((s, x) => s + x.picks, 0);
+  const k = players === 0 ? "picks only, no players"
+    : picks > players ? "picks outnumber players"
+    : picks === players ? "equal picks and players"
+    : "players outnumber picks";
+  role.set(k, (role.get(k) ?? 0) + 1);
+}
+console.log(`\nPICK vs PLAYER WEIGHT in those trades`);
+for (const [k, v] of [...role.entries()].sort((a,b)=>b[1]-a[1])) {
+  console.log(`   ${k.padEnd(26)} ${String(v).padStart(3)}  ${(100*v/withPicks.length).toFixed(0)}%`);
+}
+
+// Does the pick sit alone on its side, or alongside a player?
+let aloneSide = 0, withPlayer = 0;
+for (const t of withPicks) {
+  for (const s of t.sides) {
+    if (s.picks === 0) continue;
+    if (s.players.length === 0) aloneSide++; else withPlayer++;
+  }
+}
+console.log(`\nSIDES THAT CONTAIN A PICK`);
+console.log(`   pick(s) alone on that side   ${String(aloneSide).padStart(3)}  ${(100*aloneSide/(aloneSide+withPlayer)).toFixed(0)}%`);
+console.log(`   pick(s) alongside player(s)  ${String(withPlayer).padStart(3)}  ${(100*withPlayer/(aloneSide+withPlayer)).toFixed(0)}%`);
