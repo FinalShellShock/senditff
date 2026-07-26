@@ -17,6 +17,29 @@
 //   - concurrency capped, with a pause between batches
 //   - resumable via the on-disk output, so a rerun does not redo work
 //
+// WHAT IT CAPTURES, and why.
+//
+// Raw frequency is not a signal. "39% of traded players are WRs" says nothing
+// once you know WRs are roughly that share of the pool. "88% of trades contain
+// a pick" says nothing about picks being valuable; a pick is usually the small
+// change that closes the last gap because one side said it was not enough.
+//
+// What a trade recommender actually needs is CONTEXT, so this records the
+// state each side was in when the trade happened:
+//
+//   leg (week)     offseason vs in-season vs deadline
+//   record         who was contending and who was out of it, that season
+//   pointsFor      contention independent of luck
+//   asset ages     which direction age flowed
+//   pick direction which direction capital flowed
+//
+// With those we can test the trades that actually matter: does a contender pay
+// picks to a rebuilder for an aging producer, and does that intensify near the
+// deadline? That is a signal with math behind it. Counting positions is not.
+//
+// Never assume an executed trade was a GOOD trade. Managers make bad ones.
+// Frequency is evidence of what gets accepted, not of what is wise.
+//
 //   node scripts/research/crawl-trades.mjs [maxLeagues]
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -85,6 +108,21 @@ while (queue.length > 0 && visited.size < MAX_LEAGUES) {
   };
   if (!isDynasty) continue;
 
+  // Team state, so each side of a trade can be read in context.
+  const rosters = await get(`https://api.sleeper.app/v1/league/${id}/rosters`);
+  const state = new Map();
+  for (const r of rosters ?? []) {
+    const st = r.settings ?? {};
+    state.set(r.roster_id, {
+      w: st.wins ?? 0, l: st.losses ?? 0,
+      pf: (st.fpts ?? 0) + (st.fpts_decimal ?? 0) / 100,
+    });
+  }
+  // Rank by points for: contention without the luck of schedule.
+  const ranked = [...state.entries()].sort((a, b) => b[1].pf - a[1].pf);
+  ranked.forEach(([rid], i) => { state.get(rid).pfRank = i + 1; });
+  const nTeams = ranked.length || 1;
+
   // Trades, every week.
   const weeks = await pool([...Array(18).keys()].map((w) => w + 1), (w) =>
     get(`https://api.sleeper.app/v1/league/${id}/transactions/${w}`));
@@ -92,21 +130,31 @@ while (queue.length > 0 && visited.size < MAX_LEAGUES) {
     if (!tx || tx.type !== "trade" || tx.status !== "complete") continue;
     const sides = new Map();
     const touch = (rid) => {
-      if (!sides.has(rid)) sides.set(rid, { players: [], picks: [] });
+      if (!sides.has(rid)) sides.set(rid, { rosterId: rid, players: [], picks: [] });
       return sides.get(rid);
     };
     for (const [pid, rid] of Object.entries(tx.adds ?? {})) touch(rid).players.push(meta(pid));
     for (const p of tx.draft_picks ?? []) touch(p.owner_id).picks.push({ season: p.season, round: p.round });
     if (sides.size !== 2) continue;
+    // `receives` is what that roster GOT. Attach who they were that season.
+    const enriched = [...sides.values()].map((s) => {
+      const st = state.get(s.rosterId) ?? {};
+      return {
+        ...s,
+        wins: st.w ?? null, losses: st.l ?? null,
+        pfRank: st.pfRank ?? null,
+        pfPct: st.pfRank ? (st.pfRank - 1) / Math.max(1, nTeams - 1) : null,
+      };
+    });
     trades.push({
       league: id, season: lg.season, teams: lg.total_rosters,
       superflex: (lg.roster_positions ?? []).includes("SUPER_FLEX"),
-      sides: [...sides.values()],
+      week: tx.leg ?? null,
+      sides: enriched,
     });
   }
 
   // Snowball: this league's managers lead to their other leagues.
-  const rosters = await get(`https://api.sleeper.app/v1/league/${id}/rosters`);
   const owners = [...new Set((rosters ?? []).map((r) => r.owner_id).filter(Boolean))]
     .filter((u) => !seenUsers.has(u));
   owners.forEach((u) => seenUsers.add(u));
