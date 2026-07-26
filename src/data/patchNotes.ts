@@ -55,6 +55,17 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "1.3",
+    algo: "Shotgun",
+    date: "2026-07-25",
+    title: "League data is now readable only by that league's members",
+    changes: [
+      "Tightened who can read a league. The database previously let any approved user read any league's rosters and grades if they knew its id, even with no connection to it. The app itself already checked properly, so this closes the gap underneath it. Nobody lost access to a league they are actually in.",
+    ],
+    knownIssues: [],
+  },
+  {
+    branch: "daniels",
     release: "1.2",
     algo: "Shotgun",
     date: "2026-07-25",

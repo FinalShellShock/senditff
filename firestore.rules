@@ -44,11 +44,33 @@ service cloud.firestore {
         && next.get('admin', false) == prev.get('admin', false);
     }
 
-    // League data and value snapshots: Admin SDK writes only;
-    // approved users can read.
-    match /leagues/{leagueId}/{document=**} {
-      allow read: if isApproved();
+    // League data: Admin SDK writes only, and readable only by that league's
+    // members.
+    //
+    // This used to be `isApproved()` with no membership check, so any approved
+    // user holding any league id could read that league's rosters, computed
+    // profiles, and AI summaries even with no connection to it. The API was
+    // already stricter (ensureLeagueAccess), so the rules were the loose end.
+    //
+    // Membership is read from members[], which only the Admin SDK writes. It
+    // deliberately does NOT trust the user's own leagueIds: that field IS
+    // client-writable, so a rule keyed on it would let anyone grant themselves
+    // access by appending an id. members[] was backfilled from leagueIds on
+    // 2026-07-25 so no existing user lost access.
+    match /leagues/{leagueId} {
+      allow read: if isLeagueMember(leagueId);
       allow write: if false;
+    }
+    match /leagues/{leagueId}/{document=**} {
+      allow read: if isLeagueMember(leagueId);
+      allow write: if false;
+    }
+
+    function isLeagueMember(leagueId) {
+      return isApproved()
+        && request.auth.uid in
+             get(/databases/$(database)/documents/leagues/$(leagueId))
+               .data.get('members', []);
     }
 
     // Includes the daily/{YYYY-MM-DD} history subcollection.
