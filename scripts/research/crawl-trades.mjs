@@ -86,12 +86,47 @@ const trades = prior.trades;
 const queue = SEED_LEAGUES.filter((id) => !visited.has(id));
 const seenUsers = new Set();
 
+// Resume support. The frontier is not persisted, so a rerun with a higher cap
+// used to start with an empty queue (every seed already visited) and exit
+// immediately having done nothing. Re-derive the frontier from the managers of
+// leagues we already have.
+if (queue.length === 0 && visited.size > 0 && visited.size < MAX_LEAGUES) {
+  console.log(`resuming: rebuilding the frontier from ${visited.size} known leagues`);
+  const known = [...visited];
+  const owners = new Set();
+  await pool(known, async (id) => {
+    for (const r of (await get(`https://api.sleeper.app/v1/league/${id}/rosters`)) ?? []) {
+      if (r.owner_id) owners.add(r.owner_id);
+    }
+  });
+  const found = await pool([...owners], async (u) => {
+    seenUsers.add(u);
+    const out = [];
+    for (const s of SEASONS) {
+      for (const l of (await get(`https://api.sleeper.app/v1/user/${u}/leagues/nfl/${s}`)) ?? []) {
+        if ((l.settings?.type ?? 0) === 2 && !visited.has(l.league_id)) out.push(l.league_id);
+      }
+    }
+    return out;
+  });
+  for (const l of new Set(found.flat())) queue.push(l);
+  console.log(`  frontier rebuilt: ${queue.length} unvisited leagues`);
+}
+
 console.log(`starting: ${visited.size} leagues already crawled, ${trades.length} trades on disk`);
 
 const players = await get("https://api.sleeper.app/v1/players/nfl");
+// The sleeper id is the join key into historical value. Without it a traded
+// player cannot be priced as of the trade date, which meant "bought youth" was
+// really "received anyone under 25", a bucket dominated by dart throws rather
+// than young studs. DynastyProcess db_playerids.csv maps sleeper_id to
+// fantasypros_id, and db_fpecr.csv.gz carries dynasty-overall rankings monthly
+// from 2019-12 to 2025-08.
 const meta = (pid) => {
   const p = players?.[pid];
-  return p ? { pos: p.position ?? "?", age: p.age ?? null } : { pos: "?", age: null };
+  return p
+    ? { id: pid, pos: p.position ?? "?", age: p.age ?? null }
+    : { id: pid, pos: "?", age: null };
 };
 
 while (queue.length > 0 && visited.size < MAX_LEAGUES) {
