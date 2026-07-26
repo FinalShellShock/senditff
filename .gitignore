@@ -9,6 +9,7 @@ validate-output.html
 feedback-export.json
 feedback-export.csv
 feedback-site.json
+feedback-plays.json
 .vercel
 
 # Research data cache (megabytes of nflverse CSVs)

@@ -5,6 +5,7 @@ import { makeApiClient, type LedgerRow } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 import { scoutingPlays, type Play } from "../algo/plays.ts";
+import { FeedbackBlock } from "../components/FeedbackBlock.tsx";
 
 const LABEL_COLOR: Record<WindowLabel, string> = {
   JUGGERNAUT: "#16a34a",
@@ -73,11 +74,33 @@ function PickRow({ pick }: { pick: DraftPick }) {
   );
 }
 
+// Play feedback reasons. Deliberately NOT the trade chips: a play is a claim
+// about strategy backed by a population statistic, so it fails by not applying,
+// by naming the wrong guys, or by being something you already knew. None of
+// those are things a trade package can be wrong about.
+const PLAY_DOWN_REASONS = [
+  { key: "play_not_applicable", label: "Doesn't apply to my team" },
+  { key: "play_wrong_players", label: "Wrong players named" },
+  { key: "play_disagree", label: "I disagree with this" },
+  { key: "play_obvious", label: "Already knew this" },
+  { key: "play_unclear", label: "Confusing" },
+  { key: "play_wrong_window", label: "Wrong read on my window" },
+];
+
+const PLAY_UP_REASONS = [
+  { key: "play_actionable", label: "I can act on this" },
+  { key: "play_right_read", label: "Right read on my team" },
+  { key: "play_right_players", label: "Right players named" },
+  { key: "play_learned", label: "Taught me something" },
+  { key: "play_changed_plan", label: "Changed what I'd do" },
+];
+
 export default function TeamDeepDive() {
   const { id: leagueId, rosterId: rosterIdStr } = useParams<{ id: string; rosterId: string }>();
   const rosterId = Number(rosterIdStr);
   const navigate = useNavigate();
   const { getToken } = useAuth();
+  const api = useMemo(() => makeApiClient(getToken), [getToken]);
   const { overview } = useOutletContext<LeagueOutletContext>();
   const [rosterSort, setRosterSort] = useState<"value" | "position">("value");
 
@@ -87,7 +110,7 @@ export default function TeamDeepDive() {
   useEffect(() => {
     if (!leagueId) return;
     let cancelled = false;
-    makeApiClient(getToken)
+    api
       .getTrades(leagueId)
       .then((d) => {
         if (!cancelled && !d.needsBackfill) setLedger(d.ledger);
@@ -231,6 +254,35 @@ export default function TeamDeepDive() {
                     Find these trades
                   </button>
                 )}
+              </div>
+              {/* flex-basis 100% in CSS drops this onto its own line inside the
+                  wrapping row, so the thumbs sit under the whole card rather
+                  than competing with the rate for the right-hand column. */}
+              <div className="scout-feedback">
+                <FeedbackBlock
+                  upReasons={PLAY_UP_REASONS}
+                  downReasons={PLAY_DOWN_REASONS}
+                  upLabel="Useful play"
+                  downLabel="Not useful"
+                  onSubmit={({ verdict, reasons, comment }) =>
+                    api.submitPlayFeedback({
+                      kind: "play",
+                      verdict,
+                      reasons,
+                      comment,
+                      leagueId: leagueId!,
+                      rosterId,
+                      play: {
+                        key: play.key,
+                        title: play.title,
+                        hitRate: play.hitRate,
+                        kind: play.kind,
+                        detail: play.detail,
+                        evidence: play.evidence,
+                      },
+                    })
+                  }
+                />
               </div>
             </div>
           ))}

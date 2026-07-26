@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useOutletContext, useParams, useSearchParams } from "react-router-dom";
+import { FeedbackBlock } from "../components/FeedbackBlock.tsx";
 import { ARCHETYPE_FAMILIES, POSITIONAL_FAMILIES, type ArchetypeFamily } from "../algo/archetypes.ts";
 import { fairnessColor, fairnessLabel, fairnessText } from "../algo/fairness.ts";
 import type { Position } from "../algo/types.ts";
@@ -136,31 +137,6 @@ const UP_REASONS: Array<{ key: string; label: string }> = [
   { key: "would_send", label: "I'd actually send this" },
 ];
 
-// Outline thumb, drawn with strokes so `currentColor` drives it: the button's
-// own color handles the neutral/green/red states with no second icon. Thumbs
-// down is the same path rotated 180 degrees, which is exactly how the two
-// glyphs relate.
-function ThumbIcon({ direction }: { direction: "up" | "down" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="15"
-      height="15"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-      {...(direction === "down" ? { style: { transform: "rotate(180deg)" } } : {})}
-    >
-      <path d="M7 10v12" />
-      <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
-    </svg>
-  );
-}
-
 // Outline code glyph (angle brackets), same drawing style as ThumbIcon so it
 // reads as part of the same icon family: stroked paths, no fill.
 function PromptIcon() {
@@ -217,57 +193,11 @@ function TradeCard({
   // Older API responses don't carry fairness; the label is derivable.
   const fairness = pkg.fairness ?? fairnessLabel(pkg.valueGive, pkg.valueReceive);
 
-  const [verdict, setVerdict] = useState<"up" | "down" | null>(null);
-  const [reasons, setReasons] = useState<string[]>([]);
-  const [comment, setComment] = useState("");
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
-  // Independent of the feedback panel state above: showing the prompt has
-  // nothing to do with logging a thumbs up/down.
+  // Independent of the feedback panel state: showing the prompt has nothing to
+  // do with logging a thumbs up/down, so it stays here rather than moving into
+  // the shared feedback component.
   const [promptOpen, setPromptOpen] = useState(false);
 
-  function pickVerdict(next: "up" | "down") {
-    if (sent) return;
-    if (verdict === next) {
-      // Toggle off.
-      setVerdict(null);
-      setReasons([]);
-      return;
-    }
-    // Either opening fresh or switching sides: the reason keys differ
-    // between up and down, so always clear.
-    setVerdict(next);
-    setReasons([]);
-    setSendError(null);
-  }
-
-  function toggleReason(key: string) {
-    setReasons((prev) => (prev.includes(key) ? prev.filter((r) => r !== key) : [...prev, key]));
-  }
-
-  function submit() {
-    if (!verdict || sending) return;
-    setSending(true);
-    setSendError(null);
-    api
-      .submitFeedback({
-        verdict,
-        reasons,
-        comment: comment.trim(),
-        leagueId,
-        rosterId,
-        packageIndex: index,
-        search,
-        package: pkg,
-        diagnostics,
-      })
-      .then(() => setSent(true))
-      .catch((e) => setSendError(e instanceof Error ? e.message : "Failed to send feedback"))
-      .finally(() => setSending(false));
-  }
-
-  const reasonOptions = verdict === "down" ? DOWN_REASONS : UP_REASONS;
   const giveValue = sideValueDisplay(pkg.valueGive, pkg.adjValueGive);
   const receiveValue = sideValueDisplay(pkg.valueReceive, pkg.adjValueReceive);
   const confidenceMeta = pkg.confidence ? CONFIDENCE_META[pkg.confidence.tier] : null;
@@ -335,89 +265,39 @@ function TradeCard({
         </div>
       )}
 
-      <div className="trade-feedback-bar">
-        {pkg.prompt ? (
-          <button
-            type="button"
-            className={`trade-prompt-btn${promptOpen ? " trade-prompt-btn-open" : ""}`}
-            onClick={() => setPromptOpen((v) => !v)}
-            aria-pressed={promptOpen}
-            aria-label="Show the prompt sent to Claude"
-            title="Show the prompt sent to Claude"
-          >
-            <PromptIcon />
-          </button>
-        ) : (
-          // Keeps the thumbs pinned right even when there is no prompt to show.
-          <span />
-        )}
-        <span className="trade-feedback-thumbs">
-        <button
-          type="button"
-          className={`trade-feedback-btn${verdict === "up" ? " trade-feedback-btn-up" : ""}`}
-          onClick={() => pickVerdict("up")}
-          disabled={sent}
-          aria-pressed={verdict === "up"}
-          title="Good trade"
-          aria-label="Good trade"
-        >
-          <ThumbIcon direction="up" />
-        </button>
-        <button
-          type="button"
-          className={`trade-feedback-btn${verdict === "down" ? " trade-feedback-btn-down" : ""}`}
-          onClick={() => pickVerdict("down")}
-          disabled={sent}
-          aria-pressed={verdict === "down"}
-          title="Bad trade"
-          aria-label="Bad trade"
-        >
-          <ThumbIcon direction="down" />
-        </button>
-        </span>
-      </div>
-
-      {verdict && sent && (
-        <div className="trade-feedback-panel">
-          <p className="trade-feedback-sent">
-            <ThumbIcon direction={verdict} />
-            Thanks, logged.
-          </p>
-        </div>
-      )}
-
-      {verdict && !sent && (
-        <div className="trade-feedback-panel">
-          <div className="trade-feedback-chips">
-            {reasonOptions.map((r) => (
-              <button
-                type="button"
-                key={r.key}
-                className={`trade-feedback-chip${reasons.includes(r.key) ? " selected" : ""}`}
-                onClick={() => toggleReason(r.key)}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-          <textarea
-            className="trade-feedback-comment"
-            placeholder="Anything else? (optional)"
-            maxLength={2000}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-          {sendError && <p className="trade-feedback-error">{sendError}</p>}
-          <button
-            type="button"
-            className="trade-feedback-submit"
-            disabled={sending}
-            onClick={submit}
-          >
-            {sending ? "Sending..." : "Send feedback"}
-          </button>
-        </div>
-      )}
+      <FeedbackBlock
+        upReasons={UP_REASONS}
+        downReasons={DOWN_REASONS}
+        upLabel="Good trade"
+        downLabel="Bad trade"
+        leading={
+          pkg.prompt ? (
+            <button
+              type="button"
+              className={`trade-prompt-btn${promptOpen ? " trade-prompt-btn-open" : ""}`}
+              onClick={() => setPromptOpen((v) => !v)}
+              aria-pressed={promptOpen}
+              aria-label="Show the prompt sent to Claude"
+              title="Show the prompt sent to Claude"
+            >
+              <PromptIcon />
+            </button>
+          ) : undefined
+        }
+        onSubmit={({ verdict, reasons, comment }) =>
+          api.submitFeedback({
+            verdict,
+            reasons,
+            comment,
+            leagueId,
+            rosterId,
+            packageIndex: index,
+            search,
+            package: pkg,
+            diagnostics,
+          })
+        }
+      />
     </div>
   );
 }

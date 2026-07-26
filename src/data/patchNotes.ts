@@ -55,6 +55,19 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "1.13",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "Thumbs on the scouting report",
+    changes: [
+      "Every scouting report play now has the same thumbs up/down, reason chips and comment box as the trade cards in Send It.",
+      "The reason chips are specific to plays rather than trades, because a play goes wrong differently: it can not apply to your team, name the wrong players, misread your window, or just tell you something you already knew.",
+      "Play feedback is kept separate from trade feedback. Mixing the two would have quietly poisoned the reason tallies that tune which trades get suggested.",
+    ],
+    knownIssues: [],
+  },
+  {
+    branch: "daniels",
     release: "1.12",
     algo: "Shotgun",
     date: "2026-07-26",

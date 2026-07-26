@@ -90,6 +90,26 @@ export type FeedbackPayload = {
 
 // ── Site feedback (footer bell + form) ──────────────────────────────────
 
+// Thumbs on a SCOUTING REPORT play. Carries the league and roster because the
+// play's detail line names that league's players, so the entry is meaningless
+// without knowing whose roster produced it.
+export type PlayFeedbackPayload = {
+  kind: "play";
+  verdict: FeedbackVerdict;
+  reasons: string[];
+  comment: string;
+  leagueId: string;
+  rosterId: number;
+  play: {
+    key: string;
+    title: string;
+    hitRate: number;
+    kind: "do" | "avoid";
+    detail: string;
+    evidence: string;
+  };
+};
+
 export type SiteFeedbackPayload = {
   kind: "site";
   comment: string;
@@ -271,6 +291,12 @@ export function makeApiClient(getToken: GetTokenFn) {
       apiFetch<{ ok: true }>(getToken, "/api/admin/users", {
         method: "POST",
         body: JSON.stringify({ uid, action }),
+      }),
+
+    submitPlayFeedback: (payload: PlayFeedbackPayload) =>
+      apiFetch<{ ok: true; id: string }>(getToken, "/api/feedback", {
+        method: "POST",
+        body: JSON.stringify(payload),
       }),
 
     submitSiteFeedback: (payload: SiteFeedbackPayload) =>

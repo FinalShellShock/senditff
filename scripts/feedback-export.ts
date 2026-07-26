@@ -108,10 +108,15 @@ type FeedbackDiagnostics = { forced?: boolean; degraded?: string } | null;
 
 type FeedbackDoc = {
   createdAt?: string;
-  // "trade" (thumbs on a Send It package) or "site" (the footer Feedback
-  // button). Absent on entries written before site feedback existed, which
-  // were all trade feedback.
+  // "trade" (thumbs on a Send It package), "site" (the footer Feedback button)
+  // or "play" (thumbs on a scouting report play). Absent on entries written
+  // before site feedback existed, which were all trade feedback.
   kind?: string;
+  // Play feedback only, hoisted server-side so grouping needs no digging.
+  playKey?: string;
+  playTitle?: string;
+  playHitRate?: number | null;
+  playKind?: string;
   // App feedback only: what it is about, and the page the person was on.
   category?: string;
   route?: string | null;
@@ -281,7 +286,12 @@ async function main(): Promise<void> {
   // something across comparable trade judgments. Entries written before site
   // feedback existed have no `kind` and were all trade feedback.
   const siteEntries = entries.filter((e) => e.kind === "site");
-  const tradeEntries = entries.filter((e) => e.kind !== "site");
+  const playEntries = entries.filter((e) => e.kind === "play");
+  // Anything NOT explicitly another kind is trade feedback, because entries
+  // written before `kind` existed have none and were all trades. That default
+  // is why every new kind must be subtracted here explicitly: a kind that is
+  // only added to the writer silently lands in the trade tuning tallies.
+  const tradeEntries = entries.filter((e) => e.kind !== "site" && e.kind !== "play");
 
   const jsonPath = resolve("feedback-export.json");
   writeFileSync(jsonPath, JSON.stringify(tradeEntries, null, 2));
@@ -289,6 +299,10 @@ async function main(): Promise<void> {
   if (siteEntries.length > 0) {
     const sitePath = resolve("feedback-site.json");
     writeFileSync(sitePath, JSON.stringify(siteEntries, null, 2));
+  }
+
+  if (playEntries.length > 0) {
+    writeFileSync(resolve("feedback-plays.json"), JSON.stringify(playEntries, null, 2));
   }
 
   const csvLines = [CSV_COLUMNS.join(",")];
@@ -337,6 +351,32 @@ async function main(): Promise<void> {
       }
     }
   }
+  if (playEntries.length > 0) {
+    console.log(`Scouting plays: ${playEntries.length} -> feedback-plays.json`);
+    // Per PLAY, not per verdict overall. A play shown to every team in the
+    // league will collect more of both than a rare one, so raw counts rank by
+    // exposure; the split within each play is the thing that means something.
+    const byPlay = new Map<string, { up: number; down: number; reasons: string[]; comments: string[] }>();
+    for (const entry of playEntries) {
+      const key = entry.playKey ?? "unknown";
+      const b = byPlay.get(key) ?? { up: 0, down: 0, reasons: [], comments: [] };
+      if (entry.verdict === "up") b.up++;
+      else if (entry.verdict === "down") b.down++;
+      b.reasons.push(...(entry.reasons ?? []));
+      if (entry.comment) b.comments.push(entry.comment);
+      byPlay.set(key, b);
+    }
+    for (const [key, b] of [...byPlay.entries()].sort((a, b2) => b2[1].down - a[1].down)) {
+      console.log(`  ${key}: up ${b.up}, down ${b.down}`);
+      const tally = new Map<string, number>();
+      for (const r of b.reasons) tally.set(r, (tally.get(r) ?? 0) + 1);
+      for (const [r, n] of [...tally.entries()].sort((a, b2) => b2[1] - a[1])) {
+        console.log(`    ${r}: ${n}`);
+      }
+      for (const c of b.comments) console.log(`    "${c.slice(0, 90)}"`);
+    }
+  }
+
   console.log("Reasons by frequency:");
   if (sortedReasons.length === 0) {
     console.log("  (none)");

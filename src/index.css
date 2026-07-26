@@ -2896,6 +2896,31 @@ body {
   overflow-wrap: break-word;
 }
 
+/* The scout row wraps, so a 100% basis forces the feedback onto its own line
+   under the whole card instead of squeezing into the right-hand meter column.
+   Reuses the .trade-feedback-* classes verbatim: the widget is the same
+   component, and giving it a second skin here is how the two drift apart. */
+.scout-feedback {
+  flex: 1 1 100%;
+  min-width: 0;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  margin-top: 2px;
+}
+
+/* Tighter than on a trade card: a play is one paragraph, so the default
+   card-sized padding leaves the thumbs floating a long way from the text. */
+.scout-feedback .trade-feedback-bar {
+  padding: 6px 0 0;
+  margin: 0;
+  border-top: none;
+}
+
+/* Keeps the panel's own padding: it draws a border, and zeroing the inline
+   padding would put the chips flush against it. Only the gap above changes. */
+.scout-feedback .trade-feedback-panel {
+  margin-top: 8px;
+}
+
 .scout-row-meter {
   display: flex;
   align-items: center;

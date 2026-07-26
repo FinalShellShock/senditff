@@ -36,6 +36,23 @@ mean something across comparable trade judgments. Read it and give it its own
 heading in the plan. It is where product and UI problems surface, and those are
 invisible to the trade thumbs.
 
+**Scouting play feedback is exported separately** to `feedback-plays.json`
+(also gitignored) and tallied inline per play, with the up/down split, the
+reason chips and any comments. It is thumbs on a SCOUTING REPORT play, which is
+a claim about strategy backed by a population statistic from the trade study,
+not a judgment on one package.
+
+It never enters the trade reason tallies or the verdict split either. Read it
+against `src/algo/plays.ts`, and note the counts rank by exposure: a play shown
+to every team collects more of both than a rare one, so the split WITHIN a play
+is the signal, not its raw total.
+
+A play earning `play_not_applicable` or `play_wrong_window` repeatedly means its
+gate is wrong (which teams it fires for). `play_wrong_players` means the detail
+line is picking the wrong roster pieces. `play_disagree` on a play with a strong
+measured rate is the interesting case: either the research does not generalize
+to this league format, or the copy is overstating what the number says.
+
 Optional filters: `npm run feedback:export -- --since 2026-07-01 --league <id>`
 
 Then delete the pulled secrets once the export succeeds, so a service account
@@ -105,7 +122,8 @@ The plan should have:
 3. **Proposed changes**, each naming the file and the specific knob:
    `src/algo/constants.ts` (weights and thresholds), `src/algo/archetypes.ts`
    (archetype triggers/scoring), `src/algo/fairness.ts` (fairness bands),
-   `api/_lib/tradeEngine.ts` (generation, gates, ranking).
+   `api/_lib/tradeEngine.ts` (generation, gates, ranking), `src/algo/plays.ts`
+   (which scouting plays fire, for whom, and what they claim).
 4. **What NOT to change**, and why. Feedback that reflects taste rather than a
    defect is worth naming so it doesn't get "fixed" later.
 5. **A validation step** for each proposed change, using the existing
@@ -122,8 +140,8 @@ Then stop and let Johnny pick what to implement.
   identical inputs producing identical outputs, and must be checked with
   `npm run validate:trades`.
 - Don't commit, deploy, or edit env vars from this skill.
-- `feedback-export.json` / `.csv` / `feedback-site.json` are gitignored on
-  purpose. Leave them untracked; they hold user emails.
+- `feedback-export.json` / `.csv` / `feedback-site.json` / `feedback-plays.json`
+  are gitignored on purpose. Leave them untracked; they hold user emails.
 - Pulling marks entries reviewed, which RESETS the footer bell for everyone:
   not just the dot, but the counts too, since they are scoped to the unreviewed
   queue. Johnny considers that a feature. A cleared bell tells the others he is

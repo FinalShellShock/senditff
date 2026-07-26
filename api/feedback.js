@@ -47,6 +47,19 @@ function currentRelease() {
 var PATCH_NOTES = [
   {
     branch: "daniels",
+    release: "1.13",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "Thumbs on the scouting report",
+    changes: [
+      "Every scouting report play now has the same thumbs up/down, reason chips and comment box as the trade cards in Send It.",
+      "The reason chips are specific to plays rather than trades, because a play goes wrong differently: it can not apply to your team, name the wrong players, misread your window, or just tell you something you already knew.",
+      "Play feedback is kept separate from trade feedback. Mixing the two would have quietly poisoned the reason tallies that tune which trades get suggested."
+    ],
+    knownIssues: []
+  },
+  {
+    branch: "daniels",
     release: "1.12",
     algo: "Shotgun",
     date: "2026-07-26",
@@ -362,7 +375,7 @@ async function handler(req, res) {
     package: pkg,
     diagnostics
   } = req.body;
-  const kind = rawKind === "site" ? "site" : "trade";
+  const kind = rawKind === "site" ? "site" : rawKind === "play" ? "play" : "trade";
   const comment = typeof rawComment === "string" ? rawComment.slice(0, MAX_COMMENT_LENGTH) : "";
   if (kind === "site") {
     if (comment.trim().length === 0) {
@@ -392,6 +405,54 @@ async function handler(req, res) {
   if (verdict !== "up" && verdict !== "down") {
     return res.status(400).json({ error: 'verdict must be "up" or "down"' });
   }
+  const reasons = Array.isArray(rawReasons) ? rawReasons.filter((r) => typeof r === "string").slice(0, MAX_REASONS).map((r) => r.slice(0, MAX_REASON_LENGTH)) : [];
+  if (kind === "play") {
+    const play = req.body.play;
+    if (play == null || typeof play !== "object" || Array.isArray(play)) {
+      return res.status(400).json({ error: "play must be an object" });
+    }
+    const playKey = typeof play["key"] === "string" ? play["key"] : null;
+    if (!playKey) return res.status(400).json({ error: "play.key required" });
+    if (typeof leagueId !== "string" || leagueId.length === 0) {
+      return res.status(400).json({ error: "leagueId required" });
+    }
+    if (typeof rosterId !== "number" || !Number.isFinite(rosterId)) {
+      return res.status(400).json({ error: "rosterId must be a number" });
+    }
+    try {
+      const leagueRef = adminDb.collection("leagues").doc(leagueId);
+      const leagueSnap = await leagueRef.get();
+      const members = leagueSnap.data()?.["members"] ?? [];
+      if (!await ensureLeagueAccess(user.uid, leagueRef, members)) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      const docRef = await adminDb.collection("feedback").add({
+        createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+        userId: user.uid,
+        userEmail: user.email,
+        algoVersion: ALGO_VERSION,
+        algoFingerprint: ALGO_FINGERPRINT_BUILD,
+        release: currentRelease(),
+        kind,
+        verdict,
+        reasons,
+        comment,
+        leagueId,
+        rosterId,
+        // Hoisted out of the blob so the export can group on them without
+        // digging, the same way `prompt` is hoisted on the trade path.
+        playKey,
+        playTitle: typeof play["title"] === "string" ? play["title"] : null,
+        playHitRate: typeof play["hitRate"] === "number" ? play["hitRate"] : null,
+        playKind: play["kind"] === "avoid" ? "avoid" : "do",
+        play
+      });
+      return res.status(200).json({ ok: true, id: docRef.id });
+    } catch (err) {
+      console.error("play feedback error", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
   if (typeof leagueId !== "string" || leagueId.length === 0) {
     return res.status(400).json({ error: "leagueId required" });
   }
@@ -401,7 +462,6 @@ async function handler(req, res) {
   if (pkg == null || typeof pkg !== "object" || Array.isArray(pkg)) {
     return res.status(400).json({ error: "package must be an object" });
   }
-  const reasons = Array.isArray(rawReasons) ? rawReasons.filter((r) => typeof r === "string").slice(0, MAX_REASONS).map((r) => r.slice(0, MAX_REASON_LENGTH)) : [];
   const packageIndex = typeof rawPackageIndex === "number" && Number.isFinite(rawPackageIndex) ? rawPackageIndex : 0;
   const pkgRecord = pkg;
   const prompt = typeof pkgRecord["prompt"] === "string" ? pkgRecord["prompt"] : null;
