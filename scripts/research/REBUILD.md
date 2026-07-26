@@ -90,3 +90,57 @@ baseline recomputed at each horizon over all teams:
 - Draft-pick hit rate, the fourth clause of the hypothesis, is **not tested
   here**. It needs draft results joined to pick ownership, which is a separate
   pipeline.
+
+
+---
+
+# The strongest signal in the study: acquire quality
+
+`node scripts/research/quality.mjs` · 19,933 trade-sides.
+
+Two of my own proposals were killed by checking them first.
+
+**Shape does not matter.** The 44% of real trades our engine structurally
+cannot build perform at baseline:
+
+| Shape | Beat baseline |
+|---|---:|
+| BOTH sides 2+ (unreachable for us) | 51% (8,241) |
+| got 1, gave 2+ (consolidate) | 52% (3,923) |
+| straight 1-for-1 | 52% (3,888) |
+| **got 2+, gave 1 (tier down)** | **47%** (3,881) |
+
+**Picks do not matter.** Picks-only returns beat baseline 51% of the time,
+which is noise. I had ranked picks-as-first-class-assets the top priority on
+the grounds that they are 55% of traded assets. That is a frequency argument,
+and frequency is what gets accepted, not what works.
+
+**What matters is who you end up with.**
+
+| | Beat baseline |
+|---|---:|
+| got the better player in the trade | **54%** (4,500) |
+| gave up the better player | **46%** (4,431) |
+
+| Best player acquired | Beat baseline |
+|---|---:|
+| **top 24** | **60%** (1,584) |
+| top 25-60 | 51% (2,672) |
+| top 61-100 | 48% (2,284) |
+| nothing better than 100 | 48% (5,105) |
+
+Monotonic, on the largest samples in the study, and symmetric on the give/get
+split, which is what a real effect looks like.
+
+## What this says about the engine
+
+Tier down is the only shape that underperforms (47%), it means giving up the
+best player in the deal by construction, and it is **55% of everything the
+engine generates**.
+
+That is the change worth making, and it is far smaller than the generation
+rewrite I was about to propose: stop producing so many trades where the user
+gives away the best player, and bias toward packages that land a genuinely
+better one. The evidence behind it (n=4,500 and n=4,431, an 8 point spread;
+n=1,584 for the top-24 effect, a 12 point spread) is stronger than anything
+else measured today.
