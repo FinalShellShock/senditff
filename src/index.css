@@ -3699,3 +3699,20 @@ body {
 .trade-score-part {
   white-space: nowrap;
 }
+
+/* Side by side, the two halves MIRROR around the swap arrow: SEND reads
+   badge-name-then-values outward from the left edge, GET reads values-then-
+   name-badge outward to the right edge. Reversing the row is what puts the
+   position badge back on the outer edge of the GET column.
+   Scoped above the stacking breakpoint on purpose. Once the sides stack there
+   is no axis to mirror around, and a lone right-aligned block just reads as
+   misaligned, so the phone layout stays uniformly left-aligned. */
+@media (min-width: 601px) {
+  .trade-side-receive .trade-asset {
+    flex-direction: row-reverse;
+  }
+
+  .trade-side-receive .trade-asset-name {
+    text-align: right;
+  }
+}
