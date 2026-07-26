@@ -195,3 +195,65 @@ breadth and positional need are all either flat or restatements of it.
 That is a simplification, not a dead end. It says the engine should spend its
 weight on the quality of what the user ends up with, and stop spreading it
 across archetype machinery that the outcomes do not support.
+
+
+---
+
+# Why the good trades never get offered, and what closes them
+
+## The gate diagnostic
+
+`npm run` the forced sweep and tally which gate each family dies on:
+
+| family | raw | myFit | theirFit | balance |
+|---|---:|---:|---:|---:|
+| capital_convert_picks_to_production | 366 | **0** | **176** | 0 |
+| push_in | 163 | 10 | 45 | 0 |
+| tier_down | 2,082 | 508 | 161 | 0 |
+| capital_convert_production_to_picks | 554 | 341 | **0** | 0 |
+
+**Trades that acquire quality never fail on the user's fit. They fail because
+the counterparty says no.** The reverse is also true: trades that shed quality
+never fail on the counterparty's fit.
+
+Tier down dominates the surviving pool (50%) purely on volume: 2,082 raw
+candidates against 366 for the acquire-quality generator.
+
+**Balance rejects zero candidates in every family.** It is not the binding
+constraint, so there is headroom to pay more.
+
+## Is paying more a mistake?
+
+`node scripts/research/payup.mjs` · 14,384 trade-sides.
+
+| Value delta | Beat baseline |
+|---|---:|
+| received much more (+25% or better) | 52% (6,026) |
+| received slightly more | 51% (947) |
+| roughly even | 48% (474) |
+| paid slightly more | 51% (928) |
+| paid much more (-25% or worse) | 49% (6,009) |
+
+**Value balance is not predictive.** Flat across the whole range.
+
+But conditioned on what the premium bought:
+
+| | Beat baseline |
+|---|---:|
+| **paid up AND landed a top-24 player** | **59%** (264) |
+| paid up AND landed nothing better than 60 | 48% (5,917) |
+
+**Overpaying for quality works. Overpaying for mediocrity does not.** That is
+the guard rail: a sweetener is justified by what it buys, never by making the
+arithmetic balance.
+
+## The design this points to
+
+Candidates that acquire a top-tier player and fail ONLY on the counterparty's
+fit should be sweetened until that fit clears, rather than discarded. Balance
+has room, and the outcome data says the resulting trade is a good one for the
+user.
+
+Explicitly NOT a general "close any gap with a pick" step. The sweetener is
+conditioned on landing quality, which is the one thing measured to matter, and
+everything else stays gated as it is.
