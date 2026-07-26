@@ -17,12 +17,18 @@ const LABEL_COLOR: Record<WindowLabel, string> = {
   STUCK:      "#dc2626",
 };
 
+// CRITICAL and SURPLUS are the two states worth acting on, so they own the
+// loud colors. HEALTHY is deliberately neutral: it is the absence of leverage,
+// and it covers ~60% of cells by construction (classifySide puts NEED below
+// z -1 and CRITICAL below z -2, so the middle is always the big bucket).
+// Painting that middle green made 80% of the leverage board green and buried
+// the signal.
 const POS_CLASS_COLOR: Record<string, string> = {
   CRITICAL_NEED: "#ef4444",
   CRITICAL:      "#ef4444",
   NEED:          "#eab308",
-  HEALTHY:       "#22c55e",
-  SURPLUS:       "#4ade80",
+  HEALTHY:       "#64748b",
+  SURPLUS:       "#22c55e",
 };
 
 const ARCHETYPE_LABELS: Record<string, string> = {
@@ -58,7 +64,7 @@ function MiniBar({ score, kind }: { score: number; kind?: SubClassification }) {
   const pct = Math.min(100, Math.max(0, score));
   const color = kind
     ? POS_CLASS_COLOR[kind] ?? "#22c55e"
-    : pct >= 70 ? "#4ade80" : pct >= 50 ? "#22c55e" : pct >= 30 ? "#eab308" : "#ef4444";
+    : pct >= 70 ? "#22c55e" : pct >= 50 ? "#64748b" : pct >= 30 ? "#eab308" : "#ef4444";
   return (
     <div className="mini-bar-track">
       <div className="mini-bar-fill" style={{ width: `${pct}%`, background: color }} />

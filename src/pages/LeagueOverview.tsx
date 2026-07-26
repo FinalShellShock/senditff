@@ -20,12 +20,18 @@ const LABEL_COLOR: Record<WindowLabel, string> = {
   STUCK:      "#dc2626",
 };
 
+// CRITICAL and SURPLUS are the two states worth acting on, so they own the
+// loud colors. HEALTHY is deliberately neutral: it is the absence of leverage,
+// and it covers ~60% of cells by construction (classifySide puts NEED below
+// z -1 and CRITICAL below z -2, so the middle is always the big bucket).
+// Painting that middle green made 80% of the leverage board green and buried
+// the signal.
 const POS_CLASS_COLOR: Record<string, string> = {
   CRITICAL_NEED: "#ef4444",
   CRITICAL:      "#ef4444",
   NEED:          "#eab308",
-  HEALTHY:       "#22c55e",
-  SURPLUS:       "#4ade80",
+  HEALTHY:       "#64748b",
+  SURPLUS:       "#22c55e",
 };
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
@@ -196,7 +202,7 @@ function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
 // Color does the work that text/numbers used to. Exact numbers live in
 // the expanded detail view.
 function ThickBar({ score, kind }: { score: number; kind?: SubClassification }) {
-  const color = POS_CLASS_COLOR[kind ?? "HEALTHY"] ?? "#22c55e";
+  const color = POS_CLASS_COLOR[kind ?? "HEALTHY"] ?? "#64748b";
   const width = Math.max(4, Math.min(100, score));
   return (
     <div className="lt-thick-bar-track">
@@ -216,7 +222,7 @@ function combinedLabel(s?: SubClassification, d?: SubClassification): string {
 function combinedColor(s?: SubClassification, d?: SubClassification): string {
   if (s === "CRITICAL" || d === "CRITICAL") return POS_CLASS_COLOR.CRITICAL ?? "#ef4444";
   if (s === "NEED" || d === "NEED") return POS_CLASS_COLOR.NEED ?? "#eab308";
-  return POS_CLASS_COLOR.HEALTHY ?? "#22c55e";
+  return POS_CLASS_COLOR.HEALTHY ?? "#64748b";
 }
 
 // 1st / 2nd / 3rd / Nth

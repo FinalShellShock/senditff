@@ -47,6 +47,19 @@ function currentRelease() {
 var PATCH_NOTES = [
   {
     branch: "daniels",
+    release: "1.5",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "Green now means something on the leverage board",
+    changes: [
+      "Roughly 80% of the positional leverage board was rendering green, which made it useless for spotting anything. Green now means SURPLUS only, the positions worth shopping at. HEALTHY is neutral grey, because it means there is no leverage there and it covers about 60% of the board by nature.",
+      "The grading itself did not change. Only which colour it is drawn in.",
+      "Feedback moved out of the footer into a small button that stays in the bottom corner while you scroll, so you can report something without scrolling past it first."
+    ],
+    knownIssues: []
+  },
+  {
+    branch: "daniels",
     release: "1.4",
     algo: "Shotgun",
     date: "2026-07-26",

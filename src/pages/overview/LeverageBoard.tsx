@@ -24,11 +24,17 @@ const POS_COLOR: Record<Position, string> = {
   TE: "#a855f7",
 };
 
+// CRITICAL and SURPLUS are the two states worth acting on, so they own the
+// loud colors. HEALTHY is deliberately neutral: it is the absence of leverage,
+// and it covers ~60% of cells by construction (classifySide puts NEED below
+// z -1 and CRITICAL below z -2, so the middle is always the big bucket).
+// Painting that middle green made 80% of the leverage board green and buried
+// the signal.
 const CLASS_COLOR: Record<string, string> = {
   CRITICAL: "#ef4444",
   NEED: "#eab308",
-  HEALTHY: "#22c55e",
-  SURPLUS: "#4ade80",
+  HEALTHY: "#64748b",
+  SURPLUS: "#22c55e",
 };
 
 function classOf(p: TeamProfile, pos: Position): SubClassification {
