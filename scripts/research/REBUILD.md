@@ -144,3 +144,54 @@ gives away the best player, and bias toward packages that land a genuinely
 better one. The evidence behind it (n=4,500 and n=4,431, an 8 point spread;
 n=1,584 for the top-24 effect, a 12 point spread) is stronger than anything
 else measured today.
+
+
+---
+
+# Signals that turned out to be nothing
+
+Recorded so they are not rediscovered and believed. All on 11,645-19,933
+trade-sides, baseline-controlled.
+
+| Candidate | Result |
+|---|---|
+| **Momentum** (was he rising or falling before you bought?) | falling 48%, drifting 51%, rising 49%. **Nothing.** |
+| **Position acquired** | QB 50%, RB 51%, WR 49%, TE 49%. **Nothing.** |
+| **Breadth** (positions acquired) | 1 pos 51%, 2 pos 47%, 3+ 45%. Mild, and it just restates quality. |
+| **Positional need filled** | 57% vs 56% once quality is held constant. **Nothing.** |
+
+Buy-low / sell-high is the notable null. It is the most intuitive trading
+heuristic there is and it does not show up at all.
+
+## The need_fill trap
+
+`node scripts/research/needfill.mjs`
+
+The raw numbers look like the archetype is backwards:
+
+| Position strength when you bought | Beat baseline |
+|---|---:|
+| under 60% of league average | **38%** (1,899) |
+| 60-90% | 41% (2,468) |
+| 90-120% | 51% (3,063) |
+| over 120% | **64%** (4,208) |
+
+**It is circular.** Sleeper only serves end-of-season rosters, so the player
+you acquired is already counted in that position's strength. "Bought into
+strength" partly means "bought a good player", which is the known 60% effect.
+
+Holding quality constant at top-60: weakest position **57%**, strongest **56%**.
+The effect disappears.
+
+**So need_fill is not refuted, it is redundant.** Positional need adds nothing
+once you know how good the acquired player is.
+
+## Where that leaves the engine
+
+Every signal tested either returns nothing or collapses into the same one:
+**does this trade land you a better player?** Shape, picks, momentum, position,
+breadth and positional need are all either flat or restatements of it.
+
+That is a simplification, not a dead end. It says the engine should spend its
+weight on the quality of what the user ends up with, and stop spreading it
+across archetype machinery that the outcomes do not support.
