@@ -186,7 +186,7 @@ function PromptIcon() {
 function AssetList({ assets }: { assets: TradeAssetWire[] }) {
   return (
     <span className="trade-names">
-      {assets.map((a, i) => (
+      {assets.map((a) => (
         <span key={a.id} className="trade-asset">
           <span
             className="trade-asset-tag"
@@ -197,7 +197,6 @@ function AssetList({ assets }: { assets: TradeAssetWire[] }) {
           <span className="trade-asset-name">{a.name}</span>
           {a.age != null && <span className="trade-asset-age">{a.age.toFixed(1)}y</span>}
           <span className="trade-asset-value">{a.valueDynasty.toLocaleString()}</span>
-          {i < assets.length - 1 && <span className="trade-asset-sep"> + </span>}
         </span>
       ))}
     </span>
@@ -313,9 +312,18 @@ function TradeCard({
         </span>
         {pkg.scores && (
           <>
-            {" · "}fit for you <FitGrade fit={pkg.scores.myFit} />
-            {" · "}fit for them <FitGrade fit={pkg.scores.theirFit} />
-            {" · "}value balance {Math.round(pkg.scores.balance * 100)}%
+            {" · "}
+            <span className="trade-score-part">
+              fit for you <FitGrade fit={pkg.scores.myFit} />
+            </span>
+            {" · "}
+            <span className="trade-score-part">
+              fit for them <FitGrade fit={pkg.scores.theirFit} />
+            </span>
+            {" · "}
+            <span className="trade-score-part">
+              value balance {Math.round(pkg.scores.balance * 100)}%
+            </span>
           </>
         )}
       </div>

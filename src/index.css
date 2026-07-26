@@ -2775,24 +2775,44 @@ body {
   color: #475569;
 }
 
+/* One asset per ROW, not inline-wrapped.
+   Inline assets meant a 3-piece package reflowed into an unreadable block, and
+   at 390px each side is only 152px wide so every player name broke mid-name
+   ("Trevor / Lawrence"). A row per asset is scannable at any width and any
+   package size: the name flexes and truncates, age and value hold a fixed
+   right-hand column so they line up down the card. */
 .trade-names {
   font-size: 13px;
   font-weight: 700;
   color: #e2e8f0;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-.trade-side-receive .trade-names {
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  width: 100%;
+  min-width: 0;
 }
 
 .trade-asset {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* The name is the only thing allowed to shrink. */
+.trade-asset-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-asset-tag,
+.trade-asset-age,
+.trade-asset-value {
+  flex: 0 0 auto;
 }
 
 .trade-asset-tag {
@@ -3646,4 +3666,36 @@ body {
     padding: 9px;
   }
   .feedback-fab-label { display: none; }
+}
+
+/* Send It cards on phones: SEND above GET rather than beside it. At 390px a
+   two-column card gives each side 152px, which cannot hold a position tag, a
+   name, an age and a value. Full width per side is the only honest fix. */
+@media (max-width: 600px) {
+  .trade-players {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .trade-side,
+  .trade-side-receive {
+    align-items: stretch;
+  }
+
+  /* Points down now that the sides are stacked. */
+  .trade-arrow {
+    align-self: center;
+    transform: rotate(90deg);
+  }
+
+  .trade-val {
+    text-align: right;
+  }
+}
+
+/* Each metric holds together, so the strip breaks BETWEEN measurements rather
+   than mid-phrase ("value / balance 98%"). */
+.trade-score-part {
+  white-space: nowrap;
 }
