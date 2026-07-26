@@ -342,15 +342,29 @@ the strength proxy — trajectory arrows, not a standings predictor.
 
 Formation lineage: Pro Set → Spread → Audible → West Coast → Shotgun.
 
-### Needs Urgency Formula
+### Needs Urgency
 
 ```
-urgency = starter_gap * 0.40 + window_pressure * 0.30 + depth_gap * 0.15 + pick_capital * 0.15
+gapUrgency  = starter_gap * starterWeight + depth_gap * depthWeight
+urgency     = gapUrgency * pressureMult * positionImportance
 ```
-- urgency > 70 → CRITICAL_NEED
-- urgency 50-70 → NEED
-- urgency 30-50 → HEALTHY
-- urgency < 30 → SURPLUS
+where `pressureMult` is in [0.6, 1.2] and the weights are format-aware
+(`depthSlotsFor`). Note this is a weighted sum of GAPS scaled by a multiplier
+under 1.2, so **it cannot reach 100 on a real roster.**
+
+**Urgency is NOT a 0-100 scale.** Measured across a 16 team league: min 1,
+p25 11, median 19, p75 24, p90 36, max 62. This doc previously claimed
+`urgency > 70 → CRITICAL_NEED`; nothing has ever reached 70.
+
+Classification does NOT come from urgency. It comes from `classifySide`
+(z-scores + an absolute floor), and urgency is an input to archetype scoring
+and a display number.
+
+Anything reading urgency must scale against `URGENCY_MEANINGFUL` /
+`URGENCY_SEVERE` in `src/algo/constants.ts`, never against 100. Ignoring that
+silently zeroed every `consolidate_*` archetype across an entire league, and
+because `archMatch` derives from archetype scores, it meant almost no trade
+could be labelled RECOMMENDED.
 
 ### Determinism Rules (critical)
 

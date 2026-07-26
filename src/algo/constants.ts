@@ -193,6 +193,29 @@ export const PICK_ADJUSTMENT_BY_FLAG: Record<PickFlag, number> = {
   PICK_POOR: 12,
 };
 
+// What an urgency number actually means.
+//
+// Urgency is NOT a 0-100 scale, and archetype scoring was written as if it
+// were. Measured across a 16 team league: min 1, p25 11, median 19, p75 24,
+// p90 36, max 62. It is a weighted sum of score GAPS times a pressure
+// multiplier under 1.2, so it cannot reach 100 on a real roster.
+//
+// The old thresholds asked for urgency above 40 before an archetype scored
+// anything, which only 4 of 64 cells cleared, and above 70 to max out, which
+// nothing ever reached. That silently zeroed every consolidate_* archetype
+// across an entire league and, because archMatch is derived from these scores,
+// meant almost no trade could ever be labelled RECOMMENDED.
+//
+// MEANINGFUL sits near the median (a need worth acting on starts registering)
+// and SEVERE near p95 (fully maxed). Re-derive both if the urgency formula
+// changes again: that is exactly the drift that caused this.
+export const URGENCY_MEANINGFUL = 20;
+export const URGENCY_SEVERE = 45;
+
+// Typical spread between a roster's most and least urgent position. Used to
+// tell "one real hole plus a surplus" apart from "evenly mediocre everywhere".
+export const URGENCY_SPREAD_FULL = 30;
+
 // Threshold for the consolidate_flex archetype: a team with FLEX score this far
 // above league average has genuine "stackable trade chips" beyond positional needs.
 export const FLEX_CONSOLIDATE_THRESHOLD = 55;

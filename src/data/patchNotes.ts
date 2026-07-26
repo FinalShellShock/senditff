@@ -55,6 +55,23 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "1.8",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "Fixed the scoring that made almost nothing a real recommendation",
+    changes: [
+      "Trade angles were being scored against a scale they can never reach. The needs urgency number tops out around 60 on a real roster, but the scoring asked for 40 before an angle counted at all and 70 to count fully. Across a 16 team league only 4 of 64 spots cleared the first bar and nothing ever cleared the second.",
+      "That silently zeroed entire families of trade ideas. Consolidating at QB, WR or TE, and tiering down at RB or WR, scored zero for every single team in the league. Since a trade's confidence rating is built from that same number, it also meant almost nothing could ever be labelled RECOMMENDED.",
+      "Recalibrated to what the numbers actually are. Recommendations roughly tripled, every family of trade idea now scores somewhere, and no search falls back to degraded results any more.",
+      "Scouting reports show stronger and more varied angles as a result. The strength label is that same score, so it was being dragged down by the same bug.",
+      "Renamed the trade finder option that read 'bundle flex spares into a starter'. It never only looked at flex players: it packages two different positions into one better one, so it now says so.",
+    ],
+    knownIssues: [
+      "About half of suggested trades still read as INSPIRATION rather than a recommendation. The remaining cause is that the engine will build a trade for an angle your roster does not fit, then rate it honestly low. Being looked at next.",
+    ],
+  },
+  {
+    branch: "daniels",
     release: "1.7",
     algo: "Shotgun",
     date: "2026-07-26",

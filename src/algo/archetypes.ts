@@ -1,4 +1,12 @@
-import { FLEX_CONSOLIDATE_THRESHOLD, POSITIONS, WINDOW_LONG_THRESHOLD, WINDOW_SHORT_THRESHOLD } from "./constants";
+import {
+  FLEX_CONSOLIDATE_THRESHOLD,
+  POSITIONS,
+  URGENCY_MEANINGFUL,
+  URGENCY_SEVERE,
+  URGENCY_SPREAD_FULL,
+  WINDOW_LONG_THRESHOLD,
+  WINDOW_SHORT_THRESHOLD,
+} from "./constants";
 import type { LeagueAverages, LeagueFormat, TeamProfile } from "./types";
 
 export const ARCHETYPE_THRESHOLD = 50;
@@ -31,6 +39,16 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
+// Urgency on a 0-1 scale, against what urgency ACTUALLY ranges to rather than
+// the 0-100 it looks like. See URGENCY_MEANINGFUL in constants.ts.
+function urgencyPressure(urgency: number): number {
+  return clamp(
+    (urgency - URGENCY_MEANINGFUL) / (URGENCY_SEVERE - URGENCY_MEANINGFUL),
+    0,
+    1,
+  );
+}
+
 // Continuous 0-100 scores for every archetype. Used in two ways:
 //   1. `detectArchetypes` filters these at ARCHETYPE_THRESHOLD for display in the team deep dive.
 //   2. `find.ts` reads them off the stored profile so package generation always has
@@ -47,26 +65,41 @@ export function scoreArchetypes(
     const avgS = averages.starter[pos] || 1;
     const avgD = averages.depth[pos] || 1;
     const eliteFactor = clamp((ps.starterValue / avgS - 1.0) / 0.4, 0, 1);
-    const thinFactor  = clamp(1 - (ps.depthValue / avgD) / 0.6, 0, 1);
+    // Ramps from league-average depth down to 60% of it. The old form only
+    // started counting BELOW 60% of average, which no team in a 16 team league
+    // hit at RB or WR, so those two never scored at all.
+    const thinFactor  = clamp((1 - ps.depthValue / avgD) / 0.4, 0, 1);
     s[`tier_down_${pos}`] = Math.round(eliteFactor * thinFactor * 100);
   }
 
-  // consolidate_{pos}: mid starter [40-65] + decent depth + need elsewhere
+  // consolidate_{pos}: spare parts HERE + a need SOMEWHERE ELSE, and it makes
+  // most sense from a middling starting spot.
+  //
+  // Those first two are genuine preconditions and stay multiplicative. The
+  // third is a preference and used to be multiplicative too, with a band so
+  // narrow (starterScore 40-65) that it was zero on 52 of 64 cells and killed
+  // the whole family league-wide. It is now a soft weighting instead, which is
+  // the same fix already applied to need_fill for the same reason.
   for (const pos of POSITIONS) {
     const ps = team.positionScores[pos];
-    const midFactor   = clamp(1 - Math.abs(ps.starterScore - 52.5) / 12.5, 0, 1);
-    const depthFactor = clamp((ps.depthScore - 40) / 15, 0, 1);
+    const midFactor   = clamp(1 - Math.abs(ps.starterScore - 55) / 35, 0, 1);
+    const depthFactor = clamp((ps.depthScore - 35) / 25, 0, 1);
     const otherUrgency = POSITIONS
       .filter((p) => p !== pos)
       .reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
-    const needFactor = clamp((otherUrgency - 40) / 60, 0, 1);
-    s[`consolidate_${pos}`] = Math.round(midFactor * depthFactor * needFactor * 100);
+    const needFactor = urgencyPressure(otherUrgency);
+    s[`consolidate_${pos}`] = Math.round(
+      depthFactor * needFactor * (0.55 + 0.45 * midFactor) * 100,
+    );
   }
 
-  // consolidate_flex: flex above threshold + somewhere to put the upgrade
+  // consolidate_flex: bundle pieces from DIFFERENT positions into one better
+  // player. Named for the flex slot it frees up, not for who is eligible: it
+  // built "McCaffrey (RB) + A.J. Brown (WR) -> Lamar Jackson (QB)" on a real
+  // roster. The sibling consolidate_{pos} stays within one position.
   const maxUrgency = POSITIONS.reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
   const flexFactor = clamp((team.flex.score - 40) / (FLEX_CONSOLIDATE_THRESHOLD - 40), 0, 1);
-  s["consolidate_flex"] = Math.round(flexFactor * clamp(maxUrgency / 70, 0, 1) * 100);
+  s["consolidate_flex"] = Math.round(flexFactor * urgencyPressure(maxUrgency) * 100);
 
   // age_arb_buy: low window pressure + pick rich
   const longFactor = clamp(1 - team.windowPressure / WINDOW_SHORT_THRESHOLD, 0, 1);
@@ -93,8 +126,8 @@ export function scoreArchetypes(
   // which caused it to almost never fire on real rosters.
   const minUrgency    = POSITIONS.reduce((min, p) => Math.min(min, team.positionScores[p].urgency), 100);
   const spread        = maxUrgency - minUrgency;
-  const urgencyFactor = clamp((maxUrgency - 40) / 60, 0, 1);
-  const surplusFactor = clamp(spread / 50, 0, 1);
+  const urgencyFactor = urgencyPressure(maxUrgency);
+  const surplusFactor = clamp(spread / URGENCY_SPREAD_FULL, 0, 1);
   s["need_fill"] = Math.round((urgencyFactor * 0.6 + surplusFactor * 0.4) * 100);
 
   // capital_convert_picks_to_production: contender + pick poor

@@ -40,7 +40,7 @@ const ARCHETYPE_LABELS: Record<string, string> = {
   consolidate_RB:    "Consolidate RB depth into a true starter",
   consolidate_WR:    "Consolidate WR depth into a true starter",
   consolidate_TE:    "Consolidate TE depth into a true starter",
-  consolidate_flex:  "Convert flex depth into a positional starter",
+  consolidate_flex:  "Consolidate two positions into one better starter",
   age_arb_buy:       "Buy young players before their breakout",
   age_arb_sell:      "Sell aging veterans at peak value",
   push_in:           "Aggressive push into contention",
@@ -136,7 +136,7 @@ function buildScoutData(key: string, profile: TeamProfile): string {
   }
 
   if (key === "consolidate_flex") {
-    return "extra flex bodies riding the bench; bundle spares into a real starter";
+    return "enough startable depth to package two positions into one better player";
   }
 
   if (key === "age_arb_sell") {
