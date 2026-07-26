@@ -257,3 +257,68 @@ user.
 Explicitly NOT a general "close any gap with a pick" step. The sweetener is
 conditioned on landing quality, which is the one thing measured to matter, and
 everything else stays gated as it is.
+
+
+---
+
+# A fix that failed: penalising losses in fitScore
+
+Real feedback, daniels 1.7: *"It's too far of a tier down. Look at the
+difference in value of my starter at TE after the trade goes through."* The
+engine had graded that package myFit **+0.37**.
+
+## The diagnosis, which was right
+
+`fitScore` sums position deltas weighted by urgency:
+
+```
+urgencyWeight = 0.3 + (urgency / 100) * 1.2     // [0.3, 1.5], really [0.3, 1.0]
+score += starterScoreDelta * urgencyWeight
+```
+
+A strong position has LOW urgency, so its weight is ~0.3. Losing 40 points
+there costs 12, while gaining 20 at a needy position (weight ~1.0) pays 20.
+Gutting a strength is the cheapest thing the engine can do.
+
+## The fix, which was wrong
+
+Floor the weight for losses so giving up production costs the same wherever it
+sits. Swept the floor across five values:
+
+| loss floor | gives away best player | lands top-24 | recommended |
+|---|---:|---:|---:|
+| none (baseline) | **61%** | **18%** | **29** |
+| 0.4 | 61% | 15% | 29 |
+| 0.5 | 61% | 15% | 30 |
+| 0.6 | 64% | 15% | 30 |
+| 0.8 | 69% | 13% | 16 |
+| 1.0 | 71% | 12% | 11 |
+
+**Every increase made the target metric worse.** Baseline is the best value, so
+this is not a tuning problem.
+
+## Why it backfired, which is the useful part
+
+To ACQUIRE a stud you have to give up more, so a loss penalty punishes buying
+quality harder than it punishes selling it. Trades where the user gives away
+the best player are the ones the counterparty loves, so they keep clearing on
+theirFit, balance and archMatch even as myFit falls. Trades where the user pays
+up for quality take the bigger hit and drop out.
+
+**Penalising the give side is exactly backwards. The lever has to be on the
+acquire side**, which is what `bestPlayerEdge` already does and which is the
+only scoring change all day that moved anything (top-24 landings 13% -> 18%).
+
+## Tally of structural attempts
+
+| Attempt | Result |
+|---|---|
+| archetype contention re-weighting | inert |
+| shape fit adjustment | 20 tier-downs -> 18 |
+| young asset quality | no change |
+| **best player edge** | **top-24 landings 13% -> 18%** |
+| gating generation on archetype score | worse on every metric, reverted |
+| flooring loss weight in fitScore | worse on every metric, reverted |
+
+Five of six moved nothing or backfired. The one that worked rewarded acquiring
+quality. That is the direction.
