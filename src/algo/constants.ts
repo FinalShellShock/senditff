@@ -116,15 +116,29 @@ export const DEPTH_RESILIENCE_CREDIT = 1.0;
 
 export const LATERAL_SWAP_MIN_AGE_GAP = 2.5;
 
-// Stance cuts for the rationale writer, derived from the real archMatch
-// distribution across 80 auto-mode packages rather than guessed: min 0.00,
-// median 0.08, p75 0.27, p90 0.51, max 0.81.
+// Confidence cuts, measured on the blended `total` score.
 //
-// The first shipped guess (confident >= 0.60, caution < 0.30) fired confident
-// on 2.5% of packages and cautionary on 76%, so nearly every trade hedged.
-// These sit at roughly the top decile and the bottom third.
-export const STANCE_CONFIDENT_ARCH_MATCH = 0.50;
-export const STANCE_CAUTION_ARCH_MATCH = 0.05;
+// These used to read archMatch alone, which asked "does this pattern-match an
+// archetype", NOT "is this a good trade". Measured across 80 packages, the
+// three tiers were indistinguishable on everything that actually matters:
+//
+//   tier          n   archMatch   myFit  theirFit  balance
+//   recommended  15      0.70      0.27    0.27      0.95
+//   measured     26      0.18      0.22    0.12      0.94
+//   inspiration  39      0.01      0.24    0.25      0.94
+//
+// INSPIRATION had BETTER fit than MEASURED. One package helped both managers
+// enormously (myFit +0.97, theirFit +0.93), was perfectly balanced and read
+// FAIR, and was labelled inspiration purely because archMatch was 0.00. A user
+// spotted it from the outside: "if it's even does that mean we're saying it's
+// a weak signal even though even is a strong confident good thing?"
+//
+// `total` already blends fit for me, fit for them, balance AND archetype fit,
+// and is already what the ranking sorts on, so reading the badge off it also
+// makes the label agree with the order. Cuts sit at the measured distribution
+// of total (min 0.08, median 0.29, p75 0.39, p90 0.56, max 0.72).
+export const STANCE_CONFIDENT_TOTAL = 0.40;
+export const STANCE_CAUTION_TOTAL = 0.22;
 
 // Tanking adjustment for rebuilding (LONG-window) counter-teams.
 //

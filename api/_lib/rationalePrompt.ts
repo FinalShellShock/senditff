@@ -82,7 +82,10 @@ export function confidenceForPackage(
   diagnostics?: { degraded?: string; myArchetypeScore?: number },
 ): NonNullable<TradePackage["confidence"]> {
   const archMatch = pkg.scores?.archMatch ?? 0;
-  return { tier: confidenceTier(archMatch, isWeakMatch(pkg, diagnostics)), archMatch };
+  return {
+    tier: confidenceTier(pkg.scores?.total ?? 0, isWeakMatch(pkg, diagnostics)),
+    archMatch,
+  };
 }
 
 export function buildRationalePrompt(
@@ -121,9 +124,8 @@ export function buildRationalePrompt(
   // plainly when it does not. A forced-intent search that found nothing clean,
   // or a roster that scores badly for this archetype, produces inspiration
   // rather than a recommendation, and the copy should admit that.
-  const archMatch = pkg.scores?.archMatch ?? 0;
   const rosterFit = diagnostics?.myArchetypeScore;
-  const tier = confidenceTier(archMatch, isWeakMatch(pkg, diagnostics));
+  const tier = confidenceTier(pkg.scores?.total ?? 0, isWeakMatch(pkg, diagnostics));
   const stance =
     tier === "inspiration"
       ? `IMPORTANT: this roster is a weak match for ${archetypeLabel}${rosterFit != null ? ` (archetype fit ${rosterFit}/100)` : ""} and this was the closest package available, not a strong one. Open by saying plainly that this is an idea to consider rather than a recommendation, and name what is imperfect about it. Do not oversell.`

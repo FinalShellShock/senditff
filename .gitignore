@@ -14,3 +14,4 @@ feedback-site.json
 # Research data cache (megabytes of nflverse CSVs)
 scripts/research/.cache/
 scripts/research/aging-output.json
+scripts/research/trades-crawl.json

@@ -57,8 +57,8 @@ var AGING_LOSS_RATE = { QB: 6, RB: 8.5, WR: 7, TE: 7 };
 var DECLINING_LOSS_RATE = { QB: 10, RB: 10.5, WR: 10, TE: 10 };
 var DEPTH_RESILIENCE_WEIGHT = 0.5;
 var LATERAL_SWAP_MIN_AGE_GAP = 2.5;
-var STANCE_CONFIDENT_ARCH_MATCH = 0.5;
-var STANCE_CAUTION_ARCH_MATCH = 0.05;
+var STANCE_CONFIDENT_TOTAL = 0.4;
+var STANCE_CAUTION_TOTAL = 0.22;
 var AGE_ARB_MIN_DISCOUNT = 0.1;
 var AGING_TAKEON_SCALE = 3e3;
 var AGING_MAX_PENALTY = 0.3;
@@ -478,9 +478,9 @@ function weightedSlotAverage(scores) {
 }
 
 // api/_lib/tradeEngine.ts
-function confidenceTier(archMatch, weak) {
-  if (weak || archMatch < STANCE_CAUTION_ARCH_MATCH) return "inspiration";
-  if (archMatch >= STANCE_CONFIDENT_ARCH_MATCH) return "recommended";
+function confidenceTier(total, weak) {
+  if (weak || total < STANCE_CAUTION_TOTAL) return "inspiration";
+  if (total >= STANCE_CONFIDENT_TOTAL) return "recommended";
   return "measured";
 }
 function genPositions(ctx) {
@@ -1303,16 +1303,12 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
   });
   const perCounterCap = opts.targetRosterId != null ? Infinity : 2;
   const perCounter = /* @__PURE__ */ new Map();
-  const archFamiliesUsed = /* @__PURE__ */ new Set();
   const top = [];
   for (const s of filtered) {
     const cnt = perCounter.get(s.counterRosterId) ?? 0;
     if (cnt >= perCounterCap) continue;
-    const family = s.archetype.replace(/_(QB|RB|WR|TE)$/, "");
-    if (!forced && top.length < limit / 2 && archFamiliesUsed.has(family)) continue;
     top.push(s);
     perCounter.set(s.counterRosterId, cnt + 1);
-    archFamiliesUsed.add(family);
     if (top.length >= limit) break;
   }
   if (top.length < limit) {
@@ -1374,7 +1370,10 @@ function isWeakMatch(pkg, diagnostics) {
 }
 function confidenceForPackage(pkg, diagnostics) {
   const archMatch = pkg.scores?.archMatch ?? 0;
-  return { tier: confidenceTier(archMatch, isWeakMatch(pkg, diagnostics)), archMatch };
+  return {
+    tier: confidenceTier(pkg.scores?.total ?? 0, isWeakMatch(pkg, diagnostics)),
+    archMatch
+  };
 }
 function buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics) {
   const giveNames = pkg.give.map(describeAsset).join(", ");
@@ -1389,9 +1388,8 @@ function buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics) {
   }).filter(Boolean);
   const needNote = needNotes.length ? `Your need at what you're getting: ${needNotes.join(", ")}.` : "";
   const fitNote = pkg.scores ? `Fit grades: you ${pkg.scores.myFit >= 0.05 ? "gain" : pkg.scores.myFit <= -0.05 ? "lose" : "roughly break even"}, they ${pkg.scores.theirFit >= 0.05 ? "gain" : pkg.scores.theirFit <= -0.05 ? "lose" : "roughly break even"}.` : "";
-  const archMatch = pkg.scores?.archMatch ?? 0;
   const rosterFit = diagnostics?.myArchetypeScore;
-  const tier = confidenceTier(archMatch, isWeakMatch(pkg, diagnostics));
+  const tier = confidenceTier(pkg.scores?.total ?? 0, isWeakMatch(pkg, diagnostics));
   const stance = tier === "inspiration" ? `IMPORTANT: this roster is a weak match for ${archetypeLabel}${rosterFit != null ? ` (archetype fit ${rosterFit}/100)` : ""} and this was the closest package available, not a strong one. Open by saying plainly that this is an idea to consider rather than a recommendation, and name what is imperfect about it. Do not oversell.` : tier === "recommended" ? `This is a textbook ${archetypeLabel} for this roster. Lead with why the shape fits, and recommend it directly.` : `This is a reasonable ${archetypeLabel} fit. Be measured, neither overselling nor hedging.`;
   const adjGive = pkg.adjValueGive;
   const adjReceive = pkg.adjValueReceive;

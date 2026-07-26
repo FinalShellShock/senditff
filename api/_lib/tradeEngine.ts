@@ -18,8 +18,8 @@ import {
   LATERAL_SWAP_MIN_AGE_GAP,
   PICK_DECAY,
   POSITIONS,
-  STANCE_CAUTION_ARCH_MATCH,
-  STANCE_CONFIDENT_ARCH_MATCH,
+  STANCE_CAUTION_TOTAL,
+  STANCE_CONFIDENT_TOTAL,
   TANK_MAX_PENALTY,
   TANK_PRODUCTION_SCALE,
   TANK_SURPLUS_SCALE,
@@ -99,9 +99,9 @@ export type TradePackage = {
 // prompt, so the label and the prose can never contradict each other.
 export type ConfidenceTier = "recommended" | "measured" | "inspiration";
 
-export function confidenceTier(archMatch: number, weak: boolean): ConfidenceTier {
-  if (weak || archMatch < STANCE_CAUTION_ARCH_MATCH) return "inspiration";
-  if (archMatch >= STANCE_CONFIDENT_ARCH_MATCH) return "recommended";
+export function confidenceTier(total: number, weak: boolean): ConfidenceTier {
+  if (weak || total < STANCE_CAUTION_TOTAL) return "inspiration";
+  if (total >= STANCE_CONFIDENT_TOTAL) return "recommended";
   return "measured";
 }
 
@@ -1391,25 +1391,33 @@ export function generatePackages(
     return candidateKey(a).localeCompare(candidateKey(b));
   });
 
-  // Diversity: max 2 per counter-team (uncapped when a target team was
-  // requested), prefer spanning archetype families (skipped when forced —
-  // everything is one family).
+  // Ordering is by quality, full stop.
+  //
+  // There used to be a diversity rule here that, for the first half of the
+  // list, SKIPPED any candidate whose archetype family was already used. It
+  // was meant to show variety instead of five near-identical tier-downs, but
+  // it bought that variety by demoting better trades. Measured across 16
+  // rosters, slot 2 was the worst slot on the page: 0 recommended and 14 of 16
+  // inspiration, while slots 3 through 5 each had 2 recommended. The one
+  // position most likely to be read after the top pick was the one being
+  // handed the weakest trade.
+  //
+  // The per-counter-team cap stays. Five trades with the same manager is not a
+  // list of options, and unlike family-forcing it never costs a better trade
+  // more than one slot.
   const perCounterCap = opts.targetRosterId != null ? Infinity : 2;
   const perCounter = new Map<number, number>();
-  const archFamiliesUsed = new Set<string>();
   const top: ScoredCandidate[] = [];
   for (const s of filtered) {
     const cnt = perCounter.get(s.counterRosterId) ?? 0;
     if (cnt >= perCounterCap) continue;
-    const family = s.archetype.replace(/_(QB|RB|WR|TE)$/, "");
-    // First pass: only add if archetype family is new (boosts diversity)
-    if (!forced && top.length < limit / 2 && archFamiliesUsed.has(family)) continue;
     top.push(s);
     perCounter.set(s.counterRosterId, cnt + 1);
-    archFamiliesUsed.add(family);
     if (top.length >= limit) break;
   }
-  // Second pass: fill remaining slots from highest-scored regardless of family
+  // Backfill so the list always offers `limit` options where they exist. A
+  // thin roster gets honest INSPIRATION badges rather than a short list: the
+  // badge carries the caveat, so the list does not have to.
   if (top.length < limit) {
     for (const s of filtered) {
       if (top.includes(s)) continue;

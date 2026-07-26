@@ -55,6 +55,21 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "1.9",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "Confidence now measures whether a trade is good, not whether it fits a pattern",
+    changes: [
+      "The confidence badge was reading only one thing: how closely a trade matched a known archetype. It ignored whether the trade actually helped you, helped the other manager, or was fair. So a trade could help both sides enormously, be perfectly even, and still be labelled INSPIRATION.",
+      "Measured across 80 trades, the three badges were indistinguishable on everything that matters. INSPIRATION trades had BETTER fit scores than the ones labelled WORTH A LOOK.",
+      "Confidence now reads the blended score that already combines fit for you, fit for them, fairness and archetype fit. That is also what the list is sorted by, so the badge and the ordering finally agree.",
+      "Removed a rule that was sabotaging the second slot. To show variety it skipped any trade whose type had already been used, which meant the second trade on your page was chosen for being different rather than good. It was the worst slot on the page.",
+      "Trades are now ordered purely by quality, best first, and you still always get five options with honest badges rather than a short list.",
+    ],
+    knownIssues: [],
+  },
+  {
+    branch: "daniels",
     release: "1.8",
     algo: "Shotgun",
     date: "2026-07-26",
@@ -66,9 +81,7 @@ export const PATCH_NOTES: PatchNote[] = [
       "Scouting reports show stronger and more varied angles as a result. The strength label is that same score, so it was being dragged down by the same bug.",
       "Renamed the trade finder option that read 'bundle flex spares into a starter'. It never only looked at flex players: it packages two different positions into one better one, so it now says so.",
     ],
-    knownIssues: [
-      "About half of suggested trades still read as INSPIRATION rather than a recommendation. The remaining cause is that the engine will build a trade for an angle your roster does not fit, then rate it honestly low. Being looked at next.",
-    ],
+    knownIssues: [],
   },
   {
     branch: "daniels",
