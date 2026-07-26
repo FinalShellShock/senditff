@@ -97,7 +97,26 @@ should see.
 
 ---
 
-## 4. Trade scenario simulation builder
+## 4. Trade scenario simulation builder — TABLED 2026-07-26
+
+**Tabled by Johnny 2026-07-26: "too much".** Keep the finding below, because
+the scoping was the useful part.
+
+What he actually wants is a virtual league: every trade re-evaluates the whole
+league so archetypes, windows and needs all shift, with undo so you can make a
+different domino fall. `simulateImpact()` is NOT a foundation for that. It
+returns deltas only, holds competitiveness and window tier fixed, and takes
+league averages as a frozen input, so nothing can stack on it.
+
+The real primitive is `computeAllProfiles(teams, format, thisYear, pools)`,
+which is a PURE function from league state to a complete re-evaluation, and
+`TeamProfile` already carries `players` and `picks`, so the browser has every
+roster. A fully client-side simulator with free undo is feasible. What is
+missing is `applyTrade(teams, trade) -> teams`, a history stack, and the UI.
+
+One trap to decide up front: the engine deliberately freezes window and
+competitiveness to avoid circular scoring, but a simulator wants them to move,
+so the sim and the trade finder will disagree about the same roster.
 
 "The move after the move." Chain hypothetical trades and see where the roster
 lands.
@@ -121,7 +140,35 @@ age" part of the answer.
 
 ---
 
-## 5. Trade Tinder
+## 5. Trade calculator: more player filters
+
+Johnny 2026-07-26. The calculator's player picker needs real filtering, not
+just search. Position, age band, and value range are the obvious ones.
+
+---
+
+## 6. Player rankings tab
+
+Johnny 2026-07-26. A rankings view with quick position filters (QB/RB/WR/TE).
+Values already exist per format in `valueSnapshots/{formatKey}`, so this is
+mostly presentation over data the app already has.
+
+---
+
+## 7. Scouting report 2.0
+
+Johnny 2026-07-26. A rework of the team deep dive's scouting report, beyond
+the calibration fix shipped in daniels 1.8.
+
+Context worth carrying in: "strength" on that report is literally
+`archetypeScores[key]`, the same number `archMatch` and the trade card's
+confidence badge are built from. So the scouting report and the trade finder
+are two views of one score. Any 2.0 should decide deliberately whether that
+stays true, because today a change to one silently moves the other.
+
+---
+
+## 8. Trade Tinder
 
 Managers opt in to trade archetypes they'd be interested in. When two managers
 in the same league mark **complementary** archetypes, both get a nudge.
@@ -142,7 +189,7 @@ matchmaking logic, already written and already tested in scoring.
 
 ---
 
-## 6. Saved trades / drafts
+## 9. Saved trades / drafts
 
 Draft a trade, save it, come back to it.
 
@@ -169,7 +216,7 @@ later. Every day not retained is history that can't be recovered.
 
 ---
 
-## 7. Additional fantasy platforms — MyFantasyLeague (MFL) first
+## 10. Additional fantasy platforms — MyFantasyLeague (MFL) first
 
 Support leagues hosted somewhere other than Sleeper. MFL is the first target.
 
