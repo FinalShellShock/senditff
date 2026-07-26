@@ -230,6 +230,34 @@ export const URGENCY_SEVERE = 45;
 // tell "one real hole plus a surplus" apart from "evenly mediocre everywhere".
 export const URGENCY_SPREAD_FULL = 30;
 
+// Young assets are not interchangeable, and the difference is measurable.
+//
+// Tracked 19,615 real acquisitions from rank at the trade to rank 12 months
+// later, using median (rank movement has huge tails; a top-60 bust falls 240
+// places while improvement is capped by rank 1) and adjusted for the -18
+// places a year everyone drifts as each rookie class arrives. Median places
+// beaten vs that drift, with the share that beat it:
+//
+//   age      stud(<=24)   valuable(25-60)  fringe(61-100)   deep(100+)
+//   <=23     +1  100%     -164  25%        +30  69%         -8  45%
+//   24-25   +22   78%       +4  66%        +35  65%        -11  43%
+//
+// Among YOUNG players the fringe band rises and the deep band does not. Those
+// two bets are indistinguishable if you look only at age, which is exactly why
+// an earlier cut of this ("acquired anyone under 25") returned noise.
+//
+// Stated deliberately as a preference WITHIN young players rather than as a
+// market mispricing. A 24 year old rising 35 places may be what the market
+// already expects of a 24 year old; what the data supports is that fringe
+// beats deep, not that fringe is underpriced.
+//
+// Overall dynasty RANK, not raw value, so it ports across formats: in 1QB PPR
+// the band is roughly 1,970-3,150 but that number means nothing in superflex.
+export const FRINGE_RANK_MIN = 61;
+export const FRINGE_RANK_MAX = 100;
+export const YOUNG_ASSET_MAX_AGE = 25;
+export const YOUNG_ASSET_BONUS = 0.05;
+
 // Contention weighting for consolidate and tier_down, MEASURED rather than
 // assumed. See scripts/research/QUALIFY.md.
 //

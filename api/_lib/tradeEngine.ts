@@ -17,8 +17,12 @@ import {
   DEPTH_RESILIENCE_WEIGHT,
   LATERAL_SWAP_MIN_AGE_GAP,
   PICK_DECAY,
+  FRINGE_RANK_MAX,
+  FRINGE_RANK_MIN,
   POSITIONS,
   SHAPE_FIT_BY_COMPETITIVENESS,
+  YOUNG_ASSET_BONUS,
+  YOUNG_ASSET_MAX_AGE,
   STANCE_CAUTION_TOTAL,
   STANCE_CONFIDENT_TOTAL,
   TANK_MAX_PENALTY,
@@ -330,6 +334,50 @@ function timelinePenalty(team: TeamProfile, receives: Asset[], sends: Asset[]): 
   const surplus = Math.max(0, remaining(receives) - remaining(sends));
   const offset = Math.min(cost, surplus / TANK_SURPLUS_SCALE);
   return -(cost - offset);
+}
+
+// Overall dynasty ranking, merged across positions and cached per context.
+// The pools are the FantasyCalc universe, so this is a real overall rank
+// rather than a rank among rostered players.
+let overallCache: { pools: unknown; sorted: number[] } | null = null;
+function overallRankOf(value: number, averages: LeagueAverages): number | null {
+  if (overallCache?.pools !== averages.depthPlayerPool) {
+    const all: number[] = [];
+    for (const pos of POSITIONS) all.push(...averages.depthPlayerPool[pos]);
+    all.sort((a, b) => b - a);
+    overallCache = { pools: averages.depthPlayerPool, sorted: all };
+  }
+  const arr = overallCache.sorted;
+  if (arr.length < FRINGE_RANK_MAX) return null;
+  // Binary search for the first index whose value is below this one.
+  let lo = 0, hi = arr.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (arr[mid]! > value) lo = mid + 1; else hi = mid;
+  }
+  return lo + 1;
+}
+
+// Among YOUNG players, the fringe band rises and deep fliers do not.
+// See FRINGE_RANK_MIN in constants.ts for the measurement.
+//
+// Applies only to LONG-window teams, since this is a development bet and a
+// team trying to win now has no use for it. Symmetric in the sense that
+// acquiring a deep flier gets the same size discount that fringe gets as a
+// credit, because "young" alone was the thing that misled.
+function youngAssetQuality(team: TeamProfile, receives: Asset[], averages: LeagueAverages): number {
+  if (team.windowTier !== "LONG") return 0;
+  let score = 0;
+  for (const a of receives) {
+    if (a.kind !== "player") continue;
+    if ((a.player.age ?? 99) > YOUNG_ASSET_MAX_AGE) continue;
+    const rank = overallRankOf(a.player.valueDynasty, averages);
+    if (rank == null) continue;
+    if (rank >= FRINGE_RANK_MIN && rank <= FRINGE_RANK_MAX) score += YOUNG_ASSET_BONUS;
+    else if (rank > FRINGE_RANK_MAX) score -= YOUNG_ASSET_BONUS;
+  }
+  // One band's worth either way, so a bundle of fliers cannot dominate.
+  return Math.max(-YOUNG_ASSET_BONUS, Math.min(YOUNG_ASSET_BONUS, score));
 }
 
 // Consolidating helps a contender; tiering down hurts one.
@@ -645,9 +693,11 @@ function scoreCandidate(
   const myFit = fitScore(myImpact);
   const theirFit = fitScore(theirImpact);
   const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give)
-    + shapeFitAdjustment(myProfile, cand.give, cand.receive);
+    + shapeFitAdjustment(myProfile, cand.give, cand.receive)
+    + youngAssetQuality(myProfile, cand.receive, ctx.averages);
   const theirTimeline = timelinePenalty(them, cand.give, cand.receive)
-    + shapeFitAdjustment(them, cand.receive, cand.give);
+    + shapeFitAdjustment(them, cand.receive, cand.give)
+    + youngAssetQuality(them, cand.give, ctx.averages);
 
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
