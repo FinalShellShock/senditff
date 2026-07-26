@@ -1,6 +1,8 @@
 import {
+  CONSOLIDATE_BY_COMPETITIVENESS,
   FLEX_CONSOLIDATE_THRESHOLD,
   POSITIONS,
+  TIER_DOWN_BY_COMPETITIVENESS,
   URGENCY_MEANINGFUL,
   URGENCY_SEVERE,
   URGENCY_SPREAD_FULL,
@@ -69,7 +71,12 @@ export function scoreArchetypes(
     // started counting BELOW 60% of average, which no team in a 16 team league
     // hit at RB or WR, so those two never scored at all.
     const thinFactor  = clamp((1 - ps.depthValue / avgD) / 0.4, 0, 1);
-    s[`tier_down_${pos}`] = Math.round(eliteFactor * thinFactor * 100);
+    // Down-weighted for contenders: measured at 47% beat-baseline for them
+    // against 61% for consolidating, and tier_down is the single most common
+    // thing the engine proposes.
+    s[`tier_down_${pos}`] = Math.round(
+      eliteFactor * thinFactor * TIER_DOWN_BY_COMPETITIVENESS[team.competitiveness] * 100,
+    );
   }
 
   // consolidate_{pos}: spare parts HERE + a need SOMEWHERE ELSE, and it makes
@@ -88,8 +95,11 @@ export function scoreArchetypes(
       .filter((p) => p !== pos)
       .reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
     const needFactor = urgencyPressure(otherUrgency);
+    // Contention is the strongest qualifier this archetype has and it was not
+    // in the formula at all. 61 / 55 / 43 beat-baseline by tier.
     s[`consolidate_${pos}`] = Math.round(
-      depthFactor * needFactor * (0.55 + 0.45 * midFactor) * 100,
+      depthFactor * needFactor * (0.55 + 0.45 * midFactor)
+        * CONSOLIDATE_BY_COMPETITIVENESS[team.competitiveness] * 100,
     );
   }
 
@@ -99,7 +109,10 @@ export function scoreArchetypes(
   // roster. The sibling consolidate_{pos} stays within one position.
   const maxUrgency = POSITIONS.reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
   const flexFactor = clamp((team.flex.score - 40) / (FLEX_CONSOLIDATE_THRESHOLD - 40), 0, 1);
-  s["consolidate_flex"] = Math.round(flexFactor * urgencyPressure(maxUrgency) * 100);
+  s["consolidate_flex"] = Math.round(
+    flexFactor * urgencyPressure(maxUrgency)
+      * CONSOLIDATE_BY_COMPETITIVENESS[team.competitiveness] * 100,
+  );
 
   // age_arb_buy: low window pressure + pick rich
   const longFactor = clamp(1 - team.windowPressure / WINDOW_SHORT_THRESHOLD, 0, 1);

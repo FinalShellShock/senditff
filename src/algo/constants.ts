@@ -230,6 +230,56 @@ export const URGENCY_SEVERE = 45;
 // tell "one real hole plus a surplus" apart from "evenly mediocre everywhere".
 export const URGENCY_SPREAD_FULL = 30;
 
+// Contention weighting for consolidate and tier_down, MEASURED rather than
+// assumed. See scripts/research/QUALIFY.md.
+//
+// Followed 8,099 trade-sides into the next season, with the baseline computed
+// inside each contention-by-roster-age cell so only the move differs. Reported
+// as the share of trades that beat that baseline:
+//
+//                    contender   middle   rebuilder
+//   consolidate         61%        55%       43%
+//   tier down           47%        50%       46%
+//
+// Consolidation is the one clean conditional signal in the data: monotonic
+// across contention, which is what a real effect looks like rather than noise.
+// Breaking a stud into pieces weakens a lineup trying to win now, and a
+// rebuilder does not care about now.
+//
+// A separate control confirmed trading itself is not the driver: contenders who
+// traded beat their baseline 56% of the time against 43% for contenders who
+// did not, while rebuilders were 45% against 46%, i.e. indistinguishable.
+//
+// Deliberately gentle multipliers. The underlying effect is worth a fraction of
+// a league place, so these tilt the ranking rather than gate anything out.
+// The same measurement applied to the trade SHAPE, which is what was actually
+// measured: the buckets were "gave 2+, got 1" and "gave 1, got 2+", not our
+// archetype labels. Re-weighting the archetype score alone turned out to be
+// nearly inert (identical package counts before and after) because archMatch
+// is only 0.22 of the blended total and generation is not gated on it. This
+// applies the finding where it can act: on the package score itself.
+//
+// Sized against the measured gap of 14 points of beat-baseline rate for
+// contenders, and against a `total` scale where meaningful differences run
+// 0.1-0.3. WEAK is zero because rebuilders showed no effect either way
+// (43% vs 46%, and their traders matched their non-traders at 45 vs 46).
+export const SHAPE_FIT_BY_COMPETITIVENESS: Record<Competitiveness, number> = {
+  STRONG: 0.06,
+  AVERAGE: 0.02,
+  WEAK: 0,
+};
+
+export const CONSOLIDATE_BY_COMPETITIVENESS: Record<Competitiveness, number> = {
+  STRONG: 1.0,
+  AVERAGE: 0.85,
+  WEAK: 0.6,
+};
+export const TIER_DOWN_BY_COMPETITIVENESS: Record<Competitiveness, number> = {
+  STRONG: 0.65,
+  AVERAGE: 0.9,
+  WEAK: 1.0,
+};
+
 // Threshold for the consolidate_flex archetype: a team with FLEX score this far
 // above league average has genuine "stackable trade chips" beyond positional needs.
 export const FLEX_CONSOLIDATE_THRESHOLD = 55;

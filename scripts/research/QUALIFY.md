@@ -77,11 +77,32 @@ Both are re-weightings of existing signals, not new archetypes.
   a place. Real, not dramatic.
 - **One season of lookahead**, which structurally favours win-now moves. A
   rebuild paying off in year two scores as a failure.
-- **Rebuilders underperform on almost every move**, which suggests rebuilders
-  who trade at all do worse than ones who sit still. This design cannot
-  separate that from the move itself.
-- **Age is the only roster signal reconstructable honestly.** Player values
-  exist only as of today, so applying them to a 2023 roster would score a
-  since-broken-out rookie as if he were always a star. Positional strength,
-  depth and pick capital are therefore all missing from this analysis, and they
-  are exactly the signals the engine leans on most.
+- **CORRECTED:** an earlier draft claimed rebuilders who trade do worse than
+  rebuilders who sit still. That claim had no control group in it, since `obs`
+  contains only trade participants. Building the real control (every roster in
+  a measurable league-season, traded or not) refutes it:
+
+  | | traded | did NOT trade |
+  |---|---:|---:|
+  | contender | **56%** (n=524) | **43%** (n=105) |
+  | middle | 51% | 50% |
+  | rebuilder | 45% (n=479) | 46% (n=74) |
+
+  Rebuilders who trade and rebuilders who sit still are indistinguishable.
+  Trading helps CONTENDERS and does nothing measurable for rebuilders. The
+  earlier reading was an artifact of every listed move being a subset, so the
+  unlisted residual absorbed the balance.
+- **Age was the only roster signal reconstructable at the time of this
+  analysis**, because player values exist only as of today and applying them to
+  a 2023 roster would score a since-broken-out rookie as if he were always a
+  star. Positional strength, depth and pick capital are therefore missing here,
+  and they are exactly the signals the engine leans on most.
+
+  **This limit is now removable.** DynastyProcess publishes
+  `files/db_fpecr.csv.gz` (104MB), verified to hold **1,528,918 rows of expert
+  consensus rankings stamped with `scrape_date`, spanning 2019 through 2025**.
+  Rank is a monotone transform of value and is what DynastyProcess derives its
+  own values from, so it is a legitimate historical proxy. FantasyCalc has no
+  public historical endpoint (probed; values are current-only). Redoing this
+  analysis with historical values would let positional strength, depth and pick
+  capital enter as signals for the first time.

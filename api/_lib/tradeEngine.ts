@@ -18,6 +18,7 @@ import {
   LATERAL_SWAP_MIN_AGE_GAP,
   PICK_DECAY,
   POSITIONS,
+  SHAPE_FIT_BY_COMPETITIVENESS,
   STANCE_CAUTION_TOTAL,
   STANCE_CONFIDENT_TOTAL,
   TANK_MAX_PENALTY,
@@ -331,6 +332,31 @@ function timelinePenalty(team: TeamProfile, receives: Asset[], sends: Asset[]): 
   return -(cost - offset);
 }
 
+// Consolidating helps a contender; tiering down hurts one.
+//
+// Measured over 8,099 trade-sides followed into the next season, with the
+// baseline computed inside each contention-by-roster-age cell so only the
+// shape differs (scripts/research/QUALIFY.md):
+//
+//                    contender   middle   rebuilder
+//   gave 2+, got 1      61%        55%       43%
+//   gave 1, got 2+      47%        50%       46%
+//
+// Keyed on SHAPE rather than on the archetype label, because shape is what was
+// measured and because a tier_down and a consolidate are the same trade seen
+// from opposite sides. Zero for WEAK teams: rebuilders showed no effect in
+// either direction, and their traders matched their non-traders (45% vs 46%).
+//
+// Effect size in the real world is a fraction of a league place, so this tilts
+// the ranking and never gates anything out.
+function shapeFitAdjustment(team: TeamProfile, give: Asset[], receive: Asset[]): number {
+  const w = SHAPE_FIT_BY_COMPETITIVENESS[team.competitiveness];
+  if (w === 0) return 0;
+  if (give.length >= 2 && receive.length === 1) return w;
+  if (give.length === 1 && receive.length >= 2) return -w;
+  return 0;
+}
+
 // Absorbing age has to come with a discount.
 //
 // age_arb_buy exists to buy a player past his peak BELOW what he is worth. The
@@ -618,8 +644,10 @@ function scoreCandidate(
 
   const myFit = fitScore(myImpact);
   const theirFit = fitScore(theirImpact);
-  const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give);
-  const theirTimeline = timelinePenalty(them, cand.give, cand.receive);
+  const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give)
+    + shapeFitAdjustment(myProfile, cand.give, cand.receive);
+  const theirTimeline = timelinePenalty(them, cand.give, cand.receive)
+    + shapeFitAdjustment(them, cand.receive, cand.give);
 
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);

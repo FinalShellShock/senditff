@@ -248,3 +248,54 @@ for (const [mv, mpred] of moves) {
   }
   console.log(line);
 }
+
+// ── Johnny's catch: there is no control group ────────────────────────────────
+// I wrote "rebuilders who trade at all do worse than ones who sit still".
+// That claim is unsupported by this design: `obs` contains ONLY trade
+// participants, so non-traders were never measured. The within-cell baseline
+// is therefore an average over traders, and 50% is the definitional mean.
+// Every listed move sitting below 50% for rebuilders just means the UNLISTED
+// residual moves sit above it, not that trading hurt.
+//
+// We can actually build the missing control: every roster in a measurable
+// league-season, whether or not it traded.
+console.log("\n\nCONTROL GROUP: every team, traders and non-traders\n");
+
+const traded = new Set();
+for (const t of allTrades) {
+  const next = successor[t.league];
+  if (!next || !played(t.league) || !played(next)) continue;
+  for (const s of t.sides) traded.add(`${t.league}|${s.rosterId}`);
+}
+
+const all = [];
+for (const lid of measurable) {
+  const ageMap = ages[lid] ?? {};
+  for (const r of cache[lid].rosters) {
+    const before = rankPct(lid, r.ownerId);
+    const after = rankPct(successor[lid], r.ownerId);
+    const prof = ageMap[r.rosterId];
+    if (before == null || after == null || !prof) continue;
+    all.push({
+      before, delta: before - after, age: prof.mean,
+      didTrade: traded.has(`${lid}|${r.rosterId}`),
+    });
+  }
+}
+const trueBaseKey = (o) => `${bucket(o.before)}|${o.age < 25.5 ? 0 : o.age < 26.5 ? 1 : 2}`;
+const trueBase = new Map();
+for (const o of all) {
+  const k = trueBaseKey(o);
+  const c = trueBase.get(k) ?? { n: 0, sum: 0 };
+  c.n++; c.sum += o.delta; trueBase.set(k, c);
+}
+const trueBaseFor = (o) => { const v = trueBase.get(trueBaseKey(o)); return v ? v.sum / v.n : 0; };
+
+console.log(`teams measured: ${all.length}   traded: ${all.filter((o) => o.didTrade).length}   did NOT trade: ${all.filter((o) => !o.didTrade).length}`);
+for (const [cn, cpred] of contention) {
+  const t = all.filter((o) => cpred(o) && o.didTrade);
+  const n = all.filter((o) => cpred(o) && !o.didTrade);
+  if (t.length < 40 || n.length < 40) { console.log(`  ${cn} too few`); continue; }
+  const beat = (g) => 100 * g.filter((o) => o.delta - trueBaseFor(o) > 0).length / g.length;
+  console.log(`  ${cn} traded ${beat(t).toFixed(0)}% (n=${t.length})   did NOT trade ${beat(n).toFixed(0)}% (n=${n.length})`);
+}
