@@ -6,6 +6,7 @@ import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 import { scoutingPlays, type Play } from "../algo/plays.ts";
 import { FeedbackBlock } from "../components/FeedbackBlock.tsx";
+import TeamState from "./team/TeamState.tsx";
 
 const LABEL_COLOR: Record<WindowLabel, string> = {
   JUGGERNAUT: "#16a34a",
@@ -221,6 +222,8 @@ export default function TeamDeepDive() {
       </div>
 
       {/* Scouting Report — what the outcome data says to do */}
+      <TeamState me={profile} league={overview.profiles as TeamProfile[]} />
+
       <section className="dive-pos-section">
         <h2 className="section-title">SCOUTING REPORT</h2>
         <p className="dim-text scout-intro">

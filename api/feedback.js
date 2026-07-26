@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "2391971471d0";
+var ALGO_FINGERPRINT_BUILD = "f06a4adff7c1";
 
 // src/algo/version.ts
 var ALGO_VERSION = "shotgun";
@@ -45,6 +45,21 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.14",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "See your team before the report explains it",
+    changes: [
+      "New TEAM STATE section above the scouting report. The plays kept asserting things about your team (you are a contender, your picks are thin) without ever showing you the numbers behind them.",
+      'Left panel plots the whole league on the three axes the plays actually gate on: starter strength, how open your window is, and pick capital. Your dot is highlighted, so "rank #3 of 16" finally shows whether third is close to first or nowhere near it.',
+      "Right panel plots your roster by age against dynasty value, with the two zones the plays name drawn right on it: the corner where a veteran is old but still worth selling, and the fringe band worth buying into. You can see at a glance that you have nobody in one of them.",
+      "The shaded zones read their bounds from the same place the play copy does, so the picture and the sentence under it can never disagree.",
+      "Scouting cards are more compact, since there is now a section above them."
+    ],
+    knownIssues: []
+  },
   {
     branch: "daniels",
     release: "1.13",

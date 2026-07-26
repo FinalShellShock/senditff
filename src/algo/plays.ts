@@ -50,14 +50,40 @@ const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 const byValue = (a: Player, b: Player) =>
   b.valueDynasty - a.valueDynasty || a.id.localeCompare(b.id);
 
+// Exported so the TEAM STATE charts can shade exactly the bands the play copy
+// names. When the chart computed its own thresholds, a rounding difference was
+// enough to draw a band that did not match the sentence directly under it,
+// which reads as a bug even though both numbers are "right".
+
+/** A veteran is worth selling only if he still carries value; these are the
+ *  gate the sell_valuable_veteran play uses. */
+export const VETERAN_SELL_AGE = 27;
+export const VETERAN_SELL_VALUE = 1500;
+
+/** Rank band (inclusive, 1-indexed) that Stage 1 of the trade study found
+ *  actually rises: young players here beat drift about two thirds of the time,
+ *  while young players past it lose ground. */
+export const FRINGE_RANK_LO = 61;
+export const FRINGE_RANK_HI = 100;
+export const FRINGE_MAX_AGE = 25;
+
+/** Dynasty values bounding the fringe band in THIS league, high end first.
+ *  Null when the league does not roster enough players to have a 100th. */
+export function fringeBand(ranking: number[]): { hi: number; lo: number } | null {
+  const hi = ranking[FRINGE_RANK_LO - 1];
+  const lo = ranking[FRINGE_RANK_HI - 1];
+  if (!hi || !lo) return null;
+  return { hi, lo };
+}
+
 /** League-wide dynasty ranking, the closest thing to an overall rank we have
  *  client-side. A 12 team league rosters roughly the startable universe. */
-function leagueRanking(league: TeamProfile[]): number[] {
+export function leagueRanking(league: TeamProfile[]): number[] {
   const all: number[] = [];
   for (const t of league) for (const p of t.players) all.push(p.valueDynasty);
   return all.sort((a, b) => b - a);
 }
-function rankOf(value: number, ranking: number[]): number {
+export function rankOf(value: number, ranking: number[]): number {
   let lo = 0, hi = ranking.length;
   while (lo < hi) {
     const mid = (lo + hi) >> 1;
@@ -130,7 +156,9 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
 
   // ── Rebuilders ────────────────────────────────────────────────────────────
   if (isRebuild) {
-    const agingAsset = roster.find((p) => (p.age ?? 0) >= 27 && p.valueDynasty >= 1500);
+    const agingAsset = roster.find(
+      (p) => (p.age ?? 0) >= VETERAN_SELL_AGE && p.valueDynasty >= VETERAN_SELL_VALUE,
+    );
     if (agingAsset) {
       plays.push({
         key: "sell_valuable_veteran",
@@ -161,9 +189,9 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
     });
 
     // Fringe vs deep flier: the sharpest correction in the study.
-    const lo = ranking[60] ?? 0;
-    const hi = ranking[99] ?? 0;
-    if (lo > 0 && hi > 0) {
+    const band = fringeBand(ranking);
+    if (band) {
+      const { hi, lo } = band;
       plays.push({
         key: "buy_fringe_not_fliers",
         title: "Buy the fringe, not the lottery tickets",
@@ -171,7 +199,7 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
           "Young players ranked 61st to 100th gained 30 to 35 places in a year, with two in three beating the league-wide drift. Young players outside the top 100 lost ground. The two bets look identical if you only check age.",
         hitRate: 65,
         rateLabel: "of those players gained ground",
-        detail: `In this league that band is roughly ${fmt(hi)} to ${fmt(lo)} in value, aged 25 or under. Cheaper fliers than that are the ones that do not come in.`,
+        detail: `In this league that band is roughly ${fmt(hi)} to ${fmt(lo)} in value, aged ${FRINGE_MAX_AGE} or under. Cheaper fliers than that are the ones that do not come in.`,
         kind: "do",
         archetype: "age_arb_buy",
       });

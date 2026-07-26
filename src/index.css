@@ -2861,39 +2861,40 @@ body {
 .scout-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 7px;
 }
 
 .scout-row {
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 8px;
-  padding: 14px 16px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .scout-row-main {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
   flex: 1 1 260px;
 }
 
 .scout-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #e2e8f0;
 }
 
 .scout-data {
-  font-size: 11px;
+  font-size: 10.5px;
   color: #475569;
   overflow-wrap: break-word;
+  line-height: 1.45;
 }
 
 /* The scout row wraps, so a 100% basis forces the feedback onto its own line
@@ -2910,7 +2911,7 @@ body {
 /* Tighter than on a trade card: a play is one paragraph, so the default
    card-sized padding leaves the thumbs floating a long way from the text. */
 .scout-feedback .trade-feedback-bar {
-  padding: 6px 0 0;
+  padding: 4px 0 0;
   margin: 0;
   border-top: none;
 }
@@ -3220,6 +3221,104 @@ body {
 .scout-caveat {
   color: #64748b;
   font-size: 12px;
+}
+
+/* ── Team state charts (above the scouting report) ────────────────────── */
+
+.state-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.state-panel {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  padding: 12px 14px;
+  flex: 1 1 300px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+}
+
+.state-strip-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.state-strip-label {
+  font-size: 9px;
+  letter-spacing: 0.6px;
+  color: #64748b;
+}
+
+.state-strip-value {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2e8f0;
+  white-space: nowrap;
+}
+
+/* The strips and the scatter are laid out in viewBox units and scaled to the
+   panel, so a narrow column shrinks the chart rather than clipping it. */
+.state-strip-svg,
+.state-shape-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.state-strip-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8.5px;
+  color: #475569;
+  margin-top: -2px;
+}
+
+.state-shape-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 6px;
+  font-size: 9px;
+  color: #64748b;
+}
+
+.state-shape-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.state-key-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.state-key-sell {
+  background: rgba(239,68,68,0.16);
+  border: 1px solid rgba(239,68,68,0.5);
+}
+
+.state-key-buy {
+  background: rgba(34,197,94,0.16);
+  border: 1px solid rgba(34,197,94,0.5);
+}
+
+@media (max-width: 720px) {
+  .state-panel {
+    flex: 1 1 100%;
+  }
 }
 
 /* ── App footer + patch notes modal ──────────────────────────────────── */
@@ -3755,13 +3854,13 @@ body {
 .scout-evidence {
   display: block;
   color: #64748b;
-  font-size: 11px;
-  line-height: 1.55;
-  margin-top: 5px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  margin-top: 3px;
 }
 
 .scout-rate {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
   color: #22c55e;
   line-height: 1.1;
