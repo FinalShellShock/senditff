@@ -2800,9 +2800,12 @@ body {
   min-width: 0;
 }
 
-/* The name is the only thing allowed to shrink. */
+/* Age and value read as part of the player, so they sit right next to the
+   name rather than being pushed to the far side of the row. The name may
+   SHRINK (and ellipsis) when space runs out, but never GROWS to fill, which is
+   what was spreading the row apart. */
 .trade-asset-name {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
