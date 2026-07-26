@@ -105,28 +105,48 @@ const band = (a) => {
   return a <= 23 ? "<=23" : a <= 25 ? "24-25" : a <= 27 ? "26-27" : a <= 29 ? "28-29" : "30+";
 };
 const rankBand = (r) => (r <= 24 ? "stud (<=24)" : r <= 60 ? "valuable (25-60)" : r <= 100 ? "fringe (61-100)" : "deep (100+)");
-console.log("\n  average rank movement by age at acquisition x rank at acquisition:");
-console.log("  (a positive number means the player improved)");
+// MEDIAN, not mean. Rank movement has enormous tails: a top-60 player who
+// busts can move 240 places while an improvement is capped by rank 1, so the
+// mean is dominated by a handful of busts and reports "everyone declines".
+//
+// Also drift-adjusted. ECR is a RELATIVE rank and every year a new rookie
+// class pushes the existing population down, so a player standing still looks
+// like he fell. The baseline here is the median movement of ALL priced
+// acquisitions, which absorbs that drift; cells are reported against it.
+const med = (xs) => {
+  if (!xs.length) return null;
+  const a = [...xs].sort((x, y) => x - y);
+  return a.length % 2 ? a[(a.length - 1) / 2] : (a[a.length / 2 - 1] + a[a.length / 2]) / 2;
+};
+const drift = med(acq.map((a) => a.moved)) ?? 0;
+console.log(`\n  league-wide drift (median movement of every acquisition): ${drift.toFixed(0)} places`);
+console.log("  cells below show MEDIAN movement RELATIVE to that drift.");
+console.log("  positive = this group beat the drift, i.e. genuinely rose\n");
 const cells = new Map();
 for (const a of acq) {
   const k = `${band(a.age)}|${rankBand(a.r0)}`;
-  const c = cells.get(k) ?? { n: 0, sum: 0, rose: 0 };
-  c.n++; c.sum += a.moved; if (a.moved > 0) c.rose++;
+  const c = cells.get(k) ?? { moves: [], rose: 0 };
+  c.moves.push(a.moved);
+  if (a.moved > drift) c.rose++;
   cells.set(k, c);
 }
 const ageOrder = ["<=23", "24-25", "26-27", "28-29", "30+"];
 const rkOrder = ["stud (<=24)", "valuable (25-60)", "fringe (61-100)", "deep (100+)"];
-let head = "".padEnd(12);
-for (const r of rkOrder) head += r.padStart(20);
+let head = "".padEnd(11);
+for (const r of rkOrder) head += r.padStart(21);
 console.log("  " + head);
 for (const ab of ageOrder) {
-  let row = ab.padEnd(12);
+  let row = ab.padEnd(11);
   for (const rb of rkOrder) {
     const c = cells.get(`${ab}|${rb}`);
-    row += (c && c.n >= 25 ? `${(c.sum / c.n >= 0 ? "+" : "")}${(c.sum / c.n).toFixed(0)} (${c.n})` : `n=${c?.n ?? 0}`).padStart(20);
+    if (!c || c.moves.length < 25) { row += `n=${c?.moves.length ?? 0}`.padStart(21); continue; }
+    const m = med(c.moves) - drift;
+    const pct = 100 * c.rose / c.moves.length;
+    row += `${m >= 0 ? "+" : ""}${m.toFixed(0)}  ${pct.toFixed(0)}% (${c.moves.length})`.padStart(21);
   }
   console.log("  " + row);
 }
+console.log("\n  each cell: median places beaten vs drift, then share that beat drift, then n");
 
 // ── STAGE 2: do the strategy's moves predict team improvement? ───────────────
 console.log("\n\nSTAGE 2  Do rebuilders who follow the strategy improve?\n");
@@ -136,7 +156,10 @@ for (const t of trades) {
   for (const s of t.sides) {
     const other = t.sides.find((x) => x !== s);
     const key = `${t.league}|${s.rosterId}`;
-    const f = flags.get(key) ?? { soldValuableAge: false, boughtUndervalued: false, boughtStud: false, netPicks: 0 };
+    const f = flags.get(key) ?? {
+      soldValuableAge: false, boughtFringeYouth: false, boughtDeepFlier: false,
+      boughtStud: false, netPicks: 0,
+    };
     f.netPicks += s.picks.length - other.picks.length;
     for (const p of other.players) {
       const r = rankAt(p.id, ym);
@@ -144,7 +167,14 @@ for (const t of trades) {
     }
     for (const p of s.players) {
       const r = rankAt(p.id, ym);
-      if ((p.age ?? 99) <= 24 && (r == null || r > 100)) f.boughtUndervalued = true;
+      // Two very different bets, and Stage 1 says only one of them pays.
+      // FRINGE: young and ranked 61-100, the back-end-startable guys who rise
+      // +30 to +35 places against drift with roughly 2 in 3 beating it.
+      // DEEP: young and ranked past 100 or unranked, the lottery tickets, which
+      // do NOT rise (-8 to -11, under 45%). Lumping them together as
+      // "undervalued youth" buried the working half under the failing one.
+      if ((p.age ?? 99) <= 25 && r != null && r > 60 && r <= 100) f.boughtFringeYouth = true;
+      if ((p.age ?? 99) <= 24 && (r == null || r > 100)) f.boughtDeepFlier = true;
       if (r != null && r <= 24) f.boughtStud = true;
     }
     flags.set(key, f);
@@ -190,7 +220,10 @@ function row(label, pred) {
 console.log("   rebuilders only, beat-baseline % by horizon");
 row("sold a VALUABLE veteran", (f) => f.soldValuableAge);
 row("sold age but NOT valuable", (f) => !f.soldValuableAge);
-row("bought undervalued youth", (f) => f.boughtUndervalued);
+row("bought FRINGE youth (61-100)", (f) => f.boughtFringeYouth);
+row("bought DEEP flier (100+)", (f) => f.boughtDeepFlier);
 row("bought a stud (top 24)", (f) => f.boughtStud);
 row("net picks gained", (f) => f.netPicks > 0);
 row("the full strategy", (f) => f.soldValuableAge && f.netPicks > 0);
+row("  ...plus fringe youth", (f) => f.soldValuableAge && f.netPicks > 0 && f.boughtFringeYouth);
+row("  ...plus a stud", (f) => f.soldValuableAge && f.netPicks > 0 && f.boughtStud);
