@@ -50,7 +50,7 @@ export type TradePackage = {
 export type TradeDiagnostics = {
   rawCandidates: number;
   afterDedup: number;
-  rejected: { myFit: number; theirFit: number; balance: number };
+  rejected: { myFit: number; theirFit: number; balance: number; ageArbPrice?: number };
   forced: boolean;
   myArchetypeScore?: number;
   counterNote?: string;

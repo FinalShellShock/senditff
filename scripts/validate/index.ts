@@ -11,7 +11,16 @@ async function main(): Promise<void> {
   const myUsername = process.argv[3] ?? MY_SLEEPER_USERNAME;
 
   const inputs = await loadLeagueInputs(leagueId, myUsername);
-  const profiles = computeAllProfiles(inputs.teams, inputs.format, inputs.thisYear);
+  const profiles = computeAllProfiles(
+    inputs.teams,
+    inputs.format,
+    inputs.thisYear,
+    // Pools are REQUIRED for fidelity: api/leagues/sync.ts passes them, so
+    // omitting them here scored every package against profiles production
+    // never sees. Same class of drift as the decimal-age bug noted in
+    // teams.ts, and the reason that file exists.
+    inputs.pools,
+  );
   printTerminal(inputs.leagueName, inputs.format, profiles);
 
   const outPath = resolve("validate-output.html");

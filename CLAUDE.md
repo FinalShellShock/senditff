@@ -123,6 +123,9 @@ npm run validate             # team profiles + HTML report
 npm run validate:trades      # engine sweep: default mode + every forced archetype, determinism check
 npm run validate:history     # trade history chain walk + hindsight grading + ledger
 npm run validate:projection  # Shotgun projection table + invariants
+npm run validate:repro       # does a specific downvoted trade still get
+                             # suggested? args: <leagueId> <rosterId>
+                             # [cacheDir] [playerName]
 npm run validate:prompt      # render the real Haiku prompt for sample packages
                              # (no API call, no Firebase creds; run
                              #  validate:trades first)

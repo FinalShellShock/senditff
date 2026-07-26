@@ -55,6 +55,22 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "1.4",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "The engine stops handing old players to teams that are rebuilding",
+    changes: [
+      "Every trade card now shows each player's age next to his value.",
+      "The engine no longer pushes players in decline onto teams with a long timeline. It already understood that a rebuilding team does not want points scored, but it had no idea it also does not want old players, and those are different things. Every single downvote in the last batch was this, across four different kinds of trade and three different users.",
+      "Fixed a bug where that check was reading the wrong side of the trade entirely, so a rebuilding team was being judged on what it gave away rather than what it took on. This is why a rebuild was graded an A for trading Lamar Jackson away for two thirty-year-olds.",
+      "The check now also applies to YOU, not just the other manager. It only ever ran on the other side, so a rebuilding user searching their own trades got aging players with nothing pushing back.",
+      "\"Buy an aging stud\" now requires an actual discount. It was suggesting trades where you paid full price or more to take on someone older, which is the one thing that trade type exists to avoid.",
+      "Fixed the rationale getting the bundle premium backwards and telling you the other manager was charging a premium when you were.",
+    ],
+    knownIssues: [],
+  },
+  {
+    branch: "daniels",
     release: "1.3",
     algo: "Shotgun",
     date: "2026-07-25",

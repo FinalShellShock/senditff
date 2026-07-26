@@ -195,6 +195,7 @@ function AssetList({ assets }: { assets: TradeAssetWire[] }) {
             {a.kind === "pick" ? "PICK" : a.position}
           </span>
           <span className="trade-asset-name">{a.name}</span>
+          {a.age != null && <span className="trade-asset-age">{a.age.toFixed(1)}y</span>}
           <span className="trade-asset-value">{a.valueDynasty.toLocaleString()}</span>
           {i < assets.length - 1 && <span className="trade-asset-sep"> + </span>}
         </span>

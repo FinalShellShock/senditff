@@ -147,8 +147,19 @@ export function buildRationalePrompt(
   const rawReceive = pkg.valueReceive;
   const diverges =
     Math.abs(adjGive - rawGive) > rawGive * 0.02 || Math.abs(adjReceive - rawReceive) > rawReceive * 0.02;
+  // Spelled out per side, with the direction named. The previous wording said
+  // "the side with the single best asset charges a premium" and left the model
+  // to work out which side that was. It got it backwards on a real package and
+  // a user caught it: "said mcfarland is charging a premium when they're the
+  // one buying the most valuable asset in the deal."
+  const sideNote = (raw: number, adj: number, who: string) => {
+    if (Math.abs(adj - raw) <= raw * 0.02) return `${who} ${Math.round(raw)} counts as-is`;
+    const dir = adj > raw ? "UP" : "DOWN";
+    const why = adj > raw ? "holds the single best asset, which commands a premium" : "is a bundle, and a package of pieces is worth less than its parts";
+    return `${who} ${Math.round(raw)} counts ${dir} at ${Math.round(adj)} because that side ${why}`;
+  };
   const adjNote = diverges
-    ? `Trade-effective value (a bundle is worth less than its parts, and the side with the single best asset charges a premium): yours ${Math.round(rawGive)} counts as ${Math.round(adjGive)}, theirs ${Math.round(rawReceive)} counts as ${Math.round(adjReceive)}.`
+    ? `Trade-effective value: ${sideNote(rawGive, adjGive, "what you send,")}; ${sideNote(rawReceive, adjReceive, "what you get,")}.`
     : "";
 
   // What the package does for THEM, positionally. The writer is asked for a

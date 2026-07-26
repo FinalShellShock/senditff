@@ -142,6 +142,33 @@ export const STANCE_CAUTION_ARCH_MATCH = 0.05;
 //
 // These are a first calibration from one league's feedback, not a fitted
 // result. Expect to tune them once there is more data.
+// Taking on AGE is a separate cost from taking on production, and until now
+// only production was modelled. Every one of five downvoted packages asked a
+// LONG-window team to absorb a player at or past his positional decline, and
+// two users said the same thing unprompted: "a trade for an ageing QB who will
+// mostly likely be out of the NFL sooner rather than later hurts the longevity
+// of my team", and "a team that is building wants foundational pieces to build
+// off of. An aging RB is absolutely not one of them."
+//
+// Measured as incoming dynasty value weighted by how much of each player's
+// career is already spent, so an old cheap flier costs little and an old
+// expensive centerpiece costs a lot.
+// age_arb_buy means buying an aging asset AT A DISCOUNT. Both real instances
+// of it had the buyer paying full price or more: 2948 out for 2861 back on a
+// 26 year old for a 32 year old, and two 2026 picks for a 30.9 year old WR.
+// A user put it plainly: "Why would I ship away a higher valued asset for a
+// lower valued asset 1:1 of the same position?"
+//
+// The existing lateral-swap gate requires an age GAP but says nothing about
+// direction or price, so paying a premium to get older cleared it. This is the
+// missing half. Measured on trade-effective value, the same figure the
+// fairness label uses, and 10% sits inside the FAIR band so a qualifying
+// discount does not automatically read as a fleece.
+export const AGE_ARB_MIN_DISCOUNT = 0.10;
+
+export const AGING_TAKEON_SCALE = 3000;
+export const AGING_MAX_PENALTY = 0.30;
+
 export const TANK_PRODUCTION_SCALE = 3000;
 export const TANK_SURPLUS_SCALE = 2500;
 export const TANK_MAX_PENALTY = 0.25;

@@ -9,7 +9,10 @@
 
 import type { ArchetypeFamily } from "../../src/algo/archetypes";
 import {
+  AGE_ARB_MIN_DISCOUNT,
   AGING_LOSS_RATE,
+  AGING_MAX_PENALTY,
+  AGING_TAKEON_SCALE,
   DECLINING_LOSS_RATE,
   DEPTH_RESILIENCE_WEIGHT,
   LATERAL_SWAP_MIN_AGE_GAP,
@@ -25,6 +28,7 @@ import { fairnessLabel, packageValue, tradeEffectiveValues, type FairnessLabel }
 import {
   depthByPosition,
   depthSlotsFor,
+  agePressure,
   effectiveAge,
   fillStarters,
   flexStrengthValue,
@@ -122,7 +126,7 @@ export type GenerateOptions = {
 export type GenerateDiagnostics = {
   rawCandidates: number;
   afterDedup: number;
-  rejected: { myFit: number; theirFit: number; balance: number };
+  rejected: { myFit: number; theirFit: number; balance: number; ageArbPrice?: number };
   forced: boolean;
   // mine.archetypeScores for the forced family (0-100), when forced.
   myArchetypeScore?: number;
@@ -271,19 +275,94 @@ function isDeclining(p: Player): boolean {
 //
 // Applies to LONG-window (rebuilding) teams only. Bounded, and tunable via
 // TANK_* in src/algo/constants.ts.
-function tankAdjustment(them: TeamProfile, theyReceive: Asset[], theySend: Asset[]): number {
-  if (them.windowTier !== "LONG") return 0;
+// What this trade does to a team's TIMELINE, as a fit adjustment.
+//
+// Applies to LONG-window teams (rebuilding, or young and rising) and charges
+// two separate costs, because "wrong time to win" and "wrong age of asset" are
+// different problems and only the first was modelled before:
+//
+//   PRODUCTION: most leagues break draft order on points for, so a rebuilder
+//   taking on a productive veteran loses draft position on top of not helping
+//   itself win.
+//
+//   AGING: a rebuilder taking on players in decline gets assets that will be
+//   worthless by the time it is good. Five of five downvoted packages were
+//   exactly this, across four different archetypes and three users, so it is a
+//   missing term rather than a mistuned one.
+//
+// Both are offset by surplus, but the surplus is measured on the REMAINING
+// share of each asset's value, not its raw value. Raw surplus let a rebuilder
+// be "compensated" for two thirty-year-olds with a third thirty-year-old. On
+// the package a user called out ("why would JB give away one of the most
+// valuable assets in a superflex league for two aging assets"), raw surplus was
+// +1024 and cancelled the whole penalty; on remaining value the surplus is zero
+// and the penalty stands.
+//
+// Symmetric on purpose. The old version only ever adjusted the COUNTERPARTY's
+// fit, so a rebuilding user searching for their own trades was handed aging
+// players with nothing pushing back. Four of the five downvotes were exactly
+// that case.
+function timelinePenalty(team: TeamProfile, receives: Asset[], sends: Asset[]): number {
+  if (team.windowTier !== "LONG") return 0;
+
+  const spent = (p: Player) => agePressure(effectiveAge(p), p.position) / 100;
   const redraft = (assets: Asset[]) =>
     assets.reduce((sum, a) => sum + (a.kind === "player" ? a.player.valueRedraft : 0), 0);
-  const netProduction = redraft(theyReceive) - redraft(theySend);
-  if (netProduction <= 0) return 0; // shedding production helps a rebuild
+  const aging = (assets: Asset[]) =>
+    assets.reduce((sum, a) => sum + (a.kind === "player" ? assetValue(a) * spent(a.player) : 0), 0);
+  // Picks count in full: an unspent pick has its whole career ahead of it.
+  const remaining = (assets: Asset[]) =>
+    assets.reduce(
+      (sum, a) => sum + (a.kind === "player" ? assetValue(a) * (1 - spent(a.player)) : assetValue(a)),
+      0,
+    );
 
-  const dynasty = (assets: Asset[]) => assets.reduce((sum, a) => sum + assetValue(a), 0);
-  const surplus = Math.max(0, dynasty(theyReceive) - dynasty(theySend));
+  const netProduction = redraft(receives) - redraft(sends);
+  const netAging = aging(receives) - aging(sends);
 
-  const cost = Math.min(TANK_MAX_PENALTY, netProduction / TANK_PRODUCTION_SCALE);
+  const productionCost =
+    netProduction > 0 ? Math.min(TANK_MAX_PENALTY, netProduction / TANK_PRODUCTION_SCALE) : 0;
+  const agingCost = netAging > 0 ? Math.min(AGING_MAX_PENALTY, netAging / AGING_TAKEON_SCALE) : 0;
+  const cost = productionCost + agingCost;
+  if (cost <= 0) return 0;
+
+  const surplus = Math.max(0, remaining(receives) - remaining(sends));
   const offset = Math.min(cost, surplus / TANK_SURPLUS_SCALE);
   return -(cost - offset);
+}
+
+// Absorbing age has to come with a discount.
+//
+// age_arb_buy exists to buy a player past his peak BELOW what he is worth. The
+// generator never checked the price, so it proposed paying a premium to get
+// older, which is the trade nobody would make. lateralSwapOk requires a
+// timeline gap but is silent on direction and price, so these sailed through.
+//
+// Compares value-weighted age pressure to decide whether age is actually being
+// absorbed, then requires the incoming side to be worth meaningfully more on
+// trade-effective value. Picks count as ageless, so cashing picks for an old
+// player must clear the same bar.
+function ageArbDiscountOk(
+  archetype: string,
+  give: Asset[],
+  receive: Asset[],
+  adjGive: number,
+  adjReceive: number,
+): boolean {
+  if (!archetype.startsWith("age_arb_buy")) return true;
+  const spentShare = (assets: Asset[]): number => {
+    let value = 0;
+    let spent = 0;
+    for (const a of assets) {
+      const v = assetValue(a);
+      value += v;
+      if (a.kind === "player") spent += v * (agePressure(effectiveAge(a.player), a.player.position) / 100);
+    }
+    return value > 0 ? spent / value : 0;
+  };
+  // Not actually taking on age, so there is nothing to be compensated for.
+  if (spentShare(receive) <= spentShare(give)) return true;
+  return adjReceive >= adjGive * (1 + AGE_ARB_MIN_DISCOUNT);
 }
 
 // A one-for-one swap at the same position is churn unless it actually changes
@@ -539,7 +618,8 @@ function scoreCandidate(
 
   const myFit = fitScore(myImpact);
   const theirFit = fitScore(theirImpact);
-  const tankAdjust = tankAdjustment(them, cand.receive, cand.give);
+  const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give);
+  const theirTimeline = timelinePenalty(them, cand.give, cand.receive);
 
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
@@ -581,8 +661,8 @@ function scoreCandidate(
   const norm = (v: number, floor: number) =>
     Math.max(0, Math.min(1, (v - floor) / (1 - floor)));
   const total =
-    norm(myFit, DEFAULT_GATES.myFit) * 0.32 +
-    norm(theirFit + tankAdjust, DEFAULT_GATES.theirFit) * 0.28 +
+    norm(myFit + myTimeline, DEFAULT_GATES.myFit) * 0.32 +
+    norm(theirFit + theirTimeline, DEFAULT_GATES.theirFit) * 0.28 +
     archMatch * 0.22 +
     norm(balance, DEFAULT_GATES.balance) * 0.18;
 
@@ -1264,12 +1344,18 @@ export function generatePackages(
   // Hard rejects: severely lopsided fits. Tally each failing gate so empty
   // results can be explained.
   const applyGates = (gates: typeof DEFAULT_GATES) => {
-    const rej = { myFit: 0, theirFit: 0, balance: 0 };
+    const rej = { myFit: 0, theirFit: 0, balance: 0, ageArbPrice: 0 };
     const passed = scored.filter((s) => {
       let ok = true;
       if (!(s.myFit > gates.myFit)) { rej.myFit++; ok = false; }
       if (!(s.theirFit > gates.theirFit)) { rej.theirFit++; ok = false; }
       if (!(s.balance > gates.balance)) { rej.balance++; ok = false; }
+      // Not relaxed by FORCED_GATES: forcing "buy an aging stud" is a request
+      // for the archetype, not a request to overpay for one.
+      if (!ageArbDiscountOk(s.archetype, s.give, s.receive, s.adjGive, s.adjReceive)) {
+        rej.ageArbPrice++;
+        ok = false;
+      }
       return ok;
     });
     return { passed, rej };

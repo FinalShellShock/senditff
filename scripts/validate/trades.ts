@@ -39,7 +39,16 @@ async function main(): Promise<void> {
   const outPath = resolve(flagValue("--out") ?? "validate-trades.json");
 
   const inputs = await loadLeagueInputs(leagueId, myUsername, cacheDir);
-  const profiles = computeAllProfiles(inputs.teams, inputs.format, inputs.thisYear);
+  const profiles = computeAllProfiles(
+    inputs.teams,
+    inputs.format,
+    inputs.thisYear,
+    // Pools are REQUIRED for fidelity: api/leagues/sync.ts passes them, so
+    // omitting them here scored every package against profiles production
+    // never sees. Same class of drift as the decimal-age bug noted in
+    // teams.ts, and the reason that file exists.
+    inputs.pools,
+  );
   const sorted = [...profiles].sort((a, b) => a.rosterId - b.rosterId);
 
   const runAll = () => {

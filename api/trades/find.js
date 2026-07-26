@@ -43,6 +43,7 @@ var REMAINING_VALUE = {
   WR: { 23: 45.1, 24: 44.3, 25: 38.7, 26: 37.7, 27: 35.3, 28: 34.6, 29: 34.6, 30: 31.1, 31: 30.3, 32: 25.9, 33: 24.5, 34: 23.6, 35: 23.6, 36: 13.6 },
   TE: { 23: 35.5, 24: 33.9, 25: 30.4, 26: 29.9, 27: 26.6, 28: 25.1, 29: 23.7, 30: 21.4, 31: 21.4, 32: 21.4, 33: 21.4 }
 };
+var PRESSURE_REFERENCE_AGE = 23;
 var VALUE_LOSS_RATE = {
   QB: { 23: -1.8, 24: -1.8, 25: -1.8, 26: 0.6, 27: 0.6, 28: 4.4, 29: 4.5, 30: 4.5, 31: 4.5, 32: 4.5, 33: 4.5, 34: 4.5, 35: 12.1 },
   RB: { 23: 5.6, 24: 6.4, 25: 8, 26: 9.3, 27: 9.3, 28: 9.3, 29: 11.2, 30: 14.6 },
@@ -58,6 +59,9 @@ var DEPTH_RESILIENCE_WEIGHT = 0.5;
 var LATERAL_SWAP_MIN_AGE_GAP = 2.5;
 var STANCE_CONFIDENT_ARCH_MATCH = 0.5;
 var STANCE_CAUTION_ARCH_MATCH = 0.05;
+var AGE_ARB_MIN_DISCOUNT = 0.1;
+var AGING_TAKEON_SCALE = 3e3;
+var AGING_MAX_PENALTY = 0.3;
 var TANK_PRODUCTION_SCALE = 3e3;
 var TANK_SURPLUS_SCALE = 2500;
 var TANK_MAX_PENALTY = 0.25;
@@ -381,6 +385,12 @@ function fromAgeTable(age, table) {
 function remainingValue(age, pos) {
   return fromAgeTable(age, REMAINING_VALUE[pos]);
 }
+function agePressure(age, pos) {
+  const reference = REMAINING_VALUE[pos][PRESSURE_REFERENCE_AGE];
+  if (!reference) return 0;
+  const pressure = 100 * (1 - remainingValue(age, pos) / reference);
+  return Math.max(0, Math.min(100, pressure));
+}
 function effectiveAge(p) {
   const age = p.age;
   if (age == null) return 0;
@@ -524,16 +534,39 @@ function isAging(p) {
 function isDeclining(p) {
   return playerLossRate(p) >= DECLINING_LOSS_RATE[p.position];
 }
-function tankAdjustment(them, theyReceive, theySend) {
-  if (them.windowTier !== "LONG") return 0;
+function timelinePenalty(team, receives, sends) {
+  if (team.windowTier !== "LONG") return 0;
+  const spent = (p) => agePressure(effectiveAge(p), p.position) / 100;
   const redraft = (assets) => assets.reduce((sum, a) => sum + (a.kind === "player" ? a.player.valueRedraft : 0), 0);
-  const netProduction = redraft(theyReceive) - redraft(theySend);
-  if (netProduction <= 0) return 0;
-  const dynasty = (assets) => assets.reduce((sum, a) => sum + assetValue(a), 0);
-  const surplus = Math.max(0, dynasty(theyReceive) - dynasty(theySend));
-  const cost = Math.min(TANK_MAX_PENALTY, netProduction / TANK_PRODUCTION_SCALE);
+  const aging = (assets) => assets.reduce((sum, a) => sum + (a.kind === "player" ? assetValue(a) * spent(a.player) : 0), 0);
+  const remaining = (assets) => assets.reduce(
+    (sum, a) => sum + (a.kind === "player" ? assetValue(a) * (1 - spent(a.player)) : assetValue(a)),
+    0
+  );
+  const netProduction = redraft(receives) - redraft(sends);
+  const netAging = aging(receives) - aging(sends);
+  const productionCost = netProduction > 0 ? Math.min(TANK_MAX_PENALTY, netProduction / TANK_PRODUCTION_SCALE) : 0;
+  const agingCost = netAging > 0 ? Math.min(AGING_MAX_PENALTY, netAging / AGING_TAKEON_SCALE) : 0;
+  const cost = productionCost + agingCost;
+  if (cost <= 0) return 0;
+  const surplus = Math.max(0, remaining(receives) - remaining(sends));
   const offset = Math.min(cost, surplus / TANK_SURPLUS_SCALE);
   return -(cost - offset);
+}
+function ageArbDiscountOk(archetype, give, receive, adjGive, adjReceive) {
+  if (!archetype.startsWith("age_arb_buy")) return true;
+  const spentShare = (assets) => {
+    let value = 0;
+    let spent = 0;
+    for (const a of assets) {
+      const v = assetValue(a);
+      value += v;
+      if (a.kind === "player") spent += v * (agePressure(effectiveAge(a.player), a.player.position) / 100);
+    }
+    return value > 0 ? spent / value : 0;
+  };
+  if (spentShare(receive) <= spentShare(give)) return true;
+  return adjReceive >= adjGive * (1 + AGE_ARB_MIN_DISCOUNT);
 }
 function lateralSwapOk(give, receive) {
   if (give.length !== 1 || receive.length !== 1) return true;
@@ -708,7 +741,8 @@ function scoreCandidate(cand, myProfile, others, ctx) {
   const theirImpact = simulateImpact(them, cand.receive, cand.give, ctx.format, ctx.averages, ctx.thisYear);
   const myFit = fitScore(myImpact);
   const theirFit = fitScore(theirImpact);
-  const tankAdjust = tankAdjustment(them, cand.receive, cand.give);
+  const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give);
+  const theirTimeline = timelinePenalty(them, cand.give, cand.receive);
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
   const { give: adjGive, receive: adjReceive } = tradeEffectiveValues(
@@ -723,7 +757,7 @@ function scoreCandidate(cand, myProfile, others, ctx) {
   const theirArch = counterArchetypeScore(cand.archetype, them);
   const archMatch = myArch * 0.7 + theirArch * 0.3;
   const norm = (v, floor) => Math.max(0, Math.min(1, (v - floor) / (1 - floor)));
-  const total = norm(myFit, DEFAULT_GATES.myFit) * 0.32 + norm(theirFit + tankAdjust, DEFAULT_GATES.theirFit) * 0.28 + archMatch * 0.22 + norm(balance, DEFAULT_GATES.balance) * 0.18;
+  const total = norm(myFit + myTimeline, DEFAULT_GATES.myFit) * 0.32 + norm(theirFit + theirTimeline, DEFAULT_GATES.theirFit) * 0.28 + archMatch * 0.22 + norm(balance, DEFAULT_GATES.balance) * 0.18;
   return {
     ...cand,
     total,
@@ -1225,7 +1259,7 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
   }
   const scored = unique.map((c) => scoreCandidate(c, mine, others, ctx));
   const applyGates = (gates) => {
-    const rej = { myFit: 0, theirFit: 0, balance: 0 };
+    const rej = { myFit: 0, theirFit: 0, balance: 0, ageArbPrice: 0 };
     const passed = scored.filter((s) => {
       let ok = true;
       if (!(s.myFit > gates.myFit)) {
@@ -1238,6 +1272,10 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
       }
       if (!(s.balance > gates.balance)) {
         rej.balance++;
+        ok = false;
+      }
+      if (!ageArbDiscountOk(s.archetype, s.give, s.receive, s.adjGive, s.adjReceive)) {
+        rej.ageArbPrice++;
         ok = false;
       }
       return ok;
@@ -1360,7 +1398,13 @@ function buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics) {
   const rawGive = pkg.valueGive;
   const rawReceive = pkg.valueReceive;
   const diverges = Math.abs(adjGive - rawGive) > rawGive * 0.02 || Math.abs(adjReceive - rawReceive) > rawReceive * 0.02;
-  const adjNote = diverges ? `Trade-effective value (a bundle is worth less than its parts, and the side with the single best asset charges a premium): yours ${Math.round(rawGive)} counts as ${Math.round(adjGive)}, theirs ${Math.round(rawReceive)} counts as ${Math.round(adjReceive)}.` : "";
+  const sideNote = (raw, adj, who) => {
+    if (Math.abs(adj - raw) <= raw * 0.02) return `${who} ${Math.round(raw)} counts as-is`;
+    const dir = adj > raw ? "UP" : "DOWN";
+    const why = adj > raw ? "holds the single best asset, which commands a premium" : "is a bundle, and a package of pieces is worth less than its parts";
+    return `${who} ${Math.round(raw)} counts ${dir} at ${Math.round(adj)} because that side ${why}`;
+  };
+  const adjNote = diverges ? `Trade-effective value: ${sideNote(rawGive, adjGive, "what you send,")}; ${sideNote(rawReceive, adjReceive, "what you get,")}.` : "";
   const theirInbound = [...new Set(pkg.give.filter((a) => a.kind === "player" && a.position).map((a) => a.position))];
   const theirNeeds = counterProfile ? theirInbound.map((pos) => {
     const ps = counterProfile.positionScores?.[pos];

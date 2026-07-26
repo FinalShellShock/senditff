@@ -3596,3 +3596,11 @@ body {
 .join-deny { border-color: #475569; }
 .join-approve:disabled,
 .join-deny:disabled { opacity: 0.5; cursor: default; }
+
+/* Age on trade cards. Three of five downvoted packages turned on a player's
+   age, and the card was the one place it was not shown. */
+.trade-asset-age {
+  font-size: 9px;
+  color: #64748b;
+  margin-left: 3px;
+}
