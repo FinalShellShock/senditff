@@ -53,7 +53,7 @@ var PATCH_NOTES = [
     title: "Trade cards rebuilt for phones",
     changes: [
       "Trade cards were still using the desktop layout on phones, which gave each side of the trade about 150 pixels. Adding ages tipped it over: player names were breaking in half and values were being cut off.",
-      "Each player now gets his own line, with the name on the left and age and value lined up on the right, so a three piece package reads as a list instead of a jumble. On phones the two sides stack, SEND above GET, instead of being squeezed side by side.",
+      "Each player now gets his own line, with name and value lined up in columns, so a three piece package reads as a list instead of a jumble. Side by side, the two halves mirror around the swap arrow: position badges sit on the outer edge of each column. On phones the sides stack, SEND above GET, and everything left aligns.",
       "Verified down to 320 pixels wide with no clipping, no wrapped names, and no sideways scrolling."
     ],
     knownIssues: []
