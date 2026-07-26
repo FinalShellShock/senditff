@@ -32,6 +32,12 @@ import {
 } from "../../algo/plays.ts";
 import type { TeamProfile } from "../../algo/types.ts";
 
+/** The one place a PickFlag becomes words. Lived in TeamDeepDive, and the
+ *  chart briefly rendered the raw flag instead, so the same datum read "FINE"
+ *  in the header chip and "NEUTRAL" in the strip six inches below it. */
+export const pickFlagText = (flag: string) =>
+  flag === "NEUTRAL" ? "FINE" : flag.replace("_", " ");
+
 const ACCENT = "#f59e0b";
 const GRID = "rgba(255,255,255,0.07)";
 const AXIS_TEXT = "#475569";
@@ -72,7 +78,7 @@ const METRICS: Metric[] = [
     key: "picks",
     label: "PICK CAPITAL",
     value: (t) => t.pickCapital.value,
-    format: (t) => t.pickCapital.flag.replace("_", " "),
+    format: (t) => pickFlagText(t.pickCapital.flag),
     lowLabel: "thin",
     highLabel: "loaded",
   },

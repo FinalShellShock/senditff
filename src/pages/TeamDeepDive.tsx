@@ -6,7 +6,7 @@ import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 import { scoutingPlays, type Play } from "../algo/plays.ts";
 import { FeedbackBlock } from "../components/FeedbackBlock.tsx";
-import TeamState from "./team/TeamState.tsx";
+import TeamState, { pickFlagText } from "./team/TeamState.tsx";
 
 const LABEL_COLOR: Record<WindowLabel, string> = {
   JUGGERNAUT: "#16a34a",
@@ -45,7 +45,7 @@ function playLink(leagueId: string | undefined, rosterId: number, play: Play): s
   return `/league/${leagueId}/sendit/${rosterId}?${params.toString()}`;
 }
 
-const pickFlagText = (flag: string) => (flag === "NEUTRAL" ? "FINE" : flag.replace("_", " "));
+
 
 type RosterItem = { divider: (typeof POSITIONS)[number]; player?: undefined } | { divider?: undefined; player: Player };
 
