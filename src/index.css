@@ -2753,7 +2753,10 @@ body {
 
 .trade-players {
   display: flex;
-  align-items: center;
+  /* Top-aligned, not centered. Centering floated the shorter side's assets
+     against the middle of the longer one, so a 1-for-3 package had nothing
+     lining up. Both lists start on the same line and read straight across. */
+  align-items: flex-start;
   gap: 10px;
   margin-bottom: 10px;
 }
@@ -2963,6 +2966,9 @@ body {
 }
 
 .trade-arrow {
+  /* The one thing that still centers: it separates the two lists rather than
+     belonging to either. */
+  align-self: center;
   font-size: 18px;
   color: #334155;
 }
