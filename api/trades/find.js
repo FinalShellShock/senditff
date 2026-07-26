@@ -71,6 +71,11 @@ var PICK_DECAY = {
   2: 0.7,
   3: 0.55
 };
+var SHAPE_FIT_BY_COMPETITIVENESS = {
+  STRONG: 0.06,
+  AVERAGE: 0.02,
+  WEAK: 0
+};
 
 // src/algo/archetypes.ts
 var ARCHETYPE_FAMILIES = [
@@ -553,6 +558,13 @@ function timelinePenalty(team, receives, sends) {
   const offset = Math.min(cost, surplus / TANK_SURPLUS_SCALE);
   return -(cost - offset);
 }
+function shapeFitAdjustment(team, give, receive) {
+  const w = SHAPE_FIT_BY_COMPETITIVENESS[team.competitiveness];
+  if (w === 0) return 0;
+  if (give.length >= 2 && receive.length === 1) return w;
+  if (give.length === 1 && receive.length >= 2) return -w;
+  return 0;
+}
 function ageArbDiscountOk(archetype, give, receive, adjGive, adjReceive) {
   if (!archetype.startsWith("age_arb_buy")) return true;
   const spentShare = (assets) => {
@@ -741,8 +753,8 @@ function scoreCandidate(cand, myProfile, others, ctx) {
   const theirImpact = simulateImpact(them, cand.receive, cand.give, ctx.format, ctx.averages, ctx.thisYear);
   const myFit = fitScore(myImpact);
   const theirFit = fitScore(theirImpact);
-  const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give);
-  const theirTimeline = timelinePenalty(them, cand.give, cand.receive);
+  const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give) + shapeFitAdjustment(myProfile, cand.give, cand.receive);
+  const theirTimeline = timelinePenalty(them, cand.give, cand.receive) + shapeFitAdjustment(them, cand.receive, cand.give);
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
   const { give: adjGive, receive: adjReceive } = tradeEffectiveValues(

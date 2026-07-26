@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "8ede6fa25f22";
+var ALGO_FINGERPRINT_BUILD = "98115421c99a";
 
 // src/algo/version.ts
 var ALGO_VERSION = "shotgun";
@@ -45,6 +45,22 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.10",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "Trade advice now leans on what actually worked in 5,800 real trades",
+    changes: [
+      "Crawled 5,791 real dynasty trades from 400 leagues and followed 8,099 of the resulting team-seasons into the next year to see which trades actually helped.",
+      "One thing came through clearly: if you are contending, packaging pieces into one better player works, and breaking a star into pieces does not. If you are rebuilding, neither shows any effect. The engine now weighs both of those by whether your team is trying to win now, which it previously ignored completely.",
+      "The effect is honestly small, worth a fraction of a place in the standings, so it nudges the ordering rather than hiding anything.",
+      "Also worth knowing: trading at all helps contenders (they beat expectations 56% of the time versus 43% for contenders who stood pat), and makes no measurable difference for rebuilding teams."
+    ],
+    knownIssues: [
+      "Give-one-get-two is still 44% of everything suggested, which is more than it should be. That is down to how packages get built rather than how they are scored, and it is the next thing to fix."
+    ]
+  },
   {
     branch: "daniels",
     release: "1.9",

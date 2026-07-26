@@ -60,6 +60,16 @@ var PICK_ADJUSTMENT_BY_FLAG = {
 var URGENCY_MEANINGFUL = 20;
 var URGENCY_SEVERE = 45;
 var URGENCY_SPREAD_FULL = 30;
+var CONSOLIDATE_BY_COMPETITIVENESS = {
+  STRONG: 1,
+  AVERAGE: 0.85,
+  WEAK: 0.6
+};
+var TIER_DOWN_BY_COMPETITIVENESS = {
+  STRONG: 0.65,
+  AVERAGE: 0.9,
+  WEAK: 1
+};
 var FLEX_CONSOLIDATE_THRESHOLD = 55;
 var STD_THRESHOLD = 0.5;
 var WINDOW_LONG_THRESHOLD = 14;
@@ -90,7 +100,9 @@ function scoreArchetypes(team, averages) {
     const avgD = averages.depth[pos] || 1;
     const eliteFactor = clamp((ps.starterValue / avgS - 1) / 0.4, 0, 1);
     const thinFactor = clamp((1 - ps.depthValue / avgD) / 0.4, 0, 1);
-    s[`tier_down_${pos}`] = Math.round(eliteFactor * thinFactor * 100);
+    s[`tier_down_${pos}`] = Math.round(
+      eliteFactor * thinFactor * TIER_DOWN_BY_COMPETITIVENESS[team.competitiveness] * 100
+    );
   }
   for (const pos of POSITIONS) {
     const ps = team.positionScores[pos];
@@ -99,12 +111,14 @@ function scoreArchetypes(team, averages) {
     const otherUrgency = POSITIONS.filter((p) => p !== pos).reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
     const needFactor = urgencyPressure(otherUrgency);
     s[`consolidate_${pos}`] = Math.round(
-      depthFactor * needFactor * (0.55 + 0.45 * midFactor) * 100
+      depthFactor * needFactor * (0.55 + 0.45 * midFactor) * CONSOLIDATE_BY_COMPETITIVENESS[team.competitiveness] * 100
     );
   }
   const maxUrgency = POSITIONS.reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
   const flexFactor = clamp((team.flex.score - 40) / (FLEX_CONSOLIDATE_THRESHOLD - 40), 0, 1);
-  s["consolidate_flex"] = Math.round(flexFactor * urgencyPressure(maxUrgency) * 100);
+  s["consolidate_flex"] = Math.round(
+    flexFactor * urgencyPressure(maxUrgency) * CONSOLIDATE_BY_COMPETITIVENESS[team.competitiveness] * 100
+  );
   const longFactor = clamp(1 - team.windowPressure / WINDOW_SHORT_THRESHOLD, 0, 1);
   const richFactor = clamp((team.pickCapital.score - 50) / 50, 0, 1);
   s["age_arb_buy"] = Math.round(longFactor * richFactor * 100);
