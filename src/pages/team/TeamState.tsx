@@ -240,7 +240,15 @@ function WindowGauge({ pressure }: { pressure: number }) {
   );
 }
 
-function StarterLine({ row, metric }: { row: StarterRow; metric: number }) {
+function StarterLine({
+  row,
+  metric,
+  metricTitle,
+}: {
+  row: StarterRow;
+  metric: number;
+  metricTitle: string;
+}) {
   const cal = row.player.age as number;
   const adjusted = Math.abs(row.effAge - cal) >= 0.05;
   return (
@@ -267,7 +275,7 @@ function StarterLine({ row, metric }: { row: StarterRow; metric: number }) {
       <span className="state-runway-left" title="Career production left, against a 23 year old at the same position">
         {row.left.toFixed(0)}%
       </span>
-      <span className="state-runway-runway" title="Points of your total age pressure this starter accounts for">
+      <span className="state-runway-runway" title={metricTitle}>
         {metric.toFixed(1)}
       </span>
     </div>
@@ -303,17 +311,30 @@ function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat })
       </p>
       <WindowGauge pressure={me.windowPressure} />
       <p className="state-report-sub">
-        Age pressure is the value-weighted average across your starters, so these four move it
-        most. The numbers are the points of pressure each one is personally responsible for.
+        Age pressure is the value-weighted average across every startable slot, flex included, so
+        the biggest contracts move it most. Two adding the most, two keeping the most off.
       </p>
       <div className="state-runways">
-        <div className="state-runway-group">PULLING IT SHORTER</div>
+        <div className="state-runway-group">PULLING IT SHORTER · POINTS ADDED</div>
         {shorter.map((r) => (
-          <StarterLine key={r.player.id} row={r} metric={r.adds} />
+          <StarterLine
+            key={r.player.id}
+            row={r}
+            metric={r.adds}
+            metricTitle={`${r.player.name} adds ${r.adds.toFixed(1)} of your ${me.starterAgePressure.toFixed(1)} age pressure`}
+          />
         ))}
-        <div className="state-runway-group">HOLDING IT OPEN</div>
+        {/* This group is ranked AND displayed on points withheld. Ranking on
+            one number and printing the other put 1.5 above 3.4 and made the
+            column look unsorted. */}
+        <div className="state-runway-group">HOLDING IT OPEN · POINTS KEPT OFF</div>
         {open.map((r) => (
-          <StarterLine key={r.player.id} row={r} metric={r.adds} />
+          <StarterLine
+            key={r.player.id}
+            row={r}
+            metric={r.holds}
+            metricTitle={`${r.player.name} keeps ${r.holds.toFixed(1)} points of age pressure off your total, versus a fully aged starter in the same slot`}
+          />
         ))}
       </div>
       <p className="state-foot">
