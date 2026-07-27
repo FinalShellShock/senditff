@@ -3224,9 +3224,10 @@ body {
   flex-direction: column;
 }
 
-/* The positions table brings its own grid, so it takes the whole row. */
-.state-panel-wide {
-  flex: 1 1 100%;
+/* Keeps a lone panel on a wrapped row from stretching its chart across the
+   whole page. */
+.state-panel {
+  max-width: 100%;
 }
 
 .state-report-head {
@@ -3419,6 +3420,7 @@ body {
 .state-shape-svg {
   display: block;
   width: 100%;
+  max-width: 420px;
   height: auto;
   margin-top: 8px;
 }

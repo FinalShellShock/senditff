@@ -484,15 +484,16 @@ export default function TeamState({
         The numbers under the badges: what you actually scored, how much career your starters have
         left, and where each position sits against the thresholds that label it.
       </p>
+      {/* One row of three. The scatter used to share a row with the positions
+          table, which claims 100% basis, so it was pushed onto a line of its
+          own and scaled to the full page width. */}
       <div className="state-grid">
         <Scoring me={me} league={league} />
         <WindowReport me={me} format={format} />
-      </div>
-      <div className="state-grid">
         <RosterShape me={me} league={league} />
-        <div className="state-panel state-panel-wide">
-          <PositionTable me={me} />
-        </div>
+      </div>
+      <div className="state-panel">
+        <PositionTable me={me} />
       </div>
     </section>
   );
