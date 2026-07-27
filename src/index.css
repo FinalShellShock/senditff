@@ -3403,6 +3403,17 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.state-gauge-z {
+  font-size: 9.5px;
+  color: #475569;
+  width: 34px;
+  text-align: right;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.state-gauge-z-bad { color: #eab308; }
+
 /* Threshold ticks. Drawn over the fill so a bar that clears a floor still
    shows where the floor was. */
 .state-floor {

@@ -378,6 +378,25 @@ function RosterShape({ me, league }: { me: TeamProfile; league: TeamProfile[] })
 
 // ── Positions, against the floors that decided the label ─────────────────────
 
+/** Which of classifySide's tests actually produced this label. Mirrors its
+ *  order exactly, because a gauge showing only the absolute floors explained
+ *  nothing when the z path fired: WR depth cleared both floor ticks and still
+ *  read NEED, which looks like the same contradiction the floors were added to
+ *  remove. Both axes have to be on screen. */
+function bindingReason(ev: ClassifyEvidence, label: SubClassification): string {
+  const z = Math.min(ev.minSlotZ, ev.weightedZ);
+  if (label === "CRITICAL") {
+    if (ev.minSlotValue < ev.criticalFloor) return `under the critical floor of ${fmt(ev.criticalFloor)}`;
+    return `${z.toFixed(1)} standard deviations below the typical player at this spot`;
+  }
+  if (label === "NEED") {
+    if (ev.minSlotValue < ev.needFloor) return `under the need floor of ${fmt(ev.needFloor)}`;
+    return `${z.toFixed(1)} standard deviations below the typical player at this spot`;
+  }
+  if (label === "SURPLUS") return "clears both floors and sits well above the typical player";
+  return "clears both floors and sits near the typical player";
+}
+
 function FloorGauge({ ev, label }: { ev: ClassifyEvidence; label: SubClassification }) {
   // Scale so the NEED floor always sits at 60% of the track. Scaled to the
   // value itself the floors would land somewhere different on every row, and
@@ -388,7 +407,7 @@ function FloorGauge({ ev, label }: { ev: ClassifyEvidence; label: SubClassificat
   return (
     <span
       className="state-gauge"
-      title={`weakest slot ${fmt(ev.minSlotValue)} · need floor ${fmt(ev.needFloor)} · critical floor ${fmt(ev.criticalFloor)}`}
+      title={`Weakest slot ${fmt(ev.minSlotValue)}, ${bindingReason(ev, label)}. Floors: need ${fmt(ev.needFloor)}, critical ${fmt(ev.criticalFloor)}.`}
     >
       <span className="state-bar-track">
         <span className="state-bar-fill" style={{ width: `${pct(ev.minSlotValue)}%`, background: color }} />
@@ -396,6 +415,13 @@ function FloorGauge({ ev, label }: { ev: ClassifyEvidence; label: SubClassificat
         <span className="state-floor state-floor-need" style={{ left: `${pct(ev.needFloor)}%` }} />
       </span>
       <span className="state-gauge-num">{fmt(ev.minSlotValue)}</span>
+      {/* The relative test, alongside the absolute one. A bar can clear both
+          ticks and still be NEED because this number is below -1. */}
+      <span
+        className={`state-gauge-z${Math.min(ev.minSlotZ, ev.weightedZ) < -1 ? " state-gauge-z-bad" : ""}`}
+      >
+        {Math.min(ev.minSlotZ, ev.weightedZ).toFixed(1)}σ
+      </span>
     </span>
   );
 }
@@ -450,7 +476,7 @@ function PositionTable({ me }: { me: TeamProfile }) {
       </div>
       <p className="state-report-sub">
         {hasEvidence
-          ? "Each bar is the weakest slot you would actually have to start there. The two ticks are the thresholds that set the label: under the left one reads CRITICAL, under the right one NEED. They are absolute, not a league ranking, so a thin position stays thin even in a weak league."
+          ? "Two tests set each label, and both are shown. The bar is the weakest slot you would actually have to start there against absolute floors: under the left tick reads CRITICAL, under the right one NEED. The sigma figure is the same slot against the typical player at that spot across the whole player pool, where below -1 is NEED and below -2 is CRITICAL. Either one firing is enough, which is why a bar can clear both ticks and still be flagged. Neither test is a league ranking, so a thin position stays thin even in a weak league."
           : "Re-sync this league to see the thresholds behind each label."}
       </p>
       <div className="pos-dash-header-row">

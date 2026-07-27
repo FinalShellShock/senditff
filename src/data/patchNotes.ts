@@ -65,8 +65,8 @@ export const PATCH_NOTES: PatchNote[] = [
       "It divides by weeks played, not by wins and losses. In a league with a second weekly matchup against the median, the record counts 28 results across a 14 week season, which would have halved everyone's average.",
       "WINDOW: your starting lineup, one row each, showing how much career every starter has left and how much of your lineup value is riding on players past halfway. That is what the window tier is computed from, so now you can see the actual reason instead of a label.",
       "Career left is measured per position off nflverse production from 1999 to 2024. A 27 year old running back and a 27 year old quarterback are nowhere near the same place, and the bars show it.",
-      "POSITIONS: each bar is the weakest slot you would actually have to start, with the two thresholds that set the label drawn right on it.",
-      "That last one fixes a real contradiction. Position labels are set by absolute floors and by comparison to the whole player pool, never by league rank, so a position could read CRITICAL while sitting mid-pack in your league. The old chart showed the league rank as if it were the evidence. Now the thresholds themselves are on screen.",
+      "POSITIONS: each bar is the weakest slot you would actually have to start, with the two thresholds that set the label drawn on it, plus the sigma figure comparing that slot to the typical player at that spot across the whole player pool.",
+      "That last one fixes a real contradiction. Position labels come from an absolute floor and from a comparison to the entire player pool, never from a league ranking, so a position could read CRITICAL while sitting mid-pack in your league. The old chart showed league rank as if it were the evidence. Both real tests are now on screen, which also explains the cases where a bar clears both thresholds and is still flagged: the other test fired.",
     ],
     knownIssues: [
       "Points per game needs a league re-sync to appear. It fills in on its own within the hour, or immediately if you hit Refresh.",
