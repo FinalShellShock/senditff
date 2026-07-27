@@ -35,6 +35,7 @@ const entries = [
   "api/leagues/overview.ts",
   "api/leagues/trades.ts",
   "api/trades/find.ts",
+  "api/trades/probe.ts",
   "api/user/leagues.ts",
   "api/feedback.ts",
   "api/admin/users.ts",

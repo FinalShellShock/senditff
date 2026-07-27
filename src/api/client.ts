@@ -110,6 +110,16 @@ export type PlayFeedbackPayload = {
   };
 };
 
+/** One forced-archetype search the UI is considering offering. */
+export type TradeIntent = { archetype: string; position?: string | null };
+
+export type TradeProbeResult = {
+  archetype: string;
+  position: string | null;
+  /** Packages the engine would return. Zero means do not offer the link. */
+  count: number;
+};
+
 export type SiteFeedbackPayload = {
   kind: "site";
   comment: string;
@@ -291,6 +301,12 @@ export function makeApiClient(getToken: GetTokenFn) {
       apiFetch<{ ok: true }>(getToken, "/api/admin/users", {
         method: "POST",
         body: JSON.stringify({ uid, action }),
+      }),
+
+    probeTrades: (leagueId: string, rosterId: number, intents: TradeIntent[]) =>
+      apiFetch<{ results: TradeProbeResult[] }>(getToken, "/api/trades/probe", {
+        method: "POST",
+        body: JSON.stringify({ leagueId, rosterId, intents }),
       }),
 
     submitPlayFeedback: (payload: PlayFeedbackPayload) =>

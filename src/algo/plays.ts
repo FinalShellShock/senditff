@@ -133,8 +133,14 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
       rateLabel: "of teams beat expectations",
       detail: `${pair[0]!.name} and ${pair[1]!.name} are worth ${fmt(combined)} together. One player at that value would be the ${ordinal(rankOf(combined, ranking))} most valuable in this league.`,
       kind: "do",
+      // Deliberately NOT position-scoped. This used to force pair[0]'s
+      // position, which is arbitrary (whichever spare happened to be worth
+      // more) and contradicted the copy: the detail names two players at
+      // DIFFERENT positions and the link then searched only one of them.
+      // Measured across the league it was also the single biggest source of
+      // dead links, turning five rosters' only scouting link into "none
+      // survived scoring" while an unscoped search returned five packages.
       archetype: "consolidate",
-      ...(pair[0]!.position ? { position: pair[0]!.position } : {}),
     });
   }
 

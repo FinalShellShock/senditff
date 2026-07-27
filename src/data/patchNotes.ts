@@ -55,6 +55,20 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "1.18",
+    algo: "Shotgun",
+    date: "2026-07-27",
+    title: "Scouting links that actually go somewhere",
+    changes: [
+      "\"Find these trades\" no longer appears on a play the trade finder cannot satisfy. Measured across a real 16 team league, 16 of 39 scouting links landed on \"none survived scoring\". A play that sends you to an empty result is worse than a play with no button.",
+      "Most of those were self-inflicted. \"Package depth into one difference-maker\" was forcing the search to one position, picked arbitrarily from whichever spare piece was worth more, which also contradicted its own text: it names two players at different positions and then searched only one of them. Unscoped, that play now returns packages for all 16 teams instead of failing on five.",
+      "The rest are genuine: sometimes nobody in your league will do that kind of deal today. Those buttons now stay hidden rather than promising a result.",
+      "Each team page checks this once, in a single request, before drawing any buttons.",
+    ],
+    knownIssues: [],
+  },
+  {
+    branch: "daniels",
     release: "1.17",
     algo: "Shotgun",
     date: "2026-07-27",

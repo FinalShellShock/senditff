@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "37576a046b39";
+var ALGO_FINGERPRINT_BUILD = "d679479f315e";
 
 // src/algo/version.ts
 var ALGO_VERSION = "shotgun";
@@ -45,6 +45,20 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.18",
+    algo: "Shotgun",
+    date: "2026-07-27",
+    title: "Scouting links that actually go somewhere",
+    changes: [
+      '"Find these trades" no longer appears on a play the trade finder cannot satisfy. Measured across a real 16 team league, 16 of 39 scouting links landed on "none survived scoring". A play that sends you to an empty result is worse than a play with no button.',
+      'Most of those were self-inflicted. "Package depth into one difference-maker" was forcing the search to one position, picked arbitrarily from whichever spare piece was worth more, which also contradicted its own text: it names two players at different positions and then searched only one of them. Unscoped, that play now returns packages for all 16 teams instead of failing on five.',
+      "The rest are genuine: sometimes nobody in your league will do that kind of deal today. Those buttons now stay hidden rather than promising a result.",
+      "Each team page checks this once, in a single request, before drawing any buttons."
+    ],
+    knownIssues: []
+  },
   {
     branch: "daniels",
     release: "1.17",

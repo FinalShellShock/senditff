@@ -85,6 +85,11 @@ export default function TeamDeepDive() {
   const { overview } = useOutletContext<LeagueOutletContext>();
   const [rosterSort, setRosterSort] = useState<"value" | "position">("value");
 
+  // Which scouting plays the trade finder can actually satisfy. Null while
+  // unknown; on failure it stays null and every button shows, which degrades to
+  // the old behaviour rather than silently hiding working links.
+  const [liveIntents, setLiveIntents] = useState<Set<string> | null>(null);
+
   // Trade ledger (cached Firestore read; never triggers a backfill). One
   // fetch per league visit, shared across team switches.
   const [ledger, setLedger] = useState<LedgerRow[] | null>(null);
@@ -127,10 +132,45 @@ export default function TeamDeepDive() {
   // What the outcome research says THIS team should do, ranked by how far the
   // measured hit rate sits from a coin flip. No padding: a roster sees only the
   // plays that actually apply to it.
+  const intentKey = (archetype: string, position?: string | null) =>
+    `${archetype}|${position ?? ""}`;
+  const playHasTrades = (play: Play) =>
+    liveIntents === null || liveIntents.has(intentKey(play.archetype!, play.position ?? null));
+
   const plays = useMemo(
     () => (profile ? scoutingPlays(profile, overview.profiles as TeamProfile[]) : []),
     [profile, overview.profiles],
   );
+
+  // Probe the engine for every play that carries a link, in one request.
+  // Re-runs when the roster changes, since a play that had no match yesterday
+  // can have one after a trade.
+  const linkable = plays.filter((p) => p.archetype);
+  const probeKey = linkable.map((p) => intentKey(p.archetype!, p.position ?? null)).join(",");
+  useEffect(() => {
+    if (!leagueId || linkable.length === 0) {
+      setLiveIntents(null);
+      return;
+    }
+    let cancelled = false;
+    setLiveIntents(null);
+    api
+      .probeTrades(
+        leagueId,
+        rosterId,
+        linkable.map((p) => ({ archetype: p.archetype!, position: p.position ?? null })),
+      )
+      .then((d) => {
+        if (cancelled) return;
+        setLiveIntents(
+          new Set(d.results.filter((r) => r.count > 0).map((r) => intentKey(r.archetype, r.position))),
+        );
+      })
+      // Leave it null: every button shows, exactly as before this existed.
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leagueId, rosterId, probeKey]);
 
   if (!profile) {
     return <p className="dim-text" style={{ marginTop: 48, textAlign: "center" }}>Team not found.</p>;
@@ -229,7 +269,10 @@ export default function TeamDeepDive() {
                   {play.hitRate}%
                 </span>
                 <span className="scout-strength">{play.rateLabel}</span>
-                {play.archetype && (
+                {/* Only offered once the engine confirms it would return
+                    something. A play whose link lands on "none survived
+                    scoring" is worse than a play with no link. */}
+                {play.archetype && playHasTrades(play) && (
                   <button
                     className="sendit-reset-btn scout-cta"
                     onClick={() => navigate(playLink(leagueId, rosterId, play))}
