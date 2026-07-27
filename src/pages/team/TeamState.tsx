@@ -279,6 +279,13 @@ function StarterLine({
         {cal.toFixed(1)}
         {adjusted ? "*" : ""}
       </span>
+      {/* Column order must match the header strip above: AGE then WEAR. */}
+      <span
+        className="state-runway-wear"
+        title={`${row.pressure.toFixed(0)}% of a 23 year old ${row.player.position}'s remaining career is already gone`}
+      >
+        {row.pressure.toFixed(0)}
+      </span>
       <PullBar pull={row.pull} scale={scale} />
       <span
         className={`state-runway-runway${row.pull > 0 ? " state-pull-up" : " state-pull-down"}`}

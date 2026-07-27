@@ -3326,7 +3326,8 @@ body {
 .state-runway-row,
 .state-runway-head {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) 30px 26px 1fr 32px;
+  /* The bar carries the finding, so it gets more room than the name. */
+  grid-template-columns: 24px minmax(0, 0.9fr) 30px 26px 1.7fr 34px;
   align-items: center;
   gap: 7px;
 }
@@ -3527,7 +3528,7 @@ body {
      the pull is the result, so those two stay. */
   .state-runway-row,
   .state-runway-head {
-    grid-template-columns: 22px minmax(0, 1fr) 26px 1fr 34px;
+    grid-template-columns: 22px minmax(0, 0.9fr) 26px 1.5fr 34px;
     gap: 6px;
   }
   .state-runway-age,
