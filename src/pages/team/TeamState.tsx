@@ -154,31 +154,49 @@ type StarterRow = {
   effAge: number;
   /** Remaining production as a share of a 23 year old's AT THE SAME POSITION. */
   left: number;
-  /** This starter's share of the starting lineup's redraft value, which is
-   *  exactly the weight starterAgePressure gives him. */
+  /** Age pressure, 0-100. The complement of `left`. */
+  pressure: number;
+  /** Share of the starting lineup's redraft value, 0-1. This is exactly the
+   *  weight starterAgePressure gives him. */
   share: number;
+  /** Points of the team's age pressure this player is personally responsible
+   *  for. These SUM to starterAgePressure, which is what makes them the right
+   *  thing to rank on: raw age ranks a 33 year old QB worth 4% of the lineup
+   *  above a 27 year old RB worth 26%, when only one of them moves the number. */
+  adds: number;
+  /** The mirror: how much he holds the window open. */
+  holds: number;
 };
 
 function starterRows(me: TeamProfile, format: LeagueFormat): StarterRow[] {
   const { starters } = fillStarters(me.players, format);
   const flat: Player[] = [];
   for (const pos of POSITIONS) flat.push(...starters[pos]);
-  const total = flat.reduce((s, p) => s + p.valueRedraft, 0) || 1;
-  return flat
-    .filter((p) => p.age != null)
+  // Filter BEFORE totalling. starterAgePressure skips players with no age on
+  // both sides of its fraction, so including them in the denominator here
+  // would make the shares sum to less than one and the contributions come up
+  // short of the total they claim to explain.
+  const aged = flat.filter((p) => p.age != null);
+  const total = aged.reduce((s, p) => s + p.valueRedraft, 0) || 1;
+  return aged
     .map((p) => {
       // effectiveAge, not p.age: that is what starterAgePressure averages, so
       // reading calendar age here would print rows that do not reconcile with
       // the total they are supposed to explain.
       const effAge = effectiveAge(p);
+      const pressure = agePressure(effAge, p.position);
+      const share = p.valueRedraft / total;
       return {
         player: p,
         effAge,
-        left: 100 - agePressure(effAge, p.position),
-        share: (p.valueRedraft / total) * 100,
+        left: 100 - pressure,
+        pressure,
+        share,
+        adds: pressure * share,
+        holds: (100 - pressure) * share,
       };
     })
-    .sort((a, b) => b.share - a.share || a.player.id.localeCompare(b.player.id));
+    .sort((a, b) => b.adds - a.adds || a.player.id.localeCompare(b.player.id));
 }
 
 function runwayColor(left: number) {
@@ -222,9 +240,52 @@ function WindowGauge({ pressure }: { pressure: number }) {
   );
 }
 
+function StarterLine({ row, metric }: { row: StarterRow; metric: number }) {
+  const cal = row.player.age as number;
+  const adjusted = Math.abs(row.effAge - cal) >= 0.05;
+  return (
+    <div className="state-runway-row">
+      <span className="pos-tag" style={{ background: posColor(row.player.position) }}>
+        {row.player.position}
+      </span>
+      <span className="state-runway-name">{row.player.name}</span>
+      <span
+        className="state-runway-age"
+        {...(adjusted
+          ? { title: `${cal.toFixed(1)} calendar, judged as ${row.effAge.toFixed(1)} on his aging signal` }
+          : {})}
+      >
+        {cal.toFixed(1)}
+        {adjusted ? "*" : ""}
+      </span>
+      <span className="state-bar-track">
+        <span
+          className="state-bar-fill"
+          style={{ width: `${row.left}%`, background: runwayColor(row.left) }}
+        />
+      </span>
+      <span className="state-runway-left" title="Career production left, against a 23 year old at the same position">
+        {row.left.toFixed(0)}%
+      </span>
+      <span className="state-runway-runway" title="Points of your total age pressure this starter accounts for">
+        {metric.toFixed(1)}
+      </span>
+    </div>
+  );
+}
+
 function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat }) {
   const rows = starterRows(me, format);
   const pickAdj = PICK_ADJUSTMENT_BY_FLAG[me.pickCapital.flag];
+  // Two each, from opposite ends. The "holding it open" pick excludes anyone
+  // already listed above: a high-value starter in the middle of his career can
+  // top both lists at once, and showing the same name twice explains nothing.
+  const shorter = rows.slice(0, 2);
+  const shown = new Set(shorter.map((r) => r.player.id));
+  const open = rows
+    .filter((r) => !shown.has(r.player.id))
+    .sort((a, b) => b.holds - a.holds || a.player.id.localeCompare(b.player.id))
+    .slice(0, 2);
 
   return (
     <div className="state-panel">
@@ -242,46 +303,25 @@ function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat })
       </p>
       <WindowGauge pressure={me.windowPressure} />
       <p className="state-report-sub">
-        Age pressure is the value-weighted average of the rows below, so your biggest starters move
-        it most. Each bar is production left against a 23 year old at the SAME position.
+        Age pressure is the value-weighted average across your starters, so these four move it
+        most. The numbers are the points of pressure each one is personally responsible for.
       </p>
       <div className="state-runways">
-        {rows.map((r) => {
-          const cal = r.player.age as number;
-          const adjusted = Math.abs(r.effAge - cal) >= 0.05;
-          return (
-            <div key={r.player.id} className="state-runway-row">
-              <span className="pos-tag" style={{ background: posColor(r.player.position) }}>
-                {r.player.position}
-              </span>
-              <span className="state-runway-name">{r.player.name}</span>
-              <span
-                className="state-runway-age"
-                {...(adjusted
-                  ? { title: `${cal.toFixed(1)} calendar, judged as ${r.effAge.toFixed(1)} on his aging signal` }
-                  : {})}
-              >
-                {cal.toFixed(1)}
-                {adjusted ? "*" : ""}
-              </span>
-              <span className="state-bar-track">
-                <span
-                  className="state-bar-fill"
-                  style={{ width: `${r.left}%`, background: runwayColor(r.left) }}
-                />
-              </span>
-              <span className="state-runway-left">{r.left.toFixed(0)}%</span>
-              <span className="state-runway-runway" title="Share of your starting lineup value">
-                {r.share.toFixed(0)}%
-              </span>
-            </div>
-          );
-        })}
+        <div className="state-runway-group">PULLING IT SHORTER</div>
+        {shorter.map((r) => (
+          <StarterLine key={r.player.id} row={r} metric={r.adds} />
+        ))}
+        <div className="state-runway-group">HOLDING IT OPEN</div>
+        {open.map((r) => (
+          <StarterLine key={r.player.id} row={r} metric={r.adds} />
+        ))}
       </div>
       <p className="state-foot">
-        Measured off nflverse 1999-2024 production, per position, so the bars are not comparable
-        across positions: quarterbacks decline so slowly that a 33 year old still reads high, while
-        a running back the same age does not. An asterisk means an aging signal moved him.
+        Bars are career left, measured off nflverse 1999-2024 production per position, so they do
+        not compare across positions: quarterbacks decline so slowly that a 33 year old still reads
+        high where a running back does not. The right-hand figure is what each starter adds to your
+        {" "}{me.starterAgePressure.toFixed(1)}, which is why a big contract on a mid-career player
+        outweighs your oldest one. An asterisk means an aging signal moved him.
       </p>
     </div>
   );
