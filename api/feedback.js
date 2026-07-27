@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "8c0936e302ca";
+var ALGO_FINGERPRINT_BUILD = "37576a046b39";
 
 // src/algo/version.ts
 var ALGO_VERSION = "shotgun";
@@ -45,6 +45,19 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.17",
+    algo: "Shotgun",
+    date: "2026-07-27",
+    title: "Dropped a scouting play that was not advice",
+    changes: [
+      'Removed "End up with the better player" from the scouting report. It measured fine (the side taking the better headliner beat expectations 54% of the time against 46% for the side giving him away) but nobody needs telling to try and win a trade. It fired on every roster in the league while saying nothing anyone could act on.'
+    ],
+    knownIssues: [
+      "Teams stuck in the middle, neither contending nor rebuilding, can now see only one play. The report never pads with filler, so a thin section means we genuinely do not have a second measured angle for that spot yet."
+    ]
+  },
   {
     branch: "daniels",
     release: "1.16",
@@ -58,8 +71,10 @@ var PATCH_NOTES = [
       "WINDOW: the two startable players pulling your window shorter and the two holding it open, across every starting slot including flex. Each carries the points of age pressure it is responsible for, and those points sum to your total.",
       "Ranked by contribution, not by age. A 27 year old carrying a quarter of your lineup value moves the number far more than a 33 year old backup does, and only the weighted view shows that.",
       "Career left is measured per position off nflverse production from 1999 to 2024. A 27 year old running back and a 27 year old quarterback are nowhere near the same place, and the bars show it.",
-      "POSITIONS: a four step meter per side, critical through surplus, judged on the weakest slot you would actually have to start. Readable in a glance, and driven by the same classification as the label so the two cannot disagree. The thresholds and the exact numbers are on hover.",
-      "The window bars now show each starter's push on your average rather than a raw percentage: right of centre in red for shortening your window, left in green for holding it open, sized by how hard they pull."
+      "POSITIONS: a four step meter per side, critical through surplus, with the numbers behind it on the page rather than buried in a tooltip. Each side names the player it is actually judging, his value, the floor he has to clear and how far he sits from a typical player at that spot.",
+      "It shows your WEAKEST starter and your top backup instead of your best player. The best player is the one thing the label never looks at: a room can be critical precisely because there is nothing behind him.",
+      "The window bars show each starter's push on your average: right of centre in red for shortening your window, left in green for holding it open. Every row now carries its WEAR figure, how much of a 23 year old's career is already gone at that position, which is the number that decides the grouping.",
+      "Wear is measured per position and does not compare between them. Quarterbacks barely wear before 30, so a 31 year old quarterback can genuinely sit lower than a 27 year old receiver."
     ],
     knownIssues: [
       "Points per game needs a league re-sync to appear. It fills in on its own within the hour, or immediately if you hit Refresh."

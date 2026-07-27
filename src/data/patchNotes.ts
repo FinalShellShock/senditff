@@ -55,6 +55,19 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "1.17",
+    algo: "Shotgun",
+    date: "2026-07-27",
+    title: "Dropped a scouting play that was not advice",
+    changes: [
+      "Removed \"End up with the better player\" from the scouting report. It measured fine (the side taking the better headliner beat expectations 54% of the time against 46% for the side giving him away) but nobody needs telling to try and win a trade. It fired on every roster in the league while saying nothing anyone could act on.",
+    ],
+    knownIssues: [
+      "Teams stuck in the middle, neither contending nor rebuilding, can now see only one play. The report never pads with filler, so a thin section means we genuinely do not have a second measured angle for that spot yet.",
+    ],
+  },
+  {
+    branch: "daniels",
     release: "1.16",
     algo: "Shotgun",
     date: "2026-07-26",

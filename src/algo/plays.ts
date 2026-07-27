@@ -221,19 +221,12 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
     });
   }
 
-  // ── Everyone: the give/get asymmetry ──────────────────────────────────────
-  if (best) {
-    plays.push({
-      key: "keep_the_best_piece",
-      title: "End up with the better player",
-      evidence:
-        "Across 8,931 trades, the side that ended up with the better of the two headliners beat expectations 54% of the time; the side that gave him away, 46%.",
-      hitRate: 54,
-      rateLabel: "of teams beat expectations",
-      detail: `${best.name} (${fmt(best.valueDynasty)}, rank ${rankOf(best.valueDynasty, ranking)} in this league) is your best asset. Trades that send him out need to bring back something at least as good.`,
-      kind: "do",
-    });
-  }
+  // NOTE: dropped. "End up with the better player" (the give/get asymmetry:
+  // 54% for the side taking the better headliner, 46% for the side giving him
+  // away) measured fine but is not advice. Every manager already intends to
+  // win the trade, so it fired on nearly every roster while telling nobody
+  // anything they could act on. A real finding is not automatically a useful
+  // play. Do not reintroduce it.
 
   // Rank by how far the measured rate sits from a coin flip, "do" first on
   // ties. No padding: a team only sees plays that actually apply to it.
