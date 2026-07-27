@@ -27,7 +27,12 @@
 //              pool, and never a league rank. Drawing the real floors makes
 //              the label self-evident instead of arbitrary.
 
-import { agePressure, fillStarters, remainingValue } from "../../algo/profile.ts";
+import { agePressure, effectiveAge, fillStarters } from "../../algo/profile.ts";
+import {
+  PICK_ADJUSTMENT_BY_FLAG,
+  WINDOW_LONG_THRESHOLD,
+  WINDOW_SHORT_THRESHOLD,
+} from "../../algo/constants.ts";
 import {
   FRINGE_MAX_AGE,
   VETERAN_SELL_AGE,
@@ -144,11 +149,13 @@ function Scoring({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
 
 type StarterRow = {
   player: Player;
-  /** Share of an age-23 player's remaining career still ahead of him, 0-100. */
+  /** The age the model actually judges him on. Equals calendar age unless an
+   *  aging signal (rushing QBs today) knocks his remaining value down. */
+  effAge: number;
+  /** Remaining production as a share of a 23 year old's AT THE SAME POSITION. */
   left: number;
-  /** Remaining career production in discounted PPG-years. */
-  runway: number;
-  /** This starter's share of the starting lineup's redraft value. */
+  /** This starter's share of the starting lineup's redraft value, which is
+   *  exactly the weight starterAgePressure gives him. */
   share: number;
 };
 
@@ -159,66 +166,122 @@ function starterRows(me: TeamProfile, format: LeagueFormat): StarterRow[] {
   const total = flat.reduce((s, p) => s + p.valueRedraft, 0) || 1;
   return flat
     .filter((p) => p.age != null)
-    .map((p) => ({
-      player: p,
-      left: 100 - agePressure(p.age as number, p.position),
-      runway: remainingValue(p.age as number, p.position),
-      share: (p.valueRedraft / total) * 100,
-    }))
+    .map((p) => {
+      // effectiveAge, not p.age: that is what starterAgePressure averages, so
+      // reading calendar age here would print rows that do not reconcile with
+      // the total they are supposed to explain.
+      const effAge = effectiveAge(p);
+      return {
+        player: p,
+        effAge,
+        left: 100 - agePressure(effAge, p.position),
+        share: (p.valueRedraft / total) * 100,
+      };
+    })
     .sort((a, b) => b.share - a.share || a.player.id.localeCompare(b.player.id));
 }
 
 function runwayColor(left: number) {
-  if (left >= 60) return "#22c55e";
-  if (left >= 35) return "#eab308";
+  if (left >= 75) return "#22c55e";
+  if (left >= 50) return "#eab308";
   return "#ef4444";
+}
+
+/** windowPressure on the scale that actually decides the tier. */
+function WindowGauge({ pressure }: { pressure: number }) {
+  // The bands are narrow and low: LONG ends at 14, SHORT starts at 19, on a
+  // number that is nominally 0-100. Printing "20 of 100" makes a SHORT badge
+  // look like a bug, which is the same trap urgency fell into. Top of scale is
+  // a little past SHORT so the live value has somewhere to sit.
+  const MAX = 34;
+  const pct = (v: number) => Math.max(0, Math.min(100, (v / MAX) * 100));
+  return (
+    <div className="state-window-gauge">
+      <span className="state-bar-track">
+        <span
+          className="state-bar-fill"
+          style={{
+            width: `${pct(pressure)}%`,
+            background:
+              pressure > WINDOW_SHORT_THRESHOLD
+                ? "#ef4444"
+                : pressure > WINDOW_LONG_THRESHOLD
+                  ? "#eab308"
+                  : "#22c55e",
+          }}
+        />
+        <span className="state-floor state-floor-need" style={{ left: `${pct(WINDOW_LONG_THRESHOLD)}%` }} />
+        <span className="state-floor state-floor-crit" style={{ left: `${pct(WINDOW_SHORT_THRESHOLD)}%` }} />
+      </span>
+      <span className="state-window-bands">
+        <span style={{ width: `${pct(WINDOW_LONG_THRESHOLD)}%` }}>LONG</span>
+        <span style={{ width: `${pct(WINDOW_SHORT_THRESHOLD) - pct(WINDOW_LONG_THRESHOLD)}%` }}>MID</span>
+        <span>SHORT</span>
+      </span>
+    </div>
+  );
 }
 
 function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat }) {
   const rows = starterRows(me, format);
-  // The number that actually drives the tier: how much of your STARTING value
-  // rides on players with most of their career behind them. A plain count
-  // would treat your WR5 and your best player as the same evidence.
-  const spentShare = rows.reduce((s, r) => s + (r.left < 50 ? r.share : 0), 0);
+  const pickAdj = PICK_ADJUSTMENT_BY_FLAG[me.pickCapital.flag];
 
   return (
     <div className="state-panel">
       <div className="state-report-head">
-        <span className="state-report-title">WINDOW · CAREER LEFT PER STARTER</span>
+        <span className="state-report-title">WINDOW · WHERE THE PRESSURE COMES FROM</span>
         <span className="state-report-value">{me.windowTier}</span>
       </div>
       <p className="state-report-sub">
-        {spentShare.toFixed(0)}% of your starting value sits on players past the halfway point of
-        their careers. Value-weighted age {me.starterCalAge.toFixed(1)}, age pressure{" "}
-        {me.starterAgePressure.toFixed(0)} of 100.
+        Age pressure {me.starterAgePressure.toFixed(1)}
+        {pickAdj !== 0
+          ? `, ${pickAdj > 0 ? "plus" : "minus"} ${Math.abs(pickAdj)} for being ${pickFlagText(me.pickCapital.flag).toLowerCase()}`
+          : ", with no pick adjustment"}
+        , gives {me.windowPressure.toFixed(1)}. MID starts at {WINDOW_LONG_THRESHOLD}, SHORT at{" "}
+        {WINDOW_SHORT_THRESHOLD}. The scale is tighter than it looks.
+      </p>
+      <WindowGauge pressure={me.windowPressure} />
+      <p className="state-report-sub">
+        Age pressure is the value-weighted average of the rows below, so your biggest starters move
+        it most. Each bar is production left against a 23 year old at the SAME position.
       </p>
       <div className="state-runways">
-        {rows.map((r) => (
-          <div key={r.player.id} className="state-runway-row">
-            <span className="pos-tag" style={{ background: posColor(r.player.position) }}>
-              {r.player.position}
-            </span>
-            <span className="state-runway-name">{r.player.name}</span>
-            <span className="state-runway-age">{(r.player.age as number).toFixed(1)}</span>
-            <span className="state-bar-track">
+        {rows.map((r) => {
+          const cal = r.player.age as number;
+          const adjusted = Math.abs(r.effAge - cal) >= 0.05;
+          return (
+            <div key={r.player.id} className="state-runway-row">
+              <span className="pos-tag" style={{ background: posColor(r.player.position) }}>
+                {r.player.position}
+              </span>
+              <span className="state-runway-name">{r.player.name}</span>
               <span
-                className="state-bar-fill"
-                style={{ width: `${r.left}%`, background: runwayColor(r.left) }}
-              />
-            </span>
-            <span className="state-runway-left">{r.left.toFixed(0)}%</span>
-            <span
-              className="state-runway-runway"
-              title="Expected remaining career production, in discounted PPG-years"
-            >
-              {r.runway.toFixed(1)}y
-            </span>
-          </div>
-        ))}
+                className="state-runway-age"
+                {...(adjusted
+                  ? { title: `${cal.toFixed(1)} calendar, judged as ${r.effAge.toFixed(1)} on his aging signal` }
+                  : {})}
+              >
+                {cal.toFixed(1)}
+                {adjusted ? "*" : ""}
+              </span>
+              <span className="state-bar-track">
+                <span
+                  className="state-bar-fill"
+                  style={{ width: `${r.left}%`, background: runwayColor(r.left) }}
+                />
+              </span>
+              <span className="state-runway-left">{r.left.toFixed(0)}%</span>
+              <span className="state-runway-runway" title="Share of your starting lineup value">
+                {r.share.toFixed(0)}%
+              </span>
+            </div>
+          );
+        })}
       </div>
       <p className="state-foot">
-        Career left is measured off nflverse 1999-2024 production, per position. A 27 year old
-        running back and a 27 year old quarterback are nowhere near the same place.
+        Measured off nflverse 1999-2024 production, per position, so the bars are not comparable
+        across positions: quarterbacks decline so slowly that a 33 year old still reads high, while
+        a running back the same age does not. An asterisk means an aging signal moved him.
       </p>
     </div>
   );
