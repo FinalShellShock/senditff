@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "d679479f315e";
+var ALGO_FINGERPRINT_BUILD = "a98f8075739e";
 
 // src/algo/version.ts
 var ALGO_VERSION = "shotgun";
@@ -45,6 +45,20 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.19",
+    algo: "Shotgun",
+    date: "2026-07-27",
+    title: "Scouting links now say where they go, and go somewhere sensible",
+    changes: [
+      'Thanks to Gibbs for catching this one. Clicking "Buy the fringe, not the lottery tickets" opened the trade finder on "Buy an aging stud", which is the opposite bet. That play is about young players on the edge of startable, and the engine has no search shape for it, so it no longer carries a button at all. The advice stands; the button was lying.',
+      'Every scouting button now names the intent it opens, so you can see you are heading to "Players to picks" before you click rather than after.',
+      '"Package depth into one difference-maker" now names two players at the SAME position. It opens the consolidate intent, which is a same-position search, but it was naming a receiver and a running back and then sending you somewhere that would never offer that trade.',
+      "The intent names now live in one place, so the finder and the scouting report cannot drift apart again."
+    ],
+    knownIssues: []
+  },
   {
     branch: "daniels",
     release: "1.18",

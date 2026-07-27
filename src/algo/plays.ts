@@ -112,17 +112,24 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
   // a contender the top two are routinely a team's 3rd and 4th best assets, and
   // labelling a genuinely good RB2 a "spare part" makes the whole report read
   // as though it has not looked at the roster.
-  const spares: Player[] = [];
+  //
+  // Paired WITHIN a position, because the link opens the `consolidate` intent
+  // and that intent is "2 same-position into 1 stud". Taking the two most
+  // valuable spares regardless of position named a cross-position pair and
+  // then sent the user to a same-position search, so the trade described and
+  // the trades offered were different shapes.
+  let pair: [Player, Player] | null = null;
   for (const pos of POSITIONS) {
-    const atPos = roster.filter((p) => p.position === pos);
-    spares.push(...atPos.slice(1, 3));
+    const atPos = roster.filter((p) => p.position === pos).slice(1, 3);
+    if (atPos.length < 2 || !atPos[0] || !atPos[1]) continue;
+    const sum = atPos[0].valueDynasty + atPos[1].valueDynasty;
+    const bestSum = pair ? pair[0].valueDynasty + pair[1].valueDynasty : -1;
+    if (sum > bestSum) pair = [atPos[0], atPos[1]];
   }
-  spares.sort(byValue);
 
   // ── Universal: quality is the strongest measured predictor ────────────────
-  if (spares.length >= 2 && spares[0] && spares[1]) {
-    const pair = [spares[0], spares[1]];
-    const combined = pair.reduce((s, p) => s + p.valueDynasty, 0);
+  if (pair) {
+    const combined = pair[0].valueDynasty + pair[1].valueDynasty;
     plays.push({
       key: "land_a_difference_maker",
       title: "Package depth into one difference-maker",
@@ -131,7 +138,7 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
         : "Landing a top-24 dynasty player beat expectations 60% of the time, against 48% for a trade whose best piece was outside the top 100. It is the strongest single signal in 19,933 trades.",
       hitRate: isContender ? 61 : 60,
       rateLabel: "of teams beat expectations",
-      detail: `${pair[0]!.name} and ${pair[1]!.name} are worth ${fmt(combined)} together. One player at that value would be the ${ordinal(rankOf(combined, ranking))} most valuable in this league.`,
+      detail: `${pair[0].name} and ${pair[1].name} are worth ${fmt(combined)} together. One player at that value would be the ${ordinal(rankOf(combined, ranking))} most valuable in this league.`,
       kind: "do",
       // Deliberately NOT position-scoped. This used to force pair[0]'s
       // position, which is arbitrary (whichever spare happened to be worth
@@ -207,7 +214,11 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
         rateLabel: "of those players gained ground",
         detail: `In this league that band is roughly ${fmt(hi)} to ${fmt(lo)} in value, aged ${FRINGE_MAX_AGE} or under. Cheaper fliers than that are the ones that do not come in.`,
         kind: "do",
-        archetype: "age_arb_buy",
+        // NO archetype, so no link. The engine has no shape for "buy a young
+        // player ranked 61-100". This used to point at age_arb_buy, which the
+        // finder presents as "Buy an aging stud" — the exact opposite bet, and
+        // a user reported the whiplash. A play with no button beats a button
+        // that contradicts the play.
       });
     }
   }

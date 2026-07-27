@@ -5,6 +5,7 @@ import { makeApiClient, type LedgerRow } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 import { scoutingPlays, type Play } from "../algo/plays.ts";
+import { intentShortLabel } from "../data/intentLabels.ts";
 import { FeedbackBlock } from "../components/FeedbackBlock.tsx";
 import TeamState, { pickFlagText } from "./team/TeamState.tsx";
 
@@ -277,7 +278,10 @@ export default function TeamDeepDive() {
                     className="sendit-reset-btn scout-cta"
                     onClick={() => navigate(playLink(leagueId, rosterId, play))}
                   >
-                    Find these trades
+                    {/* Names the intent it opens. "Find these trades" gave no
+                        clue, so landing on a differently-worded picker read as
+                        the wrong page. */}
+                    Find: {intentShortLabel(play.archetype)}
                   </button>
                 )}
               </div>

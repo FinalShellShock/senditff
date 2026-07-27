@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useOutletContext, useParams, useSearchParams } from "react-router-dom";
 import { FeedbackBlock } from "../components/FeedbackBlock.tsx";
+import { INTENT_LABELS } from "../data/intentLabels.ts";
 import { ARCHETYPE_FAMILIES, POSITIONAL_FAMILIES, type ArchetypeFamily } from "../algo/archetypes.ts";
 import { fairnessColor, fairnessLabel, fairnessText } from "../algo/fairness.ts";
 import type { Position } from "../algo/types.ts";
@@ -25,18 +26,6 @@ type ResultSearchContext = {
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 
-// Friendly intent names for the archetype families. "" = auto (all families).
-const INTENT_LABELS: Record<ArchetypeFamily, string> = {
-  need_fill: "Fill a need",
-  tier_down: "Tier down (1 stud into 2 pieces)",
-  consolidate: "Consolidate (2 same-position into 1 stud)",
-  consolidate_flex: "Consolidate (2 positions into 1 stud)",
-  age_arb_buy: "Buy an aging stud",
-  age_arb_sell: "Sell an aging stud",
-  push_in: "Push all-in",
-  capital_convert_picks_to_production: "Picks to players",
-  capital_convert_production_to_picks: "Players to picks",
-};
 
 // Fit scores run in [-1, 1] internally with 0 = neutral. Percentages read
 // wrong (50% looks failing), so users get letter grades: C is neutral.
