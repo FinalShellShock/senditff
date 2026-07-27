@@ -33,13 +33,6 @@ import {
   WINDOW_LONG_THRESHOLD,
   WINDOW_SHORT_THRESHOLD,
 } from "../../algo/constants.ts";
-import {
-  FRINGE_MAX_AGE,
-  VETERAN_SELL_AGE,
-  VETERAN_SELL_VALUE,
-  fringeBand,
-  leagueRanking,
-} from "../../algo/plays.ts";
 import type {
   ClassifyEvidence,
   LeagueFormat,
@@ -152,9 +145,8 @@ type StarterRow = {
   /** The age the model actually judges him on. Equals calendar age unless an
    *  aging signal (rushing QBs today) knocks his remaining value down. */
   effAge: number;
-  /** Remaining production as a share of a 23 year old's AT THE SAME POSITION. */
-  left: number;
-  /** Age pressure, 0-100. The complement of `left`. */
+  /** Age pressure, 0-100: the share of a 23 year old's remaining production at
+   *  the same position that is already gone. */
   pressure: number;
   /** Share of the starting lineup's redraft value, 0-1. This is exactly the
    *  weight starterAgePressure gives him. */
@@ -196,7 +188,6 @@ function starterRows(me: TeamProfile, format: LeagueFormat): StarterRow[] {
       return {
         player: p,
         effAge,
-        left: 100 - pressure,
         pressure,
         share,
         pull: (pressure - avg) * share,
@@ -205,10 +196,26 @@ function starterRows(me: TeamProfile, format: LeagueFormat): StarterRow[] {
     .sort((a, b) => b.pull - a.pull || a.player.id.localeCompare(b.player.id));
 }
 
-function runwayColor(left: number) {
-  if (left >= 75) return "#22c55e";
-  if (left >= 50) return "#eab308";
-  return "#ef4444";
+/** Diverging bar for a signed, zero-sum quantity.
+ *
+ *  The bar used to be career-left as a percentage, which was the wrong picture:
+ *  it is a per-player attribute on a 0-100 scale, so every bar sat somewhere in
+ *  the 70-100 range and the group a player was in had no visible relationship
+ *  to the length of his bar. This draws the thing the groups are actually
+ *  built on, right of centre for pushing the window shorter and left for
+ *  holding it open, scaled against the biggest mover in the lineup. */
+function PullBar({ pull, scale }: { pull: number; scale: number }) {
+  const half = Math.max(0, Math.min(50, (Math.abs(pull) / scale) * 50));
+  const up = pull > 0;
+  return (
+    <span className="state-pull-track">
+      <span className="state-pull-axis" />
+      <span
+        className={`state-pull-fill${up ? " state-pull-fill-up" : " state-pull-fill-down"}`}
+        style={up ? { left: "50%", width: `${half}%` } : { right: "50%", width: `${half}%` }}
+      />
+    </span>
+  );
 }
 
 /** windowPressure on the scale that actually decides the tier. */
@@ -246,7 +253,15 @@ function WindowGauge({ pressure }: { pressure: number }) {
   );
 }
 
-function StarterLine({ row, metricTitle }: { row: StarterRow; metricTitle: string }) {
+function StarterLine({
+  row,
+  scale,
+  metricTitle,
+}: {
+  row: StarterRow;
+  scale: number;
+  metricTitle: string;
+}) {
   const cal = row.player.age as number;
   const adjusted = Math.abs(row.effAge - cal) >= 0.05;
   return (
@@ -264,15 +279,7 @@ function StarterLine({ row, metricTitle }: { row: StarterRow; metricTitle: strin
         {cal.toFixed(1)}
         {adjusted ? "*" : ""}
       </span>
-      <span className="state-bar-track">
-        <span
-          className="state-bar-fill"
-          style={{ width: `${row.left}%`, background: runwayColor(row.left) }}
-        />
-      </span>
-      <span className="state-runway-left" title="Career production left, against a 23 year old at the same position">
-        {row.left.toFixed(0)}%
-      </span>
+      <PullBar pull={row.pull} scale={scale} />
       <span
         className={`state-runway-runway${row.pull > 0 ? " state-pull-up" : " state-pull-down"}`}
         title={metricTitle}
@@ -289,6 +296,9 @@ function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat })
   const pickAdj = PICK_ADJUSTMENT_BY_FLAG[me.pickCapital.flag];
   // Two from each end of one ordering. No dedupe needed: pulls sum to zero, so
   // a player at the top cannot also be at the bottom.
+  // Scaled against the biggest mover in the WHOLE lineup, not just the four
+  // shown, so the bars keep their meaning when a team has no strong movers.
+  const scale = Math.max(0.1, ...rows.map((r) => Math.abs(r.pull)));
   const shorter = rows.filter((r) => r.pull > 0).slice(0, 2);
   const open = rows
     .filter((r) => r.pull < 0)
@@ -323,6 +333,7 @@ function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat })
           <StarterLine
             key={r.player.id}
             row={r}
+            scale={scale}
             metricTitle={`${r.player.name} pushes your age pressure up ${r.pull.toFixed(1)} points: he is ${(r.pressure - me.starterAgePressure).toFixed(0)} above the team average and carries ${(r.share * 100).toFixed(0)}% of your lineup value`}
           />
         ))}
@@ -331,156 +342,78 @@ function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat })
           <StarterLine
             key={r.player.id}
             row={r}
+            scale={scale}
             metricTitle={`${r.player.name} pulls your age pressure down ${Math.abs(r.pull).toFixed(1)} points: he is ${Math.abs(r.pressure - me.starterAgePressure).toFixed(0)} below the team average and carries ${(r.share * 100).toFixed(0)}% of your lineup value`}
           />
         ))}
       </div>
       <p className="state-foot">
-        Bars are career left, measured off nflverse 1999-2024 production per position, so they do
-        not compare across positions: quarterbacks decline so slowly that a 33 year old still reads
-        high where a running back does not. The right-hand figure is what each starter adds to your
-        {" "}{me.starterAgePressure.toFixed(1)}, which is why a big contract on a mid-career player
-        outweighs your oldest one. An asterisk means an aging signal moved him.
+        Each bar is that starter's push on your average: how far his position-adjusted age sits
+        from the team, times how much of your lineup value he carries. Ages come off measured
+        nflverse curves, so a 33 year old quarterback and a 33 year old running back are nowhere
+        near the same place. An asterisk means an aging signal moved him.
       </p>
     </div>
   );
 }
 
-// ── Roster shape ─────────────────────────────────────────────────────────────
+// ── Positions ────────────────────────────────────────────────────────────────
+//
+// This started as two league-rank plots, then became floor gauges with
+// threshold ticks and a sigma figure. Both were wrong for opposite reasons:
+// the ranks contradicted the label, and the gauges were accurate but needed
+// decoding before they told you anything.
+//
+// What a manager wants here is "is this a problem, and how bad" in one glance.
+// So the visual is a four step severity meter driven BY the classification,
+// which means it cannot contradict the label the way a separately-computed
+// plot can. The numbers that produced the label (weakest slot, both floors,
+// the sigma, and which test actually bound) move into the tooltip, where they
+// are available without being in the way.
 
-function RosterShape({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
-  const W = 340;
-  const H = 200;
-  const pad = { top: 12, right: 10, bottom: 26, left: 40 };
-  const fw = W - pad.left - pad.right;
-  const fh = H - pad.top - pad.bottom;
+const SEVERITY_STEPS: SubClassification[] = ["CRITICAL", "NEED", "HEALTHY", "SURPLUS"];
 
-  const players = me.players.filter((p) => p.age != null && p.valueDynasty > 0);
-  const band = fringeBand(leagueRanking(league));
-
-  const AGE_MIN = 21;
-  const AGE_MAX = 34;
-  const maxValue = Math.max(1, ...players.map((p) => p.valueDynasty));
-
-  const px = (age: number) =>
-    pad.left + ((Math.max(AGE_MIN, Math.min(AGE_MAX, age)) - AGE_MIN) / (AGE_MAX - AGE_MIN)) * fw;
-  const py = (v: number) => pad.top + (1 - Math.min(1, v / maxValue)) * fh;
-
-  return (
-    <div className="state-panel">
-      <div className="state-report-head">
-        <span className="state-report-title">ROSTER SHAPE</span>
-        <span className="state-report-value">{players.length} priced</span>
-      </div>
-      <p className="state-report-sub">
-        Everyone you own by age and dynasty value, with the two zones the scouting report below
-        actually names.
-      </p>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="state-shape-svg"
-        role="img"
-        aria-label="Your roster plotted by age against dynasty value"
-      >
-        <rect
-          x={px(VETERAN_SELL_AGE)}
-          y={py(maxValue)}
-          width={Math.max(0, px(AGE_MAX) - px(VETERAN_SELL_AGE))}
-          height={Math.max(0, py(VETERAN_SELL_VALUE) - py(maxValue))}
-          fill="rgba(239,68,68,0.09)"
-          stroke="rgba(239,68,68,0.28)"
-          strokeDasharray="3 3"
-        />
-        {band && (
-          <rect
-            x={px(AGE_MIN)}
-            y={py(band.hi)}
-            width={Math.max(0, px(FRINGE_MAX_AGE) - px(AGE_MIN))}
-            height={Math.max(0, py(band.lo) - py(band.hi))}
-            fill="rgba(34,197,94,0.09)"
-            stroke="rgba(34,197,94,0.28)"
-            strokeDasharray="3 3"
-          />
-        )}
-        <line x1={pad.left} y1={pad.top + fh} x2={pad.left + fw} y2={pad.top + fh} stroke={GRID} />
-        <line x1={pad.left} y1={pad.top} x2={pad.left} y2={pad.top + fh} stroke={GRID} />
-        {players.map((p) => (
-          <circle
-            key={p.id}
-            cx={px(p.age as number)}
-            cy={py(p.valueDynasty)}
-            r={3.2}
-            fill={ACCENT}
-            fillOpacity={0.75}
-          >
-            <title>{`${p.name} · ${(p.age as number).toFixed(1)} · ${p.valueDynasty.toLocaleString()}`}</title>
-          </circle>
-        ))}
-        {[AGE_MIN, 25, 28, 31, AGE_MAX].map((a) => (
-          <text key={a} x={px(a)} y={H - 12} fill={AXIS_TEXT} fontSize={8} textAnchor="middle">
-            {a}
-          </text>
-        ))}
-        <text x={pad.left + fw / 2} y={H - 2} fill={AXIS_TEXT} fontSize={8} textAnchor="middle">
-          age
-        </text>
-        <text x={4} y={pad.top + 6} fill={AXIS_TEXT} fontSize={8}>{fmt(maxValue)}</text>
-        <text x={4} y={pad.top + fh} fill={AXIS_TEXT} fontSize={8}>0</text>
-      </svg>
-      <div className="state-shape-key">
-        <span><i className="state-key-swatch state-key-sell" /> sell while still valuable</span>
-        <span><i className="state-key-swatch state-key-buy" /> the fringe worth buying</span>
-      </div>
-    </div>
-  );
-}
-
-// ── Positions, against the floors that decided the label ─────────────────────
-
-/** Which of classifySide's tests actually produced this label. Mirrors its
- *  order exactly, because a gauge showing only the absolute floors explained
- *  nothing when the z path fired: WR depth cleared both floor ticks and still
- *  read NEED, which looks like the same contradiction the floors were added to
- *  remove. Both axes have to be on screen. */
+/** Which of classifySide's tests produced this label. Mirrors its order. */
 function bindingReason(ev: ClassifyEvidence, label: SubClassification): string {
   const z = Math.min(ev.minSlotZ, ev.weightedZ);
   if (label === "CRITICAL") {
-    if (ev.minSlotValue < ev.criticalFloor) return `under the critical floor of ${fmt(ev.criticalFloor)}`;
-    return `${z.toFixed(1)} standard deviations below the typical player at this spot`;
+    if (ev.minSlotValue < ev.criticalFloor) return `below the critical floor of ${fmt(ev.criticalFloor)}`;
+    return `${z.toFixed(1)} standard deviations below a typical player at this spot`;
   }
   if (label === "NEED") {
-    if (ev.minSlotValue < ev.needFloor) return `under the need floor of ${fmt(ev.needFloor)}`;
-    return `${z.toFixed(1)} standard deviations below the typical player at this spot`;
+    if (ev.minSlotValue < ev.needFloor) return `below the need floor of ${fmt(ev.needFloor)}`;
+    return `${z.toFixed(1)} standard deviations below a typical player at this spot`;
   }
-  if (label === "SURPLUS") return "clears both floors and sits well above the typical player";
-  return "clears both floors and sits near the typical player";
+  if (label === "SURPLUS") return "clears both floors and sits well above a typical player";
+  return "clears both floors and sits near a typical player";
 }
 
-function FloorGauge({ ev, label }: { ev: ClassifyEvidence; label: SubClassification }) {
-  // Scale so the NEED floor always sits at 60% of the track. Scaled to the
-  // value itself the floors would land somewhere different on every row, and
-  // there would be nothing to compare across positions.
-  const scale = ev.needFloor > 0 ? ev.needFloor / 0.6 : Math.max(1, ev.minSlotValue);
-  const pct = (v: number) => Math.max(0, Math.min(100, (v / scale) * 100));
+function SeverityMeter({
+  label,
+  ev,
+  what,
+}: {
+  label: SubClassification;
+  ev?: ClassifyEvidence;
+  what: string;
+}) {
+  const level = Math.max(0, SEVERITY_STEPS.indexOf(label));
   const color = POS_CLASS_COLOR[label] ?? "#64748b";
+  const title = ev
+    ? `${what}: ${label}. Weakest slot ${fmt(ev.minSlotValue)}, ${bindingReason(ev, label)}. Floors are ${fmt(ev.needFloor)} for need and ${fmt(ev.criticalFloor)} for critical.`
+    : `${what}: ${label}`;
   return (
-    <span
-      className="state-gauge"
-      title={`Weakest slot ${fmt(ev.minSlotValue)}, ${bindingReason(ev, label)}. Floors: need ${fmt(ev.needFloor)}, critical ${fmt(ev.criticalFloor)}.`}
-    >
-      <span className="state-bar-track">
-        <span className="state-bar-fill" style={{ width: `${pct(ev.minSlotValue)}%`, background: color }} />
-        <span className="state-floor state-floor-crit" style={{ left: `${pct(ev.criticalFloor)}%` }} />
-        <span className="state-floor state-floor-need" style={{ left: `${pct(ev.needFloor)}%` }} />
+    <span className="state-sev" title={title}>
+      <span className="state-sev-steps" aria-hidden="true">
+        {SEVERITY_STEPS.map((_, i) => (
+          <span
+            key={i}
+            className="state-sev-step"
+            style={i <= level ? { background: color } : undefined}
+          />
+        ))}
       </span>
-      <span className="state-gauge-num">{fmt(ev.minSlotValue)}</span>
-      {/* The relative test, alongside the absolute one. A bar can clear both
-          ticks and still be NEED because this number is below -1. */}
-      <span
-        className={`state-gauge-z${Math.min(ev.minSlotZ, ev.weightedZ) < -1 ? " state-gauge-z-bad" : ""}`}
-      >
-        {Math.min(ev.minSlotZ, ev.weightedZ).toFixed(1)}σ
-      </span>
+      <span className="state-sev-label" style={{ color }}>{label}</span>
     </span>
   );
 }
@@ -490,57 +423,37 @@ function PositionRow({ pos, me }: { pos: Position; me: TeamProfile }) {
   const top = me.players
     .filter((p) => p.position === pos)
     .sort((a, b) => b.valueDynasty - a.valueDynasty || a.id.localeCompare(b.id))[0];
-  const ev = ps.evidence;
+  const starter = ps.starterClassification ?? "HEALTHY";
+  const depth = ps.depthClassification ?? "HEALTHY";
 
   return (
     <div className="pos-dash-row">
       <span className="pos-tag" style={{ background: posColor(pos) }}>{pos}</span>
-      <div className="pos-dash-class">
-        <span style={{ color: POS_CLASS_COLOR[ps.starterClassification ?? "HEALTHY"], fontWeight: 700, fontSize: 11 }}>
-          {ps.starterClassification ?? ps.classification.replace("_", " ")}
-        </span>
-        <span style={{ color: "#475569", fontSize: 10 }}> / </span>
-        <span style={{ color: POS_CLASS_COLOR[ps.depthClassification ?? "HEALTHY"], fontWeight: 700, fontSize: 10 }}>
-          {ps.depthClassification ?? "—"}
-        </span>
-        <span style={{ color: "#475569", fontSize: 10 }}> · {ps.urgency.toFixed(0)}</span>
-      </div>
-      <div className="pos-dash-metric" data-label="START">
-        {ev ? (
-          <FloorGauge ev={ev.starter} label={ps.starterClassification ?? "HEALTHY"} />
-        ) : (
-          <span className="state-gauge-num">{fmt(ps.starterValue)}</span>
-        )}
+      <div className="pos-dash-metric" data-label="STARTERS">
+        <SeverityMeter label={starter} what="Starters" {...(ps.evidence ? { ev: ps.evidence.starter } : {})} />
       </div>
       <div className="pos-dash-metric" data-label="DEPTH">
-        {ev ? (
-          <FloorGauge ev={ev.depth} label={ps.depthClassification ?? "HEALTHY"} />
-        ) : (
-          <span className="state-gauge-num">{fmt(ps.depthValue)}</span>
-        )}
+        <SeverityMeter label={depth} what="Depth" {...(ps.evidence ? { ev: ps.evidence.depth } : {})} />
       </div>
       <span className="pos-dash-player">
-        {top ? `${top.name}${top.age != null ? ` (${Number(top.age).toFixed(1)})` : ""}` : "—"}
+        {top ? `${top.name}${top.age != null ? ` (${Number(top.age).toFixed(1)})` : ""}` : "\u2014"}
       </span>
     </div>
   );
 }
 
 function PositionTable({ me }: { me: TeamProfile }) {
-  const hasEvidence = POSITIONS.some((p) => me.positionScores[p].evidence);
   return (
     <div className="pos-dashboard state-positions">
       <div className="state-report-head">
-        <span className="state-report-title">POSITIONS · WEAKEST SLOT VS THE FLOORS</span>
+        <span className="state-report-title">POSITIONS</span>
       </div>
       <p className="state-report-sub">
-        {hasEvidence
-          ? "Two tests set each label, and both are shown. The bar is the weakest slot you would actually have to start there against absolute floors: under the left tick reads CRITICAL, under the right one NEED. The sigma figure is the same slot against the typical player at that spot across the whole player pool, where below -1 is NEED and below -2 is CRITICAL. Either one firing is enough, which is why a bar can clear both ticks and still be flagged. Neither test is a league ranking, so a thin position stays thin even in a weak league."
-          : "Re-sync this league to see the thresholds behind each label."}
+        Four steps from critical to surplus, judged on the weakest slot you would actually have to
+        start. Hover any row for the thresholds behind it.
       </p>
       <div className="pos-dash-header-row">
         <div />
-        <div className="pos-dash-col-label">CLASSIFICATION</div>
         <div className="pos-dash-col-label">STARTERS</div>
         <div className="pos-dash-col-label">DEPTH</div>
         <div className="pos-dash-col-label">BEST PLAYER</div>
@@ -569,13 +482,9 @@ export default function TeamState({
         The numbers under the badges: what you actually scored, how much career your starters have
         left, and where each position sits against the thresholds that label it.
       </p>
-      {/* One row of three. The scatter used to share a row with the positions
-          table, which claims 100% basis, so it was pushed onto a line of its
-          own and scaled to the full page width. */}
       <div className="state-grid">
         <Scoring me={me} league={league} />
         <WindowReport me={me} format={format} />
-        <RosterShape me={me} league={league} />
       </div>
       <div className="state-panel">
         <PositionTable me={me} />

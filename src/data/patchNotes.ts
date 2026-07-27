@@ -66,8 +66,8 @@ export const PATCH_NOTES: PatchNote[] = [
       "WINDOW: the two startable players pulling your window shorter and the two holding it open, across every starting slot including flex. Each carries the points of age pressure it is responsible for, and those points sum to your total.",
       "Ranked by contribution, not by age. A 27 year old carrying a quarter of your lineup value moves the number far more than a 33 year old backup does, and only the weighted view shows that.",
       "Career left is measured per position off nflverse production from 1999 to 2024. A 27 year old running back and a 27 year old quarterback are nowhere near the same place, and the bars show it.",
-      "POSITIONS: each bar is the weakest slot you would actually have to start, with the two thresholds that set the label drawn on it, plus the sigma figure comparing that slot to the typical player at that spot across the whole player pool.",
-      "That last one fixes a real contradiction. Position labels come from an absolute floor and from a comparison to the entire player pool, never from a league ranking, so a position could read CRITICAL while sitting mid-pack in your league. The old chart showed league rank as if it were the evidence. Both real tests are now on screen, which also explains the cases where a bar clears both thresholds and is still flagged: the other test fired.",
+      "POSITIONS: a four step meter per side, critical through surplus, judged on the weakest slot you would actually have to start. Readable in a glance, and driven by the same classification as the label so the two cannot disagree. The thresholds and the exact numbers are on hover.",
+      "The window bars now show each starter's push on your average rather than a raw percentage: right of centre in red for shortening your window, left in green for holding it open, sized by how hard they pull.",
     ],
     knownIssues: [
       "Points per game needs a league re-sync to appear. It fills in on its own within the hour, or immediately if you hit Refresh.",
