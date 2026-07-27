@@ -184,11 +184,11 @@ function PositionRow({ pos, me, league }: { pos: Position; me: TeamProfile; leag
         </span>
         <span style={{ color: "#475569", fontSize: 10 }}> · {ps.urgency.toFixed(0)}</span>
       </div>
-      <div className="pos-dash-metric" data-label="START">
+      <div className="pos-dash-metric" data-label="NOW">
         <LeagueDots values={starterValues} mine={ps.starterValue} />
         <span className="pos-dash-num">{fmt(ps.starterValue)}</span>
       </div>
-      <div className="pos-dash-metric" data-label="DEPTH">
+      <div className="pos-dash-metric" data-label="DYN">
         <LeagueDots values={depthValues} mine={ps.depthValue} />
         <span className="pos-dash-num">{fmt(ps.depthValue)}</span>
       </div>
@@ -205,8 +205,18 @@ function PositionTable({ me, league }: { me: TeamProfile; league: TeamProfile[] 
       <div className="pos-dash-header-row">
         <div />
         <div className="pos-dash-col-label">CLASSIFICATION</div>
-        <div className="pos-dash-col-label">STARTERS VS LEAGUE</div>
-        <div className="pos-dash-col-label">DEPTH VS LEAGUE</div>
+        {/* The two columns are in DIFFERENT currencies, on purpose: starter
+            strength is a win-now question so profile.ts sums redraft value,
+            while depth is an asset question so it sums dynasty value. Rendered
+            as bare numbers side by side that reads as an inconsistency (a QB
+            room shows 1,324 next to a starter worth 2,115 in dynasty), so the
+            unit has to be on the label. */}
+        <div className="pos-dash-col-label" title="Sum of redraft value across your starting slots at this position, against every other team">
+          STARTERS (WIN NOW)
+        </div>
+        <div className="pos-dash-col-label" title="Sum of dynasty value of your bench at this position, against every other team">
+          DEPTH (DYNASTY)
+        </div>
         <div className="pos-dash-col-label">BEST PLAYER</div>
       </div>
       {POSITIONS.map((pos) => (
