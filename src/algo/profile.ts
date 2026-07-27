@@ -16,6 +16,7 @@ import {
 } from "./constants";
 import { detectArchetypes, scoreArchetypes } from "./archetypes";
 import type {
+  ClassifyEvidence,
   Competitiveness,
   LeagueAverages,
   LeagueFormat,
@@ -475,6 +476,29 @@ export function classifyPosition(score: PositionScore["urgency"]): PositionScore
 // where worst_top_N is the lowest value in the reference top-N pool.
 //
 // For SURPLUS, both halves need to be solid (positive z) AND pressure low.
+/** The floors classifySide tests against. Exported so the UI can draw the same
+ *  lines the decision used instead of inventing its own comparison. */
+export function classifyFloors(worstTopN: number): { critical: number; need: number } {
+  return { critical: worstTopN * 0.15, need: worstTopN * 0.35 };
+}
+
+/** Snapshot of what a side was judged on, for display. */
+export function classifyEvidence(args: {
+  weightedZ: number;
+  minSlotZ: number;
+  minSlotValue: number;
+  worstTopN: number;
+}): ClassifyEvidence {
+  const { critical, need } = classifyFloors(args.worstTopN);
+  return {
+    minSlotValue: args.minSlotValue,
+    criticalFloor: critical,
+    needFloor: need,
+    minSlotZ: args.minSlotZ,
+    weightedZ: args.weightedZ,
+  };
+}
+
 export function classifySide(args: {
   weightedZ: number;
   minSlotZ: number;
@@ -483,8 +507,7 @@ export function classifySide(args: {
   worstTopN: number;
 }): SubClassification {
   const { weightedZ, minSlotZ, weightedValue, minSlotValue, worstTopN } = args;
-  const criticalFloor = worstTopN * 0.15;
-  const needFloor = worstTopN * 0.35;
+  const { critical: criticalFloor, need: needFloor } = classifyFloors(worstTopN);
 
   // CRITICAL: very far below typical OR absolute floor breach
   if (minSlotZ < -2.0 || weightedZ < -2.0 || minSlotValue < criticalFloor) {
@@ -711,13 +734,14 @@ export function computePositionScores(
         : format.starterSlots[pos];
     const baseZs = starterPlayerZs.slice(0, baseSlotCount);
     const baseValues = starterValues.slice(0, baseSlotCount);
-    const starterSub = classifySide({
+    const starterArgs = {
       weightedZ: baseZs.length > 0 ? weightedSlotAverage(baseZs) : -3,
       minSlotZ: baseZs.length > 0 ? Math.min(...baseZs) : -3,
       weightedValue: baseValues.reduce((s, v) => s + v, 0),
       minSlotValue: baseValues.length > 0 ? Math.min(...baseValues) : 0,
       worstTopN: sWorstTopN,
-    });
+    };
+    const starterSub = classifySide(starterArgs);
     // Same resilience blend applied to the depth LABEL, not just its score.
     // Fixing only the score would leave the roster still reading "NEED at QB"
     // on screen, which is the thing that got reported.
@@ -752,13 +776,14 @@ export function computePositionScores(
     // stockpiled assets keep their value in the numbers.
     const coverZs = depthPlayerZs.slice(0, DEPTH_COVER_SLOTS);
     const coverValues = depthValues.slice(0, DEPTH_COVER_SLOTS);
-    const depthSub = classifySide({
+    const depthArgs = {
       weightedZ: (coverZs.length > 0 ? weightedSlotAverage(coverZs) : -3) + resilienceCredit,
       minSlotZ: (coverZs.length > 0 ? Math.min(...coverZs) : -3) + resilienceCredit,
       weightedValue: depthValue,
       minSlotValue: coverValues.length > 0 ? Math.min(...coverValues) : 0,
       worstTopN: dWorstTopN,
-    });
+    };
+    const depthSub = classifySide(depthArgs);
     const { classification, needKind } = combineClassifications({
       starterSub,
       depthSub,
@@ -776,6 +801,7 @@ export function computePositionScores(
       depthClassification: depthSub,
       classification,
       needKind,
+      evidence: { starter: classifyEvidence(starterArgs), depth: classifyEvidence(depthArgs) },
     };
   }
   return out;

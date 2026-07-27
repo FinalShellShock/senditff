@@ -33,6 +33,23 @@ function standings(rosters: SleeperRoster[]): Map<number, number> {
   return map;
 }
 
+// Points per game for one roster. Sleeper splits points into a whole part and
+// a decimal part, and reports them as strings about as often as numbers.
+//
+// Games come from the record rather than a schedule lookup, so a roster that
+// has played nothing returns null instead of dividing by zero. Ties count as
+// games played; they are results, not byes.
+function rosterPpg(r: SleeperRoster): { ppg: number; games: number } | null {
+  const st = r.settings ?? {};
+  const games = (st.wins ?? 0) + (st.losses ?? 0) + (st.ties ?? 0);
+  if (games <= 0) return null;
+  const whole = parseFloat(String(st.fpts ?? 0));
+  const dec = parseFloat(String(st.fpts_decimal ?? 0));
+  const points = (Number.isFinite(whole) ? whole : 0) + (Number.isFinite(dec) ? dec / 100 : 0);
+  if (!(points > 0)) return null;
+  return { ppg: points / games, games };
+}
+
 // Past-season finishes (up to two seasons back) plus the current standing
 // when a season is actually underway. Replaces the meaningless "0-0" record.
 async function fetchPlacements(
@@ -42,8 +59,20 @@ async function fetchPlacements(
 ): Promise<{
   history: Map<number, Array<{ season: number; place: number }>>;
   current: Map<number, number> | null;
+  scoring: Map<number, { season: number; ppg: number; games: number; live: boolean }>;
 }> {
   const history = new Map<number, Array<{ season: number; place: number }>>();
+  // Scoring comes from the most recent season anyone has actually played. The
+  // current one wins when it is underway, otherwise walk back. Costs no extra
+  // request: these rosters are already being fetched for placements.
+  const scoring = new Map<number, { season: number; ppg: number; games: number; live: boolean }>();
+  const thisSeason = parseInt(nflState.league_season ?? "", 10);
+  for (const r of rosters) {
+    const p = rosterPpg(r);
+    if (p && Number.isFinite(thisSeason)) {
+      scoring.set(r.roster_id, { season: thisSeason, ...p, live: true });
+    }
+  }
   let cursor = league.previous_league_id;
   for (let hop = 0; hop < 2 && cursor; hop++) {
     try {
@@ -57,6 +86,11 @@ async function fetchPlacements(
           arr.push({ season, place });
           history.set(rosterId, arr);
         }
+        for (const r of prevRosters) {
+          if (scoring.has(r.roster_id)) continue; // a newer season already won
+          const p = rosterPpg(r);
+          if (p) scoring.set(r.roster_id, { season, ...p, live: false });
+        }
       }
       cursor = prevLeague.previous_league_id;
     } catch {
@@ -64,7 +98,7 @@ async function fetchPlacements(
     }
   }
   const inSeason = nflState.season_type === "regular" || nflState.season_type === "post";
-  return { history, current: inSeason ? standings(rosters) : null };
+  return { history, current: inSeason ? standings(rosters) : null, scoring };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -162,6 +196,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ownerSleeperUserId: roster?.owner_id ?? null,
         placements: placements.history.get(profile.rosterId) ?? [],
         currentPlace: placements.current?.get(profile.rosterId) ?? null,
+        scoring: placements.scoring.get(profile.rosterId) ?? null,
         generatedAt: new Date().toISOString(),
       });
     }

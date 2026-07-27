@@ -379,10 +379,22 @@ function weightedSlotAverage(scores) {
   }
   return totalWeight > 0 ? weightedSum / totalWeight : 0;
 }
+function classifyFloors(worstTopN) {
+  return { critical: worstTopN * 0.15, need: worstTopN * 0.35 };
+}
+function classifyEvidence(args) {
+  const { critical, need } = classifyFloors(args.worstTopN);
+  return {
+    minSlotValue: args.minSlotValue,
+    criticalFloor: critical,
+    needFloor: need,
+    minSlotZ: args.minSlotZ,
+    weightedZ: args.weightedZ
+  };
+}
 function classifySide(args) {
   const { weightedZ, minSlotZ, weightedValue, minSlotValue, worstTopN } = args;
-  const criticalFloor = worstTopN * 0.15;
-  const needFloor = worstTopN * 0.35;
+  const { critical: criticalFloor, need: needFloor } = classifyFloors(worstTopN);
   if (minSlotZ < -2 || weightedZ < -2 || minSlotValue < criticalFloor) {
     return "CRITICAL";
   }
@@ -491,24 +503,26 @@ function computePositionScores(team, format, averages) {
     const baseSlotCount = pos === "QB" && format.starterSlots.SUPER_FLEX > 0 ? format.starterSlots.QB + 1 : format.starterSlots[pos];
     const baseZs = starterPlayerZs.slice(0, baseSlotCount);
     const baseValues = starterValues.slice(0, baseSlotCount);
-    const starterSub = classifySide({
+    const starterArgs = {
       weightedZ: baseZs.length > 0 ? weightedSlotAverage(baseZs) : -3,
       minSlotZ: baseZs.length > 0 ? Math.min(...baseZs) : -3,
       weightedValue: baseValues.reduce((s, v) => s + v, 0),
       minSlotValue: baseValues.length > 0 ? Math.min(...baseValues) : 0,
       worstTopN: sWorstTopN
-    });
+    };
+    const starterSub = classifySide(starterArgs);
     const resilienceZ = hasLineup && rStats.std > 0 ? (postInjuryTotal - rStats.mean) / rStats.std : -3;
     const resilienceCredit = Math.max(0, Math.min(1, resilienceZ)) * DEPTH_RESILIENCE_CREDIT;
     const coverZs = depthPlayerZs.slice(0, DEPTH_COVER_SLOTS);
     const coverValues = depthValues.slice(0, DEPTH_COVER_SLOTS);
-    const depthSub = classifySide({
+    const depthArgs = {
       weightedZ: (coverZs.length > 0 ? weightedSlotAverage(coverZs) : -3) + resilienceCredit,
       minSlotZ: (coverZs.length > 0 ? Math.min(...coverZs) : -3) + resilienceCredit,
       weightedValue: depthValue,
       minSlotValue: coverValues.length > 0 ? Math.min(...coverValues) : 0,
       worstTopN: dWorstTopN
-    });
+    };
+    const depthSub = classifySide(depthArgs);
     const { classification, needKind } = combineClassifications({
       starterSub,
       depthSub,
@@ -524,7 +538,8 @@ function computePositionScores(team, format, averages) {
       starterClassification: starterSub,
       depthClassification: depthSub,
       classification,
-      needKind
+      needKind,
+      evidence: { starter: classifyEvidence(starterArgs), depth: classifyEvidence(depthArgs) }
     };
   }
   return out;
@@ -1182,8 +1197,26 @@ function standings(rosters) {
   ranked.forEach((r, i) => map.set(r.roster_id, i + 1));
   return map;
 }
+function rosterPpg(r) {
+  const st = r.settings ?? {};
+  const games = (st.wins ?? 0) + (st.losses ?? 0) + (st.ties ?? 0);
+  if (games <= 0) return null;
+  const whole = parseFloat(String(st.fpts ?? 0));
+  const dec = parseFloat(String(st.fpts_decimal ?? 0));
+  const points = (Number.isFinite(whole) ? whole : 0) + (Number.isFinite(dec) ? dec / 100 : 0);
+  if (!(points > 0)) return null;
+  return { ppg: points / games, games };
+}
 async function fetchPlacements(league, rosters, nflState) {
   const history = /* @__PURE__ */ new Map();
+  const scoring = /* @__PURE__ */ new Map();
+  const thisSeason = parseInt(nflState.league_season ?? "", 10);
+  for (const r of rosters) {
+    const p = rosterPpg(r);
+    if (p && Number.isFinite(thisSeason)) {
+      scoring.set(r.roster_id, { season: thisSeason, ...p, live: true });
+    }
+  }
   let cursor = league.previous_league_id;
   for (let hop = 0; hop < 2 && cursor; hop++) {
     try {
@@ -1197,6 +1230,11 @@ async function fetchPlacements(league, rosters, nflState) {
           arr.push({ season, place });
           history.set(rosterId, arr);
         }
+        for (const r of prevRosters) {
+          if (scoring.has(r.roster_id)) continue;
+          const p = rosterPpg(r);
+          if (p) scoring.set(r.roster_id, { season, ...p, live: false });
+        }
       }
       cursor = prevLeague.previous_league_id;
     } catch {
@@ -1204,7 +1242,7 @@ async function fetchPlacements(league, rosters, nflState) {
     }
   }
   const inSeason = nflState.season_type === "regular" || nflState.season_type === "post";
-  return { history, current: inSeason ? standings(rosters) : null };
+  return { history, current: inSeason ? standings(rosters) : null, scoring };
 }
 async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -1271,6 +1309,7 @@ async function handler(req, res) {
         ownerSleeperUserId: roster?.owner_id ?? null,
         placements: placements.history.get(profile.rosterId) ?? [],
         currentPlace: placements.current?.get(profile.rosterId) ?? null,
+        scoring: placements.scoring.get(profile.rosterId) ?? null,
         generatedAt: (/* @__PURE__ */ new Date()).toISOString()
       });
     }

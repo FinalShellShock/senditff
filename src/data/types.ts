@@ -45,7 +45,14 @@ export type SleeperRoster = {
   roster_id: number;
   owner_id: string | null;
   players: string[] | null;
-  settings?: { wins?: number; losses?: number; fpts?: number | string };
+  settings?: {
+    wins?: number;
+    losses?: number;
+    ties?: number;
+    fpts?: number | string;
+    /** Sleeper splits points into whole and decimal parts. */
+    fpts_decimal?: number | string;
+  };
 };
 
 export type SleeperTradedPick = {

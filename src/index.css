@@ -2116,15 +2116,6 @@ body {
   gap: 6px;
 }
 
-.pos-dash-num {
-  font-size: 11px;
-  color: #64748b;
-  /* Raw position values, not a 0-100 score, so this holds five digits plus a
-     thousands separator. At the old 22px they wrapped or clipped. */
-  width: 46px;
-  text-align: right;
-  flex-shrink: 0;
-}
 
 .pos-dash-player {
   font-size: 11px;
@@ -3212,13 +3203,14 @@ body {
   font-size: 12px;
 }
 
-/* ── Team state charts (above the scouting report) ────────────────────── */
+/* ── Team state reports (above the scouting report) ───────────────────── */
 
 .state-grid {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
   align-items: stretch;
+  margin-bottom: 10px;
 }
 
 .state-panel {
@@ -3226,92 +3218,191 @@ body {
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 8px;
   padding: 12px 14px;
-  flex: 1 1 300px;
+  flex: 1 1 340px;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 12px;
 }
 
-.state-strip-head {
+/* The positions table brings its own grid, so it takes the whole row. */
+.state-panel-wide {
+  flex: 1 1 100%;
+}
+
+.state-report-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.state-strip-label {
+.state-report-title {
   font-size: 9px;
-  letter-spacing: 0.6px;
+  letter-spacing: 1.4px;
+  font-weight: 700;
   color: #64748b;
 }
 
-.state-strip-value {
-  font-size: 11px;
+.state-report-value {
+  font-size: 12px;
   font-weight: 700;
   color: #e2e8f0;
   white-space: nowrap;
 }
 
-/* The strips and the scatter are laid out in viewBox units and scaled to the
-   panel, so a narrow column shrinks the chart rather than clipping it. */
-.state-strip-svg,
+.state-report-sub,
+.state-empty,
+.state-foot {
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: #475569;
+  margin: 5px 0 0;
+}
+
+.state-foot {
+  font-size: 9.5px;
+  color: #334155;
+  margin-top: 8px;
+}
+
+/* Shared track: the scoring bars, the career-runway bars and the floor gauges
+   are the same object at different scales, so they share one geometry. */
+.state-bar-track {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.05);
+  overflow: visible;
+  display: block;
+}
+
+.state-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 3px;
+}
+
+/* ── Scoring ── */
+
+.state-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 9px;
+}
+
+.state-bar-row {
+  display: grid;
+  grid-template-columns: 82px 1fr 34px;
+  align-items: center;
+  gap: 8px;
+}
+
+.state-bar-name {
+  font-size: 10px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.state-bar-mine .state-bar-name {
+  color: #e2e8f0;
+  font-weight: 700;
+}
+
+.state-bar-num {
+  font-size: 10px;
+  color: #64748b;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.state-bar-mine .state-bar-num {
+  color: #e2e8f0;
+  font-weight: 700;
+}
+
+/* ── Career runway ── */
+
+.state-runways {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 9px;
+}
+
+.state-runway-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 30px 1fr 30px 32px;
+  align-items: center;
+  gap: 7px;
+}
+
+.state-runway-name {
+  font-size: 10px;
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.state-runway-age,
+.state-runway-left,
+.state-runway-runway {
+  font-size: 9.5px;
+  color: #64748b;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.state-runway-runway {
+  color: #475569;
+}
+
+/* ── Floor gauges ── */
+
+.state-gauge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+}
+
+.state-gauge-num {
+  font-size: 10px;
+  color: #64748b;
+  width: 44px;
+  text-align: right;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Threshold ticks. Drawn over the fill so a bar that clears a floor still
+   shows where the floor was. */
+.state-floor {
+  position: absolute;
+  top: -3px;
+  width: 1px;
+  height: 12px;
+}
+
+.state-floor-crit { background: rgba(239,68,68,0.85); }
+.state-floor-need { background: rgba(234,179,8,0.7); }
+
+/* ── Roster shape ── */
+
 .state-shape-svg {
   display: block;
   width: 100%;
   height: auto;
-}
-
-.state-strip-ends {
-  display: flex;
-  justify-content: space-between;
-  font-size: 8.5px;
-  color: #475569;
-  margin-top: -2px;
-}
-
-/* Fills the metric cell so the league spread reads at a glance; the number
-   beside it keeps the precision the dots cannot carry. */
-.state-dots-svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  min-width: 0;
-  flex: 1;
-}
-
-.state-positions {
-  margin-top: 10px;
-}
-
-.pos-dash-num {
-  font-variant-numeric: tabular-nums;
-}
-
-@media (max-width: 860px) {
-  /* Stacked: the label prefixes come from data-label so the numbers keep
-     meaning once the column headers are gone. */
-  .pos-dash-header-row {
-    display: none;
-  }
-  .pos-dash-row {
-    grid-template-columns: 34px 1fr;
-    row-gap: 6px;
-  }
-  .pos-dash-class,
-  .pos-dash-metric,
-  .pos-dash-player {
-    grid-column: 2;
-  }
-  .pos-dash-metric::before {
-    content: attr(data-label);
-    font-size: 8px;
-    letter-spacing: 1px;
-    color: #334155;
-    width: 42px;
-    flex-shrink: 0;
-  }
+  margin-top: 8px;
 }
 
 .state-shape-key {
@@ -3347,9 +3438,46 @@ body {
   border: 1px solid rgba(34,197,94,0.5);
 }
 
+.state-positions .pos-dash-header-row {
+  margin-top: 10px;
+}
+
+@media (max-width: 860px) {
+  /* Stacked: the column headers go away, so each metric labels itself from
+     data-label. Without this the two gauges are indistinguishable. */
+  .state-positions .pos-dash-header-row {
+    display: none;
+  }
+  .state-positions .pos-dash-row {
+    grid-template-columns: 34px 1fr;
+    row-gap: 6px;
+  }
+  .state-positions .pos-dash-class,
+  .state-positions .pos-dash-metric,
+  .state-positions .pos-dash-player {
+    grid-column: 2;
+  }
+  .state-positions .pos-dash-metric::before {
+    content: attr(data-label);
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: #334155;
+    width: 40px;
+    flex-shrink: 0;
+  }
+}
+
 @media (max-width: 720px) {
   .state-panel {
     flex: 1 1 100%;
+  }
+  .state-runway-row {
+    grid-template-columns: 24px minmax(0, 1fr) 28px 1fr 28px;
+  }
+  /* Runway years are the first thing to go when space is tight: the percentage
+     beside it already carries the same ordering. */
+  .state-runway-runway {
+    display: none;
   }
 }
 

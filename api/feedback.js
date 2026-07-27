@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "f06a4adff7c1";
+var ALGO_FINGERPRINT_BUILD = "fbe54763d07a";
 
 // src/algo/version.ts
 var ALGO_VERSION = "shotgun";
@@ -45,6 +45,38 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.16",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "Team state shows the math, not the verdict again",
+    changes: [
+      "Rebuilt TEAM STATE. The old version plotted your starter strength, window and pick capital against the league, which just restated badges already at the top of the page. It told you where you sit without ever telling you why.",
+      "SCORING: your actual points per game against every team in the league, from the most recent season with games played. This is real scoring history, not a value estimate, and it is the one number here you can check against your own memory of the season.",
+      "WINDOW: your starting lineup, one row each, showing how much career every starter has left and how much of your lineup value is riding on players past halfway. That is what the window tier is computed from, so now you can see the actual reason instead of a label.",
+      "Career left is measured per position off nflverse production from 1999 to 2024. A 27 year old running back and a 27 year old quarterback are nowhere near the same place, and the bars show it.",
+      "POSITIONS: each bar is the weakest slot you would actually have to start, with the two thresholds that set the label drawn right on it.",
+      "That last one fixes a real contradiction. Position labels are set by absolute floors and by comparison to the whole player pool, never by league rank, so a position could read CRITICAL while sitting mid-pack in your league. The old chart showed the league rank as if it were the evidence. Now the thresholds themselves are on screen."
+    ],
+    knownIssues: [
+      "Points per game needs a league re-sync to appear. It fills in on its own within the hour, or immediately if you hit Refresh."
+    ]
+  },
+  {
+    branch: "daniels",
+    release: "1.15",
+    algo: "Shotgun",
+    date: "2026-07-26",
+    title: "Positions folded into team state, with the real numbers",
+    changes: [
+      "POSITIONS is no longer its own section. It sits inside TEAM STATE, because it is the evidence for the starter-strength reading directly above it rather than unrelated detail.",
+      "The starter and depth columns used to show a 0-100 score with a bar filled to that percentage. A lone filled bar cannot tell you whether you are three points off the field or in a class of your own, which is the entire question when you are deciding if a position is actually a problem.",
+      "They now plot every team in the league on that position, with your dot in amber, next to your raw value. That is the data the score was computed from, so you can see the spread instead of trusting a number.",
+      "Same treatment on the headline strips, so every chart on the page reads the same way: each dot is a team, the amber one is you."
+    ],
+    knownIssues: []
+  },
   {
     branch: "daniels",
     release: "1.14",

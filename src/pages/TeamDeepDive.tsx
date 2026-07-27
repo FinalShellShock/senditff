@@ -202,7 +202,7 @@ export default function TeamDeepDive() {
       </div>
 
       {/* Scouting Report — what the outcome data says to do */}
-      <TeamState me={profile} league={overview.profiles as TeamProfile[]} />
+      <TeamState me={profile} league={overview.profiles as TeamProfile[]} format={overview.format} />
 
       <section className="dive-pos-section">
         <h2 className="section-title">SCOUTING REPORT</h2>

@@ -102,6 +102,27 @@ export type PositionScore = {
   // When overall classification is NEED or CRITICAL_NEED, indicates whether
   // the issue is the starter, the depth, or both.
   needKind?: NeedKind;
+  // The inputs classifySide actually decided on. Exposed because the UI used
+  // to show the label beside a league-rank plot, and the two openly disagreed:
+  // a QB cover slot can sit mid-pack among 16 teams and still be CRITICAL,
+  // because the test is an absolute floor and a z against the global player
+  // pool, never a league rank. Showing the rank as evidence for a label that
+  // never consulted it reads as a bug in the algorithm.
+  evidence?: {
+    starter: ClassifyEvidence;
+    depth: ClassifyEvidence;
+  };
+};
+
+export type ClassifyEvidence = {
+  /** Weakest slot judged on this side. */
+  minSlotValue: number;
+  /** Below this, classifySide returns CRITICAL regardless of z. */
+  criticalFloor: number;
+  /** Below this, NEED. */
+  needFloor: number;
+  minSlotZ: number;
+  weightedZ: number;
 };
 
 export type FlexScore = {
@@ -133,6 +154,17 @@ export type TeamProfile = {
   positionScores: Record<Position, PositionScore>;
   flex: FlexScore;
   pickCapital: { value: number; score: number; flag: PickFlag };
+  // Real scoring from the most recent season with games played. Attached by
+  // sync from the Sleeper rosters it already fetches for placements, so it
+  // costs no extra request. Absent on leagues with no completed season and on
+  // profile docs written before this existed.
+  scoring?: {
+    season: number;
+    ppg: number;
+    games: number;
+    /** True when the season is still being played, so PPG is partial. */
+    live: boolean;
+  };
   archetypes: string[];
   archetypeScores: Record<string, number>;
 };

@@ -1,28 +1,33 @@
-// TEAM STATE: the picture the scouting plays are reading from.
+// TEAM STATE: the numbers underneath the verdicts, not the verdicts again.
 //
-// The plays below this section assert things like "you are a contender" and
-// "buy the fringe, not the lottery tickets", and until now a manager had to
-// take both on faith. The header chips give the verdicts (CLOSING, rank #3,
-// picks FINE) but never show the distribution those verdicts came out of, so
-// "rank #3 of 16" and "age 26.9" are unreadable without knowing what the rest
-// of the league looks like.
+// The first version of this plotted starter strength, window and pick capital
+// as league strips. That was a mistake: the header chips already say "rank #3"
+// and "CLOSING", so a dot showing you are third restated a label instead of
+// explaining it. This section only earns space by answering "why".
 //
-// Two panels, each earning its place by explaining specific plays:
+// Three reports, each one a layer below a badge on this page:
 //
-//   WHERE YOU SIT   strip plots of the whole league on the three axes that
-//                   gate the plays: starter strength (contender vs rebuild),
-//                   window pressure (sell-the-veteran, bank-picks), and pick
-//                   capital (whether banking more is worth anything).
+//   SCORING    Actual points per game against the league, from the most recent
+//              season anyone has played. The only thing here that is not
+//              derived from FantasyCalc values, and the one number a manager
+//              can check against his own memory of the season.
 //
-//   ROSTER SHAPE    age against dynasty value for this roster, with the two
-//                   zones the plays actually name drawn on it. A manager can
-//                   see he has nobody in the fringe band, or three guys in the
-//                   sell-while-valuable corner, without reading a word.
+//   WINDOW     windowPressure is blended from starterAgePressure, which is
+//              itself the value-weighted share of each starter's career that
+//              is already spent, read off the measured aging curves. So the
+//              report is per starter: how much career is left, and how much of
+//              your lineup value is sitting on players with little of it. That
+//              IS the window calculation, one level down.
 //
-// The zone bounds come from src/algo/plays.ts rather than being redeclared
-// here. Drawn from local constants they drifted by a rounding step, which put
-// a shaded band on screen that disagreed with the sentence right under it.
+//   POSITIONS  Each side against the floors classifySide actually tested.
+//              Previously this showed a league-rank plot beside the label, and
+//              the two contradicted each other in public: a QB cover slot can
+//              sit mid-pack among 16 teams and still be CRITICAL, because the
+//              test is an absolute floor and a z against the global player
+//              pool, and never a league rank. Drawing the real floors makes
+//              the label self-evident instead of arbitrary.
 
+import { agePressure, fillStarters, remainingValue } from "../../algo/profile.ts";
 import {
   FRINGE_MAX_AGE,
   VETERAN_SELL_AGE,
@@ -30,16 +35,18 @@ import {
   fringeBand,
   leagueRanking,
 } from "../../algo/plays.ts";
-import type { Player, Position, TeamProfile } from "../../algo/types.ts";
-
-/** The one place a PickFlag becomes words. Lived in TeamDeepDive, and the
- *  chart briefly rendered the raw flag instead, so the same datum read "FINE"
- *  in the header chip and "NEUTRAL" in the strip six inches below it. */
-export const pickFlagText = (flag: string) =>
-  flag === "NEUTRAL" ? "FINE" : flag.replace("_", " ");
+import type {
+  ClassifyEvidence,
+  LeagueFormat,
+  Player,
+  Position,
+  SubClassification,
+  TeamProfile,
+} from "../../algo/types.ts";
 
 const ACCENT = "#f59e0b";
-const MUTED = "rgba(148,163,184,0.35)";
+const GRID = "rgba(255,255,255,0.07)";
+const AXIS_TEXT = "#475569";
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 
@@ -58,177 +65,170 @@ function posColor(pos: string) {
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 
-/** Every team on one axis, this team highlighted. The shared primitive behind
- *  both the headline strips and the per-position rows: a 0-100 score says
- *  nothing about whether the field is bunched or spread, and that is exactly
- *  the question "am I actually short at this position" turns on. */
-function LeagueDots({
-  values,
-  mine,
-  height = 14,
-}: {
-  values: number[];
-  mine: number;
-  height?: number;
-}) {
-  const W = 200;
-  const padX = 5;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min || 1;
-  const x = (v: number) => padX + ((v - min) / span) * (W - padX * 2);
+/** The one place a PickFlag becomes words. */
+export const pickFlagText = (flag: string) =>
+  flag === "NEUTRAL" ? "FINE" : flag.replace("_", " ");
+
+// ── Scoring ──────────────────────────────────────────────────────────────────
+
+function Scoring({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
+  // Only compare within one season. A league that changed size mid-chain can
+  // leave a team carrying an older season's numbers, and ranking those against
+  // this year's would invent a standing that never happened.
+  const season = me.scoring?.season;
+  const field = league.filter((t) => t.scoring && t.scoring.games > 0 && t.scoring.season === season);
+
+  if (!me.scoring || field.length < 2) {
+    return (
+      <div className="state-panel">
+        <div className="state-report-head">
+          <span className="state-report-title">SCORING</span>
+        </div>
+        <p className="state-empty">
+          No completed season on record for this league yet, so there is no real points per game to
+          compare. It appears here once games have been played.
+        </p>
+      </div>
+    );
+  }
+
+  const rows = [...field].sort(
+    (a, b) => b.scoring!.ppg - a.scoring!.ppg || a.rosterId - b.rosterId,
+  );
+  const max = rows[0]!.scoring!.ppg;
+  const rank = rows.findIndex((t) => t.rosterId === me.rosterId) + 1;
+  const mean = rows.reduce((s, t) => s + t.scoring!.ppg, 0) / rows.length;
+  const diff = me.scoring.ppg - mean;
+
   return (
-    <svg viewBox={`0 0 ${W} ${height}`} className="state-dots-svg" aria-hidden="true">
-      <line x1={padX} y1={height / 2} x2={W - padX} y2={height / 2} stroke={GRID} strokeWidth={1} />
-      {values.map((v, i) => (
-        <circle key={i} cx={x(v)} cy={height / 2} r={2.6} fill={MUTED} />
-      ))}
-      <circle cx={x(mine)} cy={height / 2} r={4} fill={ACCENT} />
-    </svg>
+    <div className="state-panel">
+      <div className="state-report-head">
+        <span className="state-report-title">
+          SCORING · {me.scoring.season}
+          {me.scoring.live ? " (in progress)" : ""}
+        </span>
+        <span className="state-report-value">
+          {me.scoring.ppg.toFixed(1)} PPG · #{rank}
+        </span>
+      </div>
+      <p className="state-report-sub">
+        {diff >= 0 ? "+" : ""}
+        {diff.toFixed(1)} a game against the league average of {mean.toFixed(1)}, over{" "}
+        {me.scoring.games} games.
+      </p>
+      <div className="state-bars">
+        {rows.map((t) => {
+          const mine = t.rosterId === me.rosterId;
+          return (
+            <div key={t.rosterId} className={`state-bar-row${mine ? " state-bar-mine" : ""}`}>
+              <span className="state-bar-name">{t.ownerName}</span>
+              <span className="state-bar-track">
+                <span
+                  className="state-bar-fill"
+                  style={{
+                    width: `${(t.scoring!.ppg / max) * 100}%`,
+                    background: mine ? ACCENT : "rgba(148,163,184,0.30)",
+                  }}
+                />
+              </span>
+              <span className="state-bar-num">{t.scoring!.ppg.toFixed(1)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
-const GRID = "rgba(255,255,255,0.07)";
-const AXIS_TEXT = "#475569";
 
-type Metric = {
-  key: string;
-  label: string;
-  /** Higher is better for reading the strip left-to-right. */
-  value: (t: TeamProfile) => number;
-  format: (t: TeamProfile) => string;
-  /** What the low and high ends of this axis mean, in plain language. */
-  lowLabel: string;
-  highLabel: string;
+// ── Window / age ─────────────────────────────────────────────────────────────
+
+type StarterRow = {
+  player: Player;
+  /** Share of an age-23 player's remaining career still ahead of him, 0-100. */
+  left: number;
+  /** Remaining career production in discounted PPG-years. */
+  runway: number;
+  /** This starter's share of the starting lineup's redraft value. */
+  share: number;
 };
 
-const METRICS: Metric[] = [
-  {
-    key: "strength",
-    label: "STARTER STRENGTH",
-    value: (t) => t.starterTotalValue,
-    format: (t) => `#${t.starterRank}`,
-    lowLabel: "weakest",
-    highLabel: "strongest",
-  },
-  {
-    // Inverted so "further right" means "more time", matching the other two
-    // rows where right is the comfortable end. Raw windowPressure runs the
-    // other way (high = closing), and mixing directions across three stacked
-    // strips makes the whole panel misread at a glance.
-    key: "window",
-    label: "WINDOW",
-    value: (t) => 100 - t.windowPressure,
-    format: (t) => t.windowTier,
-    lowLabel: "closing",
-    highLabel: "wide open",
-  },
-  {
-    key: "picks",
-    label: "PICK CAPITAL",
-    value: (t) => t.pickCapital.value,
-    format: (t) => pickFlagText(t.pickCapital.flag),
-    lowLabel: "thin",
-    highLabel: "loaded",
-  },
-];
+function starterRows(me: TeamProfile, format: LeagueFormat): StarterRow[] {
+  const { starters } = fillStarters(me.players, format);
+  const flat: Player[] = [];
+  for (const pos of POSITIONS) flat.push(...starters[pos]);
+  const total = flat.reduce((s, p) => s + p.valueRedraft, 0) || 1;
+  return flat
+    .filter((p) => p.age != null)
+    .map((p) => ({
+      player: p,
+      left: 100 - agePressure(p.age as number, p.position),
+      runway: remainingValue(p.age as number, p.position),
+      share: (p.valueRedraft / total) * 100,
+    }))
+    .sort((a, b) => b.share - a.share || a.player.id.localeCompare(b.player.id));
+}
 
-function StripPlot({ metric, me, league }: { metric: Metric; me: TeamProfile; league: TeamProfile[] }) {
+function runwayColor(left: number) {
+  if (left >= 60) return "#22c55e";
+  if (left >= 35) return "#eab308";
+  return "#ef4444";
+}
+
+function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat }) {
+  const rows = starterRows(me, format);
+  // The number that actually drives the tier: how much of your STARTING value
+  // rides on players with most of their career behind them. A plain count
+  // would treat your WR5 and your best player as the same evidence.
+  const spentShare = rows.reduce((s, r) => s + (r.left < 50 ? r.share : 0), 0);
+
   return (
-    <div className="state-strip">
-      <div className="state-strip-head">
-        <span className="state-strip-label">{metric.label}</span>
-        <span className="state-strip-value">{metric.format(me)}</span>
+    <div className="state-panel">
+      <div className="state-report-head">
+        <span className="state-report-title">WINDOW · CAREER LEFT PER STARTER</span>
+        <span className="state-report-value">{me.windowTier}</span>
       </div>
-      <LeagueDots values={league.map(metric.value)} mine={metric.value(me)} height={20} />
-      <div className="state-strip-ends">
-        <span>{metric.lowLabel}</span>
-        <span>{metric.highLabel}</span>
+      <p className="state-report-sub">
+        {spentShare.toFixed(0)}% of your starting value sits on players past the halfway point of
+        their careers. Value-weighted age {me.starterCalAge.toFixed(1)}, age pressure{" "}
+        {me.starterAgePressure.toFixed(0)} of 100.
+      </p>
+      <div className="state-runways">
+        {rows.map((r) => (
+          <div key={r.player.id} className="state-runway-row">
+            <span className="pos-tag" style={{ background: posColor(r.player.position) }}>
+              {r.player.position}
+            </span>
+            <span className="state-runway-name">{r.player.name}</span>
+            <span className="state-runway-age">{(r.player.age as number).toFixed(1)}</span>
+            <span className="state-bar-track">
+              <span
+                className="state-bar-fill"
+                style={{ width: `${r.left}%`, background: runwayColor(r.left) }}
+              />
+            </span>
+            <span className="state-runway-left">{r.left.toFixed(0)}%</span>
+            <span
+              className="state-runway-runway"
+              title="Expected remaining career production, in discounted PPG-years"
+            >
+              {r.runway.toFixed(1)}y
+            </span>
+          </div>
+        ))}
       </div>
+      <p className="state-foot">
+        Career left is measured off nflverse 1999-2024 production, per position. A 27 year old
+        running back and a 27 year old quarterback are nowhere near the same place.
+      </p>
     </div>
   );
 }
 
-// ── Positions ────────────────────────────────────────────────────────────────
-//
-// Folded into TEAM STATE rather than sitting in its own section, because it IS
-// the evidence for the starter-strength headline directly above it. As a
-// standalone block it read as unrelated detail.
-//
-// The starter and depth columns used to be a 0-100 score with a bar filled to
-// that percentage. The score is computed against the league average, so the
-// bar was already a comparison, but a lone filled bar cannot show whether you
-// are 3 points off the field or in a class of your own. These now plot the
-// league's actual position values with this team's dot on them, which is the
-// data the score was derived from in the first place.
-
-function PositionRow({ pos, me, league }: { pos: Position; me: TeamProfile; league: TeamProfile[] }) {
-  const ps = me.positionScores[pos];
-  const top = me.players
-    .filter((p) => p.position === pos)
-    .sort((a, b) => b.valueDynasty - a.valueDynasty || a.id.localeCompare(b.id))[0] as Player | undefined;
-  const starterValues = league.map((t) => t.positionScores[pos].starterValue);
-  const depthValues = league.map((t) => t.positionScores[pos].depthValue);
-
-  return (
-    <div className="pos-dash-row">
-      <span className="pos-tag" style={{ background: posColor(pos) }}>{pos}</span>
-      <div className="pos-dash-class">
-        {/* Dual-zone: starter and depth judged separately (a SURPLUS starter
-            room shouldn't hide behind merely-healthy depth) */}
-        <span style={{ color: POS_CLASS_COLOR[ps.starterClassification ?? "HEALTHY"], fontWeight: 700, fontSize: 11 }}>
-          {ps.starterClassification ?? ps.classification.replace("_", " ")}
-        </span>
-        <span style={{ color: "#475569", fontSize: 10 }}> / </span>
-        <span style={{ color: POS_CLASS_COLOR[ps.depthClassification ?? "HEALTHY"], fontWeight: 700, fontSize: 10 }}>
-          {ps.depthClassification ?? "\u2014"}
-        </span>
-        <span style={{ color: "#475569", fontSize: 10 }}> · {ps.urgency.toFixed(0)}</span>
-      </div>
-      <div className="pos-dash-metric" data-label="NOW">
-        <LeagueDots values={starterValues} mine={ps.starterValue} />
-        <span className="pos-dash-num">{fmt(ps.starterValue)}</span>
-      </div>
-      <div className="pos-dash-metric" data-label="DYN">
-        <LeagueDots values={depthValues} mine={ps.depthValue} />
-        <span className="pos-dash-num">{fmt(ps.depthValue)}</span>
-      </div>
-      <span className="pos-dash-player">
-        {top ? `${top.name}${top.age != null ? ` (${Number(top.age).toFixed(1)})` : ""}` : "\u2014"}
-      </span>
-    </div>
-  );
-}
-
-function PositionTable({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
-  return (
-    <div className="pos-dashboard state-positions">
-      <div className="pos-dash-header-row">
-        <div />
-        <div className="pos-dash-col-label">CLASSIFICATION</div>
-        {/* The two columns are in DIFFERENT currencies, on purpose: starter
-            strength is a win-now question so profile.ts sums redraft value,
-            while depth is an asset question so it sums dynasty value. Rendered
-            as bare numbers side by side that reads as an inconsistency (a QB
-            room shows 1,324 next to a starter worth 2,115 in dynasty), so the
-            unit has to be on the label. */}
-        <div className="pos-dash-col-label" title="Sum of redraft value across your starting slots at this position, against every other team">
-          STARTERS (WIN NOW)
-        </div>
-        <div className="pos-dash-col-label" title="Sum of dynasty value of your bench at this position, against every other team">
-          DEPTH (DYNASTY)
-        </div>
-        <div className="pos-dash-col-label">BEST PLAYER</div>
-      </div>
-      {POSITIONS.map((pos) => (
-        <PositionRow key={pos} pos={pos} me={me} league={league} />
-      ))}
-    </div>
-  );
-}
+// ── Roster shape ─────────────────────────────────────────────────────────────
 
 function RosterShape({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
   const W = 340;
-  const H = 210;
+  const H = 200;
   const pad = { top: 12, right: 10, bottom: 26, left: 40 };
   const fw = W - pad.left - pad.right;
   const fh = H - pad.top - pad.bottom;
@@ -244,13 +244,22 @@ function RosterShape({ me, league }: { me: TeamProfile; league: TeamProfile[] })
     pad.left + ((Math.max(AGE_MIN, Math.min(AGE_MAX, age)) - AGE_MIN) / (AGE_MAX - AGE_MIN)) * fw;
   const py = (v: number) => pad.top + (1 - Math.min(1, v / maxValue)) * fh;
 
-  const best = [...players].sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
-
   return (
-    <div className="state-shape">
-      <svg viewBox={`0 0 ${W} ${H}`} className="state-shape-svg" role="img"
-        aria-label="Your roster plotted by age against dynasty value">
-        {/* Sell-while-valuable corner: old AND still worth something. */}
+    <div className="state-panel">
+      <div className="state-report-head">
+        <span className="state-report-title">ROSTER SHAPE</span>
+        <span className="state-report-value">{players.length} priced</span>
+      </div>
+      <p className="state-report-sub">
+        Everyone you own by age and dynasty value, with the two zones the scouting report below
+        actually names.
+      </p>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="state-shape-svg"
+        role="img"
+        aria-label="Your roster plotted by age against dynasty value"
+      >
         <rect
           x={px(VETERAN_SELL_AGE)}
           y={py(maxValue)}
@@ -260,7 +269,6 @@ function RosterShape({ me, league }: { me: TeamProfile; league: TeamProfile[] })
           stroke="rgba(239,68,68,0.28)"
           strokeDasharray="3 3"
         />
-        {/* Fringe band: young AND inside the league's 61st-100th value window. */}
         {band && (
           <rect
             x={px(AGE_MIN)}
@@ -272,11 +280,8 @@ function RosterShape({ me, league }: { me: TeamProfile; league: TeamProfile[] })
             strokeDasharray="3 3"
           />
         )}
-
-        {/* Axes */}
         <line x1={pad.left} y1={pad.top + fh} x2={pad.left + fw} y2={pad.top + fh} stroke={GRID} />
         <line x1={pad.left} y1={pad.top} x2={pad.left} y2={pad.top + fh} stroke={GRID} />
-
         {players.map((p) => (
           <circle
             key={p.id}
@@ -289,25 +294,6 @@ function RosterShape({ me, league }: { me: TeamProfile; league: TeamProfile[] })
             <title>{`${p.name} · ${(p.age as number).toFixed(1)} · ${p.valueDynasty.toLocaleString()}`}</title>
           </circle>
         ))}
-
-        {/* Label flips to the left of the dot once it is far enough right that
-            the text would run off the plot. */}
-        {best && (() => {
-          const bx = px(best.age as number);
-          const flip = bx > pad.left + fw * 0.6;
-          return (
-            <text
-              x={flip ? bx - 6 : bx + 6}
-              y={py(best.valueDynasty) + 3}
-              fill="#94a3b8"
-              fontSize={8}
-              textAnchor={flip ? "end" : "start"}
-            >
-              {best.name}
-            </text>
-          );
-        })()}
-
         {[AGE_MIN, 25, 28, 31, AGE_MAX].map((a) => (
           <text key={a} x={px(a)} y={H - 12} fill={AXIS_TEXT} fontSize={8} textAnchor="middle">
             {a}
@@ -316,45 +302,135 @@ function RosterShape({ me, league }: { me: TeamProfile; league: TeamProfile[] })
         <text x={pad.left + fw / 2} y={H - 2} fill={AXIS_TEXT} fontSize={8} textAnchor="middle">
           age
         </text>
-        <text x={4} y={pad.top + 6} fill={AXIS_TEXT} fontSize={8}>
-          {Math.round(maxValue).toLocaleString()}
-        </text>
-        <text x={4} y={pad.top + fh} fill={AXIS_TEXT} fontSize={8}>
-          0
-        </text>
+        <text x={4} y={pad.top + 6} fill={AXIS_TEXT} fontSize={8}>{fmt(maxValue)}</text>
+        <text x={4} y={pad.top + fh} fill={AXIS_TEXT} fontSize={8}>0</text>
       </svg>
       <div className="state-shape-key">
-        <span>
-          <i className="state-key-swatch state-key-sell" /> sell while still valuable
-        </span>
-        <span>
-          <i className="state-key-swatch state-key-buy" /> the fringe worth buying
-        </span>
+        <span><i className="state-key-swatch state-key-sell" /> sell while still valuable</span>
+        <span><i className="state-key-swatch state-key-buy" /> the fringe worth buying</span>
       </div>
     </div>
   );
 }
 
-export default function TeamState({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
+// ── Positions, against the floors that decided the label ─────────────────────
+
+function FloorGauge({ ev, label }: { ev: ClassifyEvidence; label: SubClassification }) {
+  // Scale so the NEED floor always sits at 60% of the track. Scaled to the
+  // value itself the floors would land somewhere different on every row, and
+  // there would be nothing to compare across positions.
+  const scale = ev.needFloor > 0 ? ev.needFloor / 0.6 : Math.max(1, ev.minSlotValue);
+  const pct = (v: number) => Math.max(0, Math.min(100, (v / scale) * 100));
+  const color = POS_CLASS_COLOR[label] ?? "#64748b";
+  return (
+    <span
+      className="state-gauge"
+      title={`weakest slot ${fmt(ev.minSlotValue)} · need floor ${fmt(ev.needFloor)} · critical floor ${fmt(ev.criticalFloor)}`}
+    >
+      <span className="state-bar-track">
+        <span className="state-bar-fill" style={{ width: `${pct(ev.minSlotValue)}%`, background: color }} />
+        <span className="state-floor state-floor-crit" style={{ left: `${pct(ev.criticalFloor)}%` }} />
+        <span className="state-floor state-floor-need" style={{ left: `${pct(ev.needFloor)}%` }} />
+      </span>
+      <span className="state-gauge-num">{fmt(ev.minSlotValue)}</span>
+    </span>
+  );
+}
+
+function PositionRow({ pos, me }: { pos: Position; me: TeamProfile }) {
+  const ps = me.positionScores[pos];
+  const top = me.players
+    .filter((p) => p.position === pos)
+    .sort((a, b) => b.valueDynasty - a.valueDynasty || a.id.localeCompare(b.id))[0];
+  const ev = ps.evidence;
+
+  return (
+    <div className="pos-dash-row">
+      <span className="pos-tag" style={{ background: posColor(pos) }}>{pos}</span>
+      <div className="pos-dash-class">
+        <span style={{ color: POS_CLASS_COLOR[ps.starterClassification ?? "HEALTHY"], fontWeight: 700, fontSize: 11 }}>
+          {ps.starterClassification ?? ps.classification.replace("_", " ")}
+        </span>
+        <span style={{ color: "#475569", fontSize: 10 }}> / </span>
+        <span style={{ color: POS_CLASS_COLOR[ps.depthClassification ?? "HEALTHY"], fontWeight: 700, fontSize: 10 }}>
+          {ps.depthClassification ?? "—"}
+        </span>
+        <span style={{ color: "#475569", fontSize: 10 }}> · {ps.urgency.toFixed(0)}</span>
+      </div>
+      <div className="pos-dash-metric" data-label="START">
+        {ev ? (
+          <FloorGauge ev={ev.starter} label={ps.starterClassification ?? "HEALTHY"} />
+        ) : (
+          <span className="state-gauge-num">{fmt(ps.starterValue)}</span>
+        )}
+      </div>
+      <div className="pos-dash-metric" data-label="DEPTH">
+        {ev ? (
+          <FloorGauge ev={ev.depth} label={ps.depthClassification ?? "HEALTHY"} />
+        ) : (
+          <span className="state-gauge-num">{fmt(ps.depthValue)}</span>
+        )}
+      </div>
+      <span className="pos-dash-player">
+        {top ? `${top.name}${top.age != null ? ` (${Number(top.age).toFixed(1)})` : ""}` : "—"}
+      </span>
+    </div>
+  );
+}
+
+function PositionTable({ me }: { me: TeamProfile }) {
+  const hasEvidence = POSITIONS.some((p) => me.positionScores[p].evidence);
+  return (
+    <div className="pos-dashboard state-positions">
+      <div className="state-report-head">
+        <span className="state-report-title">POSITIONS · WEAKEST SLOT VS THE FLOORS</span>
+      </div>
+      <p className="state-report-sub">
+        {hasEvidence
+          ? "Each bar is the weakest slot you would actually have to start there. The two ticks are the thresholds that set the label: under the left one reads CRITICAL, under the right one NEED. They are absolute, not a league ranking, so a thin position stays thin even in a weak league."
+          : "Re-sync this league to see the thresholds behind each label."}
+      </p>
+      <div className="pos-dash-header-row">
+        <div />
+        <div className="pos-dash-col-label">CLASSIFICATION</div>
+        <div className="pos-dash-col-label">STARTERS</div>
+        <div className="pos-dash-col-label">DEPTH</div>
+        <div className="pos-dash-col-label">BEST PLAYER</div>
+      </div>
+      {POSITIONS.map((pos) => (
+        <PositionRow key={pos} pos={pos} me={me} />
+      ))}
+    </div>
+  );
+}
+
+export default function TeamState({
+  me,
+  league,
+  format,
+}: {
+  me: TeamProfile;
+  league: TeamProfile[];
+  format: LeagueFormat;
+}) {
   if (league.length < 2) return null;
   return (
     <section className="dive-pos-section">
       <h2 className="section-title">TEAM STATE</h2>
       <p className="dim-text scout-intro">
-        The evidence the scouting report is reading. Every dot is a team in this league, and the
-        amber one is you.
+        The numbers under the badges: what you actually scored, how much career your starters have
+        left, and where each position sits against the thresholds that label it.
       </p>
       <div className="state-grid">
-        <div className="state-panel">
-          {METRICS.map((m) => (
-            <StripPlot key={m.key} metric={m} me={me} league={league} />
-          ))}
-        </div>
-        <div className="state-panel">
-          <RosterShape me={me} league={league} />
+        <Scoring me={me} league={league} />
+        <WindowReport me={me} format={format} />
+      </div>
+      <div className="state-grid">
+        <RosterShape me={me} league={league} />
+        <div className="state-panel state-panel-wide">
+          <PositionTable me={me} />
         </div>
       </div>
-      <PositionTable me={me} league={league} />
     </section>
   );
 }
