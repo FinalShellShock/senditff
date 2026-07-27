@@ -3343,7 +3343,7 @@ body {
   letter-spacing: 1.2px;
   font-weight: 700;
   color: #334155;
-  margin-top: 4px;
+  margin-top: 5px;
 }
 
 .state-runway-group:first-child {
@@ -3517,24 +3517,14 @@ body {
   .state-panel {
     flex: 1 1 100%;
   }
-  .state-runway-group {
-  font-size: 8px;
-  letter-spacing: 1.2px;
-  font-weight: 700;
-  color: #334155;
-  margin-top: 4px;
-}
-
-.state-runway-group:first-child {
-  margin-top: 0;
-}
-
-.state-runway-row {
-    grid-template-columns: 24px minmax(0, 1fr) 28px 1fr 28px;
+  /* Six columns overflow a 390px panel. The signed pull stays, since it is the
+     point of the panel; the career-left percentage goes, because the bar right
+     next to it already shows the same thing. */
+  .state-runway-row {
+    grid-template-columns: 22px minmax(0, 1fr) 28px 1fr 34px;
+    gap: 6px;
   }
-  /* Runway years are the first thing to go when space is tight: the percentage
-     beside it already carries the same ordering. */
-  .state-runway-runway {
+  .state-runway-left {
     display: none;
   }
 }
