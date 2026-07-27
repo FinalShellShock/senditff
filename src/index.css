@@ -1369,19 +1369,6 @@ body {
 
 /* ── Mini bar (shared across league table + position dashboard) ──────── */
 
-.mini-bar-track {
-  height: 3px;
-  background: rgba(255,255,255,0.06);
-  border-radius: 2px;
-  overflow: hidden;
-  flex: 1;
-  min-width: 32px;
-}
-
-.mini-bar-fill {
-  height: 100%;
-  border-radius: 2px;
-}
 
 /* ── League table ────────────────────────────────────────────────────── */
 
@@ -2097,7 +2084,7 @@ body {
 .pos-dash-row {
   display: grid;
   /* pos-tag | classification | starter | depth | best player */
-  grid-template-columns: 34px 160px 1fr 1fr 1fr;
+  grid-template-columns: 34px 150px 1.35fr 1.35fr 1fr;
   gap: 10px;
   align-items: center;
 }
@@ -2132,7 +2119,9 @@ body {
 .pos-dash-num {
   font-size: 11px;
   color: #64748b;
-  width: 22px;
+  /* Raw position values, not a 0-100 score, so this holds five digits plus a
+     thousands separator. At the old 22px they wrapped or clipped. */
+  width: 46px;
   text-align: right;
   flex-shrink: 0;
 }
@@ -3280,6 +3269,49 @@ body {
   font-size: 8.5px;
   color: #475569;
   margin-top: -2px;
+}
+
+/* Fills the metric cell so the league spread reads at a glance; the number
+   beside it keeps the precision the dots cannot carry. */
+.state-dots-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  flex: 1;
+}
+
+.state-positions {
+  margin-top: 10px;
+}
+
+.pos-dash-num {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 860px) {
+  /* Stacked: the label prefixes come from data-label so the numbers keep
+     meaning once the column headers are gone. */
+  .pos-dash-header-row {
+    display: none;
+  }
+  .pos-dash-row {
+    grid-template-columns: 34px 1fr;
+    row-gap: 6px;
+  }
+  .pos-dash-class,
+  .pos-dash-metric,
+  .pos-dash-player {
+    grid-column: 2;
+  }
+  .pos-dash-metric::before {
+    content: attr(data-label);
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: #334155;
+    width: 42px;
+    flex-shrink: 0;
+  }
 }
 
 .state-shape-key {

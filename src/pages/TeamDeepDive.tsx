@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import type { Pick as DraftPick, Player, Position, SubClassification, TeamProfile, WindowLabel } from "../algo/types.ts";
+import type { Pick as DraftPick, Player, Position, TeamProfile, WindowLabel } from "../algo/types.ts";
 import { makeApiClient, type LedgerRow } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
@@ -26,14 +26,6 @@ const LABEL_COLOR: Record<WindowLabel, string> = {
 // z -1 and CRITICAL below z -2, so the middle is always the big bucket).
 // Painting that middle green made 80% of the leverage board green and buried
 // the signal.
-const POS_CLASS_COLOR: Record<string, string> = {
-  CRITICAL_NEED: "#ef4444",
-  CRITICAL:      "#ef4444",
-  NEED:          "#eab308",
-  HEALTHY:       "#64748b",
-  SURPLUS:       "#22c55e",
-};
-
 const POSITIONS = ["QB", "RB", "WR", "TE"] as const;
 
 // Deep-links a play into the trade finder. Plays without an archetype are
@@ -52,18 +44,6 @@ type RosterItem = { divider: (typeof POSITIONS)[number]; player?: undefined } | 
 function posColor(pos: string) {
   const map: Record<string, string> = { QB: "#f97316", RB: "#22c55e", WR: "#3b82f6", TE: "#a855f7" };
   return map[pos] ?? "#94a3b8";
-}
-
-function MiniBar({ score, kind }: { score: number; kind?: SubClassification }) {
-  const pct = Math.min(100, Math.max(0, score));
-  const color = kind
-    ? POS_CLASS_COLOR[kind] ?? "#22c55e"
-    : pct >= 70 ? "#22c55e" : pct >= 50 ? "#64748b" : pct >= 30 ? "#eab308" : "#ef4444";
-  return (
-    <div className="mini-bar-track">
-      <div className="mini-bar-fill" style={{ width: `${pct}%`, background: color }} />
-    </div>
-  );
 }
 
 function PickRow({ pick }: { pick: DraftPick }) {
@@ -292,57 +272,6 @@ export default function TeamDeepDive() {
         </div>
       </section>
 
-      {/* Position dashboard */}
-      <section className="dive-pos-section">
-        <h2 className="section-title">POSITIONS</h2>
-        <div className="pos-dashboard">
-          <div className="pos-dash-header-row">
-            <div />
-            <div className="pos-dash-col-label">CLASSIFICATION</div>
-            <div className="pos-dash-col-label">STARTER</div>
-            <div className="pos-dash-col-label">DEPTH</div>
-            <div className="pos-dash-col-label">BEST PLAYER</div>
-          </div>
-          {POSITIONS.map((pos) => {
-            const ps = profile.positionScores[pos];
-            const top = profile.players
-              .filter((p) => p.position === pos)
-              .sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
-            return (
-              <div key={pos} className="pos-dash-row">
-                <span className="pos-tag" style={{ background: posColor(pos), color: "#fff", padding: "2px 6px", borderRadius: 3, fontSize: 9, fontWeight: 700, letterSpacing: 1, textAlign: "center" }}>
-                  {pos}
-                </span>
-                <div className="pos-dash-class">
-                  {/* Dual-zone: starter and depth judged separately (a SURPLUS
-                      starter room shouldn't hide behind merely-healthy depth) */}
-                  <span style={{ color: POS_CLASS_COLOR[ps.starterClassification ?? "HEALTHY"], fontWeight: 700, fontSize: 11 }}>
-                    {ps.starterClassification ?? ps.classification.replace("_", " ")}
-                  </span>
-                  <span style={{ color: "#475569", fontSize: 10 }}> / </span>
-                  <span style={{ color: POS_CLASS_COLOR[ps.depthClassification ?? "HEALTHY"], fontWeight: 700, fontSize: 10 }}>
-                    {ps.depthClassification ?? "—"}
-                  </span>
-                  <span style={{ color: "#475569", fontSize: 10 }}> · {ps.urgency.toFixed(0)}</span>
-                </div>
-                <div className="pos-dash-metric">
-                  <MiniBar score={ps.starterScore} kind={ps.starterClassification} />
-                  <span className="pos-dash-num">{ps.starterScore.toFixed(0)}</span>
-                </div>
-                <div className="pos-dash-metric">
-                  <MiniBar score={ps.depthScore} kind={ps.depthClassification} />
-                  <span className="pos-dash-num">{ps.depthScore.toFixed(0)}</span>
-                </div>
-                <span className="pos-dash-player">
-                  {top ? `${top.name}${top.age != null ? ` (${Number(top.age).toFixed(1)})` : ""}` : "—"}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Roster — compact, deprioritized */}
       <section className="dive-pos-section">
         <div className="shape-header">
           <h2 className="section-title">ROSTER</h2>

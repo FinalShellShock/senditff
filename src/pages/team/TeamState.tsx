@@ -30,7 +30,7 @@ import {
   fringeBand,
   leagueRanking,
 } from "../../algo/plays.ts";
-import type { TeamProfile } from "../../algo/types.ts";
+import type { Player, Position, TeamProfile } from "../../algo/types.ts";
 
 /** The one place a PickFlag becomes words. Lived in TeamDeepDive, and the
  *  chart briefly rendered the raw flag instead, so the same datum read "FINE"
@@ -39,6 +39,54 @@ export const pickFlagText = (flag: string) =>
   flag === "NEUTRAL" ? "FINE" : flag.replace("_", " ");
 
 const ACCENT = "#f59e0b";
+const MUTED = "rgba(148,163,184,0.35)";
+
+const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
+
+const POS_CLASS_COLOR: Record<string, string> = {
+  CRITICAL_NEED: "#ef4444",
+  CRITICAL:      "#ef4444",
+  NEED:          "#eab308",
+  HEALTHY:       "#64748b",
+  SURPLUS:       "#22c55e",
+};
+
+function posColor(pos: string) {
+  const map: Record<string, string> = { QB: "#c2410c", RB: "#ca8a04", WR: "#3b82f6", TE: "#a855f7" };
+  return map[pos] ?? "#94a3b8";
+}
+
+const fmt = (n: number) => Math.round(n).toLocaleString();
+
+/** Every team on one axis, this team highlighted. The shared primitive behind
+ *  both the headline strips and the per-position rows: a 0-100 score says
+ *  nothing about whether the field is bunched or spread, and that is exactly
+ *  the question "am I actually short at this position" turns on. */
+function LeagueDots({
+  values,
+  mine,
+  height = 14,
+}: {
+  values: number[];
+  mine: number;
+  height?: number;
+}) {
+  const W = 200;
+  const padX = 5;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const x = (v: number) => padX + ((v - min) / span) * (W - padX * 2);
+  return (
+    <svg viewBox={`0 0 ${W} ${height}`} className="state-dots-svg" aria-hidden="true">
+      <line x1={padX} y1={height / 2} x2={W - padX} y2={height / 2} stroke={GRID} strokeWidth={1} />
+      {values.map((v, i) => (
+        <circle key={i} cx={x(v)} cy={height / 2} r={2.6} fill={MUTED} />
+      ))}
+      <circle cx={x(mine)} cy={height / 2} r={4} fill={ACCENT} />
+    </svg>
+  );
+}
 const GRID = "rgba(255,255,255,0.07)";
 const AXIS_TEXT = "#475569";
 
@@ -85,41 +133,85 @@ const METRICS: Metric[] = [
 ];
 
 function StripPlot({ metric, me, league }: { metric: Metric; me: TeamProfile; league: TeamProfile[] }) {
-  const W = 300;
-  const H = 26;
-  const padX = 6;
-  const values = league.map(metric.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min || 1;
-  const x = (v: number) => padX + ((v - min) / span) * (W - padX * 2);
-  const mine = metric.value(me);
-
   return (
     <div className="state-strip">
       <div className="state-strip-head">
         <span className="state-strip-label">{metric.label}</span>
         <span className="state-strip-value">{metric.format(me)}</span>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="state-strip-svg" role="img"
-        aria-label={`${metric.label}: ${metric.format(me)} of ${league.length} teams`}>
-        <line x1={padX} y1={H / 2} x2={W - padX} y2={H / 2} stroke={GRID} strokeWidth={1} />
-        {league.map((t) => (
-          <circle
-            key={t.rosterId}
-            cx={x(metric.value(t))}
-            cy={H / 2}
-            r={t.rosterId === me.rosterId ? 5 : 3}
-            fill={t.rosterId === me.rosterId ? ACCENT : "rgba(148,163,184,0.35)"}
-          />
-        ))}
-        {/* Drawn last so a tied neighbour can never paint over the marker. */}
-        <circle cx={x(mine)} cy={H / 2} r={5} fill={ACCENT} />
-      </svg>
+      <LeagueDots values={league.map(metric.value)} mine={metric.value(me)} height={20} />
       <div className="state-strip-ends">
         <span>{metric.lowLabel}</span>
         <span>{metric.highLabel}</span>
       </div>
+    </div>
+  );
+}
+
+// ── Positions ────────────────────────────────────────────────────────────────
+//
+// Folded into TEAM STATE rather than sitting in its own section, because it IS
+// the evidence for the starter-strength headline directly above it. As a
+// standalone block it read as unrelated detail.
+//
+// The starter and depth columns used to be a 0-100 score with a bar filled to
+// that percentage. The score is computed against the league average, so the
+// bar was already a comparison, but a lone filled bar cannot show whether you
+// are 3 points off the field or in a class of your own. These now plot the
+// league's actual position values with this team's dot on them, which is the
+// data the score was derived from in the first place.
+
+function PositionRow({ pos, me, league }: { pos: Position; me: TeamProfile; league: TeamProfile[] }) {
+  const ps = me.positionScores[pos];
+  const top = me.players
+    .filter((p) => p.position === pos)
+    .sort((a, b) => b.valueDynasty - a.valueDynasty || a.id.localeCompare(b.id))[0] as Player | undefined;
+  const starterValues = league.map((t) => t.positionScores[pos].starterValue);
+  const depthValues = league.map((t) => t.positionScores[pos].depthValue);
+
+  return (
+    <div className="pos-dash-row">
+      <span className="pos-tag" style={{ background: posColor(pos) }}>{pos}</span>
+      <div className="pos-dash-class">
+        {/* Dual-zone: starter and depth judged separately (a SURPLUS starter
+            room shouldn't hide behind merely-healthy depth) */}
+        <span style={{ color: POS_CLASS_COLOR[ps.starterClassification ?? "HEALTHY"], fontWeight: 700, fontSize: 11 }}>
+          {ps.starterClassification ?? ps.classification.replace("_", " ")}
+        </span>
+        <span style={{ color: "#475569", fontSize: 10 }}> / </span>
+        <span style={{ color: POS_CLASS_COLOR[ps.depthClassification ?? "HEALTHY"], fontWeight: 700, fontSize: 10 }}>
+          {ps.depthClassification ?? "\u2014"}
+        </span>
+        <span style={{ color: "#475569", fontSize: 10 }}> · {ps.urgency.toFixed(0)}</span>
+      </div>
+      <div className="pos-dash-metric" data-label="START">
+        <LeagueDots values={starterValues} mine={ps.starterValue} />
+        <span className="pos-dash-num">{fmt(ps.starterValue)}</span>
+      </div>
+      <div className="pos-dash-metric" data-label="DEPTH">
+        <LeagueDots values={depthValues} mine={ps.depthValue} />
+        <span className="pos-dash-num">{fmt(ps.depthValue)}</span>
+      </div>
+      <span className="pos-dash-player">
+        {top ? `${top.name}${top.age != null ? ` (${Number(top.age).toFixed(1)})` : ""}` : "\u2014"}
+      </span>
+    </div>
+  );
+}
+
+function PositionTable({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
+  return (
+    <div className="pos-dashboard state-positions">
+      <div className="pos-dash-header-row">
+        <div />
+        <div className="pos-dash-col-label">CLASSIFICATION</div>
+        <div className="pos-dash-col-label">STARTERS VS LEAGUE</div>
+        <div className="pos-dash-col-label">DEPTH VS LEAGUE</div>
+        <div className="pos-dash-col-label">BEST PLAYER</div>
+      </div>
+      {POSITIONS.map((pos) => (
+        <PositionRow key={pos} pos={pos} me={me} league={league} />
+      ))}
     </div>
   );
 }
@@ -239,8 +331,8 @@ export default function TeamState({ me, league }: { me: TeamProfile; league: Tea
     <section className="dive-pos-section">
       <h2 className="section-title">TEAM STATE</h2>
       <p className="dim-text scout-intro">
-        Where you actually sit, and what your roster is made of. The plays below read from these
-        two pictures.
+        The evidence the scouting report is reading. Every dot is a team in this league, and the
+        amber one is you.
       </p>
       <div className="state-grid">
         <div className="state-panel">
@@ -252,6 +344,7 @@ export default function TeamState({ me, league }: { me: TeamProfile; league: Tea
           <RosterShape me={me} league={league} />
         </div>
       </div>
+      <PositionTable me={me} league={league} />
     </section>
   );
 }
