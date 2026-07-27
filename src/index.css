@@ -2083,8 +2083,8 @@ body {
 .pos-dash-header-row,
 .pos-dash-row {
   display: grid;
-  /* pos-tag | starters | depth | best player */
-  grid-template-columns: 34px 1fr 1fr 1.1fr;
+  /* pos-tag | weakest starter | top backup */
+  grid-template-columns: 34px 1fr 1fr;
   gap: 10px;
   align-items: center;
 }
@@ -2114,31 +2114,6 @@ body {
   gap: 6px;
 }
 
-
-.pos-dash-player {
-  font-size: 11px;
-  color: #94a3b8;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 640px) {
-  .pos-dash-header-row,
-  .pos-dash-row {
-    grid-template-columns: 28px 100px 1fr 1fr;
-    row-gap: 4px;
-  }
-  .pos-dash-header-row > *:nth-child(5) {
-    display: none;
-  }
-  .pos-dash-player {
-    grid-column: 1 / -1;
-    font-size: 10px;
-    color: #475569;
-    white-space: normal;
-  }
-}
 
 /* ── Compact roster ──────────────────────────────────────────────────── */
 
@@ -3348,11 +3323,30 @@ body {
   margin-top: 0;
 }
 
-.state-runway-row {
+.state-runway-row,
+.state-runway-head {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) 30px 1fr 30px 32px;
+  grid-template-columns: 24px minmax(0, 1fr) 30px 26px 1fr 32px;
   align-items: center;
   gap: 7px;
+}
+
+.state-runway-head {
+  font-size: 7.5px;
+  letter-spacing: 1px;
+  color: #334155;
+  margin-bottom: 1px;
+}
+
+.state-runway-head span {
+  text-align: right;
+}
+
+.state-runway-wear {
+  font-size: 9.5px;
+  color: #94a3b8;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .state-runway-name {
@@ -3364,7 +3358,6 @@ body {
 }
 
 .state-runway-age,
-.state-runway-left,
 .state-runway-runway {
   font-size: 9.5px;
   color: #64748b;
@@ -3435,10 +3428,44 @@ body {
 
 .state-sev {
   display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.state-sev-top {
+  display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
 }
+
+.state-sev-sub {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.state-sev-player {
+  font-size: 10px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The numbers behind the label, on the page rather than in a tooltip. */
+.state-sev-nums {
+  font-size: 9px;
+  color: #475569;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.state-z-bad { color: #eab308; }
 
 .state-sev-steps {
   display: flex;
@@ -3476,8 +3503,7 @@ body {
     grid-template-columns: 34px 1fr;
     row-gap: 6px;
   }
-  .state-positions .pos-dash-metric,
-  .state-positions .pos-dash-player {
+  .state-positions .pos-dash-metric {
     grid-column: 2;
   }
   .state-positions .pos-dash-metric::before {
@@ -3497,11 +3523,15 @@ body {
   /* Six columns overflow a 390px panel. The signed pull stays, since it is the
      point of the panel; the career-left percentage goes, because the bar right
      next to it already shows the same thing. */
-  .state-runway-row {
-    grid-template-columns: 22px minmax(0, 1fr) 28px 1fr 34px;
+  /* Age goes at this width; WEAR is the number that explains the grouping and
+     the pull is the result, so those two stay. */
+  .state-runway-row,
+  .state-runway-head {
+    grid-template-columns: 22px minmax(0, 1fr) 26px 1fr 34px;
     gap: 6px;
   }
-  .state-runway-left {
+  .state-runway-age,
+  .state-runway-head span:nth-child(3) {
     display: none;
   }
 }

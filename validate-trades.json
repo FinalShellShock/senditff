@@ -14,7 +14,7 @@
               "name": "Tony Pollard",
               "position": "RB",
               "valueDynasty": 1794,
-              "age": 29.24066822087231
+              "age": 29.24070225359343
             }
           ],
           "receive": [
@@ -24,7 +24,7 @@
               "name": "Oronde Gadsden",
               "position": "TE",
               "valueDynasty": 1879,
-              "age": 23.088717502725174
+              "age": 23.08875153519279
             }
           ],
           "adjValueGive": 1794,
@@ -51,7 +51,7 @@
               "name": "TreVeyon Henderson",
               "position": "RB",
               "valueDynasty": 4045,
-              "age": 23.762228795820974
+              "age": 23.762262828542095
             },
             {
               "id": "5967",
@@ -59,7 +59,7 @@
               "name": "Tony Pollard",
               "position": "RB",
               "valueDynasty": 1794,
-              "age": 29.24066822087231
+              "age": 29.24070225359343
             }
           ],
           "receive": [
@@ -69,7 +69,7 @@
               "name": "Jonathan Taylor",
               "position": "RB",
               "valueDynasty": 5672,
-              "age": 27.518560076304915
+              "age": 27.51859410877253
             }
           ],
           "adjValueGive": 5480.2,
@@ -96,7 +96,7 @@
               "name": "Nico Collins",
               "position": "WR",
               "valueDynasty": 4397,
-              "age": 27.357026879325424
+              "age": 27.357060912046542
             }
           ],
           "receive": [
@@ -106,7 +106,7 @@
               "name": "Kenneth Walker",
               "position": "RB",
               "valueDynasty": 4632,
-              "age": 25.76633557254037
+              "age": 25.766369605007984
             }
           ],
           "adjValueGive": 4397,
@@ -133,7 +133,7 @@
               "name": "TreVeyon Henderson",
               "position": "RB",
               "valueDynasty": 4045,
-              "age": 23.762228795820974
+              "age": 23.762262828542095
             },
             {
               "id": "5967",
@@ -141,7 +141,7 @@
               "name": "Tony Pollard",
               "position": "RB",
               "valueDynasty": 1794,
-              "age": 29.24066822087231
+              "age": 29.24070225359343
             },
             {
               "id": "2028-3-1",
@@ -157,7 +157,7 @@
               "name": "De'Von Achane",
               "position": "RB",
               "valueDynasty": 6128,
-              "age": 24.786184990747078
+              "age": 24.78621902321469
             }
           ],
           "adjValueGive": 6026.12,
@@ -167,7 +167,7 @@
           "archetype": "consolidate_RB",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.3082950766579352,
+            "total": 0.3082947823343216,
             "myFit": 0.01956448955032503,
             "theirFit": 0.39771696810289453,
             "balance": 0.9356675387589377,
@@ -184,7 +184,7 @@
               "name": "Nico Collins",
               "position": "WR",
               "valueDynasty": 4397,
-              "age": 27.357026879325424
+              "age": 27.357060912046542
             }
           ],
           "receive": [
@@ -194,7 +194,7 @@
               "name": "Jaylen Waddle",
               "position": "WR",
               "valueDynasty": 3277,
-              "age": 27.66914186959718
+              "age": 27.669175902064797
             },
             {
               "id": "6806",
@@ -202,7 +202,7 @@
               "name": "J.K. Dobbins",
               "position": "RB",
               "valueDynasty": 1636,
-              "age": 27.608909152280276
+              "age": 27.60894318474789
             }
           ],
           "adjValueGive": 4565,
@@ -246,7 +246,7 @@
               "name": "Quinshon Judkins",
               "position": "RB",
               "valueDynasty": 4196,
-              "age": 22.743748303514842
+              "age": 22.74378233598246
             },
             {
               "id": "9756",
@@ -254,7 +254,7 @@
               "name": "Jordan Addison",
               "position": "WR",
               "valueDynasty": 2066,
-              "age": 24.495972807279387
+              "age": 24.496006839747004
             }
           ],
           "receive": [
@@ -264,7 +264,7 @@
               "name": "Josh Allen",
               "position": "QB",
               "valueDynasty": 5464,
-              "age": 30.18248889218445
+              "age": 30.182522924683752
             }
           ],
           "adjValueGive": 5848.8,
@@ -274,7 +274,7 @@
           "archetype": "consolidate_flex",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.5542450088595978,
+            "total": 0.554244629242125,
             "myFit": 1,
             "theirFit": 0.7197206735499906,
             "balance": 0.9667282177540691,
@@ -291,7 +291,7 @@
               "name": "Tetairoa McMillan",
               "position": "WR",
               "valueDynasty": 4835,
-              "age": 23.310483416451188
+              "age": 23.3105174489188
             }
           ],
           "receive": [
@@ -301,7 +301,7 @@
               "name": "Michael Pittman",
               "position": "WR",
               "valueDynasty": 1858,
-              "age": 28.808087797075824
+              "age": 28.80812182954344
             },
             {
               "id": "11584",
@@ -309,7 +309,7 @@
               "name": "Bucky Irving",
               "position": "RB",
               "valueDynasty": 3536,
-              "age": 23.937451246767814
+              "age": 23.93748527923543
             }
           ],
           "adjValueGive": 5029.85,
@@ -319,7 +319,7 @@
           "archetype": "tier_down_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.4459448305987314,
+            "total": 0.445944525408322,
             "myFit": 0.8530825284699185,
             "theirFit": 0.10985590336088735,
             "balance": 0.9985188425102138,
@@ -336,7 +336,7 @@
               "name": "Tetairoa McMillan",
               "position": "WR",
               "valueDynasty": 4835,
-              "age": 23.310483416451188
+              "age": 23.3105174489188
             }
           ],
           "receive": [
@@ -346,7 +346,7 @@
               "name": "DJ Moore",
               "position": "WR",
               "valueDynasty": 2334,
-              "age": 29.28447383400512
+              "age": 29.284507866504423
             },
             {
               "id": "12508",
@@ -354,7 +354,7 @@
               "name": "Jaxson Dart",
               "position": "QB",
               "valueDynasty": 2742,
-              "age": 23.206445086571858
+              "age": 23.206479119071158
             }
           ],
           "adjValueGive": 5148.95,
@@ -364,7 +364,7 @@
           "archetype": "tier_down_WR",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.4393917979416325,
+            "total": 0.4393914969059394,
             "myFit": 0.8930343637512782,
             "theirFit": 0.3625589170272683,
             "balance": 0.8951728022218122,
@@ -381,7 +381,7 @@
               "name": "Tetairoa McMillan",
               "position": "WR",
               "valueDynasty": 4835,
-              "age": 23.310483416451188
+              "age": 23.3105174489188
             }
           ],
           "receive": [
@@ -391,7 +391,7 @@
               "name": "Michael Pittman",
               "position": "WR",
               "valueDynasty": 1858,
-              "age": 28.808087797075824
+              "age": 28.80812182954344
             },
             {
               "id": "12481",
@@ -399,7 +399,7 @@
               "name": "Cam Skattebo",
               "position": "RB",
               "valueDynasty": 3433,
-              "age": 24.471332150258576
+              "age": 24.47136618272619
             }
           ],
           "adjValueGive": 5045.3,
@@ -409,7 +409,7 @@
           "archetype": "tier_down_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.407892054248626,
+            "total": 0.40789197884105577,
             "myFit": 0.8751500077509501,
             "theirFit": 0.10651023234177098,
             "balance": 0.9750460824926168,
@@ -426,7 +426,7 @@
               "name": "Tetairoa McMillan",
               "position": "WR",
               "valueDynasty": 4835,
-              "age": 23.310483416451188
+              "age": 23.3105174489188
             }
           ],
           "receive": [
@@ -436,7 +436,7 @@
               "name": "Jerry Jeudy",
               "position": "WR",
               "valueDynasty": 1180,
-              "age": 27.258464251527364
+              "age": 27.25849828399498
             },
             {
               "id": "8155",
@@ -444,7 +444,7 @@
               "name": "Breece Hall",
               "position": "RB",
               "valueDynasty": 4113,
-              "age": 25.15579484700991
+              "age": 25.155828879477525
             }
           ],
           "adjValueGive": 4943.3,
@@ -454,7 +454,7 @@
           "archetype": "tier_down_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.3580458214071919,
+            "total": 0.3580450773270893,
             "myFit": 0.7147083927579952,
             "theirFit": 0.03632777411995704,
             "balance": 0.9775163140201701,
@@ -488,7 +488,7 @@
               "name": "Drake Maye",
               "position": "QB",
               "valueDynasty": 4768,
-              "age": 23.907334888045987
+              "age": 23.9073689205136
             }
           ],
           "receive": [
@@ -498,7 +498,7 @@
               "name": "Jared Goff",
               "position": "QB",
               "valueDynasty": 1824,
-              "age": 31.78413160268842
+              "age": 31.784165635156032
             },
             {
               "id": "11584",
@@ -506,7 +506,7 @@
               "name": "Bucky Irving",
               "position": "RB",
               "valueDynasty": 3536,
-              "age": 23.937451246767814
+              "age": 23.93748527923543
             }
           ],
           "adjValueGive": 4952.8,
@@ -533,7 +533,7 @@
               "name": "Drake Maye",
               "position": "QB",
               "valueDynasty": 4768,
-              "age": 23.907334888045987
+              "age": 23.9073689205136
             }
           ],
           "receive": [
@@ -543,7 +543,7 @@
               "name": "Jared Goff",
               "position": "QB",
               "valueDynasty": 1824,
-              "age": 31.78413160268842
+              "age": 31.784165635156032
             },
             {
               "id": "12481",
@@ -551,7 +551,7 @@
               "name": "Cam Skattebo",
               "position": "RB",
               "valueDynasty": 3433,
-              "age": 24.471332150258576
+              "age": 24.47136618272619
             }
           ],
           "adjValueGive": 4968.25,
@@ -578,7 +578,7 @@
               "name": "Sam Darnold",
               "position": "QB",
               "valueDynasty": 1515,
-              "age": 29.142105593042565
+              "age": 29.14213962551018
             },
             {
               "id": "10866",
@@ -586,7 +586,7 @@
               "name": "Aidan O'Connell",
               "position": "QB",
               "valueDynasty": 0,
-              "age": 27.90185918647172
+              "age": 27.901893218939335
             }
           ],
           "receive": [
@@ -596,7 +596,7 @@
               "name": "Kyler Murray",
               "position": "QB",
               "valueDynasty": 1499,
-              "age": 28.96962099348493
+              "age": 28.969655025952544
             }
           ],
           "adjValueGive": 1517.4,
@@ -606,7 +606,7 @@
           "archetype": "consolidate_QB",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.276886232858052,
+            "total": 0.27688607149878114,
             "myFit": -0.010344819842175088,
             "theirFit": 0.17571092436974786,
             "balance": 0.9878739949914327,
@@ -623,7 +623,7 @@
               "name": "Harold Fannin",
               "position": "TE",
               "valueDynasty": 2935,
-              "age": 22.018217844924838
+              "age": 22.01825187739245
             }
           ],
           "receive": [
@@ -633,7 +633,7 @@
               "name": "Mason Taylor",
               "position": "TE",
               "valueDynasty": 827,
-              "age": 22.218080952417168
+              "age": 22.218114984916472
             },
             {
               "id": "5892",
@@ -641,7 +641,7 @@
               "name": "David Montgomery",
               "position": "RB",
               "valueDynasty": 2340,
-              "age": 29.136629891499986
+              "age": 29.13666392399929
             }
           ],
           "adjValueGive": 3024.25,
@@ -668,7 +668,7 @@
               "name": "Dalton Kincaid",
               "position": "TE",
               "valueDynasty": 1703,
-              "age": 26.773864662173295
+              "age": 26.77389869464091
             },
             {
               "id": "5001",
@@ -676,7 +676,7 @@
               "name": "Dalton Schultz",
               "position": "TE",
               "valueDynasty": 1044,
-              "age": 30.042858502009025
+              "age": 30.04289253447664
             }
           ],
           "receive": [
@@ -686,7 +686,7 @@
               "name": "Kyle Pitts",
               "position": "TE",
               "valueDynasty": 2575,
-              "age": 25.80466548356022
+              "age": 25.804699516027835
             }
           ],
           "adjValueGive": 2538.2,
@@ -696,7 +696,7 @@
           "archetype": "consolidate_TE",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.23597122607938878,
+            "total": 0.23597168836008983,
             "myFit": 0.2932045086652588,
             "theirFit": 0.09419849779097933,
             "balance": 0.938058984403873,
@@ -730,7 +730,7 @@
               "name": "Tyler Warren",
               "position": "TE",
               "valueDynasty": 4293,
-              "age": 24.17564426521662
+              "age": 24.175678297684236
             }
           ],
           "receive": [
@@ -740,7 +740,7 @@
               "name": "Pat Freiermuth",
               "position": "TE",
               "valueDynasty": 843,
-              "age": 27.754015243998275
+              "age": 27.754049276465892
             },
             {
               "id": "12519",
@@ -748,7 +748,7 @@
               "name": "Luther Burden",
               "position": "WR",
               "valueDynasty": 3578,
-              "age": 22.623282868912717
+              "age": 22.623316901380335
             }
           ],
           "adjValueGive": 4400.25,
@@ -775,7 +775,7 @@
               "name": "Malik Nabers",
               "position": "WR",
               "valueDynasty": 6375,
-              "age": 22.998368426749817
+              "age": 22.99840245921743
             }
           ],
           "receive": [
@@ -785,7 +785,7 @@
               "name": "Brian Thomas",
               "position": "WR",
               "valueDynasty": 3294,
-              "age": 23.80055870741121
+              "age": 23.800592739878823
             },
             {
               "id": "11584",
@@ -793,7 +793,7 @@
               "name": "Bucky Irving",
               "position": "RB",
               "valueDynasty": 3536,
-              "age": 23.937451246767814
+              "age": 23.93748527923543
             }
           ],
           "adjValueGive": 6800.85,
@@ -820,7 +820,7 @@
               "name": "Tyler Warren",
               "position": "TE",
               "valueDynasty": 4293,
-              "age": 24.17564426521662
+              "age": 24.175678297684236
             }
           ],
           "receive": [
@@ -830,7 +830,7 @@
               "name": "Michael Mayer",
               "position": "TE",
               "valueDynasty": 687,
-              "age": 25.057232218673157
+              "age": 25.05726625114077
             },
             {
               "id": "12519",
@@ -838,7 +838,7 @@
               "name": "Luther Burden",
               "position": "WR",
               "valueDynasty": 3578,
-              "age": 22.623282868912717
+              "age": 22.623316901380335
             }
           ],
           "adjValueGive": 4400.25,
@@ -865,7 +865,7 @@
               "name": "Malik Nabers",
               "position": "WR",
               "valueDynasty": 6375,
-              "age": 22.998368426749817
+              "age": 22.99840245921743
             }
           ],
           "receive": [
@@ -875,7 +875,7 @@
               "name": "Brian Thomas",
               "position": "WR",
               "valueDynasty": 3294,
-              "age": 23.80055870741121
+              "age": 23.800592739878823
             },
             {
               "id": "12481",
@@ -883,7 +883,7 @@
               "name": "Cam Skattebo",
               "position": "RB",
               "valueDynasty": 3433,
-              "age": 24.471332150258576
+              "age": 24.47136618272619
             }
           ],
           "adjValueGive": 6816.3,
@@ -893,7 +893,7 @@
           "archetype": "tier_down_WR",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.4174970010640957,
+            "total": 0.4174958337905324,
             "myFit": 1,
             "theirFit": 0.023304309908132842,
             "balance": 0.890248375218227,
@@ -910,7 +910,7 @@
               "name": "Malik Nabers",
               "position": "WR",
               "valueDynasty": 6375,
-              "age": 22.998368426749817
+              "age": 22.99840245921743
             }
           ],
           "receive": [
@@ -920,7 +920,7 @@
               "name": "Quentin Johnston",
               "position": "WR",
               "valueDynasty": 1965,
-              "age": 24.887485469870967
+              "age": 24.88751950233858
             },
             {
               "id": "4034",
@@ -928,7 +928,7 @@
               "name": "Christian McCaffrey",
               "position": "RB",
               "valueDynasty": 4576,
-              "age": 30.135945428803204
+              "age": 30.135979461270818
             }
           ],
           "adjValueGive": 6644.85,
@@ -972,7 +972,7 @@
               "name": "Christian McCaffrey",
               "position": "RB",
               "valueDynasty": 4576,
-              "age": 30.135945428803204
+              "age": 30.135979461270818
             }
           ],
           "receive": [
@@ -982,7 +982,7 @@
               "name": "Emeka Egbuka",
               "position": "WR",
               "valueDynasty": 4667,
-              "age": 23.78413160265673
+              "age": 23.784165635156032
             }
           ],
           "adjValueGive": 4576,
@@ -1009,7 +1009,7 @@
               "name": "Kenneth Walker",
               "position": "RB",
               "valueDynasty": 4632,
-              "age": 25.76633557254037
+              "age": 25.766369605007984
             }
           ],
           "receive": [
@@ -1019,7 +1019,7 @@
               "name": "J.K. Dobbins",
               "position": "RB",
               "valueDynasty": 1636,
-              "age": 27.608909152280276
+              "age": 27.60894318474789
             },
             {
               "id": "10229",
@@ -1027,7 +1027,7 @@
               "name": "Rashee Rice",
               "position": "WR",
               "valueDynasty": 3448,
-              "age": 26.26188656501128
+              "age": 26.261920597478895
             }
           ],
           "adjValueGive": 4809.6,
@@ -1054,7 +1054,7 @@
               "name": "Drake London",
               "position": "WR",
               "valueDynasty": 5615,
-              "age": 25.007950904504778
+              "age": 25.00798493697239
             }
           ],
           "receive": [
@@ -1064,7 +1064,7 @@
               "name": "Brian Thomas",
               "position": "WR",
               "valueDynasty": 3294,
-              "age": 23.80055870741121
+              "age": 23.800592739878823
             },
             {
               "id": "12481",
@@ -1072,7 +1072,7 @@
               "name": "Cam Skattebo",
               "position": "RB",
               "valueDynasty": 3433,
-              "age": 24.471332150258576
+              "age": 24.47136618272619
             }
           ],
           "adjValueGive": 5942.3,
@@ -1082,7 +1082,7 @@
           "archetype": "tier_down_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.4202126261531117,
+            "total": 0.4202127369004841,
             "myFit": 0.7134325720837217,
             "theirFit": 0.02592759744982397,
             "balance": 0.9792524966217329,
@@ -1099,7 +1099,7 @@
               "name": "Kenneth Walker",
               "position": "RB",
               "valueDynasty": 4632,
-              "age": 25.76633557254037
+              "age": 25.766369605007984
             }
           ],
           "receive": [
@@ -1109,7 +1109,7 @@
               "name": "J.K. Dobbins",
               "position": "RB",
               "valueDynasty": 1636,
-              "age": 27.608909152280276
+              "age": 27.60894318474789
             },
             {
               "id": "7526",
@@ -1117,7 +1117,7 @@
               "name": "Jaylen Waddle",
               "position": "WR",
               "valueDynasty": 3277,
-              "age": 27.66914186959718
+              "age": 27.669175902064797
             }
           ],
           "adjValueGive": 4835.25,
@@ -1144,7 +1144,7 @@
               "name": "Drake London",
               "position": "WR",
               "valueDynasty": 5615,
-              "age": 25.007950904504778
+              "age": 25.00798493697239
             }
           ],
           "receive": [
@@ -1154,7 +1154,7 @@
               "name": "Brian Thomas",
               "position": "WR",
               "valueDynasty": 3294,
-              "age": 23.80055870741121
+              "age": 23.800592739878823
             },
             {
               "id": "11584",
@@ -1162,7 +1162,7 @@
               "name": "Bucky Irving",
               "position": "RB",
               "valueDynasty": 3536,
-              "age": 23.937451246767814
+              "age": 23.93748527923543
             }
           ],
           "adjValueGive": 5926.85,
@@ -1172,7 +1172,7 @@
           "archetype": "tier_down_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.38088554408757425,
+            "total": 0.3808858398101322,
             "myFit": 0.6961986438105321,
             "theirFit": 0.04257477008377129,
             "balance": 0.9604047835105003,
@@ -1206,7 +1206,7 @@
               "name": "Jonathan Taylor",
               "position": "RB",
               "valueDynasty": 5672,
-              "age": 27.518560076304915
+              "age": 27.51859410877253
             }
           ],
           "receive": [
@@ -1216,7 +1216,7 @@
               "name": "Rachaad White",
               "position": "RB",
               "valueDynasty": 1671,
-              "age": 27.53772503181484
+              "age": 27.537759064282454
             },
             {
               "id": "8146",
@@ -1224,7 +1224,7 @@
               "name": "Garrett Wilson",
               "position": "WR",
               "valueDynasty": 3943,
-              "age": 26.01274214338226
+              "age": 26.012776175849876
             }
           ],
           "adjValueGive": 5931.35,
@@ -1251,7 +1251,7 @@
               "name": "Jonathan Taylor",
               "position": "RB",
               "valueDynasty": 5672,
-              "age": 27.518560076304915
+              "age": 27.51859410877253
             }
           ],
           "receive": [
@@ -1261,7 +1261,7 @@
               "name": "TreVeyon Henderson",
               "position": "RB",
               "valueDynasty": 4045,
-              "age": 23.762228795820974
+              "age": 23.762262828542095
             },
             {
               "id": "5967",
@@ -1269,7 +1269,7 @@
               "name": "Tony Pollard",
               "position": "RB",
               "valueDynasty": 1794,
-              "age": 29.24066822087231
+              "age": 29.24070225359343
             }
           ],
           "adjValueGive": 5916.05,
@@ -1296,7 +1296,7 @@
               "name": "Chris Olave",
               "position": "WR",
               "valueDynasty": 3843,
-              "age": 26.081188413060563
+              "age": 26.081222445528176
             },
             {
               "id": "6783",
@@ -1304,7 +1304,7 @@
               "name": "Jerry Jeudy",
               "position": "WR",
               "valueDynasty": 1180,
-              "age": 27.258464251527364
+              "age": 27.25849828399498
             }
           ],
           "receive": [
@@ -1314,7 +1314,7 @@
               "name": "George Pickens",
               "position": "WR",
               "valueDynasty": 4696,
-              "age": 25.396725716309223
+              "age": 25.39675974877684
             }
           ],
           "adjValueGive": 4787,
@@ -1324,7 +1324,7 @@
           "archetype": "consolidate_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.38531649546477725,
+            "total": 0.3853158319053682,
             "myFit": 0.3375013734741203,
             "theirFit": -0.017425430392677747,
             "balance": 0.9923403020346397,
@@ -1341,7 +1341,7 @@
               "name": "Jonathan Taylor",
               "position": "RB",
               "valueDynasty": 5672,
-              "age": 27.518560076304915
+              "age": 27.51859410877253
             }
           ],
           "receive": [
@@ -1351,7 +1351,7 @@
               "name": "Tony Pollard",
               "position": "RB",
               "valueDynasty": 1794,
-              "age": 29.24066822087231
+              "age": 29.24070225359343
             },
             {
               "id": "11635",
@@ -1359,7 +1359,7 @@
               "name": "Ladd McConkey",
               "position": "WR",
               "valueDynasty": 3865,
-              "age": 24.70678731738155
+              "age": 24.70682135007098
             }
           ],
           "adjValueGive": 5943.05,
@@ -1386,7 +1386,7 @@
               "name": "Amon-Ra St. Brown",
               "position": "WR",
               "valueDynasty": 7127,
-              "age": 26.75743755748219
+              "age": 26.757471589949805
             }
           ],
           "receive": [
@@ -1396,7 +1396,7 @@
               "name": "Justin Jefferson",
               "position": "WR",
               "valueDynasty": 6996,
-              "age": 27.113358159809366
+              "age": 27.11339219227698
             },
             {
               "id": "9229",
@@ -1404,7 +1404,7 @@
               "name": "Anthony Richardson",
               "position": "QB",
               "valueDynasty": 457,
-              "age": 24.181119966790884
+              "age": 24.1811539992585
             }
           ],
           "adjValueGive": 7146.65,
@@ -1448,7 +1448,7 @@
               "name": "Rico Dowdle",
               "position": "RB",
               "valueDynasty": 1820,
-              "age": 28.118149398686846
+              "age": 28.11818343115446
             },
             {
               "id": "8167",
@@ -1456,7 +1456,7 @@
               "name": "Christian Watson",
               "position": "WR",
               "valueDynasty": 2280,
-              "age": 27.20918293735899
+              "age": 27.209216969826603
             }
           ],
           "receive": [
@@ -1466,7 +1466,7 @@
               "name": "Lamar Jackson",
               "position": "QB",
               "valueDynasty": 3914,
-              "age": 29.550045360356936
+              "age": 29.55007939282455
             }
           ],
           "adjValueGive": 3736,
@@ -1476,7 +1476,7 @@
           "archetype": "consolidate_flex",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.6372421554362293,
+            "total": 0.6372420561566275,
             "myFit": 1,
             "theirFit": 0.9546582805520787,
             "balance": 0.8982712606092663,
@@ -1493,7 +1493,7 @@
               "name": "A.J. Brown",
               "position": "WR",
               "valueDynasty": 3962,
-              "age": 29.073659323395947
+              "age": 29.073693355863565
             }
           ],
           "receive": [
@@ -1503,7 +1503,7 @@
               "name": "DJ Moore",
               "position": "WR",
               "valueDynasty": 2334,
-              "age": 29.28447383400512
+              "age": 29.284507866504423
             },
             {
               "id": "12508",
@@ -1511,7 +1511,7 @@
               "name": "Jaxson Dart",
               "position": "QB",
               "valueDynasty": 2742,
-              "age": 23.206445086571858
+              "age": 23.206479119071158
             }
           ],
           "adjValueGive": 4145,
@@ -1538,7 +1538,7 @@
               "name": "A.J. Brown",
               "position": "WR",
               "valueDynasty": 3962,
-              "age": 29.073659323395947
+              "age": 29.073693355863565
             }
           ],
           "receive": [
@@ -1548,7 +1548,7 @@
               "name": "DJ Moore",
               "position": "WR",
               "valueDynasty": 2334,
-              "age": 29.28447383400512
+              "age": 29.284507866504423
             },
             {
               "id": "12522",
@@ -1556,7 +1556,7 @@
               "name": "Cam Ward",
               "position": "QB",
               "valueDynasty": 2066,
-              "age": 24.172906414429487
+              "age": 24.17294044692879
             }
           ],
           "adjValueGive": 4206.2,
@@ -1583,7 +1583,7 @@
               "name": "Rico Dowdle",
               "position": "RB",
               "valueDynasty": 1820,
-              "age": 28.118149398686846
+              "age": 28.11818343115446
             },
             {
               "id": "8167",
@@ -1591,7 +1591,7 @@
               "name": "Christian Watson",
               "position": "WR",
               "valueDynasty": 2280,
-              "age": 27.20918293735899
+              "age": 27.209216969826603
             }
           ],
           "receive": [
@@ -1601,7 +1601,7 @@
               "name": "Caleb Williams",
               "position": "QB",
               "valueDynasty": 3740,
-              "age": 24.687622362410323
+              "age": 24.687656394909627
             }
           ],
           "adjValueGive": 3736,
@@ -1628,7 +1628,7 @@
               "name": "George Kittle",
               "position": "TE",
               "valueDynasty": 1935,
-              "age": 32.797136393895606
+              "age": 32.79717042636322
             },
             {
               "id": "9480",
@@ -1636,7 +1636,7 @@
               "name": "Brenton Strange",
               "position": "TE",
               "valueDynasty": 1506,
-              "age": 25.580161719015386
+              "age": 25.580195751483004
             }
           ],
           "receive": [
@@ -1646,7 +1646,7 @@
               "name": "Tucker Kraft",
               "position": "TE",
               "valueDynasty": 3146,
-              "age": 25.72800566152052
+              "age": 25.728039694019824
             }
           ],
           "adjValueGive": 3139.8,
@@ -1656,7 +1656,7 @@
           "archetype": "consolidate_TE",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.2546981751126875,
+            "total": 0.25469823380841344,
             "myFit": 0.11987827123296353,
             "theirFit": 0.08126613192490739,
             "balance": 0.9435487506198068,
@@ -1690,7 +1690,7 @@
               "name": "Trevor Lawrence",
               "position": "QB",
               "valueDynasty": 2728,
-              "age": 26.80671887165057
+              "age": 26.806752904118184
             }
           ],
           "receive": [
@@ -1700,7 +1700,7 @@
               "name": "Kirk Cousins",
               "position": "QB",
               "valueDynasty": 605,
-              "age": 37.93608232134256
+              "age": 37.93611635381018
             },
             {
               "id": "8167",
@@ -1708,7 +1708,7 @@
               "name": "Christian Watson",
               "position": "WR",
               "valueDynasty": 2280,
-              "age": 27.20918293735899
+              "age": 27.209216969826603
             }
           ],
           "adjValueGive": 2795.2,
@@ -1735,7 +1735,7 @@
               "name": "Trevor Lawrence",
               "position": "QB",
               "valueDynasty": 2728,
-              "age": 26.80671887165057
+              "age": 26.806752904118184
             }
           ],
           "receive": [
@@ -1745,7 +1745,7 @@
               "name": "Jalen Milroe",
               "position": "QB",
               "valueDynasty": 412,
-              "age": 23.619860555428804
+              "age": 23.619894587896418
             },
             {
               "id": "8167",
@@ -1753,7 +1753,7 @@
               "name": "Christian Watson",
               "position": "WR",
               "valueDynasty": 2280,
-              "age": 27.20918293735899
+              "age": 27.209216969826603
             }
           ],
           "adjValueGive": 2795.2,
@@ -1780,7 +1780,7 @@
               "name": "Trevor Lawrence",
               "position": "QB",
               "valueDynasty": 2728,
-              "age": 26.80671887165057
+              "age": 26.806752904118184
             }
           ],
           "receive": [
@@ -1790,7 +1790,7 @@
               "name": "Bryce Young",
               "position": "QB",
               "valueDynasty": 1349,
-              "age": 25.00521305317895
+              "age": 25.00524708590007
             },
             {
               "id": "5967",
@@ -1798,7 +1798,7 @@
               "name": "Tony Pollard",
               "position": "RB",
               "valueDynasty": 1794,
-              "age": 29.24066822087231
+              "age": 29.24070225359343
             }
           ],
           "adjValueGive": 2868.1,
@@ -1825,7 +1825,7 @@
               "name": "Trevor Lawrence",
               "position": "QB",
               "valueDynasty": 2728,
-              "age": 26.80671887165057
+              "age": 26.806752904118184
             }
           ],
           "receive": [
@@ -1835,7 +1835,7 @@
               "name": "Malik Willis",
               "position": "QB",
               "valueDynasty": 1271,
-              "age": 27.173590876587575
+              "age": 27.173624909308693
             },
             {
               "id": "5967",
@@ -1843,7 +1843,7 @@
               "name": "Tony Pollard",
               "position": "RB",
               "valueDynasty": 1794,
-              "age": 29.24066822087231
+              "age": 29.24070225359343
             }
           ],
           "adjValueGive": 2868.1,
@@ -1870,7 +1870,7 @@
               "name": "Mark Andrews",
               "position": "TE",
               "valueDynasty": 1402,
-              "age": 30.88885439526453
+              "age": 30.888888427732148
             },
             {
               "id": "4314",
@@ -1878,7 +1878,7 @@
               "name": "Johnny Mundt",
               "position": "TE",
               "valueDynasty": 0,
-              "age": 31.674617571171446
+              "age": 31.67465160363906
             }
           ],
           "receive": [
@@ -1888,7 +1888,7 @@
               "name": "Dallas Goedert",
               "position": "TE",
               "valueDynasty": 1342,
-              "age": 31.56236568889903
+              "age": 31.562399721398332
             }
           ],
           "adjValueGive": 1411,
@@ -1932,7 +1932,7 @@
               "name": "Josh Jacobs",
               "position": "RB",
               "valueDynasty": 3003,
-              "age": 28.454905045504095
+              "age": 28.45493907797171
             },
             {
               "id": "6806",
@@ -1940,7 +1940,7 @@
               "name": "J.K. Dobbins",
               "position": "RB",
               "valueDynasty": 1636,
-              "age": 27.608909152280276
+              "age": 27.60894318474789
             }
           ],
           "receive": [
@@ -1950,7 +1950,7 @@
               "name": "Saquon Barkley",
               "position": "RB",
               "valueDynasty": 4275,
-              "age": 29.459696284381575
+              "age": 29.45973031688088
             }
           ],
           "adjValueGive": 4311.8,
@@ -1977,7 +1977,7 @@
               "name": "Josh Jacobs",
               "position": "RB",
               "valueDynasty": 3003,
-              "age": 28.454905045504095
+              "age": 28.45493907797171
             },
             {
               "id": "6806",
@@ -1985,7 +1985,7 @@
               "name": "J.K. Dobbins",
               "position": "RB",
               "valueDynasty": 1636,
-              "age": 27.608909152280276
+              "age": 27.60894318474789
             }
           ],
           "receive": [
@@ -1995,7 +1995,7 @@
               "name": "Chase Brown",
               "position": "RB",
               "valueDynasty": 4339,
-              "age": 26.34949778966081
+              "age": 26.34953182238193
             }
           ],
           "adjValueGive": 4311.8,
@@ -2022,7 +2022,7 @@
               "name": "James Cook",
               "position": "RB",
               "valueDynasty": 5531,
-              "age": 26.83683523030902
+              "age": 26.836869262776638
             }
           ],
           "receive": [
@@ -2032,7 +2032,7 @@
               "name": "TreVeyon Henderson",
               "position": "RB",
               "valueDynasty": 4045,
-              "age": 23.762228795820974
+              "age": 23.762262828542095
             },
             {
               "id": "5967",
@@ -2040,7 +2040,7 @@
               "name": "Tony Pollard",
               "position": "RB",
               "valueDynasty": 1794,
-              "age": 29.24066822087231
+              "age": 29.24070225359343
             }
           ],
           "adjValueGive": 5753.9,
@@ -2067,7 +2067,7 @@
               "name": "Josh Jacobs",
               "position": "RB",
               "valueDynasty": 3003,
-              "age": 28.454905045504095
+              "age": 28.45493907797171
             },
             {
               "id": "6806",
@@ -2075,7 +2075,7 @@
               "name": "J.K. Dobbins",
               "position": "RB",
               "valueDynasty": 1636,
-              "age": 27.608909152280276
+              "age": 27.60894318474789
             }
           ],
           "receive": [
@@ -2085,7 +2085,7 @@
               "name": "Kenneth Walker",
               "position": "RB",
               "valueDynasty": 4632,
-              "age": 25.76633557254037
+              "age": 25.766369605007984
             }
           ],
           "adjValueGive": 4311.8,
@@ -2112,7 +2112,7 @@
               "name": "James Cook",
               "position": "RB",
               "valueDynasty": 5531,
-              "age": 26.83683523030902
+              "age": 26.836869262776638
             }
           ],
           "receive": [
@@ -2122,7 +2122,7 @@
               "name": "Breece Hall",
               "position": "RB",
               "valueDynasty": 4113,
-              "age": 25.15579484700991
+              "age": 25.155828879477525
             },
             {
               "id": "6783",
@@ -2130,7 +2130,7 @@
               "name": "Jerry Jeudy",
               "position": "WR",
               "valueDynasty": 1180,
-              "age": 27.258464251527364
+              "age": 27.25849828399498
             }
           ],
           "adjValueGive": 5743.7,
@@ -2174,7 +2174,7 @@
               "name": "De'Von Achane",
               "position": "RB",
               "valueDynasty": 6128,
-              "age": 24.786184990747078
+              "age": 24.78621902321469
             }
           ],
           "receive": [
@@ -2184,7 +2184,7 @@
               "name": "TreVeyon Henderson",
               "position": "RB",
               "valueDynasty": 4045,
-              "age": 23.762228795820974
+              "age": 23.762262828542095
             },
             {
               "id": "5967",
@@ -2192,7 +2192,7 @@
               "name": "Tony Pollard",
               "position": "RB",
               "valueDynasty": 1794,
-              "age": 29.24066822087231
+              "age": 29.24070225359343
             },
             {
               "id": "2028-3-1",
@@ -2208,7 +2208,7 @@
           "archetype": "tier_down_RB",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.31687548173865043,
+            "total": 0.31687511611925456,
             "myFit": 0.39771696810289453,
             "theirFit": 0.01956448955032503,
             "balance": 0.9356675387589377,
@@ -2225,7 +2225,7 @@
               "name": "Isiah Pacheco",
               "position": "RB",
               "valueDynasty": 1338,
-              "age": 27.403570343245367
+              "age": 27.40360437571298
             },
             {
               "id": "11651",
@@ -2233,7 +2233,7 @@
               "name": "Isaac Guerendo",
               "position": "RB",
               "valueDynasty": 196,
-              "age": 26.07845056227343
+              "age": 26.078484594741045
             },
             {
               "id": "2027-3-6",
@@ -2249,7 +2249,7 @@
               "name": "Jonathon Brooks",
               "position": "RB",
               "valueDynasty": 2004,
-              "age": 23.017533382259742
+              "age": 23.017567414727356
             }
           ],
           "adjValueGive": 2199.44,
@@ -2259,7 +2259,7 @@
           "archetype": "consolidate_RB",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.19595255430478603,
+            "total": 0.1959525661448961,
             "myFit": 0.0011473827640947937,
             "theirFit": 0.03857867934332671,
             "balance": 0.9565616702433347,
@@ -2276,7 +2276,7 @@
               "name": "Luke Musgrave",
               "position": "TE",
               "valueDynasty": 191,
-              "age": 25.897752410322713
+              "age": 25.897786442790327
             },
             {
               "id": "5857",
@@ -2284,7 +2284,7 @@
               "name": "Noah Fant",
               "position": "TE",
               "valueDynasty": 87,
-              "age": 28.682146660836057
+              "age": 28.682180693303675
             },
             {
               "id": "2027-3-6",
@@ -2300,7 +2300,7 @@
               "name": "Greg Dulcich",
               "position": "TE",
               "valueDynasty": 1053,
-              "age": 26.335808536263848
+              "age": 26.33584256876315
             }
           ],
           "adjValueGive": 1128.48,
@@ -2310,7 +2310,7 @@
           "archetype": "consolidate_TE",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.17952371382273108,
+            "total": 0.17952342415897507,
             "myFit": 0.0017160122578396926,
             "theirFit": -0.017766313790217397,
             "balance": 0.9507922160782646,
@@ -2327,7 +2327,7 @@
               "name": "De'Von Achane",
               "position": "RB",
               "valueDynasty": 6128,
-              "age": 24.786184990747078
+              "age": 24.78621902321469
             }
           ],
           "receive": [
@@ -2337,7 +2337,7 @@
               "name": "TreVeyon Henderson",
               "position": "RB",
               "valueDynasty": 4045,
-              "age": 23.762228795820974
+              "age": 23.762262828542095
             },
             {
               "id": "2027-1-1",
@@ -2370,7 +2370,7 @@
               "name": "De'Von Achane",
               "position": "RB",
               "valueDynasty": 6128,
-              "age": 24.786184990747078
+              "age": 24.78621902321469
             }
           ],
           "receive": [
@@ -2380,7 +2380,7 @@
               "name": "Quinshon Judkins",
               "position": "RB",
               "valueDynasty": 4196,
-              "age": 22.743748303514842
+              "age": 22.74378233598246
             },
             {
               "id": "12469",
@@ -2388,7 +2388,7 @@
               "name": "Dylan Sampson",
               "position": "RB",
               "valueDynasty": 1433,
-              "age": 21.86489820084544
+              "age": 21.864932233313052
             },
             {
               "id": "2028-3-2",
@@ -2404,7 +2404,7 @@
           "archetype": "tier_down_RB",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.13811730530505778,
+            "total": 0.13811680792553274,
             "myFit": 0.09050338115875481,
             "theirFit": 0.11340065869790247,
             "balance": 0.9210882233787279,
@@ -2438,7 +2438,7 @@
               "name": "Kyren Williams",
               "position": "RB",
               "valueDynasty": 3669,
-              "age": 25.916917365832635
+              "age": 25.916951398300252
             }
           ],
           "receive": [
@@ -2448,7 +2448,7 @@
               "name": "Rhamondre Stevenson",
               "position": "RB",
               "valueDynasty": 1661,
-              "age": 28.42205083605851
+              "age": 28.42208486855781
             },
             {
               "id": "12508",
@@ -2456,7 +2456,7 @@
               "name": "Jaxson Dart",
               "position": "QB",
               "valueDynasty": 2742,
-              "age": 23.206445086571858
+              "age": 23.206479119071158
             }
           ],
           "adjValueGive": 3808.05,
@@ -2483,7 +2483,7 @@
               "name": "Kyren Williams",
               "position": "RB",
               "valueDynasty": 3669,
-              "age": 25.916917365832635
+              "age": 25.916951398300252
             }
           ],
           "receive": [
@@ -2493,7 +2493,7 @@
               "name": "David Montgomery",
               "position": "RB",
               "valueDynasty": 2340,
-              "age": 29.136629891499986
+              "age": 29.13666392399929
             },
             {
               "id": "12522",
@@ -2501,7 +2501,7 @@
               "name": "Cam Ward",
               "position": "QB",
               "valueDynasty": 2066,
-              "age": 24.172906414429487
+              "age": 24.17294044692879
             }
           ],
           "adjValueGive": 3868.35,
@@ -2528,7 +2528,7 @@
               "name": "Kyren Williams",
               "position": "RB",
               "valueDynasty": 3669,
-              "age": 25.916917365832635
+              "age": 25.916951398300252
             }
           ],
           "receive": [
@@ -2538,7 +2538,7 @@
               "name": "Travis Etienne",
               "position": "RB",
               "valueDynasty": 3160,
-              "age": 27.49939512079499
+              "age": 27.499429153262607
             },
             {
               "id": "6768",
@@ -2546,7 +2546,7 @@
               "name": "Tua Tagovailoa",
               "position": "QB",
               "valueDynasty": 839,
-              "age": 28.402885880548585
+              "age": 28.4029199130162
             }
           ],
           "adjValueGive": 3745.35,
@@ -2573,7 +2573,7 @@
               "name": "Kyren Williams",
               "position": "RB",
               "valueDynasty": 3669,
-              "age": 25.916917365832635
+              "age": 25.916951398300252
             }
           ],
           "receive": [
@@ -2583,7 +2583,7 @@
               "name": "Josh Jacobs",
               "position": "RB",
               "valueDynasty": 3003,
-              "age": 28.454905045504095
+              "age": 28.45493907797171
             },
             {
               "id": "2028-3-9",
@@ -2616,7 +2616,7 @@
               "name": "Kyren Williams",
               "position": "RB",
               "valueDynasty": 3669,
-              "age": 25.916917365832635
+              "age": 25.916951398300252
             }
           ],
           "receive": [
@@ -2626,7 +2626,7 @@
               "name": "Josh Jacobs",
               "position": "RB",
               "valueDynasty": 3003,
-              "age": 28.454905045504095
+              "age": 28.45493907797171
             },
             {
               "id": "4017",
@@ -2634,7 +2634,7 @@
               "name": "Deshaun Watson",
               "position": "QB",
               "valueDynasty": 681,
-              "age": 30.866951588967474
+              "age": 30.86698562143509
             }
           ],
           "adjValueGive": 3768.9,
@@ -2678,7 +2678,7 @@
               "name": "Tucker Kraft",
               "position": "TE",
               "valueDynasty": 3146,
-              "age": 25.72800566152052
+              "age": 25.728039694019824
             }
           ],
           "receive": [
@@ -2688,7 +2688,7 @@
               "name": "T.J. Hockenson",
               "position": "TE",
               "valueDynasty": 1309,
-              "age": 29.065445770495856
+              "age": 29.065479803216974
             },
             {
               "id": "5927",
@@ -2696,7 +2696,7 @@
               "name": "Terry McLaurin",
               "position": "WR",
               "valueDynasty": 2198,
-              "age": 30.864213737641645
+              "age": 30.864247770362766
             }
           ],
           "adjValueGive": 3288.2,
@@ -2706,7 +2706,7 @@
           "archetype": "tier_down_TE",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.4403367276960483,
+            "total": 0.44033647678025273,
             "myFit": 0.647486008911183,
             "theirFit": 0.20996475505959122,
             "balance": 0.9869229365610365,
@@ -2723,7 +2723,7 @@
               "name": "Xavier Worthy",
               "position": "WR",
               "valueDynasty": 1711,
-              "age": 23.25025069916597
+              "age": 23.25028473166527
             }
           ],
           "receive": [
@@ -2758,7 +2758,7 @@
               "name": "Xavier Worthy",
               "position": "WR",
               "valueDynasty": 1711,
-              "age": 23.25025069916597
+              "age": 23.25028473166527
             }
           ],
           "receive": [
@@ -2799,7 +2799,7 @@
               "name": "Xavier Worthy",
               "position": "WR",
               "valueDynasty": 1711,
-              "age": 23.25025069916597
+              "age": 23.25028473166527
             }
           ],
           "receive": [
@@ -2817,7 +2817,7 @@
           "archetype": "capital_convert_production_to_picks",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.3021261247169371,
+            "total": 0.3021259550462794,
             "myFit": 0.12257253488215417,
             "theirFit": 0.5173135761694984,
             "balance": 0.9142658999624353,
@@ -2834,7 +2834,7 @@
               "name": "Justin Herbert",
               "position": "QB",
               "valueDynasty": 3120,
-              "age": 28.380983074251528
+              "age": 28.38101710675083
             }
           ],
           "receive": [
@@ -2844,7 +2844,7 @@
               "name": "Jared Goff",
               "position": "QB",
               "valueDynasty": 1824,
-              "age": 31.78413160268842
+              "age": 31.784165635156032
             },
             {
               "id": "6819",
@@ -2852,7 +2852,7 @@
               "name": "Michael Pittman",
               "position": "WR",
               "valueDynasty": 1858,
-              "age": 28.808087797075824
+              "age": 28.80812182954344
             }
           ],
           "adjValueGive": 3309.3,
@@ -2862,7 +2862,7 @@
           "archetype": "tier_down_QB",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.3008148950751003,
+            "total": 0.30081488360561326,
             "myFit": 0.2298201161574058,
             "theirFit": 0.17543238858902777,
             "balance": 0.9976184734113108,
@@ -2896,7 +2896,7 @@
               "name": "Caleb Williams",
               "position": "QB",
               "valueDynasty": 3740,
-              "age": 24.687622362410323
+              "age": 24.687656394909627
             },
             {
               "id": "9479",
@@ -2904,7 +2904,7 @@
               "name": "Darnell Washington",
               "position": "TE",
               "valueDynasty": 320,
-              "age": 24.94224248561361
+              "age": 24.942276518112912
             }
           ],
           "receive": [
@@ -2914,7 +2914,7 @@
               "name": "A.J. Brown",
               "position": "WR",
               "valueDynasty": 3962,
-              "age": 29.073659323395947
+              "age": 29.073693355863565
             }
           ],
           "adjValueGive": 3996,
@@ -2941,7 +2941,7 @@
               "name": "Daniel Jones",
               "position": "QB",
               "valueDynasty": 1318,
-              "age": 29.16674625015844
+              "age": 29.166780282657744
             },
             {
               "id": "11560",
@@ -2949,7 +2949,7 @@
               "name": "Caleb Williams",
               "position": "QB",
               "valueDynasty": 3740,
-              "age": 24.687622362410323
+              "age": 24.687656394909627
             }
           ],
           "receive": [
@@ -2959,7 +2959,7 @@
               "name": "Tetairoa McMillan",
               "position": "WR",
               "valueDynasty": 4835,
-              "age": 23.310483416451188
+              "age": 23.3105174489188
             }
           ],
           "adjValueGive": 4794.4,
@@ -2986,7 +2986,7 @@
               "name": "Caleb Williams",
               "position": "QB",
               "valueDynasty": 3740,
-              "age": 24.687622362410323
+              "age": 24.687656394909627
             }
           ],
           "receive": [
@@ -2996,7 +2996,7 @@
               "name": "A.J. Brown",
               "position": "WR",
               "valueDynasty": 3962,
-              "age": 29.073659323395947
+              "age": 29.073693355863565
             }
           ],
           "adjValueGive": 3740,
@@ -3023,7 +3023,7 @@
               "name": "Daniel Jones",
               "position": "QB",
               "valueDynasty": 1318,
-              "age": 29.16674625015844
+              "age": 29.166780282657744
             },
             {
               "id": "11560",
@@ -3031,7 +3031,7 @@
               "name": "Caleb Williams",
               "position": "QB",
               "valueDynasty": 3740,
-              "age": 24.687622362410323
+              "age": 24.687656394909627
             }
           ],
           "receive": [
@@ -3041,7 +3041,7 @@
               "name": "George Pickens",
               "position": "WR",
               "valueDynasty": 4696,
-              "age": 25.396725716309223
+              "age": 25.39675974877684
             }
           ],
           "adjValueGive": 4794.4,
@@ -3068,7 +3068,7 @@
               "name": "Caleb Williams",
               "position": "QB",
               "valueDynasty": 3740,
-              "age": 24.687622362410323
+              "age": 24.687656394909627
             },
             {
               "id": "1339",
@@ -3076,7 +3076,7 @@
               "name": "Zach Ertz",
               "position": "TE",
               "valueDynasty": 113,
-              "age": 35.71020963140416
+              "age": 35.71024366390346
             }
           ],
           "receive": [
@@ -3086,7 +3086,7 @@
               "name": "Ladd McConkey",
               "position": "WR",
               "valueDynasty": 3865,
-              "age": 24.70678731738155
+              "age": 24.70682135007098
             }
           ],
           "adjValueGive": 3830.4,
@@ -3096,7 +3096,7 @@
           "archetype": "need_fill_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.35482556140195054,
+            "total": 0.35482404648739924,
             "myFit": 0.16561393190166226,
             "theirFit": 0.006751411278245,
             "balance": 0.9862632764724815,
@@ -3130,7 +3130,7 @@
               "name": "Saquon Barkley",
               "position": "RB",
               "valueDynasty": 4275,
-              "age": 29.459696284381575
+              "age": 29.45973031688088
             }
           ],
           "receive": [
@@ -3140,7 +3140,7 @@
               "name": "J.K. Dobbins",
               "position": "RB",
               "valueDynasty": 1636,
-              "age": 27.608909152280276
+              "age": 27.60894318474789
             },
             {
               "id": "7526",
@@ -3148,7 +3148,7 @@
               "name": "Jaylen Waddle",
               "position": "WR",
               "valueDynasty": 3277,
-              "age": 27.66914186959718
+              "age": 27.669175902064797
             }
           ],
           "adjValueGive": 4424.7,
@@ -3175,7 +3175,7 @@
               "name": "Saquon Barkley",
               "position": "RB",
               "valueDynasty": 4275,
-              "age": 29.459696284381575
+              "age": 29.45973031688088
             }
           ],
           "receive": [
@@ -3185,7 +3185,7 @@
               "name": "J.K. Dobbins",
               "position": "RB",
               "valueDynasty": 1636,
-              "age": 27.608909152280276
+              "age": 27.60894318474789
             },
             {
               "id": "10229",
@@ -3193,7 +3193,7 @@
               "name": "Rashee Rice",
               "position": "WR",
               "valueDynasty": 3448,
-              "age": 26.26188656501128
+              "age": 26.261920597478895
             }
           ],
           "adjValueGive": 4399.05,
@@ -3220,7 +3220,7 @@
               "name": "Cam Ward",
               "position": "QB",
               "valueDynasty": 2066,
-              "age": 24.172906414429487
+              "age": 24.17294044692879
             },
             {
               "id": "2027-1-14",
@@ -3236,7 +3236,7 @@
               "name": "Chase Brown",
               "position": "RB",
               "valueDynasty": 4339,
-              "age": 26.34949778966081
+              "age": 26.34953182238193
             }
           ],
           "adjValueGive": 4116.8,
@@ -3263,7 +3263,7 @@
               "name": "Jalen Hurts",
               "position": "QB",
               "valueDynasty": 2963,
-              "age": 27.970305456181713
+              "age": 27.970339488681017
             }
           ],
           "receive": [
@@ -3273,7 +3273,7 @@
               "name": "Kirk Cousins",
               "position": "QB",
               "valueDynasty": 605,
-              "age": 37.93608232134256
+              "age": 37.93611635381018
             },
             {
               "id": "8167",
@@ -3281,7 +3281,7 @@
               "name": "Christian Watson",
               "position": "WR",
               "valueDynasty": 2280,
-              "age": 27.20918293735899
+              "age": 27.209216969826603
             }
           ],
           "adjValueGive": 3065.45,
@@ -3308,7 +3308,7 @@
               "name": "CeeDee Lamb",
               "position": "WR",
               "valueDynasty": 6308,
-              "age": 27.30226986412148
+              "age": 27.30230389662078
             }
           ],
           "receive": [
@@ -3318,7 +3318,7 @@
               "name": "Quentin Johnston",
               "position": "WR",
               "valueDynasty": 1965,
-              "age": 24.887485469870967
+              "age": 24.88751950233858
             },
             {
               "id": "4034",
@@ -3326,7 +3326,7 @@
               "name": "Christian McCaffrey",
               "position": "RB",
               "valueDynasty": 4576,
-              "age": 30.135945428803204
+              "age": 30.135979461270818
             }
           ],
           "adjValueGive": 6567.8,
@@ -3370,7 +3370,7 @@
               "name": "Matthew Stafford",
               "position": "QB",
               "valueDynasty": 1423,
-              "age": 38.46722537404619
+              "age": 38.467259406545494
             },
             {
               "id": "2027-3-15",
@@ -3386,7 +3386,7 @@
               "name": "Christian Watson",
               "position": "WR",
               "valueDynasty": 2280,
-              "age": 27.20918293735899
+              "age": 27.209216969826603
             }
           ],
           "adjValueGive": 2208.6,
@@ -3413,7 +3413,7 @@
               "name": "Matthew Stafford",
               "position": "QB",
               "valueDynasty": 1423,
-              "age": 38.46722537404619
+              "age": 38.467259406545494
             },
             {
               "id": "2027-3-15",
@@ -3429,7 +3429,7 @@
               "name": "Jordan Addison",
               "position": "WR",
               "valueDynasty": 2066,
-              "age": 24.495972807279387
+              "age": 24.496006839747004
             }
           ],
           "adjValueGive": 2208.6,
@@ -3439,7 +3439,7 @@
           "archetype": "need_fill_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.6132870404919519,
+            "total": 0.6132876923634698,
             "myFit": 0.3885704271774128,
             "theirFit": 0.6313499699207489,
             "balance": 0.9791044100335053,
@@ -3456,7 +3456,7 @@
               "name": "Emanuel Wilson",
               "position": "RB",
               "valueDynasty": 482,
-              "age": 27.220134340507517
+              "age": 27.220168373006818
             },
             {
               "id": "3198",
@@ -3464,7 +3464,7 @@
               "name": "Derrick Henry",
               "position": "RB",
               "valueDynasty": 3091,
-              "age": 32.55894337541511
+              "age": 32.55897740791442
             }
           ],
           "receive": [
@@ -3474,7 +3474,7 @@
               "name": "Rashee Rice",
               "position": "WR",
               "valueDynasty": 3448,
-              "age": 26.26188656501128
+              "age": 26.261920597478895
             }
           ],
           "adjValueGive": 3476.6,
@@ -3501,7 +3501,7 @@
               "name": "Keaton Mitchell",
               "position": "RB",
               "valueDynasty": 1339,
-              "age": 24.523351315214086
+              "age": 24.5233853476817
             },
             {
               "id": "3198",
@@ -3509,7 +3509,7 @@
               "name": "Derrick Henry",
               "position": "RB",
               "valueDynasty": 3091,
-              "age": 32.55894337541511
+              "age": 32.55897740791442
             }
           ],
           "receive": [
@@ -3519,7 +3519,7 @@
               "name": "Garrett Wilson",
               "position": "WR",
               "valueDynasty": 3943,
-              "age": 26.01274214338226
+              "age": 26.012776175849876
             }
           ],
           "adjValueGive": 4162.2,
@@ -3546,7 +3546,7 @@
               "name": "Derrick Henry",
               "position": "RB",
               "valueDynasty": 3091,
-              "age": 32.55894337541511
+              "age": 32.55897740791442
             }
           ],
           "receive": [
@@ -3556,7 +3556,7 @@
               "name": "Tee Higgins",
               "position": "WR",
               "valueDynasty": 3133,
-              "age": 27.521297927092046
+              "age": 27.52133195959135
             }
           ],
           "adjValueGive": 3091,
@@ -3600,7 +3600,7 @@
               "name": "Bucky Irving",
               "position": "RB",
               "valueDynasty": 3536,
-              "age": 23.937451246767814
+              "age": 23.93748527923543
             },
             {
               "id": "11631",
@@ -3608,7 +3608,7 @@
               "name": "Brian Thomas",
               "position": "WR",
               "valueDynasty": 3294,
-              "age": 23.80055870741121
+              "age": 23.800592739878823
             }
           ],
           "receive": [
@@ -3618,7 +3618,7 @@
               "name": "Malik Nabers",
               "position": "WR",
               "valueDynasty": 6375,
-              "age": 22.998368426749817
+              "age": 22.99840245921743
             }
           ],
           "adjValueGive": 6171.200000000001,
@@ -3645,7 +3645,7 @@
               "name": "George Pickens",
               "position": "WR",
               "valueDynasty": 4696,
-              "age": 25.396725716309223
+              "age": 25.39675974877684
             }
           ],
           "receive": [
@@ -3655,7 +3655,7 @@
               "name": "Chris Olave",
               "position": "WR",
               "valueDynasty": 3843,
-              "age": 26.081188413060563
+              "age": 26.081222445528176
             },
             {
               "id": "6783",
@@ -3663,7 +3663,7 @@
               "name": "Jerry Jeudy",
               "position": "WR",
               "valueDynasty": 1180,
-              "age": 27.258464251527364
+              "age": 27.25849828399498
             }
           ],
           "adjValueGive": 4823.95,
@@ -3673,7 +3673,7 @@
           "archetype": "tier_down_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.3559199794657897,
+            "total": 0.3559191551683871,
             "myFit": -0.017425430392677747,
             "theirFit": 0.3375013734741203,
             "balance": 0.9923403020346397,
@@ -3690,7 +3690,7 @@
               "name": "Bucky Irving",
               "position": "RB",
               "valueDynasty": 3536,
-              "age": 23.937451246767814
+              "age": 23.93748527923543
             },
             {
               "id": "11631",
@@ -3698,7 +3698,7 @@
               "name": "Brian Thomas",
               "position": "WR",
               "valueDynasty": 3294,
-              "age": 23.80055870741121
+              "age": 23.800592739878823
             }
           ],
           "receive": [
@@ -3708,7 +3708,7 @@
               "name": "Drake London",
               "position": "WR",
               "valueDynasty": 5615,
-              "age": 25.007950904504778
+              "age": 25.00798493697239
             }
           ],
           "adjValueGive": 6171.200000000001,
@@ -3718,7 +3718,7 @@
           "archetype": "consolidate_flex",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.3465048349961631,
+            "total": 0.3465052023533779,
             "myFit": 0.04257477008377129,
             "theirFit": 0.6961986438105321,
             "balance": 0.9604047835105003,
@@ -3735,7 +3735,7 @@
               "name": "Bucky Irving",
               "position": "RB",
               "valueDynasty": 3536,
-              "age": 23.937451246767814
+              "age": 23.93748527923543
             },
             {
               "id": "11631",
@@ -3743,7 +3743,7 @@
               "name": "Brian Thomas",
               "position": "WR",
               "valueDynasty": 3294,
-              "age": 23.80055870741121
+              "age": 23.800592739878823
             }
           ],
           "receive": [
@@ -3753,7 +3753,7 @@
               "name": "CeeDee Lamb",
               "position": "WR",
               "valueDynasty": 6308,
-              "age": 27.30226986412148
+              "age": 27.30230389662078
             }
           ],
           "adjValueGive": 6171.200000000001,
@@ -3780,7 +3780,7 @@
               "name": "Brian Thomas",
               "position": "WR",
               "valueDynasty": 3294,
-              "age": 23.80055870741121
+              "age": 23.800592739878823
             },
             {
               "id": "6819",
@@ -3788,7 +3788,7 @@
               "name": "Michael Pittman",
               "position": "WR",
               "valueDynasty": 1858,
-              "age": 28.808087797075824
+              "age": 28.80812182954344
             }
           ],
           "receive": [
@@ -3798,7 +3798,7 @@
               "name": "Tetairoa McMillan",
               "position": "WR",
               "valueDynasty": 4835,
-              "age": 23.310483416451188
+              "age": 23.3105174489188
             }
           ],
           "adjValueGive": 4780.4,
@@ -3808,7 +3808,7 @@
           "archetype": "consolidate_WR",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.2687504012458883,
+            "total": 0.2687503671629127,
             "myFit": 0.16237269136005308,
             "theirFit": 0.3438726896213324,
             "balance": 0.9435962219831627,

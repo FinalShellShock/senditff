@@ -27,7 +27,7 @@
 //              pool, and never a league rank. Drawing the real floors makes
 //              the label self-evident instead of arbitrary.
 
-import { agePressure, effectiveAge, fillStarters } from "../../algo/profile.ts";
+import { agePressure, depthByPosition, effectiveAge, fillStarters } from "../../algo/profile.ts";
 import {
   PICK_ADJUSTMENT_BY_FLAG,
   WINDOW_LONG_THRESHOLD,
@@ -323,11 +323,18 @@ function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat })
       </p>
       <WindowGauge pressure={me.windowPressure} />
       <p className="state-report-sub">
-        Age pressure is the value-weighted average across every startable slot, flex included.
-        These are the two starters pushing it up hardest and the two pulling it down, in points of
-        the total. Across the whole lineup they cancel out.
+        Value-weighted across every startable slot. WEAR is how much of a 23 year old's career is
+        already gone AT THAT POSITION, so it is not comparable between them.
       </p>
       <div className="state-runways">
+        <div className="state-runway-head">
+          <span />
+          <span />
+          <span>AGE</span>
+          <span>WEAR</span>
+          <span />
+          <span>PULL</span>
+        </div>
         {shorter.length > 0 && (
           <div className="state-runway-group">PULLING IT SHORTER</div>
         )}
@@ -350,10 +357,9 @@ function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat })
         ))}
       </div>
       <p className="state-foot">
-        Each bar is that starter's push on your average: how far his position-adjusted age sits
-        from the team, times how much of your lineup value he carries. Ages come off measured
-        nflverse curves, so a 33 year old quarterback and a 33 year old running back are nowhere
-        near the same place. An asterisk means an aging signal moved him.
+        Quarterbacks barely wear at all before 30, so an older one can still read lower than a
+        younger receiver. Curves are measured, nflverse 1999-2024. An asterisk means an aging
+        signal moved him.
       </p>
     </div>
   );
@@ -375,93 +381,115 @@ function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat })
 
 const SEVERITY_STEPS: SubClassification[] = ["CRITICAL", "NEED", "HEALTHY", "SURPLUS"];
 
-/** Which of classifySide's tests produced this label. Mirrors its order. */
-function bindingReason(ev: ClassifyEvidence, label: SubClassification): string {
-  const z = Math.min(ev.minSlotZ, ev.weightedZ);
-  if (label === "CRITICAL") {
-    if (ev.minSlotValue < ev.criticalFloor) return `below the critical floor of ${fmt(ev.criticalFloor)}`;
-    return `${z.toFixed(1)} standard deviations below a typical player at this spot`;
-  }
-  if (label === "NEED") {
-    if (ev.minSlotValue < ev.needFloor) return `below the need floor of ${fmt(ev.needFloor)}`;
-    return `${z.toFixed(1)} standard deviations below a typical player at this spot`;
-  }
-  if (label === "SURPLUS") return "clears both floors and sits well above a typical player";
-  return "clears both floors and sits near a typical player";
-}
-
-function SeverityMeter({
+function SeverityCell({
   label,
   ev,
-  what,
+  player,
 }: {
   label: SubClassification;
   ev?: ClassifyEvidence;
-  what: string;
+  /** The player this side is judged ON. The old table showed each position's
+   *  BEST player, which is the one number the label never looks at: a room can
+   *  be CRITICAL precisely because everything behind the best guy is empty. */
+  player: Player | undefined;
 }) {
   const level = Math.max(0, SEVERITY_STEPS.indexOf(label));
   const color = POS_CLASS_COLOR[label] ?? "#64748b";
-  const title = ev
-    ? `${what}: ${label}. Weakest slot ${fmt(ev.minSlotValue)}, ${bindingReason(ev, label)}. Floors are ${fmt(ev.needFloor)} for need and ${fmt(ev.criticalFloor)} for critical.`
-    : `${what}: ${label}`;
   return (
-    <span className="state-sev" title={title}>
-      <span className="state-sev-steps" aria-hidden="true">
-        {SEVERITY_STEPS.map((_, i) => (
-          <span
-            key={i}
-            className="state-sev-step"
-            style={i <= level ? { background: color } : undefined}
-          />
-        ))}
-      </span>
-      <span className="state-sev-label" style={{ color }}>{label}</span>
-    </span>
-  );
-}
-
-function PositionRow({ pos, me }: { pos: Position; me: TeamProfile }) {
-  const ps = me.positionScores[pos];
-  const top = me.players
-    .filter((p) => p.position === pos)
-    .sort((a, b) => b.valueDynasty - a.valueDynasty || a.id.localeCompare(b.id))[0];
-  const starter = ps.starterClassification ?? "HEALTHY";
-  const depth = ps.depthClassification ?? "HEALTHY";
-
-  return (
-    <div className="pos-dash-row">
-      <span className="pos-tag" style={{ background: posColor(pos) }}>{pos}</span>
-      <div className="pos-dash-metric" data-label="STARTERS">
-        <SeverityMeter label={starter} what="Starters" {...(ps.evidence ? { ev: ps.evidence.starter } : {})} />
+    <div className="state-sev">
+      <div className="state-sev-top">
+        <span className="state-sev-steps" aria-hidden="true">
+          {SEVERITY_STEPS.map((_, i) => (
+            <span
+              key={i}
+              className="state-sev-step"
+              style={i <= level ? { background: color } : undefined}
+            />
+          ))}
+        </span>
+        <span className="state-sev-label" style={{ color }}>{label}</span>
       </div>
-      <div className="pos-dash-metric" data-label="DEPTH">
-        <SeverityMeter label={depth} what="Depth" {...(ps.evidence ? { ev: ps.evidence.depth } : {})} />
+      <div className="state-sev-sub">
+        <span className="state-sev-player">{player ? player.name : "nobody"}</span>
+        {ev && (
+          <span className="state-sev-nums">
+            {fmt(ev.minSlotValue)} · floor {fmt(ev.needFloor)} ·{" "}
+            <span className={Math.min(ev.minSlotZ, ev.weightedZ) < -1 ? "state-z-bad" : ""}>
+              {Math.min(ev.minSlotZ, ev.weightedZ).toFixed(1)}σ
+            </span>
+          </span>
+        )}
       </div>
-      <span className="pos-dash-player">
-        {top ? `${top.name}${top.age != null ? ` (${Number(top.age).toFixed(1)})` : ""}` : "\u2014"}
-      </span>
     </div>
   );
 }
 
-function PositionTable({ me }: { me: TeamProfile }) {
+function PositionRow({
+  pos,
+  me,
+  weakestStarter,
+  topBackup,
+}: {
+  pos: Position;
+  me: TeamProfile;
+  weakestStarter: Player | undefined;
+  topBackup: Player | undefined;
+}) {
+  const ps = me.positionScores[pos];
+  return (
+    <div className="pos-dash-row">
+      <span className="pos-tag" style={{ background: posColor(pos) }}>{pos}</span>
+      <div className="pos-dash-metric" data-label="WEAKEST STARTER">
+        <SeverityCell
+          label={ps.starterClassification ?? "HEALTHY"}
+          player={weakestStarter}
+          {...(ps.evidence ? { ev: ps.evidence.starter } : {})}
+        />
+      </div>
+      <div className="pos-dash-metric" data-label="TOP BACKUP">
+        <SeverityCell
+          label={ps.depthClassification ?? "HEALTHY"}
+          player={topBackup}
+          {...(ps.evidence ? { ev: ps.evidence.depth } : {})}
+        />
+      </div>
+    </div>
+  );
+}
+
+function PositionTable({ me, format }: { me: TeamProfile; format: LeagueFormat }) {
+  // The exact slots each label is judged on: the base starter slots for the
+  // starter side, the first cover slot for depth. Same helpers profile.ts uses.
+  const { starters } = fillStarters(me.players, format);
+  const depth = depthByPosition(me.players, format);
+  const baseSlots = (pos: Position) =>
+    pos === "QB" && format.starterSlots.SUPER_FLEX > 0
+      ? format.starterSlots.QB + 1
+      : format.starterSlots[pos];
   return (
     <div className="pos-dashboard state-positions">
       <div className="state-report-head">
         <span className="state-report-title">POSITIONS</span>
       </div>
       <p className="state-report-sub">
-        Four steps from critical to surplus, judged on the weakest slot you would actually have to
-        start. Hover any row for the thresholds behind it.
+        Judged on the weakest slot you would have to start, and on the one man behind him. Each
+        shows his value, the need floor he has to clear, and how far he sits from a typical player
+        at that spot. Below -1 sigma is a need, below -2 is critical, and either that or the floor
+        is enough to flag it.
       </p>
       <div className="pos-dash-header-row">
         <div />
-        <div className="pos-dash-col-label">STARTERS</div>
-        <div className="pos-dash-col-label">DEPTH</div>
-        <div className="pos-dash-col-label">BEST PLAYER</div>
+        <div className="pos-dash-col-label">WEAKEST STARTER</div>
+        <div className="pos-dash-col-label">TOP BACKUP</div>
       </div>
       {POSITIONS.map((pos) => (
-        <PositionRow key={pos} pos={pos} me={me} />
+        <PositionRow
+          key={pos}
+          pos={pos}
+          me={me}
+          weakestStarter={starters[pos].slice(0, baseSlots(pos)).at(-1)}
+          topBackup={depth[pos][0]}
+        />
       ))}
     </div>
   );
@@ -489,7 +517,7 @@ export default function TeamState({
         <WindowReport me={me} format={format} />
       </div>
       <div className="state-panel">
-        <PositionTable me={me} />
+        <PositionTable me={me} format={format} />
       </div>
     </section>
   );
