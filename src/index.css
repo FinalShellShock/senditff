@@ -3409,13 +3409,15 @@ body {
   display: block;
 }
 
+/* Anchors the divergence. At 0.14 alpha the bars looked like they floated at
+   arbitrary offsets rather than reading from a shared centre. */
 .state-pull-axis {
   position: absolute;
   left: 50%;
-  top: -1px;
-  bottom: -1px;
+  top: -2px;
+  bottom: -2px;
   width: 1px;
-  background: rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.28);
 }
 
 .state-pull-fill {
