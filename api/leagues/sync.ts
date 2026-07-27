@@ -33,44 +33,64 @@ function standings(rosters: SleeperRoster[]): Map<number, number> {
   return map;
 }
 
-// Points per game for one roster. Sleeper splits points into a whole part and
-// a decimal part, and reports them as strings about as often as numbers.
+// Points per game for one roster.
 //
-// Games come from the record rather than a schedule lookup, so a roster that
-// has played nothing returns null instead of dividing by zero. Ties count as
-// games played; they are results, not byes.
-function rosterPpg(r: SleeperRoster): { ppg: number; games: number } | null {
+// The denominator is WEEKS, not results, and that distinction is the whole
+// function. Johnny's league plays two matchups a week, so wins+losses is 28
+// over a 14 week regular season; dividing by it reported 59 PPG for a team
+// that actually scores 117 a week. Verified against Sleeper directly: roster 1
+// carries fpts 1641.90 with a 19-9 record, and 1641.90/14 = 117.3.
+//
+// `fpts` covers the REGULAR SEASON only, confirmed by summing the weekly
+// matchup endpoint: 18 weeks of matchups totalled 2010.86 against an fpts of
+// 1641.90, and the difference is exactly weeks 15-18. So the matching span is
+// playoff_week_start - 1.
+//
+// Sleeper splits points into a whole part and a decimal part, and reports them
+// as strings about as often as numbers.
+function rosterPpg(r: SleeperRoster, weeks: number): { ppg: number; weeks: number } | null {
+  if (!(weeks > 0)) return null;
   const st = r.settings ?? {};
-  const games = (st.wins ?? 0) + (st.losses ?? 0) + (st.ties ?? 0);
-  if (games <= 0) return null;
   const whole = parseFloat(String(st.fpts ?? 0));
   const dec = parseFloat(String(st.fpts_decimal ?? 0));
   const points = (Number.isFinite(whole) ? whole : 0) + (Number.isFinite(dec) ? dec / 100 : 0);
   if (!(points > 0)) return null;
-  return { ppg: points / games, games };
+  return { ppg: points / weeks, weeks };
+}
+
+/** Regular-season length. Null when Sleeper does not say, in which case we show
+ *  nothing: a guessed denominator can be off by the matchups-per-week factor,
+ *  and a confidently wrong PPG is worse than an absent one. */
+function regularSeasonWeeks(lg: { settings?: { playoff_week_start?: number } }): number | null {
+  const start = lg.settings?.playoff_week_start;
+  return typeof start === "number" && start > 1 ? start - 1 : null;
 }
 
 // Past-season finishes (up to two seasons back) plus the current standing
 // when a season is actually underway. Replaces the meaningless "0-0" record.
 async function fetchPlacements(
-  league: { previous_league_id?: string },
+  league: { previous_league_id?: string; settings?: { playoff_week_start?: number } },
   rosters: SleeperRoster[],
   nflState: SleeperNflState,
 ): Promise<{
   history: Map<number, Array<{ season: number; place: number }>>;
   current: Map<number, number> | null;
-  scoring: Map<number, { season: number; ppg: number; games: number; live: boolean }>;
+  scoring: Map<number, { season: number; ppg: number; weeks: number; live: boolean }>;
 }> {
   const history = new Map<number, Array<{ season: number; place: number }>>();
   // Scoring comes from the most recent season anyone has actually played. The
   // current one wins when it is underway, otherwise walk back. Costs no extra
   // request: these rosters are already being fetched for placements.
-  const scoring = new Map<number, { season: number; ppg: number; games: number; live: boolean }>();
+  const scoring = new Map<number, { season: number; ppg: number; weeks: number; live: boolean }>();
   const thisSeason = parseInt(nflState.league_season ?? "", 10);
-  for (const r of rosters) {
-    const p = rosterPpg(r);
-    if (p && Number.isFinite(thisSeason)) {
-      scoring.set(r.roster_id, { season: thisSeason, ...p, live: true });
+  const fullWeeks = regularSeasonWeeks(league);
+  // Live season: only weeks already finished count, capped at the regular
+  // season so playoff weeks never stretch the denominator.
+  const playedWeeks = Math.min((nflState.week ?? 1) - 1, fullWeeks ?? Infinity);
+  if (fullWeeks && playedWeeks > 0 && Number.isFinite(thisSeason)) {
+    for (const r of rosters) {
+      const p = rosterPpg(r, playedWeeks);
+      if (p) scoring.set(r.roster_id, { season: thisSeason, ...p, live: true });
     }
   }
   let cursor = league.previous_league_id;
@@ -86,10 +106,13 @@ async function fetchPlacements(
           arr.push({ season, place });
           history.set(rosterId, arr);
         }
-        for (const r of prevRosters) {
-          if (scoring.has(r.roster_id)) continue; // a newer season already won
-          const p = rosterPpg(r);
-          if (p) scoring.set(r.roster_id, { season, ...p, live: false });
+        const prevWeeks = regularSeasonWeeks(prevLeague);
+        if (prevWeeks) {
+          for (const r of prevRosters) {
+            if (scoring.has(r.roster_id)) continue; // a newer season already won
+            const p = rosterPpg(r, prevWeeks);
+            if (p) scoring.set(r.roster_id, { season, ...p, live: false });
+          }
         }
       }
       cursor = prevLeague.previous_league_id;

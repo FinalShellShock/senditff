@@ -1197,24 +1197,29 @@ function standings(rosters) {
   ranked.forEach((r, i) => map.set(r.roster_id, i + 1));
   return map;
 }
-function rosterPpg(r) {
+function rosterPpg(r, weeks) {
+  if (!(weeks > 0)) return null;
   const st = r.settings ?? {};
-  const games = (st.wins ?? 0) + (st.losses ?? 0) + (st.ties ?? 0);
-  if (games <= 0) return null;
   const whole = parseFloat(String(st.fpts ?? 0));
   const dec = parseFloat(String(st.fpts_decimal ?? 0));
   const points = (Number.isFinite(whole) ? whole : 0) + (Number.isFinite(dec) ? dec / 100 : 0);
   if (!(points > 0)) return null;
-  return { ppg: points / games, games };
+  return { ppg: points / weeks, weeks };
+}
+function regularSeasonWeeks(lg) {
+  const start = lg.settings?.playoff_week_start;
+  return typeof start === "number" && start > 1 ? start - 1 : null;
 }
 async function fetchPlacements(league, rosters, nflState) {
   const history = /* @__PURE__ */ new Map();
   const scoring = /* @__PURE__ */ new Map();
   const thisSeason = parseInt(nflState.league_season ?? "", 10);
-  for (const r of rosters) {
-    const p = rosterPpg(r);
-    if (p && Number.isFinite(thisSeason)) {
-      scoring.set(r.roster_id, { season: thisSeason, ...p, live: true });
+  const fullWeeks = regularSeasonWeeks(league);
+  const playedWeeks = Math.min((nflState.week ?? 1) - 1, fullWeeks ?? Infinity);
+  if (fullWeeks && playedWeeks > 0 && Number.isFinite(thisSeason)) {
+    for (const r of rosters) {
+      const p = rosterPpg(r, playedWeeks);
+      if (p) scoring.set(r.roster_id, { season: thisSeason, ...p, live: true });
     }
   }
   let cursor = league.previous_league_id;
@@ -1230,10 +1235,13 @@ async function fetchPlacements(league, rosters, nflState) {
           arr.push({ season, place });
           history.set(rosterId, arr);
         }
-        for (const r of prevRosters) {
-          if (scoring.has(r.roster_id)) continue;
-          const p = rosterPpg(r);
-          if (p) scoring.set(r.roster_id, { season, ...p, live: false });
+        const prevWeeks = regularSeasonWeeks(prevLeague);
+        if (prevWeeks) {
+          for (const r of prevRosters) {
+            if (scoring.has(r.roster_id)) continue;
+            const p = rosterPpg(r, prevWeeks);
+            if (p) scoring.set(r.roster_id, { season, ...p, live: false });
+          }
         }
       }
       cursor = prevLeague.previous_league_id;

@@ -61,7 +61,8 @@ export const PATCH_NOTES: PatchNote[] = [
     title: "Team state shows the math, not the verdict again",
     changes: [
       "Rebuilt TEAM STATE. The old version plotted your starter strength, window and pick capital against the league, which just restated badges already at the top of the page. It told you where you sit without ever telling you why.",
-      "SCORING: your actual points per game against every team in the league, from the most recent season with games played. This is real scoring history, not a value estimate, and it is the one number here you can check against your own memory of the season.",
+      "SCORING: your actual points per week against every team in the league, from the most recent completed season. This is real scoring history, not a value estimate, and it is the one number here you can check against your own memory of the season.",
+      "It divides by weeks played, not by wins and losses. In a league with a second weekly matchup against the median, the record counts 28 results across a 14 week season, which would have halved everyone's average.",
       "WINDOW: your starting lineup, one row each, showing how much career every starter has left and how much of your lineup value is riding on players past halfway. That is what the window tier is computed from, so now you can see the actual reason instead of a label.",
       "Career left is measured per position off nflverse production from 1999 to 2024. A 27 year old running back and a 27 year old quarterback are nowhere near the same place, and the bars show it.",
       "POSITIONS: each bar is the weakest slot you would actually have to start, with the two thresholds that set the label drawn right on it.",

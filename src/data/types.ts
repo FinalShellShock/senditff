@@ -7,7 +7,13 @@ export type SleeperLeague = {
   roster_positions: string[];
   scoring_settings: Record<string, number>;
   status?: string;
-  settings?: { type?: number; draft_rounds?: number };
+  settings?: {
+    type?: number;
+    draft_rounds?: number;
+    /** First playoff week. Regular season is weeks 1..(this - 1), which is the
+     *  only span roster settings.fpts covers. */
+    playoff_week_start?: number;
+  };
   previous_league_id?: string;
   season?: string;
 };
@@ -33,6 +39,8 @@ export type SleeperNflState = {
   // until Sleeper rolls leagues forward. Use this (not new Date().getFullYear())
   // to decide what counts as "this year" for pick logic.
   league_season?: string;
+  /** Current NFL week. Weeks strictly before this one are complete. */
+  week?: number;
 };
 
 export type SleeperUser = {

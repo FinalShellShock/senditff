@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "fbe54763d07a";
+var ALGO_FINGERPRINT_BUILD = "8c0936e302ca";
 
 // src/algo/version.ts
 var ALGO_VERSION = "shotgun";

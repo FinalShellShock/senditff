@@ -161,7 +161,10 @@ export type TeamProfile = {
   scoring?: {
     season: number;
     ppg: number;
-    games: number;
+    /** Scoring WEEKS, not match results. This league plays a second matchup
+     *  each week against the league median, so wins+losses is double the weeks
+     *  and dividing by it halves PPG. */
+    weeks: number;
     /** True when the season is still being played, so PPG is partial. */
     live: boolean;
   };

@@ -81,7 +81,7 @@ function Scoring({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
   // leave a team carrying an older season's numbers, and ranking those against
   // this year's would invent a standing that never happened.
   const season = me.scoring?.season;
-  const field = league.filter((t) => t.scoring && t.scoring.games > 0 && t.scoring.season === season);
+  const field = league.filter((t) => t.scoring && t.scoring.weeks > 0 && t.scoring.season === season);
 
   if (!me.scoring || field.length < 2) {
     return (
@@ -119,7 +119,7 @@ function Scoring({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
       <p className="state-report-sub">
         {diff >= 0 ? "+" : ""}
         {diff.toFixed(1)} a game against the league average of {mean.toFixed(1)}, over{" "}
-        {me.scoring.games} games.
+        {me.scoring.weeks} weeks.
       </p>
       <div className="state-bars">
         {rows.map((t) => {
