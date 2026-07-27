@@ -63,6 +63,18 @@ export const VETERAN_SELL_VALUE = 1500;
 /** Rank band (inclusive, 1-indexed) that Stage 1 of the trade study found
  *  actually rises: young players here beat drift about two thirds of the time,
  *  while young players past it lose ground. */
+/** The package has to be able to LAND a difference-maker for the finding about
+ *  landing one to apply. 24 is not a taste call: it is the exact tier the
+ *  evidence is measured on ("landing a top-24 dynasty player beat expectations
+ *  60% of the time"). Without it the play fired on a rebuild team whose two
+ *  spare quarterbacks were worth 2,235 together, which buys the 74th most
+ *  valuable player in that league. Quoting a top-24 hit rate to that roster is
+ *  not a difference-maker suggestion, it is the wrong finding.
+ *
+ *  It is also the lenient reading: this checks what you can OFFER, and you
+ *  rarely get full value back. */
+export const DIFFERENCE_MAKER_RANK = 24;
+
 export const FRINGE_RANK_LO = 61;
 export const FRINGE_RANK_HI = 100;
 export const FRINGE_MAX_AGE = 25;
@@ -128,8 +140,9 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
   }
 
   // ── Universal: quality is the strongest measured predictor ────────────────
-  if (pair) {
-    const combined = pair[0].valueDynasty + pair[1].valueDynasty;
+  const pairValue = pair ? pair[0].valueDynasty + pair[1].valueDynasty : 0;
+  if (pair && rankOf(pairValue, ranking) <= DIFFERENCE_MAKER_RANK) {
+    const combined = pairValue;
     plays.push({
       key: "land_a_difference_maker",
       title: "Package depth into one difference-maker",
@@ -212,13 +225,16 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
           "Young players ranked 61st to 100th gained 30 to 35 places in a year, with two in three beating the league-wide drift. Young players outside the top 100 lost ground. The two bets look identical if you only check age.",
         hitRate: 65,
         rateLabel: "of those players gained ground",
-        detail: `In this league that band is roughly ${fmt(hi)} to ${fmt(lo)} in value, aged ${FRINGE_MAX_AGE} or under. Cheaper fliers than that are the ones that do not come in.`,
+        detail: `In this league that band is roughly ${fmt(hi)} to ${fmt(lo)} in value, aged ${FRINGE_MAX_AGE} or under. Cheaper fliers than that are the ones that do not come in. The finder cannot search that band directly yet, so check the ages and values on what it offers.`,
         kind: "do",
-        // NO archetype, so no link. The engine has no shape for "buy a young
-        // player ranked 61-100". This used to point at age_arb_buy, which the
-        // finder presents as "Buy an aging stud" — the exact opposite bet, and
-        // a user reported the whiplash. A play with no button beats a button
-        // that contradicts the play.
+        // APPROXIMATE, and deliberately so. The engine has no search for "young
+        // player ranked 61-100", so this points at the closest real mechanism:
+        // a pick-rich rebuilder spending picks to acquire players. It replaces
+        // age_arb_buy, which the finder presents as "Buy an aging stud" — the
+        // exact opposite bet, and a user reported the whiplash. Directionally
+        // right beats inverted, and the detail line tells them what band to
+        // look for in the results. Worth a real search shape later.
+        archetype: "capital_convert_picks_to_production",
       });
     }
   }

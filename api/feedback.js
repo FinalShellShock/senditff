@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "a98f8075739e";
+var ALGO_FINGERPRINT_BUILD = "2adcd0e0279a";
 
 // src/algo/version.ts
 var ALGO_VERSION = "shotgun";
@@ -45,6 +45,21 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.20",
+    algo: "Shotgun",
+    date: "2026-07-27",
+    title: "The difference-maker play has to actually buy a difference-maker",
+    changes: [
+      '"Package depth into one difference-maker" now only appears when your two pieces could genuinely land a top-24 player. It was firing on a rebuilding roster whose two spare quarterbacks were worth 2,235 together, which buys the 74th most valuable player in that league. That is not a difference-maker, and those quarterbacks are worth more sold to a contender in-season anyway.',
+      "Top 24 is not a taste call: it is the exact tier the 60% figure quoted on that play is measured on. If your package cannot reach it, the finding does not apply to you and the play stays off.",
+      '"Buy the fringe, not the lottery tickets" has a button again, pointing at Picks to players. That is the real mechanism for a pick-rich team buying young players, though the finder still cannot filter to the exact value band, so the play now tells you to check ages and values on what comes back.'
+    ],
+    knownIssues: [
+      "Two teams in a 16 team test league now see an empty scouting report. Both are stuck in the middle with no measured angle that fits. The report will not pad with filler, so an empty one means we genuinely have nothing backed by data for that spot yet."
+    ]
+  },
   {
     branch: "daniels",
     release: "1.19",
