@@ -316,8 +316,10 @@ function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat })
         {pickAdj !== 0
           ? `, ${pickAdj > 0 ? "plus" : "minus"} ${Math.abs(pickAdj)} for being ${pickFlagText(me.pickCapital.flag).toLowerCase()}`
           : ", with no pick adjustment"}
-        , gives {me.windowPressure.toFixed(1)}. MID starts at {WINDOW_LONG_THRESHOLD}, SHORT at{" "}
-        {WINDOW_SHORT_THRESHOLD}. The scale is tighter than it looks.
+        , gives {me.windowPressure.toFixed(1)}
+        {me.starterAgePressure + pickAdj < 0 ? " (it floors at zero)" : ""}. MID starts at{" "}
+        {WINDOW_LONG_THRESHOLD}, SHORT at {WINDOW_SHORT_THRESHOLD}. The scale is tighter than it
+        looks.
       </p>
       <WindowGauge pressure={me.windowPressure} />
       <p className="state-report-sub">
