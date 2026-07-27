@@ -159,13 +159,15 @@ type StarterRow = {
   /** Share of the starting lineup's redraft value, 0-1. This is exactly the
    *  weight starterAgePressure gives him. */
   share: number;
-  /** Points of the team's age pressure this player is personally responsible
-   *  for. These SUM to starterAgePressure, which is what makes them the right
-   *  thing to rank on: raw age ranks a 33 year old QB worth 4% of the lineup
-   *  above a 27 year old RB worth 26%, when only one of them moves the number. */
-  adds: number;
-  /** The mirror: how much he holds the window open. */
-  holds: number;
+  /** How hard this starter pulls the team average, in points: his distance
+   *  from it times his share of lineup value.
+   *
+   *  These sum to ZERO by construction, which is what makes the two ends a
+   *  real decomposition. Ranking on raw contribution (pressure x share) does
+   *  not work: that number and its mirror both scale with share, so the single
+   *  biggest starter tops BOTH lists and only a dedupe hides it. On this
+   *  roster that put two 27.5 year old running backs in opposite groups. */
+  pull: number;
 };
 
 function starterRows(me: TeamProfile, format: LeagueFormat): StarterRow[] {
@@ -178,6 +180,11 @@ function starterRows(me: TeamProfile, format: LeagueFormat): StarterRow[] {
   // short of the total they claim to explain.
   const aged = flat.filter((p) => p.age != null);
   const total = aged.reduce((s, p) => s + p.valueRedraft, 0) || 1;
+  // The team average these are measured against. Recomputed from the same
+  // inputs rather than read off the profile so the pulls provably sum to zero
+  // even if one is ever rounded differently upstream.
+  const avg =
+    aged.reduce((s, p) => s + agePressure(effectiveAge(p), p.position) * p.valueRedraft, 0) / total;
   return aged
     .map((p) => {
       // effectiveAge, not p.age: that is what starterAgePressure averages, so
@@ -192,11 +199,10 @@ function starterRows(me: TeamProfile, format: LeagueFormat): StarterRow[] {
         left: 100 - pressure,
         pressure,
         share,
-        adds: pressure * share,
-        holds: (100 - pressure) * share,
+        pull: (pressure - avg) * share,
       };
     })
-    .sort((a, b) => b.adds - a.adds || a.player.id.localeCompare(b.player.id));
+    .sort((a, b) => b.pull - a.pull || a.player.id.localeCompare(b.player.id));
 }
 
 function runwayColor(left: number) {
@@ -240,15 +246,7 @@ function WindowGauge({ pressure }: { pressure: number }) {
   );
 }
 
-function StarterLine({
-  row,
-  metric,
-  metricTitle,
-}: {
-  row: StarterRow;
-  metric: number;
-  metricTitle: string;
-}) {
+function StarterLine({ row, metricTitle }: { row: StarterRow; metricTitle: string }) {
   const cal = row.player.age as number;
   const adjusted = Math.abs(row.effAge - cal) >= 0.05;
   return (
@@ -275,8 +273,12 @@ function StarterLine({
       <span className="state-runway-left" title="Career production left, against a 23 year old at the same position">
         {row.left.toFixed(0)}%
       </span>
-      <span className="state-runway-runway" title={metricTitle}>
-        {metric.toFixed(1)}
+      <span
+        className={`state-runway-runway${row.pull > 0 ? " state-pull-up" : " state-pull-down"}`}
+        title={metricTitle}
+      >
+        {row.pull > 0 ? "+" : ""}
+        {row.pull.toFixed(1)}
       </span>
     </div>
   );
@@ -285,15 +287,13 @@ function StarterLine({
 function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat }) {
   const rows = starterRows(me, format);
   const pickAdj = PICK_ADJUSTMENT_BY_FLAG[me.pickCapital.flag];
-  // Two each, from opposite ends. The "holding it open" pick excludes anyone
-  // already listed above: a high-value starter in the middle of his career can
-  // top both lists at once, and showing the same name twice explains nothing.
-  const shorter = rows.slice(0, 2);
-  const shown = new Set(shorter.map((r) => r.player.id));
+  // Two from each end of one ordering. No dedupe needed: pulls sum to zero, so
+  // a player at the top cannot also be at the bottom.
+  const shorter = rows.filter((r) => r.pull > 0).slice(0, 2);
   const open = rows
-    .filter((r) => !shown.has(r.player.id))
-    .sort((a, b) => b.holds - a.holds || a.player.id.localeCompare(b.player.id))
-    .slice(0, 2);
+    .filter((r) => r.pull < 0)
+    .slice(-2)
+    .reverse();
 
   return (
     <div className="state-panel">
@@ -311,29 +311,27 @@ function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat })
       </p>
       <WindowGauge pressure={me.windowPressure} />
       <p className="state-report-sub">
-        Age pressure is the value-weighted average across every startable slot, flex included, so
-        the biggest contracts move it most. Two adding the most, two keeping the most off.
+        Age pressure is the value-weighted average across every startable slot, flex included.
+        These are the two starters pushing it up hardest and the two pulling it down, in points of
+        the total. Across the whole lineup they cancel out.
       </p>
       <div className="state-runways">
-        <div className="state-runway-group">PULLING IT SHORTER · POINTS ADDED</div>
+        {shorter.length > 0 && (
+          <div className="state-runway-group">PULLING IT SHORTER</div>
+        )}
         {shorter.map((r) => (
           <StarterLine
             key={r.player.id}
             row={r}
-            metric={r.adds}
-            metricTitle={`${r.player.name} adds ${r.adds.toFixed(1)} of your ${me.starterAgePressure.toFixed(1)} age pressure`}
+            metricTitle={`${r.player.name} pushes your age pressure up ${r.pull.toFixed(1)} points: he is ${(r.pressure - me.starterAgePressure).toFixed(0)} above the team average and carries ${(r.share * 100).toFixed(0)}% of your lineup value`}
           />
         ))}
-        {/* This group is ranked AND displayed on points withheld. Ranking on
-            one number and printing the other put 1.5 above 3.4 and made the
-            column look unsorted. */}
-        <div className="state-runway-group">HOLDING IT OPEN · POINTS KEPT OFF</div>
+        {open.length > 0 && <div className="state-runway-group">HOLDING IT OPEN</div>}
         {open.map((r) => (
           <StarterLine
             key={r.player.id}
             row={r}
-            metric={r.holds}
-            metricTitle={`${r.player.name} keeps ${r.holds.toFixed(1)} points of age pressure off your total, versus a fully aged starter in the same slot`}
+            metricTitle={`${r.player.name} pulls your age pressure down ${Math.abs(r.pull).toFixed(1)} points: he is ${Math.abs(r.pressure - me.starterAgePressure).toFixed(0)} below the team average and carries ${(r.share * 100).toFixed(0)}% of your lineup value`}
           />
         ))}
       </div>

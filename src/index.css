@@ -3375,9 +3375,11 @@ body {
 }
 
 .state-runway-runway {
-  color: #94a3b8;
   font-weight: 700;
 }
+
+.state-pull-up { color: #ef4444; }
+.state-pull-down { color: #22c55e; }
 
 /* ── Window gauge ── */
 
