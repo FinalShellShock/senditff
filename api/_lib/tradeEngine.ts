@@ -228,11 +228,37 @@ function assetValue(a: Asset): number {
 // fraction of the bundle's raw value. Three mid 4ths for a startable WR is
 // a no from every league mate.
 const FILLER_SWEETENER_MAX = 0.15;
+
+// Every piece in a multi-asset side has to carry at least this share of it.
+// Below that it is a body, not a piece, and including it misrepresents the
+// trade: two reported downvotes were 1-for-1 swaps wearing a second name.
+//
+//   Mark Andrews (1,399) + Johnny Mundt (0)   for Dallas Goedert (1,350)
+//   Sam Darnold  (1,510) + Aidan O'Connell (0) for Kyler Murray  (1,495)
+//
+//   "added a player with zero balance. that shouldn't make the trade even."
+//   "Why are we adding someone of zero value to this ... This is urgent."
+//
+// Both passed because the check below used to `return true` for any side of
+// two assets, so the sweetener rule only ever ran on three or more. The
+// zero-value case is the loud one, but the rule is about proportion: a piece
+// worth 2% of the side is filler whether it is worth 0 or 40.
+const BUNDLE_PIECE_MIN = 0.05;
+
+// How much better than your best outgoing piece the incoming player has to be
+// for a consolidation to be worth the name. 1.0 would only stop it going
+// strictly backwards; the point of packaging two players into one is a tier
+// jump, so it has to clear him by a visible margin.
+const CONSOLIDATE_UPGRADE = 1.1;
+
 function bundleShapeOk(assets: Asset[]): boolean {
-  if (assets.length <= 2) return true;
+  if (assets.length <= 1) return true;
   const values = assets.map(assetValue).sort((a, b) => b - a);
   const sum = values.reduce((s, v) => s + v, 0);
   if (sum <= 0) return false;
+  // No passengers, at any package size.
+  if (values.some((v) => v < BUNDLE_PIECE_MIN * sum)) return false;
+  if (assets.length <= 2) return true;
   return values.slice(2).every((v) => v <= FILLER_SWEETENER_MAX * sum);
 }
 function assetId(a: Asset): string {
@@ -1116,11 +1142,29 @@ function genConsolidate(ctx: GenContext): Candidate[] {
     if (myPair.length < 2) continue;
     const pairValue = packageValue(myPair.map((p) => p.valueDynasty));
 
+    const pairBest = Math.max(...myPair.map((p) => p.valueDynasty));
+
     for (const them of others) {
       const theirElite = topPlayersByPos(them, pos, 1)[0];
       if (!theirElite) continue;
       // Counter must outvalue my pair by a noticeable margin (otherwise it's not a consolidation)
       if (theirElite.valueDynasty < pairValue * 0.85) continue;
+      // ...and must be a real upgrade on the BEST piece leaving, not just on
+      // the pair total. Measured against the total, "consolidation" happily
+      // went backwards:
+      //
+      //   Mark Andrews (1,399) + a body  ->  Dallas Goedert (1,350)
+      //   Sam Darnold  (1,510) + a body  ->  Kyler Murray   (1,495)
+      //
+      //   "Darnoldis worth more than Murray alone ... doing that for not the
+      //    best player in the deal is way off."
+      //
+      // Consolidating is supposed to turn depth into a better player. Landing
+      // someone worse than the guy you already had is the give-away-your-best-
+      // player shape that 19,933 trades measured as the losing side, and it is
+      // what daniels 1.11 recorded as needing a GENERATION fix after five
+      // attempts at the ranking end moved nothing.
+      if (theirElite.valueDynasty < pairBest * CONSOLIDATE_UPGRADE) continue;
 
       const ratio = pairValue / theirElite.valueDynasty;
       if (ratio >= 0.80 && ratio <= 1.18) {

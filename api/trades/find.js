@@ -512,11 +512,15 @@ function assetValue(a) {
   return a.kind === "player" ? a.player.valueDynasty : a.pick.value;
 }
 var FILLER_SWEETENER_MAX = 0.15;
+var BUNDLE_PIECE_MIN = 0.05;
+var CONSOLIDATE_UPGRADE = 1.1;
 function bundleShapeOk(assets) {
-  if (assets.length <= 2) return true;
+  if (assets.length <= 1) return true;
   const values = assets.map(assetValue).sort((a, b) => b - a);
   const sum = values.reduce((s, v) => s + v, 0);
   if (sum <= 0) return false;
+  if (values.some((v) => v < BUNDLE_PIECE_MIN * sum)) return false;
+  if (assets.length <= 2) return true;
   return values.slice(2).every((v) => v <= FILLER_SWEETENER_MAX * sum);
 }
 function assetId(a) {
@@ -1082,10 +1086,12 @@ function genConsolidate(ctx) {
     const myPair = myAtPos.slice(1, 3);
     if (myPair.length < 2) continue;
     const pairValue = packageValue(myPair.map((p) => p.valueDynasty));
+    const pairBest = Math.max(...myPair.map((p) => p.valueDynasty));
     for (const them of others) {
       const theirElite = topPlayersByPos(them, pos, 1)[0];
       if (!theirElite) continue;
       if (theirElite.valueDynasty < pairValue * 0.85) continue;
+      if (theirElite.valueDynasty < pairBest * CONSOLIDATE_UPGRADE) continue;
       const ratio = pairValue / theirElite.valueDynasty;
       if (ratio >= 0.8 && ratio <= 1.18) {
         out.push({
