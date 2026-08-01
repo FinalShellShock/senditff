@@ -1,7 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useOutletContext, useParams, useSearchParams } from "react-router-dom";
 import { FeedbackBlock } from "../components/FeedbackBlock.tsx";
 import { INTENT_LABELS } from "../data/intentLabels.ts";
+import AssetFilterBar from "./shared/AssetFilterBar.tsx";
+import {
+  EMPTY_ASSET_FILTERS,
+  buildAssetPool,
+  filterAssets,
+  type AssetFilters,
+  type TradeAsset,
+} from "../data/assetPool.ts";
 import { ARCHETYPE_FAMILIES, POSITIONAL_FAMILIES, type ArchetypeFamily } from "../algo/archetypes.ts";
 import { fairnessColor, fairnessLabel, fairnessText } from "../algo/fairness.ts";
 import type { Position } from "../algo/types.ts";
@@ -22,6 +30,9 @@ type ResultSearchContext = {
   position: string | null;
   targetRosterId: number | null;
   noFillerPicks: boolean;
+  /** Assets the search required on each side, captured at search time. */
+  give: TradeAsset[];
+  receive: TradeAsset[];
 };
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
@@ -318,6 +329,27 @@ function EmptyState({
   const intentLabel = intent ? INTENT_LABELS[intent] : null;
   const lines: string[] = [];
 
+  // Asset scope explains an empty result better than anything downstream can,
+  // because it separates "no such trade exists" from "no good trade exists".
+  // `before` is how many packages were built at all; `after` how many contained
+  // every asset you named.
+  const scope = diagnostics.assetScope;
+  if (scope && scope.after === 0) {
+    const named = scope.give + scope.receive;
+    lines.push(
+      `Built ${scope.before} candidate package${scope.before === 1 ? "" : "s"}${targetName ? ` with ${targetName}` : ""}, but none of them involved ${named === 1 ? "the asset" : "all the assets"} you named. The finder builds packages from each roster's position leaders, so a specific piece only turns up when a trade shape naturally reaches for it.`,
+    );
+    if (named > 1) lines.push("Naming fewer assets is the quickest way to widen this.");
+    return (
+      <div className="sendit-empty">
+        {lines.map((l, i) => <p key={i} className="dim-text">{l}</p>)}
+        <button className="sendit-reset-btn" onClick={onReset}>
+          Reset to best available, all teams
+        </button>
+      </div>
+    );
+  }
+
   if (diagnostics.rawCandidates === 0) {
     if (intent && (diagnostics.myArchetypeScore ?? 0) < 30) {
       lines.push(
@@ -387,7 +419,16 @@ export default function SendIt() {
     position: null,
     targetRosterId: null,
     noFillerPicks: false,
+    give: [],
+    receive: [],
   });
+  // Asset scope: "find trades that send X" / "that land Y". Empty by default,
+  // so the menu-free auto search is unchanged until you name something.
+  const [scopeGive, setScopeGive] = useState<TradeAsset[]>([]);
+  const [scopeReceive, setScopeReceive] = useState<TradeAsset[]>([]);
+  const [scopeOpen, setScopeOpen] = useState(false);
+  const [scopeQuery, setScopeQuery] = useState("");
+  const [scopeFilters, setScopeFilters] = useState<AssetFilters>(EMPTY_ASSET_FILTERS);
 
   const showPosition = intent !== "" && POSITIONAL_FAMILIES.includes(intent);
 
@@ -396,19 +437,27 @@ export default function SendIt() {
     position: Position | "";
     target: number | "";
     noFiller: boolean;
+    give?: TradeAsset[];
+    receive?: TradeAsset[];
   }) {
     if (!leagueId || !rosterId) return;
     setResult(null);
     setLoading(true);
     setError(null);
     const usePosition = opts.intent !== "" && POSITIONAL_FAMILIES.includes(opts.intent) ? opts.position : "";
+    const give = opts.give ?? [];
+    const receive = opts.receive ?? [];
     setResultSearch({
       archetype: opts.intent || null,
       position: usePosition || null,
       targetRosterId: opts.target === "" ? null : opts.target,
       noFillerPicks: opts.noFiller,
+      give,
+      receive,
     });
-    // Keep the URL shareable
+    // Keep the URL shareable. Asset scope is deliberately NOT in the URL: the
+    // ids are long, and a link that pins specific players goes stale the moment
+    // either roster changes, which is a worse experience than an unscoped link.
     const next = new URLSearchParams();
     if (opts.intent) next.set("archetype", opts.intent);
     if (usePosition) next.set("pos", usePosition);
@@ -421,6 +470,8 @@ export default function SendIt() {
       ...(usePosition ? { position: usePosition } : {}),
       ...(opts.target !== "" ? { targetRosterId: opts.target } : {}),
       ...(opts.noFiller ? { noFillerPicks: true } : {}),
+      ...(give.length > 0 ? { mustGive: give.map((a) => a.id) } : {}),
+      ...(receive.length > 0 ? { mustReceive: receive.map((a) => a.id) } : {}),
     })
       .then(setResult)
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to find trades"))
@@ -437,7 +488,12 @@ export default function SendIt() {
     // A stale target equal to the new perspective team gets cleared.
     const effectiveTarget = target !== "" && target === rosterId ? "" : target;
     if (effectiveTarget !== target) setTarget(effectiveTarget);
-    runSearch({ intent, position, target: effectiveTarget, noFiller });
+    // Asset scope is roster-relative (SEND means "this roster owns it"), so
+    // switching teams drops it rather than carrying over a scope that would now
+    // ask the wrong roster to send someone else's player.
+    setScopeGive([]);
+    setScopeReceive([]);
+    runSearch({ intent, position, target: effectiveTarget, noFiller, give: [], receive: [] });
   }, [leagueId, rosterId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sortedTeams = [...overview.profiles].sort((a, b) => a.starterRank - b.starterRank);
@@ -448,12 +504,25 @@ export default function SendIt() {
   const myTeam =
     overview.profiles.find((p) => p.rosterId === rosterId)?.ownerName ?? "this team";
 
+  const assetPool = useMemo(() => buildAssetPool(overview.profiles), [overview.profiles]);
+  const scopeCount = scopeGive.length + scopeReceive.length;
+  const scopedIds = useMemo(
+    () => new Set([...scopeGive, ...scopeReceive].map((a) => a.id)),
+    [scopeGive, scopeReceive],
+  );
+  const scopeResults = useMemo(
+    () => filterAssets(assetPool, { ...scopeFilters, query: scopeQuery }, { exclude: scopedIds }),
+    [assetPool, scopeFilters, scopeQuery, scopedIds],
+  );
+
   function resetControls() {
     setIntent("");
     setPosition("");
     setTarget("");
     setNoFiller(false);
-    runSearch({ intent: "", position: "", target: "", noFiller: false });
+    setScopeGive([]);
+    setScopeReceive([]);
+    runSearch({ intent: "", position: "", target: "", noFiller: false, give: [], receive: [] });
   }
 
   return (
@@ -538,10 +607,130 @@ export default function SendIt() {
         <button
           className="sendit-find-btn"
           disabled={loading}
-          onClick={() => runSearch({ intent, position, target, noFiller })}
+          onClick={() =>
+            runSearch({ intent, position, target, noFiller, give: scopeGive, receive: scopeReceive })
+          }
         >
           FIND TRADES
         </button>
+      </div>
+
+      {/* Asset scope. Collapsed by default so the menu-free auto search stays
+          the default experience: naming a player is an extra thing you can do,
+          not a step you have to take. */}
+      <div className="sendit-scope">
+        <button
+          type="button"
+          className="sendit-scope-toggle"
+          aria-expanded={scopeOpen}
+          onClick={() => setScopeOpen((v) => !v)}
+        >
+          {scopeOpen ? "▾" : "▸"} INVOLVE SPECIFIC PLAYERS OR PICKS
+          {scopeCount > 0 && <span className="sendit-scope-count">{scopeCount}</span>}
+        </button>
+
+        {(scopeGive.length > 0 || scopeReceive.length > 0) && (
+          <div className="sendit-scope-summary">
+            {scopeGive.length > 0 && (
+              <div className="sendit-scope-line">
+                <span className="sendit-scope-tag give">SEND</span>
+                {scopeGive.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    className="sendit-scope-pill"
+                    onClick={() => setScopeGive((prev) => prev.filter((x) => x.id !== a.id))}
+                    title="Remove"
+                  >
+                    {a.name} <span className="sendit-scope-x">×</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {scopeReceive.length > 0 && (
+              <div className="sendit-scope-line">
+                <span className="sendit-scope-tag receive">GET</span>
+                {scopeReceive.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    className="sendit-scope-pill"
+                    onClick={() => setScopeReceive((prev) => prev.filter((x) => x.id !== a.id))}
+                    title="Remove"
+                  >
+                    {a.name} <span className="sendit-scope-x">×</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {scopeOpen && (
+          <div className="sendit-scope-picker">
+            <input
+              className="calc-search-input"
+              placeholder="Search players and picks…"
+              value={scopeQuery}
+              onChange={(e) => setScopeQuery(e.target.value)}
+            />
+            <AssetFilterBar filters={scopeFilters} onChange={setScopeFilters} />
+            <div className="calc-results">
+              {scopeResults.length === 0 ? (
+                <p className="dim-text" style={{ textAlign: "center", fontSize: 11, padding: "16px 0" }}>
+                  Nothing matches those filters.
+                </p>
+              ) : (
+                scopeResults.map((asset) => {
+                  const mine = asset.ownerRosterId === rosterId;
+                  return (
+                    <div key={asset.id} className="calc-result-row">
+                      <div className="calc-result-left">
+                        <span className="sendit-scope-pos" style={{ background: posColor(asset.position) }}>
+                          {asset.kind === "pick" ? "PICK" : asset.position}
+                        </span>
+                        <span className="calc-result-name">{asset.name}</span>
+                        {asset.age != null && (
+                          <span className="calc-result-meta">{asset.age.toFixed(1)}</span>
+                        )}
+                        <span className="calc-result-owner">{asset.ownerName}</span>
+                      </div>
+                      <div className="calc-result-right">
+                        <span className="calc-result-value">{asset.value.toLocaleString()}</span>
+                        {/* You can only send what this roster owns, and only
+                            receive what it does not. Offering both on every row
+                            would let you build a search that cannot match. */}
+                        {mine ? (
+                          <button
+                            className="calc-add-btn side-a natural"
+                            onClick={() => {
+                              setScopeGive((prev) =>
+                                prev.some((x) => x.id === asset.id) ? prev : [...prev, asset],
+                              );
+                            }}
+                          >
+                            SEND
+                          </button>
+                        ) : (
+                          <button
+                            className="calc-add-btn side-b natural"
+                            onClick={() => {
+                              setScopeReceive((prev) =>
+                                prev.some((x) => x.id === asset.id) ? prev : [...prev, asset],
+                              );
+                            }}
+                          >
+                            GET
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {error && <div className="error-banner">{error}</div>}

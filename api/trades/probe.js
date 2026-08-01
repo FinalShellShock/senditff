@@ -1319,7 +1319,21 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
   };
   const shapeFilter = (cands) => cands.filter((c) => sideOk(c.give) && sideOk(c.receive) && lateralSwapOk(c.give, c.receive));
   let degraded;
-  const rawCandidates = shapeFilter(generators.flatMap((g) => g(ctx)));
+  const generated = shapeFilter(generators.flatMap((g) => g(ctx)));
+  const mustGive = opts.mustGive ?? [];
+  const mustReceive = opts.mustReceive ?? [];
+  const scoped = mustGive.length > 0 || mustReceive.length > 0;
+  const rawCandidates = scoped ? generated.filter((c) => {
+    const give = new Set(c.give.map(assetId));
+    const receive = new Set(c.receive.map(assetId));
+    return mustGive.every((id) => give.has(id)) && mustReceive.every((id) => receive.has(id));
+  }) : generated;
+  const assetScope = scoped ? {
+    before: generated.length,
+    after: rawCandidates.length,
+    give: mustGive.length,
+    receive: mustReceive.length
+  } : void 0;
   const seen = /* @__PURE__ */ new Set();
   const unique = [];
   for (const c of rawCandidates) {
@@ -1419,6 +1433,7 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
     afterDedup: unique.length,
     rejected,
     forced: !!forced,
+    ...assetScope ? { assetScope } : {},
     ...degraded ? { degraded } : {},
     ...forced ? { myArchetypeScore: forcedArchetypeScore(mine, forced) } : {},
     ...target ? { counterNote: buildCounterNote(target, forced) } : {}

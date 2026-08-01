@@ -1331,7 +1331,21 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
   };
   const shapeFilter = (cands) => cands.filter((c) => sideOk(c.give) && sideOk(c.receive) && lateralSwapOk(c.give, c.receive));
   let degraded;
-  const rawCandidates = shapeFilter(generators.flatMap((g) => g(ctx)));
+  const generated = shapeFilter(generators.flatMap((g) => g(ctx)));
+  const mustGive = opts.mustGive ?? [];
+  const mustReceive = opts.mustReceive ?? [];
+  const scoped = mustGive.length > 0 || mustReceive.length > 0;
+  const rawCandidates = scoped ? generated.filter((c) => {
+    const give = new Set(c.give.map(assetId));
+    const receive = new Set(c.receive.map(assetId));
+    return mustGive.every((id) => give.has(id)) && mustReceive.every((id) => receive.has(id));
+  }) : generated;
+  const assetScope = scoped ? {
+    before: generated.length,
+    after: rawCandidates.length,
+    give: mustGive.length,
+    receive: mustReceive.length
+  } : void 0;
   const seen = /* @__PURE__ */ new Set();
   const unique = [];
   for (const c of rawCandidates) {
@@ -1431,6 +1445,7 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
     afterDedup: unique.length,
     rejected,
     forced: !!forced,
+    ...assetScope ? { assetScope } : {},
     ...degraded ? { degraded } : {},
     ...forced ? { myArchetypeScore: forcedArchetypeScore(mine, forced) } : {},
     ...target ? { counterNote: buildCounterNote(target, forced) } : {}
@@ -1560,10 +1575,34 @@ async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   const user = await requireApprovedUser(req, res);
   if (!user) return;
-  const { leagueId, rosterId, archetype, position, targetRosterId, noFillerPicks } = req.body;
+  const {
+    leagueId,
+    rosterId,
+    archetype,
+    position,
+    targetRosterId,
+    noFillerPicks,
+    mustGive,
+    mustReceive
+  } = req.body;
   if (!leagueId || rosterId == null) {
     return res.status(400).json({ error: "leagueId and rosterId required" });
   }
+  const ASSET_SCOPE_MAX = 6;
+  const assetIds = (v, field) => {
+    if (v == null) return [];
+    if (!Array.isArray(v) || v.some((x) => typeof x !== "string")) {
+      return { error: `${field} must be an array of asset ids` };
+    }
+    if (v.length > ASSET_SCOPE_MAX) {
+      return { error: `${field} accepts at most ${ASSET_SCOPE_MAX} assets` };
+    }
+    return [...new Set(v)];
+  };
+  const giveIds = assetIds(mustGive, "mustGive");
+  if (!Array.isArray(giveIds)) return res.status(400).json({ error: giveIds.error });
+  const receiveIds = assetIds(mustReceive, "mustReceive");
+  if (!Array.isArray(receiveIds)) return res.status(400).json({ error: receiveIds.error });
   if (archetype != null && !ARCHETYPE_FAMILIES.includes(archetype)) {
     return res.status(400).json({ error: `Unknown archetype: ${archetype}` });
   }
@@ -1607,7 +1646,9 @@ async function handler(req, res) {
         }
       } : {},
       ...targetRosterId != null ? { targetRosterId: Number(targetRosterId) } : {},
-      ...noFillerPicks === true ? { noFillerPicks: true } : {}
+      ...noFillerPicks === true ? { noFillerPicks: true } : {},
+      ...giveIds.length > 0 ? { mustGive: giveIds } : {},
+      ...receiveIds.length > 0 ? { mustReceive: receiveIds } : {}
     });
     const withRationales = await Promise.all(
       packages.map(

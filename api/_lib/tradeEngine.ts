@@ -122,6 +122,18 @@ export type GenerateOptions = {
   targetRosterId?: number;
   // User toggle: at most one pick per side and no 3rds/4ths at all.
   noFillerPicks?: boolean;
+  // Asset scoping: "find me trades that SEND this player" / "that LAND this
+  // player". Engine asset ids (see assetId), ANDed together, so naming two
+  // assets means both must appear on that side.
+  //
+  // Applied as a filter over generated candidates rather than as a generator.
+  // The generators build from position leaders, so a specific mid-value player
+  // simply never appears in most of them, and a dedicated seeded generator is
+  // the right answer only once we know how often this comes back empty. The
+  // diagnostics below report exactly that, so the decision gets made on
+  // numbers instead of a guess.
+  mustGive?: string[];
+  mustReceive?: string[];
   pools?: {
     dynastyByPos: Record<Position, number[]>;
     redraftByPos: Record<Position, number[]>;
@@ -135,6 +147,12 @@ export type GenerateDiagnostics = {
   afterDedup: number;
   rejected: { myFit: number; theirFit: number; balance: number; ageArbPrice?: number };
   forced: boolean;
+  // Asset scoping, when the user named assets. `before` is how many candidates
+  // existed at all, `after` how many contained every named asset. after=0 with
+  // a healthy `before` is the honest "nobody in your league would build that
+  // deal today" answer, and is also the number that decides whether a seeded
+  // generator is worth building.
+  assetScope?: { before: number; after: number; give: number; receive: number };
   // mine.archetypeScores for the forced family (0-100), when forced.
   myArchetypeScore?: number;
   // One deterministic sentence about the target team, when one was set.
@@ -1453,7 +1471,31 @@ export function generatePackages(
     cands.filter((c) => sideOk(c.give) && sideOk(c.receive) && lateralSwapOk(c.give, c.receive));
 
   let degraded: GenerateDiagnostics["degraded"];
-  const rawCandidates = shapeFilter(generators.flatMap((g) => g(ctx)));
+  const generated = shapeFilter(generators.flatMap((g) => g(ctx)));
+
+  // Asset scope: keep only candidates carrying every named asset on the named
+  // side. Runs before dedup and scoring so everything downstream, including the
+  // rejection tallies, describes the scoped pool the user actually asked about.
+  const mustGive = opts.mustGive ?? [];
+  const mustReceive = opts.mustReceive ?? [];
+  const scoped = mustGive.length > 0 || mustReceive.length > 0;
+  const rawCandidates = scoped
+    ? generated.filter((c) => {
+        const give = new Set(c.give.map(assetId));
+        const receive = new Set(c.receive.map(assetId));
+        return (
+          mustGive.every((id) => give.has(id)) && mustReceive.every((id) => receive.has(id))
+        );
+      })
+    : generated;
+  const assetScope: GenerateDiagnostics["assetScope"] = scoped
+    ? {
+        before: generated.length,
+        after: rawCandidates.length,
+        give: mustGive.length,
+        receive: mustReceive.length,
+      }
+    : undefined;
 
   // Dedup identical packages, keep first occurrence
   const seen = new Set<string>();
@@ -1584,6 +1626,7 @@ export function generatePackages(
     afterDedup: unique.length,
     rejected,
     forced: !!forced,
+    ...(assetScope ? { assetScope } : {}),
     ...(degraded ? { degraded } : {}),
     ...(forced ? { myArchetypeScore: forcedArchetypeScore(mine, forced) } : {}),
     ...(target ? { counterNote: buildCounterNote(target, forced) } : {}),

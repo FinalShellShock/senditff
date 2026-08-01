@@ -888,6 +888,76 @@ body {
 }
 .sendit-find-btn:hover:not(:disabled) { background: rgba(245, 158, 11, 0.22); }
 .sendit-find-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ── Asset scope ("involve these specific players/picks") ─────────────────── */
+.sendit-scope { margin: 0 0 20px; }
+.sendit-scope-toggle {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sendit-scope-toggle:hover { color: #cbd5e1; }
+.sendit-scope-count {
+  background: #f59e0b;
+  border-radius: 8px;
+  color: #0f172a;
+  font-size: 9px;
+  padding: 1px 6px;
+}
+.sendit-scope-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 0 10px;
+}
+.sendit-scope-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.sendit-scope-tag {
+  border-radius: 2px;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 2px 5px;
+}
+.sendit-scope-tag.give { background: #b45309; }
+.sendit-scope-tag.receive { background: #1d4ed8; }
+.sendit-scope-pill {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 3px;
+  color: #cbd5e1;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 3px 8px;
+}
+.sendit-scope-pill:hover { border-color: #ef4444; color: #fca5a5; }
+.sendit-scope-x { color: #64748b; margin-left: 2px; }
+.sendit-scope-picker {
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 4px;
+  background: rgba(255,255,255,0.02);
+  overflow: hidden;
+}
+.sendit-scope-picker > .calc-search-input { width: 100%; box-sizing: border-box; }
+.sendit-scope-pos {
+  border-radius: 2px;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 1px 5px;
+}
+
 .sendit-empty {
   padding: 20px 4px;
   display: flex;
@@ -2436,6 +2506,53 @@ body {
   color: #475569;
 }
 .calc-lock-toggle:has(input:checked) span { color: #f59e0b; }
+
+/* Shared asset filter bar (trade calculator + Send It asset scoping).
+   Wraps rather than scrolls: on a phone these drop onto two or three rows,
+   which is fine, where a sideways-scrolling filter row hides its own options. */
+.asset-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.01);
+}
+.asset-filter-chips {
+  display: flex;
+  gap: 4px;
+}
+.asset-filter-chip {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 3px;
+  color: #64748b;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 4px 8px;
+}
+.asset-filter-chip:hover { color: #cbd5e1; border-color: rgba(255,255,255,0.22); }
+.asset-filter-chip.active {
+  background: rgba(245,158,11,0.12);
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+.asset-filter-select {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 3px;
+  color: #94a3b8;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 4px 6px;
+}
+.asset-filter-select:focus { outline: none; border-color: rgba(245,158,11,0.5); }
+.asset-filter-clear { font-size: 10px; }
 
 /* Results list */
 .calc-results {

@@ -4,17 +4,14 @@ import { fairnessColor, fairnessLabel, fairnessText, tradeEffectiveValues } from
 import type { Position } from "../algo/types.ts";
 import type { TeamProfile } from "../algo/types.ts";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
-
-type TradeAsset = {
-  id: string;
-  kind: "player" | "pick";
-  name: string;
-  position?: Position;
-  value: number;
-  ownerName: string;
-  ownerRosterId: number;
-  age?: number | null;
-};
+import AssetFilterBar from "./shared/AssetFilterBar.tsx";
+import {
+  EMPTY_ASSET_FILTERS,
+  buildAssetPool,
+  filterAssets,
+  type AssetFilters,
+  type TradeAsset,
+} from "../data/assetPool.ts";
 
 type TradeSide = {
   rosterId: number | null;
@@ -304,34 +301,10 @@ export default function Calc() {
   const [sideA, setSideA] = useState<TradeSide>({ rosterId: null, assets: [] });
   const [sideB, setSideB] = useState<TradeSide>({ rosterId: null, assets: [] });
   const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<AssetFilters>(EMPTY_ASSET_FILTERS);
   const [rosterLocked, setRosterLocked] = useState(true);
 
-  // All assets across the league, players + picks combined, sorted by value
-  const allAssets = useMemo<TradeAsset[]>(() => {
-    const players: TradeAsset[] = profiles.flatMap((p) =>
-      p.players.map((pl): TradeAsset => ({
-        id: pl.id,
-        kind: "player",
-        name: pl.name,
-        position: pl.position,
-        value: pl.valueDynasty,
-        ownerName: p.ownerName,
-        ownerRosterId: p.rosterId,
-        age: pl.age,
-      }))
-    );
-    const picks: TradeAsset[] = profiles.flatMap((p) =>
-      p.picks.map((pk): TradeAsset => ({
-        id: `${pk.year}-${pk.round}-${pk.origRosterId}`,
-        kind: "pick",
-        name: pk.label,
-        value: pk.value,
-        ownerName: p.ownerName,
-        ownerRosterId: p.rosterId,
-      }))
-    );
-    return [...players, ...picks].sort((a, b) => b.value - a.value);
-  }, [profiles]);
+  const allAssets = useMemo(() => buildAssetPool(profiles), [profiles]);
 
   const addedIds = useMemo(
     () => new Set([...sideA.assets.map((a) => a.id), ...sideB.assets.map((a) => a.id)]),
@@ -348,16 +321,10 @@ export default function Calc() {
     );
   }, [allAssets, rosterLocked, sideA.rosterId, sideB.rosterId]);
 
-  const searchResults = useMemo(() => {
-    const available = pool.filter((a) => !addedIds.has(a.id));
-    if (query.length >= 2) {
-      return available
-        .filter((a) => a.name.toLowerCase().includes(query.toLowerCase()))
-        .slice(0, 30);
-    }
-    // No query: top 25 assets by value (players + picks combined)
-    return available.slice(0, 25);
-  }, [pool, query, addedIds]);
+  const searchResults = useMemo(
+    () => filterAssets(pool, { ...filters, query }, { exclude: addedIds }),
+    [pool, filters, query, addedIds],
+  );
 
   function addAsset(asset: TradeAsset, side: "A" | "B") {
     const setter = side === "A" ? setSideA : setSideB;
@@ -561,6 +528,8 @@ export default function Calc() {
             <span>ROSTER FILTER</span>
           </label>
         </div>
+
+        <AssetFilterBar filters={filters} onChange={setFilters} />
 
         {searchResults.length > 0 ? (
           <div className="calc-results">

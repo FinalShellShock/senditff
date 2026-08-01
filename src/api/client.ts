@@ -54,6 +54,7 @@ export type TradeDiagnostics = {
   forced: boolean;
   myArchetypeScore?: number;
   counterNote?: string;
+  assetScope?: { before: number; after: number; give: number; receive: number };
   degraded?: "no_archetype" | "gates";
 };
 
@@ -62,6 +63,10 @@ export type FindTradesOptions = {
   position?: Position;
   targetRosterId?: number;
   noFillerPicks?: boolean;
+  /** Engine asset ids that must appear on the side you send. */
+  mustGive?: string[];
+  /** Engine asset ids that must appear on the side you receive. */
+  mustReceive?: string[];
 };
 
 export type FindTradesResponse = {
