@@ -4091,6 +4091,16 @@ body {
   margin-left: 3px;
 }
 
+/* NFL team on trade cards. Requested alongside the age: two names alone do not
+   tell you whether you just stacked a bye or bought into a bad offence. Dimmer
+   than the age so the name still leads the row. */
+.trade-asset-team {
+  font-size: 9px;
+  color: #475569;
+  margin-left: 4px;
+  letter-spacing: 0.5px;
+}
+
 /* Floating feedback button. Fixed rather than in the footer: a link you can
    only reach by scrolling past the thing you wanted to report is a link that
    does not get used. Sits opposite the page content, dims until hovered, and

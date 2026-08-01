@@ -46,9 +46,12 @@ async function main(): Promise<void> {
 
   const passengers: string[] = [];
   const backwards: string[] = [];
+  const dupes: string[] = [];
+  const misordered: string[] = [];
   let sides = 0;
   let consolidations = 0;
   let packages = 0;
+  let lists = 0;
 
   const runs: Array<{ label: string; opts: Record<string, unknown> }> = [
     { label: "auto", opts: {} },
@@ -64,6 +67,40 @@ async function main(): Promise<void> {
         mine, profiles, inputs.format, inputs.thisYear,
         { pools: inputs.pools, ...run.opts },
       );
+      // 3. NO NEAR-DUPLICATES within one result list, and 4. headline first.
+      lists++;
+      const pairSeen = new Map<string, number>();
+      const giveSeen = new Map<string, number>();
+      const recvSeen = new Map<string, number>();
+      const head = (as: Array<{ name: string; valueDynasty: number }>) =>
+        as.reduce((b, a) => (a.valueDynasty > b.valueDynasty ? a : b), as[0]!).name;
+      for (const p of pkgs) {
+        const g = head(p.give);
+        const r = head(p.receive);
+        pairSeen.set(`${g}>${r}`, (pairSeen.get(`${g}>${r}`) ?? 0) + 1);
+        giveSeen.set(g, (giveSeen.get(g) ?? 0) + 1);
+        recvSeen.set(r, (recvSeen.get(r) ?? 0) + 1);
+        for (const [side, assets] of [["send", p.give], ["get", p.receive]] as const) {
+          for (let i = 1; i < assets.length; i++) {
+            if (assets[i]!.valueDynasty > assets[i - 1]!.valueDynasty) {
+              misordered.push(
+                `${mine.ownerName} [${run.label}] ${side}: ${assets[i]!.name} ` +
+                  `(${assets[i]!.valueDynasty}) listed after ${assets[i - 1]!.name} (${assets[i - 1]!.valueDynasty})`,
+              );
+            }
+          }
+        }
+      }
+      for (const [k, n] of pairSeen) {
+        if (n > 1) dupes.push(`${mine.ownerName} [${run.label}] same trade ${n}x: ${k}`);
+      }
+      for (const [k, n] of giveSeen) {
+        if (n > 2) dupes.push(`${mine.ownerName} [${run.label}] sends ${k} in ${n} packages`);
+      }
+      for (const [k, n] of recvSeen) {
+        if (n > 2) dupes.push(`${mine.ownerName} [${run.label}] lands ${k} in ${n} packages`);
+      }
+
       for (const p of pkgs) {
         packages++;
         for (const [side, assets] of [["send", p.give], ["get", p.receive]] as const) {
@@ -112,7 +149,19 @@ async function main(): Promise<void> {
       ? `✓ Every consolidation landed a player beating the best outgoing piece by ${CONSOLIDATE_UPGRADE}x.`
       : `✗ ${backwards.length} consolidations went backwards:\n  ` + backwards.slice(0, 15).join("\n  "),
   );
-  if (passengers.length > 0 || backwards.length > 0) process.exit(1);
+  console.log(
+    dupes.length === 0
+      ? `✓ No near-duplicates across ${lists} result lists.`
+      : `✗ ${dupes.length} near-duplicate clusters:\n  ` + dupes.slice(0, 15).join("\n  "),
+  );
+  console.log(
+    misordered.length === 0
+      ? "✓ Every side lists its biggest asset first."
+      : `✗ ${misordered.length} misordered sides:\n  ` + misordered.slice(0, 10).join("\n  "),
+  );
+  if (passengers.length > 0 || backwards.length > 0 || dupes.length > 0 || misordered.length > 0) {
+    process.exit(1);
+  }
 }
 
 main().catch((e) => {

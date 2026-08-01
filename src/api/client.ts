@@ -7,6 +7,8 @@ export type TradeAssetWire = {
   kind: "player" | "pick";
   name: string;
   position?: string;
+  /** NFL team. Absent on picks and on players Sleeper lists as free agents. */
+  team?: string;
   valueDynasty: number;
   age?: number;
 };

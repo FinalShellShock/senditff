@@ -62,6 +62,9 @@ export type TradeAssetWire = {
   kind: "player" | "pick";
   name: string;
   position?: string;
+  // NFL team. Requested on a trade card: two players' names alone do not tell
+  // you whether you just stacked a bye week or bought into a bad offence.
+  team?: string;
   valueDynasty: number;
   // Players only. Carried so the rationale writer works from real ages
   // instead of inventing them, and so logged feedback records the age the
@@ -273,6 +276,7 @@ function toWire(a: Asset): TradeAssetWire {
       kind: "player",
       name: a.player.name,
       position: a.player.position,
+      ...(a.player.team ? { team: a.player.team } : {}),
       valueDynasty: a.player.valueDynasty,
       ...(a.player.age != null ? { age: a.player.age } : {}),
     };
@@ -1618,37 +1622,92 @@ export function generatePackages(
   // The per-counter-team cap stays. Five trades with the same manager is not a
   // list of options, and unlike family-forcing it never costs a better trade
   // more than one slot.
+  // NEAR-DUPLICATE SUPPRESSION. Reported four times in one sitting:
+  //
+  //   "This is a repeat of the trade directly above it minus the 2028 3rd."
+  //   "a repeat of the same trade two cards up but with Michael Mayer instead
+  //    of a late 2028 third. This has happened twice now."
+  //   "On this run alone we surfaced 4 trades trading Xavier Worthy for picks."
+  //   "We already surfaced a trade for Keon Coleman ... we don't need to tier
+  //    down our trades found for more trades."
+  //
+  // This is NOT the diversity rule removed in daniels 1.9, and must not become
+  // it. That one skipped candidates by ARCHETYPE FAMILY, a coarse category, so
+  // it demoted genuinely better trades to make the page look varied and turned
+  // slot 2 into the worst slot on the page. This one clusters only packages
+  // that are the same trade, and always keeps the BEST member of a cluster.
+  // Quality ordering is untouched; the same idea just does not get two slots.
+  // Keyed on what the user SEES, not on asset identity. Two 2027 early 2nds
+  // from different original rosters are distinct assets with distinct ids and
+  // slightly different values, but both cards read "2027 early 2nd", so
+  // shipping both is the same repetition the user complained about. Keying on
+  // assetId let exactly that through, three times, until the shape harness
+  // caught it.
+  const displayKey = (a: Asset): string =>
+    a.kind === "player" ? `p:${a.player.id}` : `pk:${a.pick.label}`;
+  const headline = (assets: Asset[]): string => {
+    let best = assets[0];
+    for (const a of assets) {
+      if (!best) { best = a; continue; }
+      const av = assetValue(a);
+      const bv = assetValue(best);
+      if (av > bv || (av === bv && assetId(a) < assetId(best))) best = a;
+    }
+    return best ? displayKey(best) : "";
+  };
+  // Same player out AND same player in: the sweetener is the only difference.
+  const SAME_TRADE_CAP = 1;
+  // Same headline on one side: at most two ways to move (or land) one player,
+  // which is Johnny's "the best package plus one or two alternatives".
+  const SAME_HEADLINE_CAP = 2;
+
   const perCounterCap = opts.targetRosterId != null ? Infinity : 2;
   const perCounter = new Map<number, number>();
+  const perPair = new Map<string, number>();
+  const perGive = new Map<string, number>();
+  const perReceive = new Map<string, number>();
   const top: ScoredCandidate[] = [];
-  for (const s of filtered) {
-    const cnt = perCounter.get(s.counterRosterId) ?? 0;
-    if (cnt >= perCounterCap) continue;
+
+  const admit = (s: ScoredCandidate): boolean => {
+    const g = headline(s.give);
+    const r = headline(s.receive);
+    if ((perCounter.get(s.counterRosterId) ?? 0) >= perCounterCap) return false;
+    if ((perPair.get(`${g}>${r}`) ?? 0) >= SAME_TRADE_CAP) return false;
+    if ((perGive.get(g) ?? 0) >= SAME_HEADLINE_CAP) return false;
+    if ((perReceive.get(r) ?? 0) >= SAME_HEADLINE_CAP) return false;
+    perCounter.set(s.counterRosterId, (perCounter.get(s.counterRosterId) ?? 0) + 1);
+    perPair.set(`${g}>${r}`, (perPair.get(`${g}>${r}`) ?? 0) + 1);
+    perGive.set(g, (perGive.get(g) ?? 0) + 1);
+    perReceive.set(r, (perReceive.get(r) ?? 0) + 1);
     top.push(s);
-    perCounter.set(s.counterRosterId, cnt + 1);
+    return true;
+  };
+
+  for (const s of filtered) {
+    admit(s);
     if (top.length >= limit) break;
   }
-  // Backfill so the list always offers `limit` options where they exist. A
-  // thin roster gets honest INSPIRATION badges rather than a short list: the
-  // badge carries the caveat, so the list does not have to.
-  if (top.length < limit) {
-    for (const s of filtered) {
-      if (top.includes(s)) continue;
-      const cnt = perCounter.get(s.counterRosterId) ?? 0;
-      if (cnt >= perCounterCap) continue;
-      top.push(s);
-      perCounter.set(s.counterRosterId, cnt + 1);
-      if (top.length >= limit) break;
-    }
-  }
+  // No backfill past the caps. The old code filled to `limit` unconditionally,
+  // which is exactly how the fourth Xavier Worthy variant earned a slot. A
+  // shorter list of distinct ideas beats five cards showing three ideas, and
+  // the user said so directly: "we don't need to tier down our trades found for
+  // more trades."
+
+  // Headline asset first on each side. Reported on a package that read
+  // "Jerry Jeudy (1,221), Breece Hall (4,185)": "We should list the bigger
+  // asset first. Breece shouldn't be after Jeudy." Sorted here rather than in
+  // the card so the rationale prompt, the feedback payload and every screen
+  // see the same order. Ties break on asset id, per the determinism rules.
+  const byValueDesc = (a: Asset, b: Asset) =>
+    assetValue(b) - assetValue(a) || assetId(a).localeCompare(assetId(b));
 
   const packages = top.map((s) => {
     const counter = others.find((p) => p.rosterId === s.counterRosterId);
     return {
       counterTeam: counter?.ownerName ?? "?",
       counterRosterId: s.counterRosterId,
-      give: s.give.map(toWire),
-      receive: s.receive.map(toWire),
+      give: [...s.give].sort(byValueDesc).map(toWire),
+      receive: [...s.receive].sort(byValueDesc).map(toWire),
       adjValueGive: s.adjGive,
       adjValueReceive: s.adjReceive,
       valueGive: s.valueGive,

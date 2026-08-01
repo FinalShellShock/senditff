@@ -533,6 +533,7 @@ function toWire(a) {
       kind: "player",
       name: a.player.name,
       position: a.player.position,
+      ...a.player.team ? { team: a.player.team } : {},
       valueDynasty: a.player.valueDynasty,
       ...a.player.age != null ? { age: a.player.age } : {}
     };
@@ -1404,33 +1405,54 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
     if (b.total !== a.total) return b.total - a.total;
     return candidateKey(a).localeCompare(candidateKey(b));
   });
+  const displayKey = (a) => a.kind === "player" ? `p:${a.player.id}` : `pk:${a.pick.label}`;
+  const headline = (assets) => {
+    let best = assets[0];
+    for (const a of assets) {
+      if (!best) {
+        best = a;
+        continue;
+      }
+      const av = assetValue(a);
+      const bv = assetValue(best);
+      if (av > bv || av === bv && assetId(a) < assetId(best)) best = a;
+    }
+    return best ? displayKey(best) : "";
+  };
+  const SAME_TRADE_CAP = 1;
+  const SAME_HEADLINE_CAP = 2;
   const perCounterCap = opts.targetRosterId != null ? Infinity : 2;
   const perCounter = /* @__PURE__ */ new Map();
+  const perPair = /* @__PURE__ */ new Map();
+  const perGive = /* @__PURE__ */ new Map();
+  const perReceive = /* @__PURE__ */ new Map();
   const top = [];
-  for (const s of filtered) {
-    const cnt = perCounter.get(s.counterRosterId) ?? 0;
-    if (cnt >= perCounterCap) continue;
+  const admit = (s) => {
+    const g = headline(s.give);
+    const r = headline(s.receive);
+    if ((perCounter.get(s.counterRosterId) ?? 0) >= perCounterCap) return false;
+    if ((perPair.get(`${g}>${r}`) ?? 0) >= SAME_TRADE_CAP) return false;
+    if ((perGive.get(g) ?? 0) >= SAME_HEADLINE_CAP) return false;
+    if ((perReceive.get(r) ?? 0) >= SAME_HEADLINE_CAP) return false;
+    perCounter.set(s.counterRosterId, (perCounter.get(s.counterRosterId) ?? 0) + 1);
+    perPair.set(`${g}>${r}`, (perPair.get(`${g}>${r}`) ?? 0) + 1);
+    perGive.set(g, (perGive.get(g) ?? 0) + 1);
+    perReceive.set(r, (perReceive.get(r) ?? 0) + 1);
     top.push(s);
-    perCounter.set(s.counterRosterId, cnt + 1);
+    return true;
+  };
+  for (const s of filtered) {
+    admit(s);
     if (top.length >= limit) break;
   }
-  if (top.length < limit) {
-    for (const s of filtered) {
-      if (top.includes(s)) continue;
-      const cnt = perCounter.get(s.counterRosterId) ?? 0;
-      if (cnt >= perCounterCap) continue;
-      top.push(s);
-      perCounter.set(s.counterRosterId, cnt + 1);
-      if (top.length >= limit) break;
-    }
-  }
+  const byValueDesc2 = (a, b) => assetValue(b) - assetValue(a) || assetId(a).localeCompare(assetId(b));
   const packages = top.map((s) => {
     const counter = others.find((p) => p.rosterId === s.counterRosterId);
     return {
       counterTeam: counter?.ownerName ?? "?",
       counterRosterId: s.counterRosterId,
-      give: s.give.map(toWire),
-      receive: s.receive.map(toWire),
+      give: [...s.give].sort(byValueDesc2).map(toWire),
+      receive: [...s.receive].sort(byValueDesc2).map(toWire),
       adjValueGive: s.adjGive,
       adjValueReceive: s.adjReceive,
       valueGive: s.valueGive,
