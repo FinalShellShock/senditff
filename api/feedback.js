@@ -48,6 +48,26 @@ function currentRelease() {
 var PATCH_NOTES = [
   {
     branch: "daniels",
+    release: "1.21",
+    algo: "Shotgun",
+    algoFingerprint: "8cb30600a5c9",
+    date: "2026-08-01",
+    title: "Name a player and search around him, and no more filler bodies",
+    changes: [
+      "You can now point the trade finder at a specific player or pick. Open INVOLVE SPECIFIC PLAYERS OR PICKS on the Send It tab, mark what you want to send or land, and every package that comes back has to include it. Thanks to Gibbs for asking for this one directly.",
+      "It searches, it does not invent: the finder still only builds the trade shapes it knows how to build, so naming a deep bench player can come back empty. When it does it now says so, and tells you how many packages it built before your pieces ruled them out.",
+      "The trade calculator's search got real filters: position, age band, value band, and players or picks. Send It's new picker uses the same ones, so the two cannot drift apart.",
+      "Packages no longer carry passengers. A player worth nothing could ride along on a side, which turned a straight one-for-one into something the card presented as a two-piece package. Two of you reported the same thing: adding someone of zero value does not make a trade even. Every piece now has to be worth at least a twentieth of its side.",
+      `"Consolidate" now has to actually move you up. It was checking the pair's combined value and never the best player leaving, so it would happily take your best guy and hand back someone worse. Turning depth into a better player is the whole point of the shape, so the player coming back now has to clearly beat the best one going out.`,
+      `Feedback buttons name the team you are looking at. "Doesn't fit for me" meant whichever roster was on screen, not you, which made your own notes unreadable later whenever you were scouting someone else's team. Same fix on the scouting report.`,
+      "POSITIONAL LEVERAGE moved up the league page, above the team table. It is for building trades, and it was sitting under sixteen rows where nobody found it."
+    ],
+    knownIssues: [
+      "Packages can still be technically sound and not worth making: a few low-value pieces for another low-value piece passes every rule we have, because none of them measures whether the players involved are actually any good. Reported and not fixed."
+    ]
+  },
+  {
+    branch: "daniels",
     release: "1.20",
     algo: "Shotgun",
     algoFingerprint: "2adcd0e0279a",
