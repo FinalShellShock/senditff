@@ -17,3 +17,13 @@ export const ALGO_VERSION = "shotgun";
 // Vercel's builder cannot compute it. The frontend used to fall back to "dev"
 // in production while the server stamped the real hash.
 export { ALGO_FINGERPRINT_BUILD as ALGO_FINGERPRINT } from "../algoFingerprint.generated";
+
+// The scouting report hashed separately, and stamped on PLAY feedback instead
+// of the engine hash above.
+//
+// plays.ts used to live inside ALGO_FINGERPRINT, which meant every scouting
+// copy edit announced itself as a new trade engine. Eight deploys on
+// 2026-07-27 did exactly that, and the next feedback pull read as though the
+// entire queue described a dead engine while the trade path had not changed a
+// byte since daniels 1.14.
+export { SCOUT_FINGERPRINT_BUILD as SCOUT_FINGERPRINT } from "../algoFingerprint.generated";

@@ -107,23 +107,34 @@ function sideValueDisplay(raw: number, adj?: number): { text: string; title?: st
   };
 }
 
-const DOWN_REASONS: Array<{ key: string; label: string }> = [
-  { key: "fit_me", label: "Doesn't fit for me" },
-  { key: "fit_them", label: "Doesn't fit for them" },
+// Reason chips NAME THE TWO TEAMS rather than saying "me" and "them".
+//
+// The team switcher lets you inspect any roster, so "me" meant whichever
+// roster was on screen, not the person clicking. Reading the feedback back
+// later, `fit_me` on a roster that is not yours is unresolvable without
+// cross-referencing rosterId, and free-text comments inherited the same
+// ambiguity: one downvote said the deal made no sense for "them" and there is
+// no way to tell which side was meant.
+//
+// The stored KEYS are deliberately unchanged, so this stays comparable with
+// every entry logged before it. Only the labels move.
+const downReasonsFor = (myTeam: string, theirTeam: string): Array<{ key: string; label: string }> => [
+  { key: "fit_me", label: `Doesn't fit ${myTeam}` },
+  { key: "fit_them", label: `Doesn't fit ${theirTeam}` },
   { key: "archetype_mismatch", label: "Doesn't match the archetype" },
   { key: "unbalanced", label: "Value is unbalanced" },
-  { key: "unrealistic", label: "They'd never accept" },
+  { key: "unrealistic", label: `${theirTeam} would never accept` },
   { key: "wrong_players", label: "Wrong players targeted" },
   { key: "bad_rationale", label: "Rationale is off" },
 ];
 
-const UP_REASONS: Array<{ key: string; label: string }> = [
-  { key: "fit_me_good", label: "Great fit for me" },
-  { key: "fit_them_good", label: "Realistic for them" },
+const upReasonsFor = (myTeam: string, theirTeam: string): Array<{ key: string; label: string }> => [
+  { key: "fit_me_good", label: `Great fit for ${myTeam}` },
+  { key: "fit_them_good", label: `Realistic for ${theirTeam}` },
   { key: "archetype_match", label: "Nails the archetype" },
   { key: "fair_value", label: "Value feels fair" },
   { key: "good_rationale", label: "Rationale is sharp" },
-  { key: "would_send", label: "I'd actually send this" },
+  { key: "would_send", label: `${myTeam} should send this` },
 ];
 
 // Outline code glyph (angle brackets), same drawing style as ThumbIcon so it
@@ -169,16 +180,19 @@ function AssetList({ assets }: { assets: TradeAssetWire[] }) {
 }
 
 function TradeCard({
-  pkg, index, leagueId, rosterId, search, diagnostics, api,
+  pkg, index, leagueId, rosterId, myTeam, search, diagnostics, api,
 }: {
   pkg: TradePackage;
   index: number;
   leagueId: string;
   rosterId: number;
+  /** Owner name of the roster on screen, which is not necessarily the viewer. */
+  myTeam: string;
   search: ResultSearchContext;
   diagnostics: TradeDiagnostics | null;
   api: ApiClient;
 }) {
+  const theirTeam = pkg.counterTeam || "the other team";
   // Older API responses don't carry fairness; the label is derivable.
   const fairness = pkg.fairness ?? fairnessLabel(pkg.valueGive, pkg.valueReceive);
 
@@ -233,11 +247,11 @@ function TradeCard({
           <>
             {" · "}
             <span className="trade-score-part">
-              fit for you <FitGrade fit={pkg.scores.myFit} />
+              fit for {myTeam} <FitGrade fit={pkg.scores.myFit} />
             </span>
             {" · "}
             <span className="trade-score-part">
-              fit for them <FitGrade fit={pkg.scores.theirFit} />
+              fit for {theirTeam} <FitGrade fit={pkg.scores.theirFit} />
             </span>
             {" · "}
             <span className="trade-score-part">
@@ -255,8 +269,8 @@ function TradeCard({
       )}
 
       <FeedbackBlock
-        upReasons={UP_REASONS}
-        downReasons={DOWN_REASONS}
+        upReasons={upReasonsFor(myTeam, theirTeam)}
+        downReasons={downReasonsFor(myTeam, theirTeam)}
         upLabel="Good trade"
         downLabel="Bad trade"
         leading={
@@ -429,6 +443,10 @@ export default function SendIt() {
   const sortedTeams = [...overview.profiles].sort((a, b) => a.starterRank - b.starterRank);
   const targetName =
     target !== "" ? overview.profiles.find((p) => p.rosterId === target)?.ownerName ?? null : null;
+  // The roster being INSPECTED, which the team switcher lets you change. Every
+  // "me"/"you" on a trade card refers to this team, not to whoever is signed in.
+  const myTeam =
+    overview.profiles.find((p) => p.rosterId === rosterId)?.ownerName ?? "this team";
 
   function resetControls() {
     setIntent("");
@@ -560,6 +578,7 @@ export default function SendIt() {
               index={i}
               leagueId={leagueId!}
               rosterId={rosterId}
+              myTeam={myTeam}
               search={resultSearch}
               diagnostics={result.diagnostics ?? null}
               api={api}

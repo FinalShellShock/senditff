@@ -629,6 +629,14 @@ export default function LeagueOverview() {
           )}
         </section>
 
+        {/* Above the Teams table on purpose. This is the board you read when
+            you are BUILDING a trade, and under a 16 row table it was reported
+            as "great, but kind of hidden". */}
+        <section className="overview-section">
+          <h2 className="section-title">Positional Leverage</h2>
+          <LeverageBoard profiles={overview.profiles} />
+        </section>
+
         <section className="overview-section">
           <h2 className="section-title">Teams</h2>
           <div className="league-table">
@@ -644,11 +652,6 @@ export default function LeagueOverview() {
               />
             ))}
           </div>
-        </section>
-
-        <section className="overview-section">
-          <h2 className="section-title">Positional Leverage</h2>
-          <LeverageBoard profiles={overview.profiles} />
         </section>
       </div>
     </>

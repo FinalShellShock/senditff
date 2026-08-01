@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { ALGO_FINGERPRINT, ALGO_VERSION } from "../src/algo/version";
+import { ALGO_FINGERPRINT, ALGO_VERSION, SCOUT_FINGERPRINT } from "../src/algo/version";
 import { currentRelease } from "../src/data/patchNotes";
 import { DEFAULT_FEEDBACK_CATEGORY, FEEDBACK_CATEGORIES } from "../src/data/feedbackCategories";
 import { adminDb } from "./_lib/admin";
@@ -188,7 +188,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         userId: user.uid,
         userEmail: user.email,
         algoVersion: ALGO_VERSION,
-        algoFingerprint: ALGO_FINGERPRINT,
+        // Play feedback is about the SCOUTING REPORT, so it carries the scouting
+        // hash. Stamping the engine hash here made a play thumbs-down look stale
+        // whenever the trade engine moved, and look current whenever the play
+        // copy changed but the engine did not. Both readings were wrong.
+        algoFingerprint: SCOUT_FINGERPRINT,
         release: currentRelease(),
         kind,
         verdict,

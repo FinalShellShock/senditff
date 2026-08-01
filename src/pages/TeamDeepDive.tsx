@@ -60,18 +60,23 @@ function PickRow({ pick }: { pick: DraftPick }) {
 // about strategy backed by a population statistic, so it fails by not applying,
 // by naming the wrong guys, or by being something you already knew. None of
 // those are things a trade package can be wrong about.
-const PLAY_DOWN_REASONS = [
-  { key: "play_not_applicable", label: "Doesn't apply to my team" },
+// Chips that judge the TEAM name it, because the switcher above lets you read
+// any roster's report and "my team" then means whichever one is on screen.
+// Chips that judge the READER ("I disagree", "Already knew this") stay in the
+// first person, because those are about you whichever roster you are looking
+// at. Keys are unchanged so this stays comparable with earlier feedback.
+const playDownReasonsFor = (team: string) => [
+  { key: "play_not_applicable", label: `Doesn't apply to ${team}` },
   { key: "play_wrong_players", label: "Wrong players named" },
   { key: "play_disagree", label: "I disagree with this" },
   { key: "play_obvious", label: "Already knew this" },
   { key: "play_unclear", label: "Confusing" },
-  { key: "play_wrong_window", label: "Wrong read on my window" },
+  { key: "play_wrong_window", label: `Wrong read on ${team}'s window` },
 ];
 
-const PLAY_UP_REASONS = [
+const playUpReasonsFor = (team: string) => [
   { key: "play_actionable", label: "I can act on this" },
-  { key: "play_right_read", label: "Right read on my team" },
+  { key: "play_right_read", label: `Right read on ${team}` },
   { key: "play_right_players", label: "Right players named" },
   { key: "play_learned", label: "Taught me something" },
   { key: "play_changed_plan", label: "Changed what I'd do" },
@@ -290,8 +295,8 @@ export default function TeamDeepDive() {
                   than competing with the rate for the right-hand column. */}
               <div className="scout-feedback">
                 <FeedbackBlock
-                  upReasons={PLAY_UP_REASONS}
-                  downReasons={PLAY_DOWN_REASONS}
+                  upReasons={playUpReasonsFor(profile.ownerName)}
+                  downReasons={playDownReasonsFor(profile.ownerName)}
                   upLabel="Useful play"
                   downLabel="Not useful"
                   onSubmit={({ verdict, reasons, comment }) =>

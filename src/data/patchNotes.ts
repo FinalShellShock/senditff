@@ -36,6 +36,22 @@ export type PatchNote = {
   release: string;
   /** Formation name of the scoring engine this release runs. */
   algo: string;
+  /**
+   * The algo fingerprint this release actually stamped on feedback. Lets a
+   * logged thumbs-down be traced to a release rather than to a bare hash, and
+   * more importantly lets you see at a glance that two releases ran the SAME
+   * engine.
+   *
+   * Backfilled from the git tags by hashing each tag's files. Absent where a
+   * release was never tagged (barkley 1.0).
+   *
+   * NOTE: daniels 1.21 changed what this hashes. Up to and including 1.20 it
+   * covered src/algo/plays.ts, so scouting-report edits moved it; from 1.21 the
+   * scouting report has its own hash and this covers the trade path only. That
+   * is why 1.12 through 1.20 show so much churn on a trade engine that did not
+   * change once between 1.14 and 1.20.
+   */
+  algoFingerprint?: string;
   /** ISO date or range end, YYYY-MM-DD. */
   date: string;
   /** One line on the theme of the release. */
@@ -57,6 +73,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.20",
     algo: "Shotgun",
+    algoFingerprint: "2adcd0e0279a",
     date: "2026-07-27",
     title: "The difference-maker play has to actually buy a difference-maker",
     changes: [
@@ -72,6 +89,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.19",
     algo: "Shotgun",
+    algoFingerprint: "a98f8075739e",
     date: "2026-07-27",
     title: "Scouting links now say where they go, and go somewhere sensible",
     changes: [
@@ -86,6 +104,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.18",
     algo: "Shotgun",
+    algoFingerprint: "d679479f315e",
     date: "2026-07-27",
     title: "Scouting links that actually go somewhere",
     changes: [
@@ -100,6 +119,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.17",
     algo: "Shotgun",
+    algoFingerprint: "37576a046b39",
     date: "2026-07-27",
     title: "Dropped a scouting play that was not advice",
     changes: [
@@ -113,6 +133,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.16",
     algo: "Shotgun",
+    algoFingerprint: "8c0936e302ca",
     date: "2026-07-26",
     title: "Team state shows the math, not the verdict again",
     changes: [
@@ -135,6 +156,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.15",
     algo: "Shotgun",
+    algoFingerprint: "f06a4adff7c1",
     date: "2026-07-26",
     title: "Positions folded into team state, with the real numbers",
     changes: [
@@ -149,6 +171,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.14",
     algo: "Shotgun",
+    algoFingerprint: "f06a4adff7c1",
     date: "2026-07-26",
     title: "See your team before the report explains it",
     changes: [
@@ -164,6 +187,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.13",
     algo: "Shotgun",
+    algoFingerprint: "2391971471d0",
     date: "2026-07-26",
     title: "Thumbs on the scouting report",
     changes: [
@@ -177,6 +201,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.12",
     algo: "Shotgun",
+    algoFingerprint: "2391971471d0",
     date: "2026-07-26",
     title: "The scouting report now tells you what actually worked",
     changes: [
@@ -193,6 +218,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.11",
     algo: "Shotgun",
+    algoFingerprint: "7a883247a604",
     date: "2026-07-26",
     title: "The engine now cares most about who you end up with",
     changes: [
@@ -208,6 +234,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.10",
     algo: "Shotgun",
+    algoFingerprint: "98115421c99a",
     date: "2026-07-26",
     title: "Trade advice now leans on what actually worked in 5,800 real trades",
     changes: [
@@ -224,6 +251,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.9",
     algo: "Shotgun",
+    algoFingerprint: "8ede6fa25f22",
     date: "2026-07-26",
     title: "Confidence now measures whether a trade is good, not whether it fits a pattern",
     changes: [
@@ -239,6 +267,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.8",
     algo: "Shotgun",
+    algoFingerprint: "53317c0c54a3",
     date: "2026-07-26",
     title: "Fixed the scoring that made almost nothing a real recommendation",
     changes: [
@@ -254,6 +283,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.7",
     algo: "Shotgun",
+    algoFingerprint: "2fe0c0951fcb",
     date: "2026-07-26",
     title: "Trade cards rebuilt for phones",
     changes: [
@@ -267,6 +297,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.6",
     algo: "Shotgun",
+    algoFingerprint: "2fe0c0951fcb",
     date: "2026-07-26",
     title: "The feedback counter is a queue, not a lifetime total",
     changes: [
@@ -278,6 +309,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.5",
     algo: "Shotgun",
+    algoFingerprint: "2fe0c0951fcb",
     date: "2026-07-26",
     title: "Green now means something on the leverage board",
     changes: [
@@ -291,6 +323,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.4",
     algo: "Shotgun",
+    algoFingerprint: "2fe0c0951fcb",
     date: "2026-07-26",
     title: "The engine stops handing old players to teams that are rebuilding",
     changes: [
@@ -307,6 +340,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.3",
     algo: "Shotgun",
+    algoFingerprint: "d329a3795f53",
     date: "2026-07-25",
     title: "League data is now readable only by that league's members",
     changes: [
@@ -318,6 +352,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.2",
     algo: "Shotgun",
+    algoFingerprint: "d329a3795f53",
     date: "2026-07-25",
     title: "Depth no longer counts a flex starter twice when it simulates an injury",
     changes: [
@@ -329,6 +364,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.1",
     algo: "Shotgun",
+    algoFingerprint: "87c6b1ff3fe3",
     date: "2026-07-25",
     title: "Access control fixed, and value history is now being kept",
     changes: [
@@ -342,6 +378,7 @@ export const PATCH_NOTES: PatchNote[] = [
     branch: "daniels",
     release: "1.0",
     algo: "Shotgun",
+    algoFingerprint: "87c6b1ff3fe3",
     date: "2026-07-25",
     title: "Depth grading rebuilt, and the trade cards now show their work",
     changes: [
