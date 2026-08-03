@@ -70,7 +70,6 @@ var TIER_DOWN_BY_COMPETITIVENESS = {
   AVERAGE: 0.9,
   WEAK: 1
 };
-var FLEX_CONSOLIDATE_THRESHOLD = 55;
 var STD_THRESHOLD = 0.5;
 var WINDOW_LONG_THRESHOLD = 14;
 var WINDOW_SHORT_THRESHOLD = 19;
@@ -114,11 +113,6 @@ function scoreArchetypes(team, averages) {
       depthFactor * needFactor * (0.55 + 0.45 * midFactor) * CONSOLIDATE_BY_COMPETITIVENESS[team.competitiveness] * 100
     );
   }
-  const maxUrgency = POSITIONS.reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
-  const flexFactor = clamp((team.flex.score - 40) / (FLEX_CONSOLIDATE_THRESHOLD - 40), 0, 1);
-  s["consolidate_flex"] = Math.round(
-    flexFactor * urgencyPressure(maxUrgency) * CONSOLIDATE_BY_COMPETITIVENESS[team.competitiveness] * 100
-  );
   const longFactor = clamp(1 - team.windowPressure / WINDOW_SHORT_THRESHOLD, 0, 1);
   const richFactor = clamp((team.pickCapital.score - 50) / 50, 0, 1);
   s["age_arb_buy"] = Math.round(longFactor * richFactor * 100);
@@ -132,6 +126,7 @@ function scoreArchetypes(team, averages) {
   const strongFactor = team.competitiveness === "STRONG" ? 1 : team.competitiveness === "AVERAGE" ? 0.3 : 0;
   const pushInFactor = clamp((team.windowPressure - WINDOW_SHORT_THRESHOLD) / (WINDOW_SHORT_THRESHOLD * 0.5), 0, 1);
   s["push_in"] = Math.round(pushInFactor * strongFactor * 100);
+  const maxUrgency = POSITIONS.reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
   const minUrgency = POSITIONS.reduce((min, p) => Math.min(min, team.positionScores[p].urgency), 100);
   const spread = maxUrgency - minUrgency;
   const urgencyFactor = urgencyPressure(maxUrgency);

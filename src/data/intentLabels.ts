@@ -15,8 +15,7 @@ import type { ArchetypeFamily } from "../algo/archetypes.ts";
 export const INTENT_LABELS: Record<ArchetypeFamily, string> = {
   need_fill: "Fill a need",
   tier_down: "Tier down (1 stud into 2 pieces)",
-  consolidate: "Consolidate (2 same-position into 1 stud)",
-  consolidate_flex: "Consolidate (2 positions into 1 stud)",
+  consolidate: "Consolidate (2 pieces into 1 stud)",
   age_arb_buy: "Buy an aging stud",
   age_arb_sell: "Sell an aging stud",
   push_in: "Push all-in",

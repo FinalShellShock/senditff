@@ -125,19 +125,23 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
   // labelling a genuinely good RB2 a "spare part" makes the whole report read
   // as though it has not looked at the roster.
   //
-  // Paired WITHIN a position, because the link opens the `consolidate` intent
-  // and that intent is "2 same-position into 1 stud". Taking the two most
-  // valuable spares regardless of position named a cross-position pair and
-  // then sent the user to a same-position search, so the trade described and
-  // the trades offered were different shapes.
+  // The two most valuable spares, wherever they play.
+  //
+  // This was restricted to a single position in 1.19, because the button opened
+  // the `consolidate` intent and that intent was "2 SAME-position into 1 stud":
+  // naming a WR and an RB and then running a same-position search described one
+  // trade and offered another. The intent now handles any two pieces, so the
+  // restriction has nothing left to protect and is pure cost. It was suppressing
+  // the strongest version of the play, since the best two spares on a roster are
+  // usually at different positions and are worth more together than the best two
+  // at any one position.
   let pair: [Player, Player] | null = null;
+  const spares: Player[] = [];
   for (const pos of POSITIONS) {
-    const atPos = roster.filter((p) => p.position === pos).slice(1, 3);
-    if (atPos.length < 2 || !atPos[0] || !atPos[1]) continue;
-    const sum = atPos[0].valueDynasty + atPos[1].valueDynasty;
-    const bestSum = pair ? pair[0].valueDynasty + pair[1].valueDynasty : -1;
-    if (sum > bestSum) pair = [atPos[0], atPos[1]];
+    spares.push(...roster.filter((p) => p.position === pos).slice(1, 3));
   }
+  spares.sort(byValue);
+  if (spares.length >= 2 && spares[0] && spares[1]) pair = [spares[0], spares[1]];
 
   // ── Universal: quality is the strongest measured predictor ────────────────
   const pairValue = pair ? pair[0].valueDynasty + pair[1].valueDynasty : 0;

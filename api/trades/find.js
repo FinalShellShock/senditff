@@ -94,7 +94,6 @@ var ARCHETYPE_FAMILIES = [
   "need_fill",
   "tier_down",
   "consolidate",
-  "consolidate_flex",
   "age_arb_buy",
   "age_arb_sell",
   "push_in",
@@ -816,8 +815,10 @@ function fitScore(impact) {
 }
 var COUNTER_ARCHETYPES = {
   tier_down: (pos) => pos ? [`consolidate_${pos}`, "push_in"] : [],
-  consolidate: (pos) => pos ? [`tier_down_${pos}`] : [],
-  consolidate_flex: () => ["tier_down_RB", "tier_down_WR", "tier_down_TE"],
+  // Unscoped now returns every tier-down: one consolidate covers same- and
+  // cross-position packages, so its counterpart is any team breaking a
+  // player up, not only one at a matching position.
+  consolidate: (pos) => pos ? [`tier_down_${pos}`] : POSITIONS.map((q) => `tier_down_${q}`),
   age_arb_buy: () => ["age_arb_sell", "capital_convert_production_to_picks"],
   age_arb_sell: () => ["age_arb_buy", "capital_convert_picks_to_production", "push_in"],
   push_in: () => ["capital_convert_production_to_picks"],
@@ -1094,78 +1095,55 @@ function genTierDown(ctx) {
 function genConsolidate(ctx) {
   const out = [];
   const { mine, others } = ctx;
-  for (const pos of genPositions(ctx)) {
-    const myAtPos = topPlayersByPos(mine, pos, 4);
-    const myPair = myAtPos.slice(1, 3);
-    if (myPair.length < 2) continue;
-    const pairValue = packageValue(myPair.map((p) => p.valueDynasty));
-    const pairBest = Math.max(...myPair.map((p) => p.valueDynasty));
-    for (const them of others) {
-      const theirElite = topPlayersByPos(them, pos, 1)[0];
-      if (!theirElite) continue;
-      if (theirElite.valueDynasty < pairValue * 0.85) continue;
-      if (theirElite.valueDynasty < pairBest * CONSOLIDATE_UPGRADE) continue;
-      const ratio = pairValue / theirElite.valueDynasty;
-      if (ratio >= 0.8 && ratio <= 1.18) {
-        out.push({
-          give: myPair.map((p) => playerAsset(p, mine.rosterId)),
-          receive: [playerAsset(theirElite, them.rosterId)],
-          counterRosterId: them.rosterId,
-          archetype: `consolidate_${pos}`
-        });
-      }
-      if (pairValue < theirElite.valueDynasty * 0.95 && mine.picks.length > 0) {
-        const gap = theirElite.valueDynasty - pairValue;
-        const pickSet = bestPickSet(mine.picks, gap, 2);
-        if (pickSet) {
-          const v = packageValue([
-            ...myPair.map((p) => p.valueDynasty),
-            ...pickSet.map((p) => p.value)
-          ]);
-          const sweetenedBest = Math.max(pairBest, ...pickSet.map((p) => p.value));
-          if (within(v, theirElite.valueDynasty, 0.15) && theirElite.valueDynasty >= sweetenedBest * CONSOLIDATE_UPGRADE) {
+  const spares = [];
+  for (const pos of POSITIONS) spares.push(...topPlayersByPos(mine, pos, 4).slice(1, 3));
+  spares.sort((a, b) => b.valueDynasty - a.valueDynasty || a.id.localeCompare(b.id));
+  const targetPositions = ctx.forced?.position ? [ctx.forced.position] : [...POSITIONS].sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency).slice(0, 2);
+  for (let i = 0; i < spares.length; i++) {
+    for (let j = i + 1; j < spares.length; j++) {
+      const myPair = [spares[i], spares[j]];
+      const pairValue = packageValue(myPair.map((p) => p.valueDynasty));
+      const pairBest = Math.max(...myPair.map((p) => p.valueDynasty));
+      for (const them of others) {
+        for (const pos of targetPositions) {
+          const theirElite = topPlayersByPos(them, pos, 1)[0];
+          if (!theirElite) continue;
+          if (myPair.some((p) => p.id === theirElite.id)) continue;
+          if (theirElite.valueDynasty < pairValue * 0.85) continue;
+          if (theirElite.valueDynasty < pairBest * CONSOLIDATE_UPGRADE) continue;
+          const ratio = pairValue / theirElite.valueDynasty;
+          if (ratio >= 0.8 && ratio <= 1.18) {
             out.push({
-              give: [
-                ...myPair.map((p) => playerAsset(p, mine.rosterId)),
-                ...pickSet.map((pk) => pickAsset(pk, mine.rosterId))
-              ],
+              give: myPair.map((p) => playerAsset(p, mine.rosterId)),
               receive: [playerAsset(theirElite, them.rosterId)],
               counterRosterId: them.rosterId,
               archetype: `consolidate_${pos}`
             });
           }
+          if (pairValue < theirElite.valueDynasty * 0.95 && mine.picks.length > 0) {
+            const gap = theirElite.valueDynasty - pairValue;
+            const pickSet = bestPickSet(mine.picks, gap, 2);
+            if (pickSet) {
+              const v = packageValue([
+                ...myPair.map((p) => p.valueDynasty),
+                ...pickSet.map((p) => p.value)
+              ]);
+              const sweetenedBest = Math.max(pairBest, ...pickSet.map((p) => p.value));
+              if (within(v, theirElite.valueDynasty, 0.15) && theirElite.valueDynasty >= sweetenedBest * CONSOLIDATE_UPGRADE) {
+                out.push({
+                  give: [
+                    ...myPair.map((p) => playerAsset(p, mine.rosterId)),
+                    ...pickSet.map((pk) => pickAsset(pk, mine.rosterId))
+                  ],
+                  receive: [playerAsset(theirElite, them.rosterId)],
+                  counterRosterId: them.rosterId,
+                  archetype: `consolidate_${pos}`
+                });
+              }
+            }
+          }
         }
       }
-    }
-  }
-  return out;
-}
-function genConsolidateFlex(ctx) {
-  const out = [];
-  const { mine, others } = ctx;
-  const upgradePos = [...POSITIONS].sort(
-    (a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency
-  )[0];
-  const myRB2 = topPlayersByPos(mine, "RB", 3)[1];
-  const myWR2 = topPlayersByPos(mine, "WR", 3)[1];
-  if (!myRB2 && !myWR2) return out;
-  const candidatesGive = [myRB2, myWR2].filter((p) => !!p);
-  if (candidatesGive.length < 2) return out;
-  const giveValue = packageValue(candidatesGive.map((p) => p.valueDynasty));
-  const giveBest = Math.max(...candidatesGive.map((p) => p.valueDynasty));
-  for (const them of others) {
-    const target = topPlayersByPos(them, upgradePos, 2)[0];
-    if (!target) continue;
-    if (target.valueDynasty < giveValue * 0.85) continue;
-    if (target.valueDynasty < giveBest * CONSOLIDATE_UPGRADE) continue;
-    const ratio = giveValue / target.valueDynasty;
-    if (ratio >= 0.8 && ratio <= 1.2) {
-      out.push({
-        give: candidatesGive.map((p) => playerAsset(p, mine.rosterId)),
-        receive: [playerAsset(target, them.rosterId)],
-        counterRosterId: them.rosterId,
-        archetype: "consolidate_flex"
-      });
     }
   }
   return out;
@@ -1301,7 +1279,6 @@ var GENERATORS = {
   need_fill: genNeedFill,
   tier_down: genTierDown,
   consolidate: genConsolidate,
-  consolidate_flex: genConsolidateFlex,
   age_arb_buy: genAgeArbBuy,
   age_arb_sell: genAgeArbSell,
   push_in: genPushIn,

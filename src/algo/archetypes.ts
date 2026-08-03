@@ -19,7 +19,6 @@ export const ARCHETYPE_FAMILIES = [
   "need_fill",
   "tier_down",
   "consolidate",
-  "consolidate_flex",
   "age_arb_buy",
   "age_arb_sell",
   "push_in",
@@ -103,17 +102,6 @@ export function scoreArchetypes(
     );
   }
 
-  // consolidate_flex: bundle pieces from DIFFERENT positions into one better
-  // player. Named for the flex slot it frees up, not for who is eligible: it
-  // built "McCaffrey (RB) + A.J. Brown (WR) -> Lamar Jackson (QB)" on a real
-  // roster. The sibling consolidate_{pos} stays within one position.
-  const maxUrgency = POSITIONS.reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
-  const flexFactor = clamp((team.flex.score - 40) / (FLEX_CONSOLIDATE_THRESHOLD - 40), 0, 1);
-  s["consolidate_flex"] = Math.round(
-    flexFactor * urgencyPressure(maxUrgency)
-      * CONSOLIDATE_BY_COMPETITIVENESS[team.competitiveness] * 100,
-  );
-
   // age_arb_buy: low window pressure + pick rich
   const longFactor = clamp(1 - team.windowPressure / WINDOW_SHORT_THRESHOLD, 0, 1);
   const richFactor = clamp((team.pickCapital.score - 50) / 50, 0, 1);
@@ -137,6 +125,7 @@ export function scoreArchetypes(
   // Additive formula so that a large need (high urgency) or a large spread both count;
   // the old multiplicative formula required both to be simultaneously near-maximum,
   // which caused it to almost never fire on real rosters.
+  const maxUrgency    = POSITIONS.reduce((max, p) => Math.max(max, team.positionScores[p].urgency), 0);
   const minUrgency    = POSITIONS.reduce((min, p) => Math.min(min, team.positionScores[p].urgency), 100);
   const spread        = maxUrgency - minUrgency;
   const urgencyFactor = urgencyPressure(maxUrgency);

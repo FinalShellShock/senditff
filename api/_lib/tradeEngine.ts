@@ -767,8 +767,11 @@ function fitScore(impact: ImpactDelta): number {
 
 const COUNTER_ARCHETYPES: Record<string, (pos?: Position) => string[]> = {
   tier_down: (pos) => (pos ? [`consolidate_${pos}`, "push_in"] : []),
-  consolidate: (pos) => (pos ? [`tier_down_${pos}`] : []),
-  consolidate_flex: () => ["tier_down_RB", "tier_down_WR", "tier_down_TE"],
+  // Unscoped now returns every tier-down: one consolidate covers same- and
+  // cross-position packages, so its counterpart is any team breaking a
+  // player up, not only one at a matching position.
+  consolidate: (pos) =>
+    pos ? [`tier_down_${pos}`] : POSITIONS.map((q) => `tier_down_${q}`),
   age_arb_buy: () => ["age_arb_sell", "capital_convert_production_to_picks"],
   age_arb_sell: () => ["age_arb_buy", "capital_convert_picks_to_production", "push_in"],
   push_in: () => ["capital_convert_production_to_picks"],
@@ -1162,20 +1165,58 @@ function genTierDown(ctx: GenContext): Candidate[] {
   return out;
 }
 
+// Package two spare pieces into one better player.
+//
+// This used to be two generators. `consolidate` paired your #2 and #3 at ONE
+// position and could only buy their #1 at that SAME position; `consolidate_flex`
+// was hardcoded to your #2 RB plus your #2 WR and nothing else. "Flex" never
+// meant flex-eligible, which release 1.8 already fixed in the label without
+// touching the code underneath.
+//
+// Between them, five of the ten possible give-pairs could never be built at
+// all: QB+RB, QB+WR, QB+TE, RB+TE and TE+WR. In a superflex league "my QB2 and
+// my RB2 for your stud" is an ordinary trade the engine could not express.
+//
+// One generator now: any two spares, same position or not, for one better
+// player at a position that is actually a need. Position scoping (forced mode)
+// filters the TARGET, which is the thing the user is shopping for, rather than
+// the pieces they happen to be paying with.
 function genConsolidate(ctx: GenContext): Candidate[] {
   const out: Candidate[] = [];
   const { mine, others } = ctx;
-  for (const pos of genPositions(ctx)) {
-    const myAtPos = topPlayersByPos(mine, pos, 4);
-    const myPair = myAtPos.slice(1, 3); // my #2 + #3
-    if (myPair.length < 2) continue;
-    const pairValue = packageValue(myPair.map((p) => p.valueDynasty));
 
-    const pairBest = Math.max(...myPair.map((p) => p.valueDynasty));
+  // Spares: everyone behind the starter at each position. The #1 stays home,
+  // consolidating means selling depth, not your best player.
+  const spares: Player[] = [];
+  for (const pos of POSITIONS) spares.push(...topPlayersByPos(mine, pos, 4).slice(1, 3));
+  // Deterministic order, per the tiebreak rules: value first, then Sleeper id.
+  spares.sort((a, b) => b.valueDynasty - a.valueDynasty || a.id.localeCompare(b.id));
 
-    for (const them of others) {
+  // Buy INTO a need. Unscoped this is the two most urgent rooms, which keeps
+  // the candidate count sane and matches what the old flex generator aimed at.
+  const targetPositions = ctx.forced?.position
+    ? [ctx.forced.position]
+    : [...POSITIONS]
+        .sort((a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency)
+        .slice(0, 2);
+
+  for (let i = 0; i < spares.length; i++) {
+    for (let j = i + 1; j < spares.length; j++) {
+      const myPair = [spares[i]!, spares[j]!];
+      const pairValue = packageValue(myPair.map((p) => p.valueDynasty));
+
+      const pairBest = Math.max(...myPair.map((p) => p.valueDynasty));
+
+      for (const them of others) {
+        for (const pos of targetPositions) {
       const theirElite = topPlayersByPos(them, pos, 1)[0];
       if (!theirElite) continue;
+      // Don't pay for a room with pieces out of that same room and call it an
+      // upgrade: giving your WR2 and WR3 for their WR1 is fine, but only if
+      // you are not left thinner at WR than you started. The value band below
+      // handles the arithmetic; this just skips the degenerate case where the
+      // target IS one of the pieces' own backups.
+      if (myPair.some((p) => p.id === theirElite.id)) continue;
       // Counter must outvalue my pair by a noticeable margin (otherwise it's not a consolidation)
       if (theirElite.valueDynasty < pairValue * 0.85) continue;
       // ...and must be a real upgrade on the BEST piece leaving, not just on
@@ -1235,48 +1276,8 @@ function genConsolidate(ctx: GenContext): Candidate[] {
           }
         }
       }
-    }
-  }
-  return out;
-}
-
-function genConsolidateFlex(ctx: GenContext): Candidate[] {
-  const out: Candidate[] = [];
-  const { mine, others } = ctx;
-
-  // Pick the position with highest urgency to upgrade INTO
-  const upgradePos = [...POSITIONS].sort(
-    (a, b) => mine.positionScores[b].urgency - mine.positionScores[a].urgency,
-  )[0]!;
-
-  // Two flex-y players from RB+WR (most flexable positions): take #2 RB + #2 WR
-  const myRB2 = topPlayersByPos(mine, "RB", 3)[1];
-  const myWR2 = topPlayersByPos(mine, "WR", 3)[1];
-  if (!myRB2 && !myWR2) return out;
-  const candidatesGive: Player[] = [myRB2, myWR2].filter((p): p is Player => !!p);
-  if (candidatesGive.length < 2) return out;
-
-  const giveValue = packageValue(candidatesGive.map((p) => p.valueDynasty));
-  const giveBest = Math.max(...candidatesGive.map((p) => p.valueDynasty));
-
-  for (const them of others) {
-    const target = topPlayersByPos(them, upgradePos, 2)[0];
-    if (!target) continue;
-    if (target.valueDynasty < giveValue * 0.85) continue;
-    // Same rule as genConsolidate: consolidating has to land a real upgrade on
-    // the best piece leaving, not just on the pair total. This branch was
-    // missed when that gate went in, and stayed hidden until the sidegrade
-    // penalty reordered results and pushed two non-compliant flex packages
-    // into the top five (ratios 1.06 and 1.08). The shape harness caught it.
-    if (target.valueDynasty < giveBest * CONSOLIDATE_UPGRADE) continue;
-    const ratio = giveValue / target.valueDynasty;
-    if (ratio >= 0.80 && ratio <= 1.20) {
-      out.push({
-        give: candidatesGive.map((p) => playerAsset(p, mine.rosterId)),
-        receive: [playerAsset(target, them.rosterId)],
-        counterRosterId: them.rosterId,
-        archetype: "consolidate_flex",
-      });
+        }
+      }
     }
   }
   return out;
@@ -1448,7 +1449,6 @@ const GENERATORS: Record<ArchetypeFamily, (ctx: GenContext) => Candidate[]> = {
   need_fill: genNeedFill,
   tier_down: genTierDown,
   consolidate: genConsolidate,
-  consolidate_flex: genConsolidateFlex,
   age_arb_buy: genAgeArbBuy,
   age_arb_sell: genAgeArbSell,
   push_in: genPushIn,
