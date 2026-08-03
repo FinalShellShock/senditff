@@ -48,6 +48,26 @@ function currentRelease() {
 var PATCH_NOTES = [
   {
     branch: "daniels",
+    release: "1.22",
+    algo: "Shotgun",
+    algoFingerprint: "e377c25eca47",
+    date: "2026-08-02",
+    title: "Five different trades, not the same trade five times",
+    changes: [
+      "The five cards were often three ideas wearing five faces: the same trade again with a different pick attached, or four versions of shipping the same player. You now get at most one of any given trade, and at most two built around the same player. If that leaves four options instead of five, you get four. A shorter list of real choices beats a padded one.",
+      "Breaking up a good player now has to buy you something somewhere else. Trading a quarterback for two quarterbacks left your starter worse and your bench deeper, and it was doing it in two different leagues. Deals that only reload the position you just emptied now rank below deals that improve a different one. They are not banned, because sometimes that trade is right, they just stop crowding out better ideas.",
+      "Consolidating had two more holes. One kind of consolidation was never checked for whether it landed an upgrade at all, and another counted only the players you send while ignoring the pick you throw in, so it could call a small step up a consolidation.",
+      'Trade cards list the biggest piece first. A package reading "Jerry Jeudy, Breece Hall" buried the part that mattered.',
+      "Every player on a trade card shows his NFL team.",
+      "Fixed the calculator zooming and cutting off the text box on iPhone. Any text box under a certain size makes iOS zoom the whole page, and every box in the app was under it. Typing a player name or writing feedback should behave now."
+    ],
+    knownIssues: [
+      'The written rationale on each trade card is too long and still gets things wrong: it has called a 38 year old quarterback "younger" than a 33 year old, described a 27 year old receiver as an aging asset, and printed an internal number at you with no explanation. It is being rebuilt to show how both teams actually change at the positions in the trade, with far less prose.',
+      "A package can pass every rule and still not be worth making, because nothing yet measures whether the players involved are any good in absolute terms."
+    ]
+  },
+  {
+    branch: "daniels",
     release: "1.21",
     algo: "Shotgun",
     algoFingerprint: "8cb30600a5c9",
