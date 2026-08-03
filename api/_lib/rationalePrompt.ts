@@ -14,7 +14,13 @@ import { fairnessText } from "../../src/algo/fairness";
 import type { TeamProfile } from "../../src/algo/types";
 import { confidenceTier, type TradePackage } from "./tradeEngine";
 
-export const PROMPT_VERSION = 4;
+// 5: cut to two sentences and banned the claims that kept coming back wrong
+//    (age comparisons, "aging asset", raw internal metrics, unlabelled
+//    numbers). MUST be bumped with any prompt edit: it is in the rationale
+//    cache key, and without it every trade already in rationaleCache would keep
+//    serving the old long rationale and the change would look like it did
+//    nothing.
+export const PROMPT_VERSION = 5;
 
 // Ages are included because the model was otherwise inventing them, and on an
 // age-arbitrage trade the age IS the argument. Real feedback caught a rationale
@@ -106,12 +112,19 @@ export function buildRationalePrompt(
   // Positional need on what's coming back. The engine computes urgency and a
   // classification per position and previously told the writer none of it, so
   // rationales argued from vibes where hard numbers existed.
+  //
+  // The raw urgency number is NOT passed any more. It used to be, and it came
+  // straight back out at a user as "your 21-urgency QB need". Telling the model
+  // not to print a number while handing it the number is not a fix. Urgency is
+  // also not a 0-100 scale (it tops out around 60 on a real roster), so it was
+  // never safe to show even if it had been explained. The classification is the
+  // part that carries meaning, and it is already plain English.
   const inbound = [...new Set(pkg.receive.filter((a) => a.kind === "player" && a.position).map((a) => a.position!))];
   const needNotes = inbound
     .map((pos) => {
       const ps = myProfile.positionScores?.[pos as keyof typeof myProfile.positionScores];
       if (!ps) return null;
-      return `${pos} ${ps.classification} (urgency ${Math.round(ps.urgency)})`;
+      return `${pos} ${ps.classification}`;
     })
     .filter(Boolean);
   const needNote = needNotes.length ? `Your need at what you're getting: ${needNotes.join(", ")}.` : "";
@@ -192,7 +205,15 @@ Get: ${receiveNames}
 Shape: ${archetypeLabel}. ${[fairnessNote, fitNote, needNote, theirNeedNote, adjNote].filter(Boolean).join(" ")}
 ${stance}
 
-Write 2-3 sentences on why this fits your roster now, then one sentence on why ${pkg.counterTeam} accepts (a trade nobody takes is worthless). Be concrete about the players and both timelines.
+Write ONE sentence on why this fits your roster, then ONE short sentence on why ${pkg.counterTeam} accepts. Two sentences total, nothing else.
 
-Use only the facts above. Never invent an age, stat, injury, contract, or team situation not stated here. Plain prose: no markdown, no bullets, no em dashes.`;
+The card already shows every player's age, value and NFL team, and a before/after of both rosters at the positions in the trade. Do not restate any of it. Say the thing the numbers do not: what this trade is FOR.
+
+Hard rules, each one from a rationale that was wrong:
+- Never say a player is younger, older, aging, declining or ascending. A 38 year old was called "younger" than a 33 year old, and a 27 year old receiver was called "an aging asset". Ages are on the card; the reader can see them.
+- Never print an internal metric. "your 21-urgency QB need" reached a user. Say "your thinnest position", not a number the app made up.
+- Every number you do write must say what it counts. A bare "at 22.7" is unreadable.
+- Use only the facts above. Never invent a stat, injury, contract or team situation.
+
+Plain prose: no markdown, no bullets, no em dashes.`;
 }

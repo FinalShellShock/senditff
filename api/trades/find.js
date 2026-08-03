@@ -869,7 +869,9 @@ function scoreCandidate(cand, myProfile, others, ctx) {
     valueGive,
     valueReceive,
     adjGive,
-    adjReceive
+    adjReceive,
+    myImpact,
+    theirImpact
   };
 }
 function within(value, target, tolerance) {
@@ -1438,9 +1440,33 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
     if (top.length >= limit) break;
   }
   const byValueDesc2 = (a, b) => assetValue(b) - assetValue(a) || assetId(a).localeCompare(assetId(b));
+  const touchedPositions = (c) => {
+    const seen2 = /* @__PURE__ */ new Set();
+    for (const a of [...c.give, ...c.receive]) {
+      if (a.kind === "player") seen2.add(a.player.position);
+    }
+    return POSITIONS.filter((p) => seen2.has(p));
+  };
+  const shifts = (profile, impact, positions) => positions.map((pos) => {
+    const before = profile.positionScores[pos];
+    const d = impact.perPosition[pos];
+    const round1 = (n) => Math.round(n * 10) / 10;
+    return {
+      position: pos,
+      starterBefore: round1(before?.starterScore ?? 0),
+      starterAfter: round1((before?.starterScore ?? 0) + (d?.starterScoreDelta ?? 0)),
+      depthBefore: round1(before?.depthScore ?? 0),
+      depthAfter: round1((before?.depthScore ?? 0) + (d?.depthScoreDelta ?? 0))
+    };
+  });
   const packages = top.map((s) => {
     const counter = others.find((p) => p.rosterId === s.counterRosterId);
+    const positions = touchedPositions(s);
     return {
+      impact: {
+        mine: shifts(mine, s.myImpact, positions),
+        theirs: counter ? shifts(counter, s.theirImpact, positions) : []
+      },
       counterTeam: counter?.ownerName ?? "?",
       counterRosterId: s.counterRosterId,
       give: [...s.give].sort(byValueDesc2).map(toWire),
@@ -1474,7 +1500,7 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
 }
 
 // api/_lib/rationalePrompt.ts
-var PROMPT_VERSION = 4;
+var PROMPT_VERSION = 5;
 function describeAsset(a) {
   const v = a.valueDynasty != null ? ` ${Math.round(a.valueDynasty)}` : "";
   if (a.kind !== "player") return `${a.name}${v}`;
@@ -1502,7 +1528,7 @@ function buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics) {
   const needNotes = inbound.map((pos) => {
     const ps = myProfile.positionScores?.[pos];
     if (!ps) return null;
-    return `${pos} ${ps.classification} (urgency ${Math.round(ps.urgency)})`;
+    return `${pos} ${ps.classification}`;
   }).filter(Boolean);
   const needNote = needNotes.length ? `Your need at what you're getting: ${needNotes.join(", ")}.` : "";
   const fitNote = pkg.scores ? `Fit grades: you ${pkg.scores.myFit >= 0.05 ? "gain" : pkg.scores.myFit <= -0.05 ? "lose" : "roughly break even"}, they ${pkg.scores.theirFit >= 0.05 ? "gain" : pkg.scores.theirFit <= -0.05 ? "lose" : "roughly break even"}.` : "";
@@ -1536,9 +1562,17 @@ Get: ${receiveNames}
 Shape: ${archetypeLabel}. ${[fairnessNote, fitNote, needNote, theirNeedNote, adjNote].filter(Boolean).join(" ")}
 ${stance}
 
-Write 2-3 sentences on why this fits your roster now, then one sentence on why ${pkg.counterTeam} accepts (a trade nobody takes is worthless). Be concrete about the players and both timelines.
+Write ONE sentence on why this fits your roster, then ONE short sentence on why ${pkg.counterTeam} accepts. Two sentences total, nothing else.
 
-Use only the facts above. Never invent an age, stat, injury, contract, or team situation not stated here. Plain prose: no markdown, no bullets, no em dashes.`;
+The card already shows every player's age, value and NFL team, and a before/after of both rosters at the positions in the trade. Do not restate any of it. Say the thing the numbers do not: what this trade is FOR.
+
+Hard rules, each one from a rationale that was wrong:
+- Never say a player is younger, older, aging, declining or ascending. A 38 year old was called "younger" than a 33 year old, and a 27 year old receiver was called "an aging asset". Ages are on the card; the reader can see them.
+- Never print an internal metric. "your 21-urgency QB need" reached a user. Say "your thinnest position", not a number the app made up.
+- Every number you do write must say what it counts. A bare "at 22.7" is unreadable.
+- Use only the facts above. Never invent a stat, injury, contract or team situation.
+
+Plain prose: no markdown, no bullets, no em dashes.`;
 }
 
 // api/trades/find.ts

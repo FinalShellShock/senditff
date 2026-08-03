@@ -16,8 +16,10 @@ import type { Position } from "../algo/types.ts";
 import {
   makeApiClient,
   type FindTradesResponse,
+  type PositionShiftWire,
   type TradeAssetWire,
   type TradeDiagnostics,
+  type TradeImpactWire,
   type TradePackage,
 } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
@@ -191,6 +193,66 @@ function AssetList({ assets }: { assets: TradeAssetWire[] }) {
   );
 }
 
+// How both rosters move at the positions in the trade.
+//
+// Replaces the bulk of the written rationale: "I want to see how the teams
+// changed more than this long rationale." Deliberately only the positions the
+// trade touches, both sides, since a QB-for-RB deal says nothing about tight
+// ends and four rows of zeroes would bury the two that matter.
+//
+// Shows STARTER and DEPTH before -> after, which is what the engine actually
+// scored. Note this is a real recomputation of the post-trade roster, not the
+// current score with a value delta bolted on: the calculator does the latter,
+// and its bars never move.
+function ShiftCell({ before, after }: { before: number; after: number }) {
+  const delta = after - before;
+  const dir = Math.abs(delta) < 0.05 ? "flat" : delta > 0 ? "up" : "down";
+  return (
+    <span className={`impact-shift impact-${dir}`}>
+      <span className="impact-before">{before.toFixed(0)}</span>
+      <span className="impact-arrow">→</span>
+      <span className="impact-after">{after.toFixed(0)}</span>
+      {dir !== "flat" && (
+        <span className="impact-delta">{delta > 0 ? "+" : ""}{delta.toFixed(0)}</span>
+      )}
+    </span>
+  );
+}
+
+function ImpactSide({ team, rows }: { team: string; rows: PositionShiftWire[] }) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="impact-side">
+      <div className="impact-team">{team}</div>
+      {rows.map((r) => (
+        <div key={r.position} className="impact-row">
+          <span className="impact-pos" style={{ color: posColor(r.position) }}>{r.position}</span>
+          <span className="impact-label">starters</span>
+          <ShiftCell before={r.starterBefore} after={r.starterAfter} />
+          <span className="impact-label">depth</span>
+          <ShiftCell before={r.depthBefore} after={r.depthAfter} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ImpactTable({
+  impact, myTeam, theirTeam,
+}: {
+  impact?: TradeImpactWire;
+  myTeam: string;
+  theirTeam: string;
+}) {
+  if (!impact || (impact.mine.length === 0 && impact.theirs.length === 0)) return null;
+  return (
+    <div className="trade-impact">
+      <ImpactSide team={myTeam} rows={impact.mine} />
+      <ImpactSide team={theirTeam} rows={impact.theirs} />
+    </div>
+  );
+}
+
 function TradeCard({
   pkg, index, leagueId, rosterId, myTeam, search, diagnostics, api,
 }: {
@@ -272,6 +334,8 @@ function TradeCard({
           </>
         )}
       </div>
+      <ImpactTable impact={pkg.impact} myTeam={myTeam} theirTeam={theirTeam} />
+
       {pkg.rationale && <p className="trade-rationale">{pkg.rationale}</p>}
 
       {pkg.prompt && promptOpen && (

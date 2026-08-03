@@ -13,9 +13,24 @@ export type TradeAssetWire = {
   age?: number;
 };
 
+export type PositionShiftWire = {
+  position: string;
+  starterBefore: number;
+  starterAfter: number;
+  depthBefore: number;
+  depthAfter: number;
+};
+
+/** Before/after for both rosters, limited to the positions in the trade. */
+export type TradeImpactWire = {
+  mine: PositionShiftWire[];
+  theirs: PositionShiftWire[];
+};
+
 export type TradePackage = {
   counterTeam: string;
   counterRosterId: number;
+  impact?: TradeImpactWire;
   give: TradeAssetWire[];
   receive: TradeAssetWire[];
   valueGive: number;

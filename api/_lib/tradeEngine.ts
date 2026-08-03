@@ -196,6 +196,28 @@ type ScoredCandidate = Candidate & {
   // Consolidation-adjusted side values (fairness/balance math).
   adjGive: number;
   adjReceive: number;
+  // Kept rather than discarded after scoring: this is what the card shows
+  // instead of three paragraphs of prose. "I want to see how the teams changed
+  // more than this long rationale."
+  myImpact: ImpactDelta;
+  theirImpact: ImpactDelta;
+};
+
+/** Before and after for one position on one roster. */
+export type PositionShiftWire = {
+  position: string;
+  starterBefore: number;
+  starterAfter: number;
+  depthBefore: number;
+  depthAfter: number;
+};
+
+/** How both rosters move, limited to the positions the trade actually touches.
+ *  A QB-for-RB deal says nothing about your tight ends, so it does not show
+ *  them: four rows of zeroes is noise that hides the two rows that matter. */
+export type TradeImpactWire = {
+  mine: PositionShiftWire[];
+  theirs: PositionShiftWire[];
 };
 
 type GenContext = {
@@ -873,6 +895,8 @@ function scoreCandidate(
     valueReceive,
     adjGive,
     adjReceive,
+    myImpact,
+    theirImpact,
   };
 }
 
@@ -1742,9 +1766,40 @@ export function generatePackages(
   const byValueDesc = (a: Asset, b: Asset) =>
     assetValue(b) - assetValue(a) || assetId(a).localeCompare(assetId(b));
 
+  // Positions the trade actually touches, in a stable order.
+  const touchedPositions = (c: ScoredCandidate): Position[] => {
+    const seen = new Set<Position>();
+    for (const a of [...c.give, ...c.receive]) {
+      if (a.kind === "player") seen.add(a.player.position);
+    }
+    return POSITIONS.filter((p) => seen.has(p));
+  };
+  const shifts = (
+    profile: TeamProfile,
+    impact: ImpactDelta,
+    positions: Position[],
+  ): PositionShiftWire[] =>
+    positions.map((pos) => {
+      const before = profile.positionScores[pos];
+      const d = impact.perPosition[pos];
+      const round1 = (n: number) => Math.round(n * 10) / 10;
+      return {
+        position: pos,
+        starterBefore: round1(before?.starterScore ?? 0),
+        starterAfter: round1((before?.starterScore ?? 0) + (d?.starterScoreDelta ?? 0)),
+        depthBefore: round1(before?.depthScore ?? 0),
+        depthAfter: round1((before?.depthScore ?? 0) + (d?.depthScoreDelta ?? 0)),
+      };
+    });
+
   const packages = top.map((s) => {
     const counter = others.find((p) => p.rosterId === s.counterRosterId);
+    const positions = touchedPositions(s);
     return {
+      impact: {
+        mine: shifts(mine, s.myImpact, positions),
+        theirs: counter ? shifts(counter, s.theirImpact, positions) : [],
+      } satisfies TradeImpactWire,
       counterTeam: counter?.ownerName ?? "?",
       counterRosterId: s.counterRosterId,
       give: [...s.give].sort(byValueDesc).map(toWire),
