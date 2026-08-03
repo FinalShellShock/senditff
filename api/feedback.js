@@ -54,7 +54,8 @@ var PATCH_NOTES = [
     date: "2026-08-02",
     title: "Trade cards show how both teams change, and say a lot less",
     changes: [
-      "Every trade card now shows what the trade does to both rosters: your starters and your depth at each position in the deal, before and after, and the same for the other team. Only the positions actually involved, because a quarterback for a running back tells you nothing about your tight ends.",
+      "Every trade card now shows what the trade does to both rosters: your starters and your depth at each position in the deal, and the same for the other team. Only the positions actually involved, because a quarterback for a running back tells you nothing about your tight ends.",
+      "Drawn as bars rather than numbers, so you can read it at a glance. The bar is where the position ends up, and the coloured tip is the change: green if the room got better, red if it got worse. Hover for the exact figures. The two halves mirror around the middle the same way the send and get sides of the card do.",
       "These are real recalculations of both rosters after the trade, not the current number with the traded value added on. The engine was already working all of this out to score the trade and then throwing it away.",
       "The written rationale is two sentences now: one on why it fits you, one on why they say yes. Everything it used to spend paragraphs restating is on the card already.",
       'It is also no longer allowed to talk about age. It had called a 38 year old "younger" than a 33 year old and described a 27 year old receiver as an aging asset. Ages are printed on every player, so you can see for yourself.',
