@@ -214,22 +214,38 @@ function ShiftBar({ before, after }: { before: number; after: number }) {
   const clamp = (n: number) => Math.max(0, Math.min(100, n));
   const b = clamp(before);
   const a = clamp(after);
-  const base = Math.min(b, a);
   const change = Math.abs(a - b);
   const gained = a > b;
   const flat = change < 0.5;
+  // The SOLID bar is always the after-state, so a room that got worse draws a
+  // physically shorter bar. The first version drew to max(before, after) and
+  // coloured the difference, which meant a loss rendered LONGER with a red tip:
+  // "Tough to tell that it's being subtracted ... not just filled up with a
+  // different color."
+  //
+  // A tick marks where it started, so the shortfall is measurable rather than
+  // just felt, and the vacated stretch is a dim wash instead of solid red.
   return (
     <span
-      className="impact-bar"
+      className={`impact-bar${flat ? "" : gained ? " is-gain" : " is-loss"}`}
       title={`${before.toFixed(0)} → ${after.toFixed(0)}`}
       aria-label={`${before.toFixed(0)} to ${after.toFixed(0)}`}
     >
-      <span className="impact-bar-base" style={{ width: `${base}%` }} />
-      {!flat && (
+      <span className="impact-bar-fill" style={{ width: `${a}%` }} />
+      {!flat && gained && (
         <span
-          className={`impact-bar-change ${gained ? "gain" : "loss"}`}
-          style={{ width: `${change}%` }}
+          className="impact-bar-gain"
+          style={{ ["--start" as string]: `${b}%`, width: `${change}%` }}
         />
+      )}
+      {!flat && !gained && (
+        <span
+          className="impact-bar-lost"
+          style={{ ["--start" as string]: `${a}%`, width: `${change}%` }}
+        />
+      )}
+      {!flat && (
+        <span className="impact-bar-tick" style={{ ["--at" as string]: `${b}%` }} />
       )}
     </span>
   );

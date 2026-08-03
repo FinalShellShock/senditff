@@ -4319,16 +4319,33 @@ body {
 
 .impact-bar {
   flex: 1;
-  display: flex;
-  align-items: stretch;
-  height: 7px;
+  position: relative;
+  height: 8px;
   border-radius: 2px;
   background: rgba(255,255,255,0.05);
   overflow: hidden;
 }
-.impact-bar-base { background: #475569; }
-.impact-bar-change.gain { background: #22c55e; }
-.impact-bar-change.loss { background: #ef4444; }
+/* The solid bar IS the after-state, so a room that got worse is visibly
+   shorter. Anchored to the outer edge on each side so the mirror holds:
+   percentages run from left normally and from right on the mirrored half. */
+.impact-bar-fill,
+.impact-bar-gain,
+.impact-bar-lost,
+.impact-bar-tick { position: absolute; top: 0; bottom: 0; }
+.impact-bar-fill { left: 0; background: #475569; }
+.impact-bar-gain { left: var(--start); background: #22c55e; }
+/* Vacated stretch: a wash, not a fill. Solid red here read as something ADDED,
+   which is the opposite of what a drop should look like, and at full strength
+   it was the loudest thing in the panel. */
+.impact-bar-lost { left: var(--start); background: rgba(239,68,68,0.16); }
+/* Where it started. Makes a shortfall measurable instead of merely felt. */
+.impact-bar-tick { left: var(--at); width: 1px; background: rgba(226,232,240,0.55); }
+.impact-bar.is-loss .impact-bar-tick { background: rgba(248,113,113,0.75); }
+
+.impact-side-theirs .impact-bar-fill { left: auto; right: 0; }
+.impact-side-theirs .impact-bar-gain,
+.impact-side-theirs .impact-bar-lost { left: auto; right: var(--start); }
+.impact-side-theirs .impact-bar-tick { left: auto; right: var(--at); }
 
 /* Stacked on a phone, and the mirror comes off with it: at this width both
    sides get the full row, so flipping one of them would just read as a bug. */
@@ -4340,6 +4357,10 @@ body {
   .impact-side-theirs .impact-bar { flex-direction: row; }
   .impact-side-theirs .impact-col,
   .impact-side-theirs .impact-pos { text-align: left; }
+  .impact-side-theirs .impact-bar-fill { right: auto; left: 0; }
+  .impact-side-theirs .impact-bar-gain,
+  .impact-side-theirs .impact-bar-lost { right: auto; left: var(--start); }
+  .impact-side-theirs .impact-bar-tick { right: auto; left: var(--at); }
 }
 
 
