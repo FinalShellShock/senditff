@@ -48,6 +48,26 @@ function currentRelease() {
 var PATCH_NOTES = [
   {
     branch: "daniels",
+    release: "1.24",
+    algo: "Shotgun",
+    algoFingerprint: "66d9bdc652c8",
+    date: "2026-08-02",
+    title: "Trade cards show how both teams change, and say a lot less",
+    changes: [
+      "Every trade card now shows what the trade does to both rosters: your starters and your depth at each position in the deal, before and after, and the same for the other team. Only the positions actually involved, because a quarterback for a running back tells you nothing about your tight ends.",
+      "These are real recalculations of both rosters after the trade, not the current number with the traded value added on. The engine was already working all of this out to score the trade and then throwing it away.",
+      "The written rationale is two sentences now: one on why it fits you, one on why they say yes. Everything it used to spend paragraphs restating is on the card already.",
+      'It is also no longer allowed to talk about age. It had called a 38 year old "younger" than a 33 year old and described a 27 year old receiver as an aging asset. Ages are printed on every player, so you can see for yourself.',
+      'It can no longer print internal numbers at you either. "Your 21-urgency QB need" was a real sentence a real person read. That number was never on a 0 to 100 scale and was never meant to leave the engine, so it is not handed to the writer at all now.',
+      "On phones, the player search filters collapse to a single line instead of three rows. They were pushing the search results down under the keyboard, which made picking a player nearly impossible."
+    ],
+    knownIssues: [
+      "The trade calculator needs a proper layout pass. It was built before the impact panel, the fairness badge and the player filters existed, and it has never been reorganised around them. Collapsing the filters fixes the worst of it on mobile but not the underlying design.",
+      "A package can pass every rule and still not be worth making, because nothing yet measures whether the players involved are any good in absolute terms."
+    ]
+  },
+  {
+    branch: "daniels",
     release: "1.23",
     algo: "Shotgun",
     algoFingerprint: "ee3de4362a27",
