@@ -48,6 +48,25 @@ function currentRelease() {
 var PATCH_NOTES = [
   {
     branch: "daniels",
+    release: "1.23",
+    algo: "Shotgun",
+    algoFingerprint: "ee3de4362a27",
+    date: "2026-08-02",
+    title: "Consolidate is one option now, and it can finally build the obvious trades",
+    changes: [
+      'There were two consolidate options in the trade finder and there should only ever have been one. "2 same-position into 1 stud" packaged two players at the same position, and "2 positions into 1 stud" was quietly hardcoded to your second-best running back plus your second-best receiver, and nothing else.',
+      'Between them, half the possible packages could not be built at all. Your QB with your RB, your QB with your WR, your QB with your TE, your RB with your TE, your TE with your WR: none of those five combinations existed as far as the engine was concerned. In a superflex league, "my second quarterback and my second running back for your stud" is an ordinary trade it simply could not think of.',
+      "Now it is one option that takes any two of your spare pieces, wherever they play, and buys one better player at a position you actually need. On the test league the combinations that were impossible are now the most common ones, because your backup quarterback turns out to be the most useful trade currency you own.",
+      "You get more consolidation options as a result, and a search pinned to a specific player now finds something every time rather than occasionally coming up empty.",
+      `The scouting report's "package depth into one difference-maker" now names your best two spare pieces wherever they play, instead of the best two at a single position. It was restricted last week only because the button behind it could not search across positions, and now it can.`
+    ],
+    knownIssues: [
+      "The written rationale on each trade card is still too long and still gets things wrong. It is being rebuilt to show how both teams actually change at the positions in the trade, with far less prose. This is the next thing being worked on.",
+      "A package can pass every rule and still not be worth making, because nothing yet measures whether the players involved are any good in absolute terms."
+    ]
+  },
+  {
+    branch: "daniels",
     release: "1.22",
     algo: "Shotgun",
     algoFingerprint: "e377c25eca47",
