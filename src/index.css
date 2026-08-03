@@ -4254,53 +4254,94 @@ body {
 }
 
 /* ── Team change on a trade card ──────────────────────────────────────────────
-   Replaces the bulk of the written rationale. Only the positions the trade
-   touches, both rosters, starter and depth before -> after.
+   Bars, not numbers: "Bars would be better and quicker to read over numbers."
+   Bar length is the post-trade score (0-100, so no normalising needed) and the
+   segment between before and after is the change, green up and red down.
 
-   Two columns on desktop, stacked on a phone. The rows are short enough that
-   stacking costs nothing, and side-by-side at 375px would put four numbers in
-   about 90 pixels. */
+   MIRRORED, the same way the SEND/GET halves of the card mirror: each side's
+   position label sits on the OUTER edge and its bars fill inward from it, so
+   the two halves read outward from the centre instead of both marching left to
+   right. row-reverse on the right side flips the row order and the bar fill
+   together.
+
+   The position label is deliberately UNCOLOURED. The position badges on the
+   player rows above already carry the colour code; repeating it down here had
+   four competing colours fighting two bars for attention. */
 .trade-impact {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 18px;
   margin: 10px 0 4px;
   padding: 10px 12px;
   background: rgba(255,255,255,0.02);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 4px;
 }
+.impact-side-theirs .impact-team { text-align: right; }
+.impact-side-theirs .impact-head,
+.impact-side-theirs .impact-row { flex-direction: row-reverse; }
+.impact-side-theirs .impact-bar { flex-direction: row-reverse; }
+
 .impact-team {
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 1px;
   color: #64748b;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.impact-head,
 .impact-row {
-  display: grid;
-  grid-template-columns: 22px auto 1fr auto 1fr;
+  display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 0;
+  gap: 6px;
+  padding: 1px 0;
 }
-.impact-pos { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; }
-.impact-label { font-size: 8px; color: #475569; letter-spacing: 0.5px; }
-.impact-shift { display: inline-flex; align-items: baseline; gap: 3px; font-size: 10px; }
-.impact-before { color: #64748b; }
-.impact-arrow { color: #334155; font-size: 9px; }
-.impact-after { color: #cbd5e1; font-weight: 600; }
-.impact-delta { font-size: 9px; }
-.impact-up .impact-after,   .impact-up .impact-delta   { color: #22c55e; }
-.impact-down .impact-after, .impact-down .impact-delta { color: #ef4444; }
-.impact-flat .impact-after { color: #64748b; }
+.impact-head { margin-bottom: 2px; }
+.impact-col {
+  flex: 1;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #475569;
+}
+.impact-side-theirs .impact-col { text-align: right; }
+.impact-pos {
+  width: 22px;
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+}
+.impact-side-theirs .impact-pos { text-align: right; }
 
-@media (max-width: 640px) {
-  .trade-impact { grid-template-columns: 1fr; }
+.impact-bar {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  height: 7px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.05);
+  overflow: hidden;
 }
+.impact-bar-base { background: #475569; }
+.impact-bar-change.gain { background: #22c55e; }
+.impact-bar-change.loss { background: #ef4444; }
+
+/* Stacked on a phone, and the mirror comes off with it: at this width both
+   sides get the full row, so flipping one of them would just read as a bug. */
+@media (max-width: 640px) {
+  .trade-impact { grid-template-columns: 1fr; gap: 12px; }
+  .impact-side-theirs .impact-team { text-align: left; }
+  .impact-side-theirs .impact-head,
+  .impact-side-theirs .impact-row,
+  .impact-side-theirs .impact-bar { flex-direction: row; }
+  .impact-side-theirs .impact-col,
+  .impact-side-theirs .impact-pos { text-align: left; }
+}
+
 
 /* Collapsed filter row. One line instead of three, so the result list stays
    above the keyboard on a phone. */

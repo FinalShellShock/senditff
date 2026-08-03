@@ -204,33 +204,61 @@ function AssetList({ assets }: { assets: TradeAssetWire[] }) {
 // scored. Note this is a real recomputation of the post-trade roster, not the
 // current score with a value delta bolted on: the calculator does the latter,
 // and its bars never move.
-function ShiftCell({ before, after }: { before: number; after: number }) {
-  const delta = after - before;
-  const dir = Math.abs(delta) < 0.05 ? "flat" : delta > 0 ? "up" : "down";
+// One score, drawn rather than printed. Bar length is the post-trade score on
+// its 0-100 scale; the segment between before and after is the change, green
+// when the room got better and red when it got worse. Reading "did this go up
+// or down, and by a lot" is then a glance instead of two subtractions.
+//
+// Scores are 0-100, so the track needs no normalising.
+function ShiftBar({ before, after }: { before: number; after: number }) {
+  const clamp = (n: number) => Math.max(0, Math.min(100, n));
+  const b = clamp(before);
+  const a = clamp(after);
+  const base = Math.min(b, a);
+  const change = Math.abs(a - b);
+  const gained = a > b;
+  const flat = change < 0.5;
   return (
-    <span className={`impact-shift impact-${dir}`}>
-      <span className="impact-before">{before.toFixed(0)}</span>
-      <span className="impact-arrow">→</span>
-      <span className="impact-after">{after.toFixed(0)}</span>
-      {dir !== "flat" && (
-        <span className="impact-delta">{delta > 0 ? "+" : ""}{delta.toFixed(0)}</span>
+    <span
+      className="impact-bar"
+      title={`${before.toFixed(0)} → ${after.toFixed(0)}`}
+      aria-label={`${before.toFixed(0)} to ${after.toFixed(0)}`}
+    >
+      <span className="impact-bar-base" style={{ width: `${base}%` }} />
+      {!flat && (
+        <span
+          className={`impact-bar-change ${gained ? "gain" : "loss"}`}
+          style={{ width: `${change}%` }}
+        />
       )}
     </span>
   );
 }
 
-function ImpactSide({ team, rows }: { team: string; rows: PositionShiftWire[] }) {
+function ImpactSide({
+  team, rows, side,
+}: {
+  team: string;
+  rows: PositionShiftWire[];
+  side: "mine" | "theirs";
+}) {
   if (rows.length === 0) return null;
   return (
-    <div className="impact-side">
+    <div className={`impact-side impact-side-${side}`}>
       <div className="impact-team">{team}</div>
+      <div className="impact-head">
+        <span className="impact-pos" />
+        <span className="impact-col">STR</span>
+        <span className="impact-col">DEP</span>
+      </div>
       {rows.map((r) => (
         <div key={r.position} className="impact-row">
-          <span className="impact-pos" style={{ color: posColor(r.position) }}>{r.position}</span>
-          <span className="impact-label">starters</span>
-          <ShiftCell before={r.starterBefore} after={r.starterAfter} />
-          <span className="impact-label">depth</span>
-          <ShiftCell before={r.depthBefore} after={r.depthAfter} />
+          {/* Uncoloured on purpose. The position BADGES on the player rows
+              carry the colour code; repeating it here made the panel read as
+              four competing colours instead of two bars. */}
+          <span className="impact-pos">{r.position}</span>
+          <ShiftBar before={r.starterBefore} after={r.starterAfter} />
+          <ShiftBar before={r.depthBefore} after={r.depthAfter} />
         </div>
       ))}
     </div>
@@ -247,8 +275,8 @@ function ImpactTable({
   if (!impact || (impact.mine.length === 0 && impact.theirs.length === 0)) return null;
   return (
     <div className="trade-impact">
-      <ImpactSide team={myTeam} rows={impact.mine} />
-      <ImpactSide team={theirTeam} rows={impact.theirs} />
+      <ImpactSide team={myTeam} rows={impact.mine} side="mine" />
+      <ImpactSide team={theirTeam} rows={impact.theirs} side="theirs" />
     </div>
   );
 }
