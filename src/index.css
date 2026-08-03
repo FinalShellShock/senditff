@@ -4301,3 +4301,42 @@ body {
 @media (max-width: 640px) {
   .trade-impact { grid-template-columns: 1fr; }
 }
+
+/* Collapsed filter row. One line instead of three, so the result list stays
+   above the keyboard on a phone. */
+.asset-filter-collapsed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.asset-filter-toggle {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 2px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.asset-filter-toggle:hover { color: #cbd5e1; }
+.asset-filter-toggle-open { margin-right: 4px; }
+.asset-filter-badge {
+  background: #f59e0b;
+  border-radius: 8px;
+  color: #0f172a;
+  font-size: 9px;
+  padding: 1px 6px;
+}
+
+/* Keep the results reachable when the keyboard is up. 340px plus the panels
+   above it ran past the visible area on a phone in landscape-height terms. */
+@media (max-width: 640px) {
+  .calc-results { max-height: 42vh; }
+}

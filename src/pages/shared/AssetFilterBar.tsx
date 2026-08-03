@@ -2,6 +2,7 @@
 // by Send It's asset scoping, so the two cannot drift apart on what "young" or
 // "fringe" means.
 
+import { useState } from "react";
 import type { Position } from "../../algo/types.ts";
 import type { AssetFilters } from "../../data/assetPool.ts";
 import { assetFiltersActive } from "../../data/assetPool.ts";
@@ -31,6 +32,17 @@ function bandKey(min: number | null, max: number | null): string {
   return `${min ?? ""}|${max ?? ""}`;
 }
 
+// Collapsed by default, and that is the point.
+//
+// Shipped expanded, and on a phone the four controls wrapped onto three rows,
+// pushed the result list under the on-screen keyboard, and left exactly one
+// player visible. Reported as "still very unusable ... I can't click on him
+// without dismissing the keyboard and it's visually cluttered".
+//
+// Three of the four controls read "any age" / "any value" / "players + picks",
+// which is to say they were spending most of the screen announcing that no
+// filter was applied. Behind a toggle they cost one line and carry a count when
+// they are actually doing something.
 export default function AssetFilterBar({
   filters,
   onChange,
@@ -40,11 +52,55 @@ export default function AssetFilterBar({
   onChange: (next: AssetFilters) => void;
   showKind?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
   const set = <K extends keyof AssetFilters>(key: K, value: AssetFilters[K]) =>
     onChange({ ...filters, [key]: value });
 
+  const activeCount =
+    (filters.position !== "" ? 1 : 0) +
+    (filters.kind !== "all" ? 1 : 0) +
+    (filters.ageMin != null || filters.ageMax != null ? 1 : 0) +
+    (filters.valueMin != null || filters.valueMax != null ? 1 : 0);
+
+  if (!open) {
+    return (
+      <div className="asset-filter-collapsed">
+        <button type="button" className="asset-filter-toggle" onClick={() => setOpen(true)}>
+          FILTERS
+          {activeCount > 0 && <span className="asset-filter-badge">{activeCount}</span>}
+        </button>
+        {activeCount > 0 && (
+          <button
+            type="button"
+            className="btn-link asset-filter-clear"
+            onClick={() =>
+              onChange({
+                ...filters,
+                position: "",
+                kind: "all",
+                ageMin: null,
+                ageMax: null,
+                valueMin: null,
+                valueMax: null,
+              })
+            }
+          >
+            clear
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="asset-filter-bar">
+      <button
+        type="button"
+        className="asset-filter-toggle asset-filter-toggle-open"
+        onClick={() => setOpen(false)}
+      >
+        FILTERS ▾
+      </button>
       <div className="asset-filter-chips">
         <button
           type="button"
