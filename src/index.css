@@ -4227,3 +4227,28 @@ body {
 }
 
 .scout-row-avoid { opacity: 0.88; }
+
+/* ── iOS: stop the zoom-on-focus ──────────────────────────────────────────────
+   Reported from a phone: "Whether it's feedback or typing players names in, on
+   iOS anyway it auto zooms in to the text box but then the text box is cut off.
+   It shouldn't zoom in at all."
+
+   Not a layout bug. Safari on iOS zooms the viewport whenever a focused form
+   control has a font-size under 16px, and the zoom is what pushes the field
+   off-screen. Every control we own was under it: the calc search (12px), the
+   feedback comment (12px), the team switchers (11px and 9px) and the asset
+   filters (10px).
+
+   Scoped to coarse pointers so the desktop layout keeps its density, which is
+   the whole reason those sizes are small in the first place. Applied last so
+   it wins over the component rules above without needing !important. */
+@media (pointer: coarse) {
+  .calc-search-input,
+  .trade-feedback-comment,
+  .text-input,
+  .team-switcher-select,
+  .calc-team-select,
+  .asset-filter-select {
+    font-size: 16px;
+  }
+}

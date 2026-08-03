@@ -52,6 +52,8 @@ async function main(): Promise<void> {
   let consolidations = 0;
   let packages = 0;
   let lists = 0;
+  let autoPackages = 0;
+  const sidegrades: string[] = [];
 
   const runs: Array<{ label: string; opts: Record<string, unknown> }> = [
     { label: "auto", opts: {} },
@@ -103,6 +105,23 @@ async function main(): Promise<void> {
 
       for (const p of pkgs) {
         packages++;
+        // Reported, not asserted. SIDEGRADE_PENALTY demotes these rather than
+        // banning them, so a non-zero count is expected and the number itself
+        // is the thing worth watching: it should be small and should not creep.
+        if (run.label === "auto") {
+          autoPackages++;
+          const sent = p.give.filter((a) => a.kind === "player");
+          const back = p.receive.filter((a) => a.kind === "player");
+          if (
+            sent.length === 1 && back.length >= 2 &&
+            back.every((a) => a.position === sent[0]!.position)
+          ) {
+            sidegrades.push(
+              `${mine.ownerName}: ${sent[0]!.position} ${sent[0]!.name} -> ` +
+                back.map((a) => a.name).join(" + "),
+            );
+          }
+        }
         for (const [side, assets] of [["send", p.give], ["get", p.receive]] as const) {
           if (assets.length <= 1) continue;
           sides++;
@@ -153,6 +172,10 @@ async function main(): Promise<void> {
     dupes.length === 0
       ? `✓ No near-duplicates across ${lists} result lists.`
       : `✗ ${dupes.length} near-duplicate clusters:\n  ` + dupes.slice(0, 15).join("\n  "),
+  );
+  console.log(
+    `\ni ${sidegrades.length} of ${autoPackages} auto-mode packages return only the position they emptied` +
+      (sidegrades.length ? ":\n  " + sidegrades.join("\n  ") : "."),
   );
   console.log(
     misordered.length === 0

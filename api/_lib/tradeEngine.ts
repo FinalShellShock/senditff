@@ -23,6 +23,7 @@ import {
   FRINGE_RANK_MIN,
   POSITIONS,
   SHAPE_FIT_BY_COMPETITIVENESS,
+  SIDEGRADE_PENALTY,
   YOUNG_ASSET_BONUS,
   YOUNG_ASSET_MAX_AGE,
   STANCE_CAUTION_TOTAL,
@@ -485,6 +486,28 @@ function youngAssetQuality(team: TeamProfile, receives: Asset[], averages: Leagu
 //
 // Effect size in the real world is a fraction of a league place, so this tilts
 // the ranking and never gates anything out.
+// Did breaking this player up buy anything anywhere else?
+//
+// Fires when one player goes out and every player coming back plays the same
+// position. You have not improved a room, you have made its starter worse and
+// its bench deeper. Picks are ignored: a pick is not a position.
+//
+// Position-agnostic on purpose. The reported cases were both QB-for-two-QBs,
+// but capping same-position returns would delete the shape from the pool, and
+// the shape is fine when it genuinely helps. This charges it instead.
+function sidegradePenalty(give: Asset[], receive: Asset[]): number {
+  const sent = give.filter((a) => a.kind === "player");
+  if (sent.length !== 1 || !sent[0] || sent[0].kind !== "player") return 0;
+  const sentPos = sent[0].player.position;
+  const back = receive.filter((a) => a.kind === "player");
+  // A straight one-for-one is a swap, not a tier down, and is judged elsewhere.
+  if (back.length < 2) return 0;
+  const gainsElsewhere = back.some(
+    (a) => a.kind === "player" && a.player.position !== sentPos,
+  );
+  return gainsElsewhere ? 0 : -SIDEGRADE_PENALTY;
+}
+
 function shapeFitAdjustment(team: TeamProfile, give: Asset[], receive: Asset[]): number {
   const w = SHAPE_FIT_BY_COMPETITIVENESS[team.competitiveness];
   if (w === 0) return 0;
@@ -783,11 +806,13 @@ function scoreCandidate(
   const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give)
     + shapeFitAdjustment(myProfile, cand.give, cand.receive)
     + youngAssetQuality(myProfile, cand.receive, ctx.averages)
-    + bestPlayerEdge(cand.receive, cand.give, ctx.averages);
+    + bestPlayerEdge(cand.receive, cand.give, ctx.averages)
+    + sidegradePenalty(cand.give, cand.receive);
   const theirTimeline = timelinePenalty(them, cand.give, cand.receive)
     + shapeFitAdjustment(them, cand.receive, cand.give)
     + youngAssetQuality(them, cand.give, ctx.averages)
-    + bestPlayerEdge(cand.give, cand.receive, ctx.averages);
+    + bestPlayerEdge(cand.give, cand.receive, ctx.averages)
+    + sidegradePenalty(cand.receive, cand.give);
 
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
@@ -1188,7 +1213,16 @@ function genConsolidate(ctx: GenContext): Candidate[] {
             ...myPair.map((p) => p.valueDynasty),
             ...pickSet.map((p) => p.value),
           ]);
-          if (within(v, theirElite.valueDynasty, 0.15)) {
+          // The upgrade rule counts the sweetener too. Checking only the player
+          // pair let a package through that sent a 1,301 pick alongside two
+          // smaller players for a 1,404 player: an 8% gain on the best thing
+          // leaving, presented as a consolidation. A user reading the card sees
+          // assets, not players-versus-picks.
+          const sweetenedBest = Math.max(pairBest, ...pickSet.map((p) => p.value));
+          if (
+            within(v, theirElite.valueDynasty, 0.15) &&
+            theirElite.valueDynasty >= sweetenedBest * CONSOLIDATE_UPGRADE
+          ) {
             out.push({
               give: [
                 ...myPair.map((p) => playerAsset(p, mine.rosterId)),
@@ -1223,11 +1257,18 @@ function genConsolidateFlex(ctx: GenContext): Candidate[] {
   if (candidatesGive.length < 2) return out;
 
   const giveValue = packageValue(candidatesGive.map((p) => p.valueDynasty));
+  const giveBest = Math.max(...candidatesGive.map((p) => p.valueDynasty));
 
   for (const them of others) {
     const target = topPlayersByPos(them, upgradePos, 2)[0];
     if (!target) continue;
     if (target.valueDynasty < giveValue * 0.85) continue;
+    // Same rule as genConsolidate: consolidating has to land a real upgrade on
+    // the best piece leaving, not just on the pair total. This branch was
+    // missed when that gate went in, and stayed hidden until the sidegrade
+    // penalty reordered results and pushed two non-compliant flex packages
+    // into the top five (ratios 1.06 and 1.08). The shape harness caught it.
+    if (target.valueDynasty < giveBest * CONSOLIDATE_UPGRADE) continue;
     const ratio = giveValue / target.valueDynasty;
     if (ratio >= 0.80 && ratio <= 1.20) {
       out.push({

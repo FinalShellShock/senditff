@@ -87,6 +87,7 @@ var SHAPE_FIT_BY_COMPETITIVENESS = {
   AVERAGE: 0.02,
   WEAK: 0
 };
+var SIDEGRADE_PENALTY = 0.12;
 
 // src/algo/archetypes.ts
 var ARCHETYPE_FAMILIES = [
@@ -634,6 +635,17 @@ function youngAssetQuality(team, receives, averages) {
   }
   return Math.max(-YOUNG_ASSET_BONUS, Math.min(YOUNG_ASSET_BONUS, score));
 }
+function sidegradePenalty(give, receive) {
+  const sent = give.filter((a) => a.kind === "player");
+  if (sent.length !== 1 || !sent[0] || sent[0].kind !== "player") return 0;
+  const sentPos = sent[0].player.position;
+  const back = receive.filter((a) => a.kind === "player");
+  if (back.length < 2) return 0;
+  const gainsElsewhere = back.some(
+    (a) => a.kind === "player" && a.player.position !== sentPos
+  );
+  return gainsElsewhere ? 0 : -SIDEGRADE_PENALTY;
+}
 function shapeFitAdjustment(team, give, receive) {
   const w = SHAPE_FIT_BY_COMPETITIVENESS[team.competitiveness];
   if (w === 0) return 0;
@@ -829,8 +841,8 @@ function scoreCandidate(cand, myProfile, others, ctx) {
   const theirImpact = simulateImpact(them, cand.receive, cand.give, ctx.format, ctx.averages, ctx.thisYear);
   const myFit = fitScore(myImpact);
   const theirFit = fitScore(theirImpact);
-  const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give) + shapeFitAdjustment(myProfile, cand.give, cand.receive) + youngAssetQuality(myProfile, cand.receive, ctx.averages) + bestPlayerEdge(cand.receive, cand.give, ctx.averages);
-  const theirTimeline = timelinePenalty(them, cand.give, cand.receive) + shapeFitAdjustment(them, cand.receive, cand.give) + youngAssetQuality(them, cand.give, ctx.averages) + bestPlayerEdge(cand.give, cand.receive, ctx.averages);
+  const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give) + shapeFitAdjustment(myProfile, cand.give, cand.receive) + youngAssetQuality(myProfile, cand.receive, ctx.averages) + bestPlayerEdge(cand.receive, cand.give, ctx.averages) + sidegradePenalty(cand.give, cand.receive);
+  const theirTimeline = timelinePenalty(them, cand.give, cand.receive) + shapeFitAdjustment(them, cand.receive, cand.give) + youngAssetQuality(them, cand.give, ctx.averages) + bestPlayerEdge(cand.give, cand.receive, ctx.averages) + sidegradePenalty(cand.receive, cand.give);
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
   const { give: adjGive, receive: adjReceive } = tradeEffectiveValues(
@@ -1110,7 +1122,8 @@ function genConsolidate(ctx) {
             ...myPair.map((p) => p.valueDynasty),
             ...pickSet.map((p) => p.value)
           ]);
-          if (within(v, theirElite.valueDynasty, 0.15)) {
+          const sweetenedBest = Math.max(pairBest, ...pickSet.map((p) => p.value));
+          if (within(v, theirElite.valueDynasty, 0.15) && theirElite.valueDynasty >= sweetenedBest * CONSOLIDATE_UPGRADE) {
             out.push({
               give: [
                 ...myPair.map((p) => playerAsset(p, mine.rosterId)),
@@ -1139,10 +1152,12 @@ function genConsolidateFlex(ctx) {
   const candidatesGive = [myRB2, myWR2].filter((p) => !!p);
   if (candidatesGive.length < 2) return out;
   const giveValue = packageValue(candidatesGive.map((p) => p.valueDynasty));
+  const giveBest = Math.max(...candidatesGive.map((p) => p.valueDynasty));
   for (const them of others) {
     const target = topPlayersByPos(them, upgradePos, 2)[0];
     if (!target) continue;
     if (target.valueDynasty < giveValue * 0.85) continue;
+    if (target.valueDynasty < giveBest * CONSOLIDATE_UPGRADE) continue;
     const ratio = giveValue / target.valueDynasty;
     if (ratio >= 0.8 && ratio <= 1.2) {
       out.push({

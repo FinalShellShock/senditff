@@ -335,6 +335,38 @@ export const SHAPE_FIT_BY_COMPETITIVENESS: Record<Competitiveness, number> = {
   WEAK: 0,
 };
 
+// Breaking one player up has to BUY you something somewhere else.
+//
+// A tier-down that returns only players at the position it emptied leaves the
+// starting lineup worse and the bench deeper, which is the trade the user
+// rejected twice in two different leagues, in almost the same words:
+//
+//   "the replacement level is too big of a difference in this tier down again"
+//   "Nothing here makes finalshellshock's team better."
+//   "Stop the qb for two QBs"
+//
+// Measured on the seven tier-downs that carry a verdict, this separates them
+// perfectly and WITHOUT reference to any particular position:
+//
+//   verdict  sent            replacement            gained elsewhere
+//   DOWN     QB 5,210        Purdy   4,470 (-740)   NONE
+//   DOWN     QB 3,982        Stafford 2,622 (-1360) NONE
+//   UP       RB 3,457        Hubbard 1,836          TE Kittle 2,095
+//   UP       RB 5,839        Jacobs  2,789          QB Ward   3,973
+//   UP       RB 5,839        Etienne 2,759          WR Burden 3,739
+//   UP       TE 3,390        Njoku   1,055          QB Stafford 2,622
+//   UP       TE 3,390        Juwan   1,292          QB Jones  2,459
+//
+// Deliberately a PENALTY and not a gate, and deliberately not a cap on how
+// many players of one position may come back. The shape stays in the pool and
+// can still surface when everything else about it is strong; it just stops
+// outranking trades that actually improve a room. Sized to move a package a
+// tier rather than delete it: `total` differences that matter run 0.1-0.3.
+//
+// Caveat worth keeping in view: n=7, one user, one sitting, one superflex
+// league. Strong separation, thin sample.
+export const SIDEGRADE_PENALTY = 0.12;
+
 export const CONSOLIDATE_BY_COMPETITIVENESS: Record<Competitiveness, number> = {
   STRONG: 1.0,
   AVERAGE: 0.85,
