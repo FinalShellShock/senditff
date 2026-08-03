@@ -267,3 +267,84 @@ platform is the moment to define a **provider interface** (fetch league, fetch
 rosters, fetch traded picks, detect format) with Sleeper and MFL as two
 implementations, rather than branching inside the existing functions. Doing it
 at two providers is cheap; doing it at four is a rewrite.
+
+---
+
+## 11. OPEN QUESTION: is age being double-counted? — raised 2026-08-02
+
+**Not a feature. An unresolved challenge to the algorithm's foundation, from
+Gibbs in Discord, which Johnny did not dismiss.** Recorded before it gets
+relitigated from memory or quietly actioned without a decision.
+
+### The argument, in his words
+
+> "I think when valuing and in the send it of trades ... I think dynasty view
+> gives enough of it. And if it doesn't that's because dynasty value is too
+> short term, but you yourself say all the time you shouldn't look past three
+> years. Which your age pressure stretches out beyond."
+
+> "If you yourself believed as your sendit tool does, that we need to adjust
+> dynasty values to help account for age (specifically youth), then you would
+> have a younger team like mine. Probably even younger. Because you would see
+> such potential value in players like Makai Lemon, and other such rookies."
+
+> "Sure the dynasty values that have him amidst Olave, Waddle, Rashee, Tee are
+> already accounting for age. But for you, you gotta double count it and bump
+> him up. Which means you'd happily pay any of those + for Makai Lemon. And if
+> that doesn't sound right to you, and I know it doesn't, that is why we can't
+> double count it."
+
+Johnny: *"I think i was trying to adjust for exactly that."*
+
+### Why it is not obviously wrong
+
+FantasyCalc dynasty values are a market price, and the market already prices
+age. A 23 year old and a 30 year old at the same dynasty value are already
+being called equivalent BY the number the engine reads. Every age term layered
+on top is a second charge for the same thing.
+
+The reductio is the strong part: applied consistently, a youth adjustment on
+top of dynasty value means the engine should prefer an unproven rookie to
+established producers at the same price. Nobody actually believes that, which
+suggests the adjustment is not a belief anyone holds, just a mechanism nobody
+audited end to end.
+
+The three-year point is separate and also sharp: `REMAINING_VALUE` curves run
+a full career, while Johnny's own stated horizon is three seasons.
+
+### What this would touch, and why it is not a small change
+
+Age is load-bearing nearly everywhere:
+
+- `agePressure()` / `remainingValue()` in `src/algo/profile.ts`
+- window classification and `windowPressure`
+- `timelinePenalty()`, `youngAssetQuality()` in `api/_lib/tradeEngine.ts`
+- both age-arb archetypes, whose entire trigger is `agePressure`
+- the WEAR column and window rows on TEAM STATE
+- `src/algo/projection.ts` (Shotgun trajectory arrows)
+- the nflverse aging-curve research this was all rebuilt from
+
+So "remove age pressure" is not a knob. Do NOT act on this without deciding
+the question first.
+
+### How to settle it rather than argue it
+
+The app already has what it needs to answer this empirically, and did not a
+week ago:
+
+1. **Dated value snapshots** have been retained since 2026-07-25
+   (`valueSnapshots/{formatKey}/daily/{YYYY-MM-DD}`). Take players matched on
+   dynasty value but separated in age, and measure how their values ACTUALLY
+   diverge over the window we have. If the market re-prices age faster than our
+   curve does, the curve is redundant. If it does not, age pressure is adding
+   information the price lacks.
+2. **The trade study** in `scripts/research/` measured outcomes and found
+   player QUALITY dominant and most other factors flat once quality was held
+   constant. Age was never isolated against dynasty value specifically.
+3. Sensitivity sweep: zero out the age terms and re-run `validate:trades`, then
+   measure top-24 landings and recommendation counts the way the 1.11 loss-floor
+   sweep was measured.
+
+Whatever is decided, record the reasoning here. This is the second foundational
+challenge to survive contact (the first was the flat age cutoff, which was
+wrong and got fixed); it deserves an answer with numbers, not a preference.
