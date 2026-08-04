@@ -4580,3 +4580,16 @@ body {
   border-radius: 4px;
   overflow: hidden;
 }
+
+/* Why a package is only an idea. Amber to match the INSPIRATION badge it
+   explains, quiet enough not to compete with the trade itself. */
+.trade-weak-note {
+  margin: 8px 0 0;
+  padding: 7px 10px;
+  border-left: 2px solid #f59e0b;
+  background: rgba(245,158,11,0.06);
+  border-radius: 0 3px 3px 0;
+  color: #cbd5e1;
+  font-size: 11px;
+  line-height: 1.55;
+}

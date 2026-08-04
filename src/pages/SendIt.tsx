@@ -378,6 +378,15 @@ function TradeCard({
           </>
         )}
       </div>
+      {/* Say WHY it is only an idea, not just that it is. The badge already
+          reads INSPIRATION, which is true and unhelpful: "the shape does not
+          suit this roster" and "none of these players is worth much" are
+          completely different problems and the user has to know which one they
+          are looking at. Transparency is the point, so the trade still shows. */}
+      {pkg.confidence?.note && (
+        <p className="trade-weak-note">{pkg.confidence.note}</p>
+      )}
+
       <ImpactTable impact={pkg.impact} myTeam={myTeam} theirTeam={theirTeam} />
 
       {pkg.rationale && <p className="trade-rationale">{pkg.rationale}</p>}

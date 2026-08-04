@@ -57,7 +57,11 @@ export type TradePackage = {
   confidence?: {
     tier: "recommended" | "measured" | "inspiration";
     archMatch: number; // 0-1
+    /** Why it is only an idea, in plain words. Absent when it isn't. */
+    note?: string;
   };
+  /** League rank of the best asset in the deal. Signal, not a gate. */
+  headlineRank?: number;
   rationale: string;
   // The exact prompt sent to Haiku to write `rationale`. Optional: responses
   // from an older API deploy won't have it.

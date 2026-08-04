@@ -1358,18 +1358,7 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
     }
     return true;
   };
-  const headlineOk = (c) => {
-    if (forced || (opts.mustGive?.length ?? 0) > 0 || (opts.mustReceive?.length ?? 0) > 0) {
-      return true;
-    }
-    let best = 0;
-    for (const a of [...c.give, ...c.receive]) best = Math.max(best, assetValue(a));
-    const rank = overallRankOf(best, averages);
-    return rank == null || rank <= MIN_HEADLINE_RANK;
-  };
-  const shapeFilter = (cands) => cands.filter(
-    (c) => sideOk(c.give) && sideOk(c.receive) && lateralSwapOk(c.give, c.receive) && headlineOk(c)
-  );
+  const shapeFilter = (cands) => cands.filter((c) => sideOk(c.give) && sideOk(c.receive) && lateralSwapOk(c.give, c.receive));
   let degraded;
   const generated = shapeFilter(generators.flatMap((g) => g(ctx)));
   const mustGive = opts.mustGive ?? [];
@@ -1522,7 +1511,13 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
         theirFit: s.theirFit,
         balance: s.balance,
         archMatch: s.archMatch
-      }
+      },
+      ...(() => {
+        let best = 0;
+        for (const a of [...s.give, ...s.receive]) best = Math.max(best, assetValue(a));
+        const rank = overallRankOf(best, averages);
+        return rank == null ? {} : { headlineRank: rank };
+      })()
     };
   });
   const diagnostics = {
@@ -1549,13 +1544,30 @@ function sanitizeRationale(text) {
   return text.replace(/^#{1,6}[^\n]*$/gm, "").replace(/\*\*/g, "").replace(/\s*[—–]\s*/g, ", ").trim();
 }
 function isWeakMatch(pkg, diagnostics) {
-  return diagnostics?.degraded != null || diagnostics?.myArchetypeScore != null && diagnostics.myArchetypeScore < 30;
+  return diagnostics?.degraded != null || diagnostics?.myArchetypeScore != null && diagnostics.myArchetypeScore < 30 || isAllBenchPieces(pkg);
+}
+function isAllBenchPieces(pkg) {
+  return pkg.headlineRank != null && pkg.headlineRank > MIN_HEADLINE_RANK;
+}
+function weakReason(pkg, diagnostics) {
+  if (isAllBenchPieces(pkg)) {
+    return `Nobody in this deal ranks inside the league's top ${MIN_HEADLINE_RANK}. The pieces fit each other, but none of them is worth much on its own.`;
+  }
+  if (diagnostics?.myArchetypeScore != null && diagnostics.myArchetypeScore < 30) {
+    return "This roster does not really fit the shape you asked for, so this is the closest thing available rather than a natural move.";
+  }
+  if (diagnostics?.degraded != null) {
+    return "Nothing cleared the usual quality bar for this roster, so these are the closest options rather than recommendations.";
+  }
+  return null;
 }
 function confidenceForPackage(pkg, diagnostics) {
   const archMatch = pkg.scores?.archMatch ?? 0;
+  const note = weakReason(pkg, diagnostics);
   return {
     tier: confidenceTier(pkg.scores?.total ?? 0, isWeakMatch(pkg, diagnostics)),
-    archMatch
+    archMatch,
+    ...note ? { note } : {}
   };
 }
 function buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics) {

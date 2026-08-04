@@ -92,6 +92,18 @@ export type TradePackage = {
     balance: number;
     archMatch: number;
   };
+  // League rank of the best asset in the deal, either side. A SIGNAL, not a
+  // gate: every other check in this engine is relative (the sides against each
+  // other, each piece against its own side, the incoming player against the
+  // outgoing one), so a deal made entirely of bench pieces passes all of them
+  // at once and nothing ever asked whether the players were any good.
+  //
+  // This was briefly a hard filter that deleted those packages. That was the
+  // wrong shape for this product: the point is to find a signal and then be
+  // honest about whether it is there, not to hide what the data found. A deal
+  // where nobody is any good should still appear, saying so. Null when the
+  // league pool cannot be resolved.
+  headlineRank?: number;
   // Trade-effective totals: raw sums after per-side bundle decay and the
   // cross-side best-asset premium. These, not valueGive/valueReceive, are what
   // `balance` is judged on, so showing only the raw sums made a package the
@@ -101,7 +113,7 @@ export type TradePackage = {
   adjValueReceive: number;
   // How strongly this is a recommendation versus an idea worth a look. Set by
   // api/trades/find.ts, which owns the diagnostics the tier depends on.
-  confidence?: { tier: ConfidenceTier; archMatch: number };
+  confidence?: { tier: ConfidenceTier; archMatch: number; note?: string };
   rationale: string;
   // The exact prompt sent to Haiku to write `rationale`, echoed back so the UI
   // can show what the model was actually asked. Filled in by api/trades/find.ts.
@@ -1664,32 +1676,8 @@ export function generatePackages(
     }
     return true;
   };
-  // Absolute quality floor. Every other check in this engine is relative, so a
-  // package of nobodies passes all of them at once: the sides balance against
-  // each other, each piece clears a share of its own side, the consolidation
-  // beats the best outgoing piece, and the fit deltas are positive because
-  // terrible upgraded to slightly-less-terrible is still an upgrade. Nothing
-  // asked whether the players were any good. "It's a bunch of back ups for back
-  // ups."
-  //
-  // Exempt whenever the user asked for something SPECIFIC: a forced archetype,
-  // or a named asset. Both are explicit intent, and the honest answer to "show
-  // me trades for my WR5" is the trades that exist, not a blank page. Dropped
-  // asset-scoped searches from 64/64 to 61/64 before this exemption, and the
-  // three it lost were exactly the lowest-value players anyone would scope to.
-  const headlineOk = (c: Candidate): boolean => {
-    if (forced || (opts.mustGive?.length ?? 0) > 0 || (opts.mustReceive?.length ?? 0) > 0) {
-      return true;
-    }
-    let best = 0;
-    for (const a of [...c.give, ...c.receive]) best = Math.max(best, assetValue(a));
-    const rank = overallRankOf(best, averages);
-    return rank == null || rank <= MIN_HEADLINE_RANK;
-  };
   const shapeFilter = (cands: Candidate[]) =>
-    cands.filter(
-      (c) => sideOk(c.give) && sideOk(c.receive) && lateralSwapOk(c.give, c.receive) && headlineOk(c),
-    );
+    cands.filter((c) => sideOk(c.give) && sideOk(c.receive) && lateralSwapOk(c.give, c.receive));
 
   let degraded: GenerateDiagnostics["degraded"];
   const generated = shapeFilter(generators.flatMap((g) => g(ctx)));
@@ -1925,6 +1913,12 @@ export function generatePackages(
         balance: s.balance,
         archMatch: s.archMatch,
       },
+      ...(() => {
+        let best = 0;
+        for (const a of [...s.give, ...s.receive]) best = Math.max(best, assetValue(a));
+        const rank = overallRankOf(best, averages);
+        return rank == null ? {} : { headlineRank: rank };
+      })(),
     };
   });
 

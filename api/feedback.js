@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "fdec63255448";
+var ALGO_FINGERPRINT_BUILD = "1650f710baf0";
 var SCOUT_FINGERPRINT_BUILD = "8a16d2504d13";
 
 // src/algo/version.ts
@@ -46,6 +46,21 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.31",
+    algo: "Shotgun",
+    algoFingerprint: "1650f710baf0",
+    date: "2026-08-04",
+    title: "Trades tell you when nobody in them is any good, instead of disappearing",
+    changes: [
+      "Last release started hiding trades where none of the players were worth much. That was the wrong call and it is reversed. You get the trade, and it tells you why it is only an idea.",
+      `The badge already said INSPIRATION on those, which is true and useless: "this roster doesn't suit that shape" and "none of these players is worth much" are completely different problems, and you had no way to tell which one you were looking at. Each of those now says so in a line under the card.`,
+      "The check itself is unchanged: does anything in the deal rank inside the league's top 100. It just labels now instead of deleting. Six of eighty suggestions carry it, and you can see all six.",
+      "Searching for trades involving a specific player never hides anything either. If the only deals available for your WR5 are unexciting, you should see them, labelled, rather than an empty page."
+    ],
+    knownIssues: []
+  },
   {
     branch: "daniels",
     release: "1.30",

@@ -10,6 +10,7 @@
 // Editing the prompt moves the hash, so feedback stays attributable to the
 // wording that produced it.
 
+import { MIN_HEADLINE_RANK } from "../../src/algo/constants";
 import { fairnessText } from "../../src/algo/fairness";
 import type { TeamProfile } from "../../src/algo/types";
 import { confidenceTier, type TradePackage } from "./tradeEngine";
@@ -78,8 +79,39 @@ function isWeakMatch(
 ): boolean {
   return (
     diagnostics?.degraded != null ||
-    (diagnostics?.myArchetypeScore != null && diagnostics.myArchetypeScore < 30)
+    (diagnostics?.myArchetypeScore != null && diagnostics.myArchetypeScore < 30) ||
+    isAllBenchPieces(pkg)
   );
+}
+
+/** Nobody in the deal ranks inside the league's top MIN_HEADLINE_RANK. */
+function isAllBenchPieces(pkg: Omit<TradePackage, "rationale">): boolean {
+  return pkg.headlineRank != null && pkg.headlineRank > MIN_HEADLINE_RANK;
+}
+
+/**
+ * Why this package is only an idea, in plain words, or null when it is not.
+ *
+ * The INSPIRATION badge already says "closest package available", which is true
+ * but says nothing about WHICH thing is weak. A user who has been told a deal
+ * is a stretch still has to work out why, and the two reasons are completely
+ * different problems: one means the shape does not suit this roster, the other
+ * means the players are not worth trading for at all.
+ */
+export function weakReason(
+  pkg: Omit<TradePackage, "rationale">,
+  diagnostics?: { degraded?: string; myArchetypeScore?: number },
+): string | null {
+  if (isAllBenchPieces(pkg)) {
+    return `Nobody in this deal ranks inside the league's top ${MIN_HEADLINE_RANK}. The pieces fit each other, but none of them is worth much on its own.`;
+  }
+  if (diagnostics?.myArchetypeScore != null && diagnostics.myArchetypeScore < 30) {
+    return "This roster does not really fit the shape you asked for, so this is the closest thing available rather than a natural move.";
+  }
+  if (diagnostics?.degraded != null) {
+    return "Nothing cleared the usual quality bar for this roster, so these are the closest options rather than recommendations.";
+  }
+  return null;
 }
 
 // The badge the UI shows, from the same inputs the prompt stance uses.
@@ -88,9 +120,11 @@ export function confidenceForPackage(
   diagnostics?: { degraded?: string; myArchetypeScore?: number },
 ): NonNullable<TradePackage["confidence"]> {
   const archMatch = pkg.scores?.archMatch ?? 0;
+  const note = weakReason(pkg, diagnostics);
   return {
     tier: confidenceTier(pkg.scores?.total ?? 0, isWeakMatch(pkg, diagnostics)),
     archMatch,
+    ...(note ? { note } : {}),
   };
 }
 
