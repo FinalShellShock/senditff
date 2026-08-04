@@ -48,6 +48,24 @@ function currentRelease() {
 var PATCH_NOTES = [
   {
     branch: "daniels",
+    release: "1.25",
+    algo: "Shotgun",
+    algoFingerprint: "66d9bdc652c8",
+    date: "2026-08-04",
+    title: "A new way to read your window that owes nothing to age",
+    changes: [
+      "New UNBANKED VALUE panel in TEAM STATE. FantasyCalc prices every player twice: what the rights to him are worth long term, and what he is worth this season. The gap between those is the market telling you how much of him you have not been paid for yet, and it is priced player by player rather than read off an age curve.",
+      "Your number is the share of everything you own that is still owed to you. Draft picks count in full, because a pick cannot score a point this season, so a team sitting on picks reads as holding a lot of unrealised value. Rightly.",
+      "Your starting lineup gets its own reading, and it can go negative. Negative means your lineup out-produces its own long-term price, which is what a contending roster looks like: that value is banked, not pending.",
+      "This is a second opinion, not a replacement. It is not wired into any score, badge or trade suggestion. Across the test league it agrees with the existing window reading only about 60% of the time, and the disagreements are the interesting part: one roster has the fifth oldest starting lineup in the league and the second most unrealised one at the same time, which the age curve has no way to express."
+    ],
+    knownIssues: [
+      "The trade calculator still needs a proper layout pass. It was built before the impact panel, the fairness badge and the player filters existed, and has never been reorganised around them.",
+      "A package can pass every rule and still not be worth making, because nothing yet measures whether the players involved are any good in absolute terms."
+    ]
+  },
+  {
+    branch: "daniels",
     release: "1.24",
     algo: "Shotgun",
     algoFingerprint: "66d9bdc652c8",

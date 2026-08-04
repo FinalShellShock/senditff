@@ -36,6 +36,7 @@ import {
 import type {
   ClassifyEvidence,
   LeagueFormat,
+  Pick,
   Player,
   Position,
   SubClassification,
@@ -502,6 +503,138 @@ function PositionTable({ me, format }: { me: TeamProfile; format: LeagueFormat }
   );
 }
 
+// UNBANKED VALUE: how much of a roster the market has not yet been paid for.
+//
+// FantasyCalc publishes a dynasty value and a redraft value for the same
+// player. Dynasty is what the right to him is worth; redraft is what he is
+// worth THIS season. The gap is the market's own statement of how much of his
+// value is still in front of him, and unlike our aging curve it is priced per
+// player rather than read off a curve by age.
+//
+//   unbanked = 1 - redraft / dynasty
+//
+// Written that way round on purpose. The first attempt used dynasty/redraft,
+// which divides by a number that goes to nearly zero for a stashed rookie: one
+// bench read 162.3 and two read 0.00. Dividing by dynasty keeps it bounded and
+// makes it a percentage anyone can read. Measured across this league it lands
+// between 9% and 81% at roster level.
+//
+// NEGATIVE is meaningful and worth reading twice: it means the lineup produces
+// MORE this season than its dynasty price implies. Value already banked, not
+// still owed. Contending lineups sit there.
+//
+// This is deliberately NOT wired into any score. It sits beside the window
+// report as a second reading, because the two only agree at Spearman 0.60 and
+// the disagreements look real: a roster can hold the 5th oldest lineup in the
+// league and the 2nd most unrealised one at the same time, which the aging
+// curve has no way to say.
+// Picks fold in for free and are the cleanest case in the whole idea: a pick
+// carries dynasty value and cannot score a point this season, so it is 100%
+// unbanked by construction. Nothing has to be assumed about it.
+//
+// That also gives a continuous reading where `pickCapital.flag` only has three
+// settings, and the flag turns out to be too coarse to trust: across this
+// league NEUTRAL covers everything from 9% to 47% of assets held in picks, so
+// it separates FustinJerguson (PICK_RICH, 49%) from Numlckr (NEUTRAL, 47%)
+// while calling Numlckr the same as a team with 9%.
+function unbankedShare(players: Player[], picks: Pick[] = []): number | null {
+  let dyn = 0;
+  let red = 0;
+  for (const p of players) {
+    if (!p.valueDynasty) continue;
+    dyn += p.valueDynasty;
+    red += p.valueRedraft ?? 0;
+  }
+  for (const k of picks) dyn += k.value || 0; // redraft contribution is zero
+  return dyn > 0 ? 1 - red / dyn : null;
+}
+
+function UnbankedReport({
+  me,
+  league,
+  format,
+}: {
+  me: TeamProfile;
+  league: TeamProfile[];
+  format: LeagueFormat;
+}) {
+  const startersOf = (t: TeamProfile): Player[] => {
+    const { starters } = fillStarters(t.players, format);
+    return POSITIONS.flatMap((p) => starters[p]);
+  };
+
+  const rows = league
+    .map((t) => ({
+      rosterId: t.rosterId,
+      ownerName: t.ownerName,
+      roster: unbankedShare(t.players, t.picks),
+      starters: unbankedShare(startersOf(t)),
+      pickShare:
+        t.picks.reduce((s, k) => s + (k.value || 0), 0) /
+        Math.max(
+          1,
+          t.players.reduce((s, x) => s + (x.valueDynasty || 0), 0) +
+            t.picks.reduce((s, k) => s + (k.value || 0), 0),
+        ),
+    }))
+    .filter((r): r is typeof r & { roster: number; starters: number } =>
+      r.roster != null && r.starters != null,
+    )
+    .sort((a, b) => b.roster - a.roster || a.rosterId - b.rosterId);
+
+  const mine = rows.find((r) => r.rosterId === me.rosterId);
+  if (!mine || rows.length < 2) return null;
+  const rank = rows.findIndex((r) => r.rosterId === me.rosterId) + 1;
+
+  // Left-aligned from zero, like SCORING, rather than diverging from a centre.
+  // The first pass used a signed bar and it was wasted: once picks are counted
+  // every roster in the league is positive (28% to 93% here), so half the track
+  // was dead and the centre line marked an edge nothing ever crossed. The sign
+  // only flips on the STARTERS figure, which is a sentence, not a bar.
+  const span = Math.max(...rows.map((r) => r.roster), 0.05);
+  const pct = (n: number) => `${n < 0 ? "" : "+"}${Math.round(n * 100)}%`;
+
+  return (
+    <div className="state-panel">
+      <div className="state-report-head">
+        <span className="state-report-title">UNBANKED VALUE</span>
+        <span className="state-report-value">
+          {pct(mine.roster)} · #{rank}
+        </span>
+      </div>
+      <p className="state-report-sub">
+        Share of everything you own that has not been paid out yet, from the gap between each
+        player's dynasty and redraft price. Picks count in full, since they cannot score this
+        season, and they are {Math.round(mine.pickShare * 100)}% of your assets. Your starting
+        lineup alone is {pct(mine.starters)}.{" "}
+        {mine.starters < 0
+          ? "Negative means it out-produces its own dynasty price: that value is already banked."
+          : "Higher means more of it is still in front of you."}
+      </p>
+      <div className="state-bars">
+        {rows.map((r) => {
+          const isMe = r.rosterId === me.rosterId;
+          return (
+            <div key={r.rosterId} className={`state-bar-row${isMe ? " state-bar-mine" : ""}`}>
+              <span className="state-bar-name">{r.ownerName}</span>
+              <span className="state-bar-track">
+                <span
+                  className="state-bar-fill"
+                  style={{
+                    width: `${Math.max(0, (r.roster / span) * 100)}%`,
+                    background: isMe ? ACCENT : "rgba(148,163,184,0.30)",
+                  }}
+                />
+              </span>
+              <span className="state-bar-num">{pct(r.roster)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function TeamState({
   me,
   league,
@@ -522,6 +655,7 @@ export default function TeamState({
       <div className="state-grid">
         <Scoring me={me} league={league} />
         <WindowReport me={me} format={format} />
+        <UnbankedReport me={me} league={league} format={format} />
       </div>
       <div className="state-panel">
         <PositionTable me={me} format={format} />
