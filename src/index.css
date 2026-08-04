@@ -4593,3 +4593,26 @@ body {
   font-size: 11px;
   line-height: 1.55;
 }
+
+/* Pivot marker in the patch notes. The only line in a release that says the
+   engine changed its mind rather than got better at the same idea. */
+.patch-pivot {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin: 8px 0 4px;
+  padding: 7px 10px;
+  border-left: 2px solid #f59e0b;
+  background: rgba(245,158,11,0.07);
+  border-radius: 0 3px 3px 0;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #cbd5e1;
+}
+.patch-pivot-tag {
+  color: #f59e0b;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  flex-shrink: 0;
+}

@@ -27,7 +27,8 @@ import {
   SIDEGRADE_PENALTY,
   THEIR_FIT_SATISFIED,
   YOUNG_ASSET_BONUS,
-  YOUNG_ASSET_MAX_AGE,
+  YOUNG_ASSET_MIN_UNBANKED,
+  ROSTER_BUILDING_SHARE,
   STANCE_CAUTION_TOTAL,
   STANCE_CONFIDENT_TOTAL,
   TANK_MAX_PENALTY,
@@ -401,10 +402,58 @@ function isDeclining(p: Player): boolean {
 // fit, so a rebuilding user searching for their own trades was handed aging
 // players with nothing pushing back. Four of the five downvotes were exactly
 // that case.
-function timelinePenalty(team: TeamProfile, receives: Asset[], sends: Asset[]): number {
-  if (team.windowTier !== "LONG") return 0;
+/**
+ * Share of a player the market has already been paid for: redraft over dynasty.
+ *
+ * This replaced `agePressure(age, position) / 100`, and the difference is the
+ * whole point. The curve answered "how much of a typical player at this
+ * position and age is used up". The price answers "how much of THIS player is
+ * used up", and it has already priced everything the curve cannot see:
+ *
+ *   - position development curves. A 23 year old TE and a 23 year old RB are
+ *     not in the same place, and neither are two 23 year old RBs.
+ *   - team situation. A rookie back drafted third overall into a bad offence
+ *     with a committee behind him has low redraft and healthy dynasty, so he
+ *     reads as mostly unspent. The age gate saw "young RB" and stopped there.
+ *   - injury, holdouts, depth charts, everything else in a price.
+ *
+ * It also fixes two measured defects in the curve. agePressure is flat 0 across
+ * 22.0 to 23.8 while the market premium moves 2.47 to 1.80, so the curve had no
+ * resolution exactly where a rebuild cares most. And QB is inverted:
+ * corr(agePressure, dynasty/redraft) is +0.38 for QB against negative for every
+ * other position.
+ *
+ * Clamped, because redraft can exceed dynasty for a pure win-now asset (that is
+ * fully spent, not negatively spent) and can be missing.
+ */
+function spentShare(p: Player): number {
+  if (!p.valueDynasty || p.valueDynasty <= 0) return 0;
+  return Math.max(0, Math.min(1, (p.valueRedraft ?? 0) / p.valueDynasty));
+}
 
-  const spent = (p: Player) => agePressure(effectiveAge(p), p.position) / 100;
+/** The same reading for a whole roster. Picks count as wholly unspent. */
+function rosterUnbankedShare(team: TeamProfile): number {
+  let dyn = 0;
+  let red = 0;
+  for (const p of team.players) {
+    if (!p.valueDynasty) continue;
+    dyn += p.valueDynasty;
+    red += p.valueRedraft ?? 0;
+  }
+  for (const k of team.picks) dyn += k.value || 0;
+  return dyn > 0 ? Math.max(0, Math.min(1, 1 - red / dyn)) : 0;
+}
+
+function timelinePenalty(team: TeamProfile, receives: Asset[], sends: Asset[]): number {
+  // Scaled by how much of this roster is still unbanked, not gated on a window
+  // BUCKET. windowTier === "LONG" was a proxy for "is building", and a team can
+  // have nothing banked because it has been managed badly rather than because
+  // it is deliberately rebuilding. The share says which team this actually is,
+  // continuously, and a contending roster lands near zero on its own.
+  const building = rosterUnbankedShare(team);
+  if (building <= 0) return 0;
+
+  const spent = (p: Player) => spentShare(p);
   const redraft = (assets: Asset[]) =>
     assets.reduce((sum, a) => sum + (a.kind === "player" ? a.player.valueRedraft : 0), 0);
   const aging = (assets: Asset[]) =>
@@ -427,7 +476,10 @@ function timelinePenalty(team: TeamProfile, receives: Asset[], sends: Asset[]): 
 
   const surplus = Math.max(0, remaining(receives) - remaining(sends));
   const offset = Math.min(cost, surplus / TANK_SURPLUS_SCALE);
-  return -(cost - offset);
+  // Scaled by how much of this roster is still ahead of it. Previously this was
+  // all-or-nothing on windowTier, so a team one point over the LONG threshold
+  // paid the full charge and a team one point under paid none.
+  return -(cost - offset) * building;
 }
 
 // Overall dynasty ranking, merged across positions and cached per context.
@@ -520,12 +572,28 @@ function bestPlayerEdge(
 // team trying to win now has no use for it. Symmetric in the sense that
 // acquiring a deep flier gets the same size discount that fringe gets as a
 // credit, because "young" alone was the thing that misled.
+// The fringe bet, now keyed on unbanked value rather than on a birthday.
+//
+// The study behind this measured "young (25 and under) and ranked 61-100 gains
+// 30 to 35 places, two in three beating drift". That was one study, and the age
+// half of it is a proxy for the thing that actually drives the gain: the market
+// has priced this player for later rather than now, and later has not arrived.
+// Unbanked share measures that directly, and carries the variables the study
+// never separated out. Position development curves, where TE and WR take longer
+// to arrive than RB. Team situation, where a back drafted third overall into a
+// bad offence with a committee reads as mostly unspent because he is.
+//
+// Honest about the trade: this discards the measured half of a measured finding
+// in favour of a better-reasoned but UNMEASURED one. The outcome corpus in
+// scripts/research/ carries no redraft values, so this cannot be backtested on
+// it. Dated snapshots have been accumulating since 2026-07-25 and are the way
+// to settle it later.
 function youngAssetQuality(team: TeamProfile, receives: Asset[], averages: LeagueAverages): number {
-  if (team.windowTier !== "LONG") return 0;
+  if (rosterUnbankedShare(team) < ROSTER_BUILDING_SHARE) return 0;
   let score = 0;
   for (const a of receives) {
     if (a.kind !== "player") continue;
-    if ((a.player.age ?? 99) > YOUNG_ASSET_MAX_AGE) continue;
+    if (1 - spentShare(a.player) < YOUNG_ASSET_MIN_UNBANKED) continue;
     const rank = overallRankOf(a.player.valueDynasty, averages);
     if (rank == null) continue;
     if (rank >= FRINGE_RANK_MIN && rank <= FRINGE_RANK_MAX) score += YOUNG_ASSET_BONUS;

@@ -73,6 +73,15 @@ function UpdatesBody() {
               One engine spans many branches, so it is reported rather than
               used as the version number. */}
           <div className="patch-release-algo dim-text">{note.algo} engine</div>
+          {/* Pivots are the only thing in these notes that says "we changed our
+              mind", as opposed to "we did more work". Marked so you can find
+              them by scrolling rather than by reading every entry. */}
+          {note.pivot && (
+            <div className="patch-pivot">
+              <span className="patch-pivot-tag">PIVOT</span>
+              <span>{note.pivot}</span>
+            </div>
+          )}
 
           <div className="patch-release-heading">What changed</div>
           <ul className="patch-release-list">

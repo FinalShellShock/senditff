@@ -56,6 +56,19 @@ export type PatchNote = {
   date: string;
   /** One line on the theme of the release. */
   title: string;
+  /**
+   * Set ONLY when this release changed what the engine BELIEVES, which is also
+   * the only thing that changes the formation name and the major version.
+   *
+   * The bar is deliberately high. Adding a scoring term, retuning a threshold,
+   * fixing a bug or adding a generator is the engine getting better at the same
+   * belief, and gets nothing. A change to what a core quantity MEANS gets this.
+   *
+   * It exists because the first 34 releases were all called "Shotgun" while the
+   * engine changed on 23 of them, so neither the name nor the number told you
+   * when anything actually turned.
+   */
+  pivot?: string;
   changes: string[];
   knownIssues: string[];
 };
@@ -69,6 +82,26 @@ export function currentRelease(): string {
 }
 
 export const PATCH_NOTES: PatchNote[] = [
+  {
+    branch: "daniels",
+    release: "2.0",
+    algo: "Pistol",
+    algoFingerprint: "746028c4a43d",
+    date: "2026-08-04",
+    title: "The engine stops guessing a player's future from his birthday",
+    pivot: "How much future an asset has is now read from the market's own price (dynasty against redraft) instead of from our aging curve. First formation change since Shotgun.",
+    changes: [
+      "Until now the engine worked out how much of a player was still ahead of him from his age and position, using curves built from twenty five years of NFL data. That is a good model of a typical player at that age. It is not a model of a specific one.",
+      "It now reads the market instead. FantasyCalc prices every player twice, once for what he is worth long term and once for what he is worth this season, and the gap between those two numbers is the market saying how much of him is still to come. That figure already contains everything the age curve could not know: that tight ends and receivers take longer to arrive than running backs, that a rookie drafted third overall into a bad offence with a committee behind him is going to take a year, that a player is hurt, or buried, or about to break out.",
+      "The practical difference shows up on teams the old model misread. One roster in the test league reads as a short window by age, but 62% of its value has not been paid out yet. The old rule charged it nothing for taking on win-now production; the new one charges it more than four teams the old rule called rebuilds.",
+      "Rebuilding is no longer a yes or no. It is how much of your roster is still ahead of you, so a team sitting at 42% is treated as 42% of the way there rather than being lumped in with a team at 92% or excluded entirely.",
+      "This is a genuine change of mind, not a tuning pass, so it gets a new engine name and a new major version. Everything from here reports Pistol. Anything you see labelled Shotgun came from the old model.",
+      "Being straight about the cost: the old age rule had one study behind it and this does not, because the research data has no redraft prices to test against. It is better reasoned rather than better measured. Daily price history has been kept since 25 July and is what will eventually settle it.",
+    ],
+    knownIssues: [
+      "The unbanked reading is not purely about time left. A player who is injured or stuck behind someone also reads as having a lot still to come, because in price terms he does.",
+    ],
+  },
   {
     branch: "daniels",
     release: "1.32",

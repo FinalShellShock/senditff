@@ -2,10 +2,11 @@
 // the engine that produced it.
 
 // Friendly label, for reading feedback at a glance.
-// Formation lineage: Pro Set -> Spread -> Audible -> West Coast -> Shotgun.
+// Formation lineage: Pro Set -> Spread -> Audible -> West Coast -> Shotgun
+// -> Pistol.
 // Rename this whenever a new formation starts. Nothing depends on you
 // remembering to: attribution is handled by the fingerprint below.
-export const ALGO_VERSION = "shotgun";
+export const ALGO_VERSION = "pistol";
 
 // Content hash of every file that decides which trades get suggested, written
 // to src/algoFingerprint.generated.ts by scripts/build-api.mjs. It changes by

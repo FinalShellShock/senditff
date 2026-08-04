@@ -54,32 +54,65 @@ senditff/
   formation engine it runs. One engine spans many branches. "Shotgun 1.4" was
   briefly used as a release label and was wrong on both counts.
 
-### Versioning: release = `<branch> <major>.<minor>`
+### Versioning: release = `<branch> <major>.<minor>`, running an `algo`
 
-Three independent axes. Don't collapse them.
+Three axes. They are NOT independent: two of them are now tied together on
+purpose, because when they were independent one of them never moved.
 
 | Axis | Example | Changes when |
 |------|---------|--------------|
-| **Branch** | `daniels` | A paradigm shift |
-| **Release** | `1.2` | Every deploy users would notice |
-| **Algo** (`ALGO_VERSION`) | `Shotgun` | The scoring engine is rewritten |
+| **Branch** | `daniels` | A paradigm shift: new data model, different product shape |
+| **Algo** (`ALGO_VERSION`) | `Pistol` | The engine changes **what it believes** |
+| **Release** | `2.3` | Major = the algo generation. Minor = every deploy users notice |
 
-So a release reads `daniels 1.2`, running the `Shotgun` engine. One engine
-spans many branches; one branch spans many releases.
+**The algo name is the pivot marker, and the major version follows it.** Every
+release running Pistol is `2.x`. When the formation changes, major bumps and
+minor resets. So `daniels 2.0` says, by itself, that something fundamental
+turned, and `1.31` and `1.32` say they did not.
+
+#### What earns a new formation
+
+Only a change to **what the engine believes**, never a change to how well it
+executes the same belief. The bar is high on purpose.
+
+NOT a formation change, however much work it was:
+- adding or removing a scoring term (`sidegradePenalty`, `benchedValuePenalty`)
+- retuning a threshold or a gate
+- a new generator, or merging two of them
+- fixing a bug, however bad
+- anything in `src/pages/`
+
+A formation change is when a core quantity starts **meaning** something else:
+- `Shotgun -> Pistol`: how much future an asset has stopped being read off our
+  aging curve and started being read off the market's dynasty/redraft spread.
+
+#### Why this rule exists
+
+The first 34 releases were all called "Shotgun" while the fingerprint shows the
+engine actually changed on **23** of them. Neither the name nor the number ever
+told anyone when something turned, so the release number was a counter wearing a
+version's clothes. Johnny, reading the notes: "daniels 1.32 does nothing for me
+because I don't remember what we changed from 1.26."
+
+Feedback carries `algoVersion`, so a name that never changes makes every entry
+look like it came from the same engine. Now it segments.
+
+#### Marking it in the notes
+
+A release that changes the formation MUST set `pivot` on its patch note: one
+line on what the engine now believes that it did not before. Releases that do
+not change the formation must NOT set it. It is the one field in the notes that
+says "we changed our mind" rather than "we did more work", and it is worthless
+if it appears on ordinary work.
 
 **Cut a new BRANCH on a paradigm shift**, not on volume of work: a new data
 model, a rewritten scoring approach, a different product shape, or anything
 where the old branch name stops describing what the code is. Refactors, new
-pages, tuning, and bug fixes are point releases, however many of them there
-are.
-
-**Bump the release on every deploy** that users would notice. Minor for
-ordinary work, major for something big that still fits the branch's paradigm.
-Every such deploy adds an entry to `src/data/patchNotes.ts`.
+pages, tuning, and bug fixes are point releases, however many of them there are.
 
 Pick the player surname for mnemonic value where you can. `daniels` is the
-release where Jayden Daniels plus Mahomes stopped grading as a CRITICAL need
-at QB, so the name recalls the work.
+release where Jayden Daniels plus Mahomes stopped grading as a CRITICAL need at
+QB, so the name recalls the work.
 
 ### Patch notes: `knownIssues` is not filler
 

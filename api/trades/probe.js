@@ -76,7 +76,8 @@ var ACQUIRED_QUALITY_BONUS = [
 ];
 var FRINGE_RANK_MIN = 61;
 var FRINGE_RANK_MAX = 100;
-var YOUNG_ASSET_MAX_AGE = 25;
+var YOUNG_ASSET_MIN_UNBANKED = 0.4;
+var ROSTER_BUILDING_SHARE = 0.35;
 var YOUNG_ASSET_BONUS = 0.05;
 var SHAPE_FIT_BY_COMPETITIVENESS = {
   STRONG: 0.06,
@@ -545,9 +546,25 @@ function isAging(p) {
 function isDeclining(p) {
   return playerLossRate(p) >= DECLINING_LOSS_RATE[p.position];
 }
+function spentShare(p) {
+  if (!p.valueDynasty || p.valueDynasty <= 0) return 0;
+  return Math.max(0, Math.min(1, (p.valueRedraft ?? 0) / p.valueDynasty));
+}
+function rosterUnbankedShare(team) {
+  let dyn = 0;
+  let red = 0;
+  for (const p of team.players) {
+    if (!p.valueDynasty) continue;
+    dyn += p.valueDynasty;
+    red += p.valueRedraft ?? 0;
+  }
+  for (const k of team.picks) dyn += k.value || 0;
+  return dyn > 0 ? Math.max(0, Math.min(1, 1 - red / dyn)) : 0;
+}
 function timelinePenalty(team, receives, sends) {
-  if (team.windowTier !== "LONG") return 0;
-  const spent = (p) => agePressure(effectiveAge(p), p.position) / 100;
+  const building = rosterUnbankedShare(team);
+  if (building <= 0) return 0;
+  const spent = (p) => spentShare(p);
   const redraft = (assets) => assets.reduce((sum, a) => sum + (a.kind === "player" ? a.player.valueRedraft : 0), 0);
   const aging = (assets) => assets.reduce((sum, a) => sum + (a.kind === "player" ? assetValue(a) * spent(a.player) : 0), 0);
   const remaining = (assets) => assets.reduce(
@@ -562,7 +579,7 @@ function timelinePenalty(team, receives, sends) {
   if (cost <= 0) return 0;
   const surplus = Math.max(0, remaining(receives) - remaining(sends));
   const offset = Math.min(cost, surplus / TANK_SURPLUS_SCALE);
-  return -(cost - offset);
+  return -(cost - offset) * building;
 }
 var overallCache = null;
 function isStartableInLeague(p, averages) {
@@ -620,11 +637,11 @@ function bestPlayerEdge(receives, gives, averages) {
   return adj;
 }
 function youngAssetQuality(team, receives, averages) {
-  if (team.windowTier !== "LONG") return 0;
+  if (rosterUnbankedShare(team) < ROSTER_BUILDING_SHARE) return 0;
   let score = 0;
   for (const a of receives) {
     if (a.kind !== "player") continue;
-    if ((a.player.age ?? 99) > YOUNG_ASSET_MAX_AGE) continue;
+    if (1 - spentShare(a.player) < YOUNG_ASSET_MIN_UNBANKED) continue;
     const rank = overallRankOf(a.player.valueDynasty, averages);
     if (rank == null) continue;
     if (rank >= FRINGE_RANK_MIN && rank <= FRINGE_RANK_MAX) score += YOUNG_ASSET_BONUS;
@@ -673,7 +690,7 @@ function shapeFitAdjustment(team, give, receive) {
 }
 function ageArbDiscountOk(archetype, give, receive, adjGive, adjReceive) {
   if (!archetype.startsWith("age_arb_buy")) return true;
-  const spentShare = (assets) => {
+  const spentShare2 = (assets) => {
     let value = 0;
     let spent = 0;
     for (const a of assets) {
@@ -683,7 +700,7 @@ function ageArbDiscountOk(archetype, give, receive, adjGive, adjReceive) {
     }
     return value > 0 ? spent / value : 0;
   };
-  if (spentShare(receive) <= spentShare(give)) return true;
+  if (spentShare2(receive) <= spentShare2(give)) return true;
   return adjReceive >= adjGive * (1 + AGE_ARB_MIN_DISCOUNT);
 }
 function lateralSwapOk(give, receive) {

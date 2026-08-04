@@ -34,11 +34,11 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "19ddbc5e248b";
+var ALGO_FINGERPRINT_BUILD = "746028c4a43d";
 var SCOUT_FINGERPRINT_BUILD = "8a16d2504d13";
 
 // src/algo/version.ts
-var ALGO_VERSION = "shotgun";
+var ALGO_VERSION = "pistol";
 
 // src/data/patchNotes.ts
 function currentRelease() {
@@ -46,6 +46,26 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "2.0",
+    algo: "Pistol",
+    algoFingerprint: "746028c4a43d",
+    date: "2026-08-04",
+    title: "The engine stops guessing a player's future from his birthday",
+    pivot: "How much future an asset has is now read from the market's own price (dynasty against redraft) instead of from our aging curve. First formation change since Shotgun.",
+    changes: [
+      "Until now the engine worked out how much of a player was still ahead of him from his age and position, using curves built from twenty five years of NFL data. That is a good model of a typical player at that age. It is not a model of a specific one.",
+      "It now reads the market instead. FantasyCalc prices every player twice, once for what he is worth long term and once for what he is worth this season, and the gap between those two numbers is the market saying how much of him is still to come. That figure already contains everything the age curve could not know: that tight ends and receivers take longer to arrive than running backs, that a rookie drafted third overall into a bad offence with a committee behind him is going to take a year, that a player is hurt, or buried, or about to break out.",
+      "The practical difference shows up on teams the old model misread. One roster in the test league reads as a short window by age, but 62% of its value has not been paid out yet. The old rule charged it nothing for taking on win-now production; the new one charges it more than four teams the old rule called rebuilds.",
+      "Rebuilding is no longer a yes or no. It is how much of your roster is still ahead of you, so a team sitting at 42% is treated as 42% of the way there rather than being lumped in with a team at 92% or excluded entirely.",
+      "This is a genuine change of mind, not a tuning pass, so it gets a new engine name and a new major version. Everything from here reports Pistol. Anything you see labelled Shotgun came from the old model.",
+      "Being straight about the cost: the old age rule had one study behind it and this does not, because the research data has no redraft prices to test against. It is better reasoned rather than better measured. Daily price history has been kept since 25 July and is what will eventually settle it."
+    ],
+    knownIssues: [
+      "The unbanked reading is not purely about time left. A player who is injured or stuck behind someone also reads as having a lot still to come, because in price terms he does."
+    ]
+  },
   {
     branch: "daniels",
     release: "1.32",

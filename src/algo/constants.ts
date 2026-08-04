@@ -293,7 +293,19 @@ export const ACQUIRED_QUALITY_BONUS: Array<{ maxRank: number; bonus: number }> =
 // the band is roughly 1,970-3,150 but that number means nothing in superflex.
 export const FRINGE_RANK_MIN = 61;
 export const FRINGE_RANK_MAX = 100;
-export const YOUNG_ASSET_MAX_AGE = 25;
+// Replaced YOUNG_ASSET_MAX_AGE = 25. A player counts as "still ahead of him"
+// when the market has been paid for less than 60% of him.
+//
+// Calibrated off the observed spread: in the WR 3,000-4,200 band the 22 to 23
+// year olds sit at 44-60% unbanked while the 26 and older sit at 0-4%, so 0.40
+// separates the two groups with room on both sides and without landing on
+// anyone's exact figure.
+export const YOUNG_ASSET_MIN_UNBANKED = 0.40;
+
+// A roster counts as building when this much of it is still unbanked. Replaces
+// gating on windowTier === "LONG", which was a bucket standing in for the same
+// question and could not tell a deliberate rebuild from a badly managed roster.
+export const ROSTER_BUILDING_SHARE = 0.35;
 export const YOUNG_ASSET_BONUS = 0.05;
 
 // Contention weighting for consolidate and tier_down, MEASURED rather than
