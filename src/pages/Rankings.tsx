@@ -47,6 +47,21 @@ export default function Rankings() {
     return r;
   }, [pool]);
 
+  // Rank within his own position: WR5, QB3. Same rule as the overall rank, off
+  // the full pool, so filtering to WRs does not renumber anyone. The pool is
+  // already value-sorted, so a running counter per position is the ranking.
+  const posRanked = useMemo(() => {
+    const seen = new Map<string, number>();
+    const r = new Map<string, string>();
+    for (const a of pool) {
+      if (a.kind !== "player" || !a.position) continue;
+      const n = (seen.get(a.position) ?? 0) + 1;
+      seen.set(a.position, n);
+      r.set(a.id, `${a.position}${n}`);
+    }
+    return r;
+  }, [pool]);
+
   // Redraft value per player id, for the unbanked column. Not on TradeAsset
   // because nothing else needs it.
   const redraft = useMemo(() => {
@@ -92,8 +107,11 @@ export default function Rankings() {
           <span className="rk-rank">#</span>
           <span className="rk-pos" />
           <span className="rk-name">PLAYER</span>
+          <span className="rk-posrank">POS RK</span>
           <span className="rk-owner">OWNER</span>
-          <span className="rk-num">AGE</span>
+          {/* rk-dim so the header hides with its cells on a phone. Without it
+              the head kept eight columns while the rows dropped to five. */}
+          <span className="rk-num rk-dim">AGE</span>
           <span className="rk-num">UNBANKED</span>
           <span className="rk-num">VALUE</span>
         </div>
@@ -113,6 +131,9 @@ export default function Rankings() {
                     {a.kind === "pick" ? "PK" : a.position}
                   </span>
                   <span className="rk-name">{a.name}</span>
+                  <span className="rk-posrank" style={{ color: posColor(a.position) }}>
+                    {posRanked.get(a.id) ?? "—"}
+                  </span>
                   <span className="rk-owner">{a.ownerName}</span>
                   <span className="rk-num rk-dim">
                     {a.age != null ? a.age.toFixed(1) : "—"}

@@ -48,6 +48,20 @@ function currentRelease() {
 var PATCH_NOTES = [
   {
     branch: "daniels",
+    release: "1.30",
+    algo: "Shotgun",
+    algoFingerprint: "fdec63255448",
+    date: "2026-08-04",
+    title: "Rankings show where a player sits at his own position",
+    changes: [
+      "The rankings page has a POS RK column: QB1, WR14, RB4. Overall rank tells you what a player is worth, positional rank tells you what he is worth to a lineup, and those are different questions.",
+      "Ranked against the full league pool, so filtering to receivers does not renumber anyone. Your WR14 stays WR14.",
+      'On phones the coloured position badge steps aside for it, since "WR14" already says the position and the rank in the space the badge used for the position alone.'
+    ],
+    knownIssues: []
+  },
+  {
+    branch: "daniels",
     release: "1.29",
     algo: "Shotgun",
     algoFingerprint: "fdec63255448",

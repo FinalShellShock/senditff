@@ -4418,7 +4418,7 @@ body {
 .rankings-head,
 .rankings-row {
   display: grid;
-  grid-template-columns: 34px 26px minmax(0,1fr) 110px 46px 74px 68px;
+  grid-template-columns: 34px 26px minmax(0,1fr) 52px 100px 44px 72px 68px;
   align-items: center;
   gap: 8px;
   padding: 5px 14px;
@@ -4442,6 +4442,9 @@ body {
   padding: 1px 0;
 }
 .rk-name { color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Rank within his own position. Coloured by position, which is also why the
+   badge can drop out on a phone: "WR5" already carries the letters. */
+.rk-posrank { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
 .rk-owner { color: #64748b; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rk-num { text-align: right; font-size: 11px; color: #94a3b8; }
 .rk-dim { color: #475569; }
@@ -4453,8 +4456,10 @@ body {
   /* Owner and age are the first things to go: the ranking, the name, how much
      is still to come and the price are the columns worth the width. */
   .rankings-head,
-  .rankings-row { grid-template-columns: 28px 24px minmax(0,1fr) 60px 62px; gap: 6px; padding: 5px 10px; }
-  .rk-owner, .rk-dim { display: none; }
+  .rankings-row { grid-template-columns: 26px minmax(0,1fr) 46px 52px 58px; gap: 6px; padding: 5px 10px; }
+  /* The colour badge goes, not the positional rank: "WR5" says the position
+     and the rank in the space the badge used for the position alone. */
+  .rk-pos, .rk-owner, .rk-dim { display: none; }
 }
 
 .calc-leverage { margin-top: 24px; }
