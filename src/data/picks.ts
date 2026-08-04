@@ -29,6 +29,12 @@ export function buildPicksMap(
   return map;
 }
 
+// FantasyCalc publishes slotted pick values on a 12 team scale and only a 12
+// team scale: rounds 1-4, exactly 12 slots each, verified against the live
+// feed. Our league's own round.slot label stays as it is; only the VALUE
+// lookup needs translating.
+const FCALC_TEAM_COUNT = 12;
+
 const ROUND_LABELS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"] as const;
 
 // Per-round slot curves parsed from the value map ("YYYY Pick R.SS" entries,
@@ -119,10 +125,33 @@ export function resolvePickValue(
   yearsOut = 0,
 ): number {
   if (typeof slotOrTier === "number") {
+    // Translate OUR league's slot onto FantasyCalc's grid by overall pick
+    // number, because their slotted values are published on a 12 team scale and
+    // nothing else. Verified against the live feed: rounds 1-4, exactly 12
+    // slots each, no 1.13 anywhere.
+    //
+    // Read directly, a 16 team league's 2.09 is the 25th pick overall but was
+    // being priced as their 2.09 (1,425) instead of their 3.01 (1,247), a 14%
+    // overvalue. Reported as "this is a 16 team league. Is 2.09 value taken
+    // from fantasycalc directly? If so they probably base it's value off 12
+    // team leagues and we should bake in a way to recalculate that."
+    //
+    // Rounds 1.13 to 1.16 were worse: they matched no key at all and silently
+    // fell through to the fuzzy generic-plus-tier path below, so one round
+    // carried exact values for its first 12 picks and estimates for the rest.
+    //
+    // Identity for a 12 team league, so nothing moves for a standard format.
+    const overall = (round - 1) * teamCount + slotOrTier;
+    const fcRound = Math.floor((overall - 1) / FCALC_TEAM_COUNT) + 1;
+    const fcSlot = ((overall - 1) % FCALC_TEAM_COUNT) + 1;
     const exact = dynastyValues.get(
-      normName(`${year} Pick ${round}.${String(slotOrTier).padStart(2, "0")}`),
+      normName(`${year} Pick ${fcRound}.${String(fcSlot).padStart(2, "0")}`),
     );
     if (exact) return exact.value;
+    // Past their published depth (they stop at 4 rounds, so 48 picks) there is
+    // no slotted value to find. A 16 team league runs to 64, so its whole
+    // fourth round lands here and takes the generic path below, as it did
+    // before this mapping existed.
   }
   const tier =
     typeof slotOrTier === "number" ? slotToTier(slotOrTier, teamCount) : slotOrTier;

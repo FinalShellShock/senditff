@@ -836,6 +836,7 @@ function buildPicksMap(rosters, tradedPicks, draftYears, draftRounds) {
   }
   return map;
 }
+var FCALC_TEAM_COUNT = 12;
 var ROUND_LABELS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"];
 var curveCache = /* @__PURE__ */ new WeakMap();
 function slotCurves(dynastyValues) {
@@ -876,8 +877,11 @@ function tierMultiplier(dynastyValues, round, tier) {
 var TIER_CONVICTION_DECAY = 0.65;
 function resolvePickValue(dynastyValues, teamCount, year, round, slotOrTier, yearsOut = 0) {
   if (typeof slotOrTier === "number") {
+    const overall = (round - 1) * teamCount + slotOrTier;
+    const fcRound = Math.floor((overall - 1) / FCALC_TEAM_COUNT) + 1;
+    const fcSlot = (overall - 1) % FCALC_TEAM_COUNT + 1;
     const exact = dynastyValues.get(
-      normName(`${year} Pick ${round}.${String(slotOrTier).padStart(2, "0")}`)
+      normName(`${year} Pick ${fcRound}.${String(fcSlot).padStart(2, "0")}`)
     );
     if (exact) return exact.value;
   }
