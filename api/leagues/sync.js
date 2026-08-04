@@ -592,11 +592,16 @@ function computeAllProfiles(teams, format, thisYear, globalPlayerPools) {
     const playerDyn = t.players.reduce((s, p) => s + (p.valueDynasty || 0), 0);
     return pickDyn / Math.max(1, pickDyn + playerDyn);
   };
+  const median = (xs) => {
+    const s = [...xs].sort((a, b) => a - b);
+    const n = s.length;
+    return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2;
+  };
   const shares = stage1.map(shareOf);
-  const meanShare = shares.reduce((s, v) => s + v, 0) / shares.length;
-  const stdShare = Math.sqrt(shares.reduce((s, v) => s + (v - meanShare) ** 2, 0) / shares.length) || 1;
+  const medianShare = median(shares);
+  const shareScale = 1.4826 * median(shares.map((v) => Math.abs(v - medianShare))) || 1;
   const pickAdjustment = (share) => {
-    const z = (share - meanShare) / stdShare;
+    const z = (share - medianShare) / shareScale;
     const raw = z >= 0 ? -(8 / 1.5) * z : -(12 / 1.5) * z;
     return Math.max(PICK_ADJUSTMENT_BY_FLAG.PICK_RICH, Math.min(PICK_ADJUSTMENT_BY_FLAG.PICK_POOR, raw));
   };

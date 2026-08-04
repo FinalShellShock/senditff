@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "231cb8145742";
+var ALGO_FINGERPRINT_BUILD = "b768314c1638";
 var SCOUT_FINGERPRINT_BUILD = "8a16d2504d13";
 
 // src/algo/version.ts
@@ -46,6 +46,24 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.27",
+    algo: "Shotgun",
+    algoFingerprint: "b768314c1638",
+    date: "2026-08-04",
+    title: "Fixes the gap the last release put through the middle of the window map",
+    changes: [
+      "The pick adjustment shipped in 1.26 compared every team against the league average share of value held in picks. That was the wrong comparison: a couple of teams hoard picks and drag the average above what any normal roster holds, so ten of sixteen teams came out below average and every one of them got pushed toward a shorter window.",
+      "The effect was a hole in the middle of the window map. The middle tier went from three teams to one, and both leagues showed a visible divide with nobody in it.",
+      "It now compares each team against the MEDIAN, which is what a typical roster actually holds, so a typical roster gets no adjustment at all. That is what the old three-way label did for everyone in the middle, and it was the part worth keeping.",
+      "Teams genuinely rich or poor in picks still move, and by the same amounts as before."
+    ],
+    knownIssues: [
+      "The trade calculator still needs a proper layout pass.",
+      "A package can pass every rule and still not be worth making, because nothing yet measures whether the players involved are any good in absolute terms."
+    ]
+  },
   {
     branch: "daniels",
     release: "1.26",

@@ -902,10 +902,30 @@ export function computeAllProfiles(
     const playerDyn = t.players.reduce((s, p) => s + (p.valueDynasty || 0), 0);
     return pickDyn / Math.max(1, pickDyn + playerDyn);
   };
+  // Centred on the MEDIAN with a median-absolute-deviation scale, not mean and
+  // standard deviation.
+  //
+  // Pick share is right skewed: a couple of hoarders sit near 60% and drag the
+  // mean above what any typical roster holds. Measured on the 16 team league
+  // the mean was 30.9% while TEN of sixteen teams sat below it, so centring on
+  // the mean told the majority of the league it was pick poor and pushed every
+  // one of them toward a shorter window. That hollowed out the MID band, from
+  // three teams to one, and put a visible gap through the middle of the window
+  // map in both leagues. Reported as "a great divide in the graph".
+  //
+  // The median is what a typical roster actually holds, so a typical roster now
+  // gets an adjustment of roughly zero, which is what the old flag did for the
+  // whole middle band and the part of its behaviour worth keeping.
+  const median = (xs: number[]): number => {
+    const s = [...xs].sort((a, b) => a - b);
+    const n = s.length;
+    return n % 2 ? s[(n - 1) / 2]! : (s[n / 2 - 1]! + s[n / 2]!) / 2;
+  };
   const shares = stage1.map(shareOf);
-  const meanShare = shares.reduce((s, v) => s + v, 0) / shares.length;
-  const stdShare =
-    Math.sqrt(shares.reduce((s, v) => s + (v - meanShare) ** 2, 0) / shares.length) || 1;
+  const medianShare = median(shares);
+  // 1.4826 puts MAD on the same footing as a standard deviation for normal
+  // data, so the +/-1.5 calibration below keeps meaning what it meant.
+  const shareScale = 1.4826 * median(shares.map((v) => Math.abs(v - medianShare))) || 1;
 
   // The pick contribution to the window, CONTINUOUS rather than bucketed.
   //
@@ -925,7 +945,7 @@ export function computeAllProfiles(
   // instead of the share moves the identical two teams, so the de-bucketing is
   // the whole effect and the choice of statistic is not load bearing.
   const pickAdjustment = (share: number): number => {
-    const z = (share - meanShare) / stdShare;
+    const z = (share - medianShare) / shareScale;
     const raw = z >= 0 ? -(8 / 1.5) * z : -(12 / 1.5) * z;
     return Math.max(PICK_ADJUSTMENT_BY_FLAG.PICK_RICH, Math.min(PICK_ADJUSTMENT_BY_FLAG.PICK_POOR, raw));
   };
