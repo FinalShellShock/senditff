@@ -565,6 +565,14 @@ function timelinePenalty(team, receives, sends) {
   return -(cost - offset);
 }
 var overallCache = null;
+function isStartableInLeague(p, averages) {
+  const pool = averages.depthPlayerPool[p.position];
+  const slots = averages.startersInUse[p.position];
+  if (!pool || pool.length === 0 || !slots) return true;
+  let better = 0;
+  for (const v of pool) if (v > p.valueDynasty) better++;
+  return better < slots;
+}
 function overallRankOf(value, averages) {
   if (overallCache?.pools !== averages.depthPlayerPool) {
     const all = [];
@@ -1499,12 +1507,9 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
         balance: s.balance,
         archMatch: s.archMatch
       },
-      ...(() => {
-        let best = 0;
-        for (const a of [...s.give, ...s.receive]) best = Math.max(best, assetValue(a));
-        const rank = overallRankOf(best, averages);
-        return rank == null ? {} : { headlineRank: rank };
-      })()
+      startableCount: [...s.give, ...s.receive].filter(
+        (a) => a.kind === "player" && isStartableInLeague(a.player, averages)
+      ).length
     };
   });
   const diagnostics = {

@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "1650f710baf0";
+var ALGO_FINGERPRINT_BUILD = "19ddbc5e248b";
 var SCOUT_FINGERPRINT_BUILD = "8a16d2504d13";
 
 // src/algo/version.ts
@@ -46,6 +46,21 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.32",
+    algo: "Shotgun",
+    algoFingerprint: "19ddbc5e248b",
+    date: "2026-08-04",
+    title: '"Is anyone in this deal any good" is now a question about your own league',
+    changes: [
+      "The check for a trade full of nobodies used to ask whether anyone ranked inside the top 100 players in the league. That treated a tight end and a receiver at the same rank as equally useful, which is wrong when your league starts one tight end and two receivers plus flex.",
+      "It now asks whether a player would actually start somewhere in your league at his own position. In your 16 team league that means 16 quarterbacks, 57 running backs, 50 receivers and 21 tight ends, counted off real lineups so flex is already included. Nobody picked those numbers; they are a fact about your league.",
+      "The practical difference: Tony Pollard used to trip the warning because he ranked 124th overall. He is a startable running back, so he no longer does.",
+      "On the rankings page, picks now show their actual pick number instead of a blank. A 2.03 in a 12 team league reads as Pick 15. Picks whose slot is still projected stay blank rather than passing off a guess as a fact."
+    ],
+    knownIssues: []
+  },
   {
     branch: "daniels",
     release: "1.31",

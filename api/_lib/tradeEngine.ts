@@ -17,7 +17,6 @@ import {
   DECLINING_LOSS_RATE,
   DEPTH_RESILIENCE_WEIGHT,
   LATERAL_SWAP_MIN_AGE_GAP,
-  MIN_HEADLINE_RANK,
   PICK_DECAY,
   ACQUIRED_QUALITY_BONUS,
   BEST_PLAYER_EDGE,
@@ -92,18 +91,25 @@ export type TradePackage = {
     balance: number;
     archMatch: number;
   };
-  // League rank of the best asset in the deal, either side. A SIGNAL, not a
-  // gate: every other check in this engine is relative (the sides against each
-  // other, each piece against its own side, the incoming player against the
-  // outgoing one), so a deal made entirely of bench pieces passes all of them
-  // at once and nothing ever asked whether the players were any good.
+  // How many players in this deal, either side, would actually start somewhere
+  // in this league at their own position.
   //
-  // This was briefly a hard filter that deleted those packages. That was the
-  // wrong shape for this product: the point is to find a signal and then be
-  // honest about whether it is there, not to hide what the data found. A deal
-  // where nobody is any good should still appear, saying so. Null when the
-  // league pool cannot be resolved.
-  headlineRank?: number;
+  // A SIGNAL, not a gate. Every other check in this engine is relative (the
+  // sides against each other, each piece against its own side, the incoming
+  // player against the outgoing one), so a deal made entirely of bench pieces
+  // passes all of them at once and nothing ever asked whether the players were
+  // any good.
+  //
+  // PER POSITION, not one league-wide rank. A flat "top 100" said a TE and a WR
+  // at the same overall rank were equally useful, which is wrong in a league
+  // starting one TE and two WR plus flex: tight end is thinner, so a TE ranks
+  // worse overall for the same startable status. The threshold is
+  // startersInUse[pos], the number of starting slots actually filled at that
+  // position across the league, which already accounts for flex because it is
+  // counted off real lineups rather than off the format string.
+  //
+  // Nothing arbitrary is chosen here. The line is a fact about the league.
+  startableCount?: number;
   // Trade-effective totals: raw sums after per-side bundle decay and the
   // cross-side best-asset premium. These, not valueGive/valueReceive, are what
   // `balance` is judged on, so showing only the raw sums made a package the
@@ -428,6 +434,29 @@ function timelinePenalty(team: TeamProfile, receives: Asset[], sends: Asset[]): 
 // The pools are the FantasyCalc universe, so this is a real overall rank
 // rather than a rank among rostered players.
 let overallCache: { pools: unknown; sorted: number[] } | null = null;
+/**
+ * Would this player start somewhere in this league, at his own position?
+ *
+ * Ranks him against everyone at HIS position and compares to the number of
+ * starting slots actually filled there league-wide. That count comes off real
+ * lineups, so flex usage is already in it: a league starting one TE plus three
+ * flex ends up with more than `teams` tight ends starting, and this sees that
+ * without anyone hand-writing flex arithmetic.
+ *
+ * Positional on purpose. A flat league-wide rank treats thin positions
+ * unfairly: with one TE slot against two WR slots, a TE and a WR at the same
+ * overall rank are in completely different places, and only one of them is
+ * getting on the field.
+ */
+function isStartableInLeague(p: Player, averages: LeagueAverages): boolean {
+  const pool = averages.depthPlayerPool[p.position];
+  const slots = averages.startersInUse[p.position];
+  if (!pool || pool.length === 0 || !slots) return true; // cannot tell, do not accuse
+  let better = 0;
+  for (const v of pool) if (v > p.valueDynasty) better++;
+  return better < slots;
+}
+
 function overallRankOf(value: number, averages: LeagueAverages): number | null {
   if (overallCache?.pools !== averages.depthPlayerPool) {
     const all: number[] = [];
@@ -1913,12 +1942,9 @@ export function generatePackages(
         balance: s.balance,
         archMatch: s.archMatch,
       },
-      ...(() => {
-        let best = 0;
-        for (const a of [...s.give, ...s.receive]) best = Math.max(best, assetValue(a));
-        const rank = overallRankOf(best, averages);
-        return rank == null ? {} : { headlineRank: rank };
-      })(),
+      startableCount: [...s.give, ...s.receive].filter(
+        (a) => a.kind === "player" && isStartableInLeague(a.player, averages),
+      ).length,
     };
   });
 

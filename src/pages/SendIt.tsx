@@ -622,7 +622,7 @@ export default function SendIt() {
   const myTeam =
     overview.profiles.find((p) => p.rosterId === rosterId)?.ownerName ?? "this team";
 
-  const assetPool = useMemo(() => buildAssetPool(overview.profiles), [overview.profiles]);
+  const assetPool = useMemo(() => buildAssetPool(overview.profiles, overview.format?.teamCount), [overview.profiles]);
   const scopeCount = scopeGive.length + scopeReceive.length;
   const scopedIds = useMemo(
     () => new Set([...scopeGive, ...scopeReceive].map((a) => a.id)),

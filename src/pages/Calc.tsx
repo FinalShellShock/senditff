@@ -435,7 +435,7 @@ export default function Calc() {
   // The dock stays one line until you actually reach for it.
   const [searchOpen, setSearchOpen] = useState(false);
 
-  const allAssets = useMemo(() => buildAssetPool(profiles), [profiles]);
+  const allAssets = useMemo(() => buildAssetPool(profiles, overview.format?.teamCount), [profiles]);
 
   const addedIds = useMemo(
     () => new Set([...sideA.assets.map((a) => a.id), ...sideB.assets.map((a) => a.id)]),

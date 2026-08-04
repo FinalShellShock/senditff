@@ -36,7 +36,10 @@ export default function Rankings() {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<AssetFilters>(EMPTY_ASSET_FILTERS);
 
-  const pool = useMemo(() => buildAssetPool(overview.profiles), [overview.profiles]);
+  const pool = useMemo(
+    () => buildAssetPool(overview.profiles, overview.format?.teamCount),
+    [overview.profiles, overview.format?.teamCount],
+  );
 
   // Rank is assigned on the FULL pool before filtering, so a player keeps his
   // league rank when you filter to WRs. A list that renumbers 1..n under a
@@ -54,7 +57,14 @@ export default function Rankings() {
     const seen = new Map<string, number>();
     const r = new Map<string, string>();
     for (const a of pool) {
-      if (a.kind !== "player" || !a.position) continue;
+      // Picks get the overall pick number instead: a 2.03 in a 12 team league
+      // is pick 15, which is the number you actually think in when you value
+      // one. Projected slots stay blank rather than guessing.
+      if (a.kind === "pick") {
+        if (a.pickOverall) r.set(a.id, `Pick ${a.pickOverall}`);
+        continue;
+      }
+      if (!a.position) continue;
       const n = (seen.get(a.position) ?? 0) + 1;
       seen.set(a.position, n);
       r.set(a.id, `${a.position}${n}`);

@@ -90,7 +90,6 @@ var SHAPE_FIT_BY_COMPETITIVENESS = {
 var SIDEGRADE_PENALTY = 0.12;
 var THEIR_FIT_SATISFIED = 0.6;
 var BENCHED_VALUE_PENALTY = 0.1;
-var MIN_HEADLINE_RANK = 100;
 
 // src/algo/archetypes.ts
 var ARCHETYPE_FAMILIES = [
@@ -578,6 +577,14 @@ function timelinePenalty(team, receives, sends) {
   return -(cost - offset);
 }
 var overallCache = null;
+function isStartableInLeague(p, averages) {
+  const pool = averages.depthPlayerPool[p.position];
+  const slots = averages.startersInUse[p.position];
+  if (!pool || pool.length === 0 || !slots) return true;
+  let better = 0;
+  for (const v of pool) if (v > p.valueDynasty) better++;
+  return better < slots;
+}
 function overallRankOf(value, averages) {
   if (overallCache?.pools !== averages.depthPlayerPool) {
     const all = [];
@@ -1512,12 +1519,9 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
         balance: s.balance,
         archMatch: s.archMatch
       },
-      ...(() => {
-        let best = 0;
-        for (const a of [...s.give, ...s.receive]) best = Math.max(best, assetValue(a));
-        const rank = overallRankOf(best, averages);
-        return rank == null ? {} : { headlineRank: rank };
-      })()
+      startableCount: [...s.give, ...s.receive].filter(
+        (a) => a.kind === "player" && isStartableInLeague(a.player, averages)
+      ).length
     };
   });
   const diagnostics = {
@@ -1547,11 +1551,11 @@ function isWeakMatch(pkg, diagnostics) {
   return diagnostics?.degraded != null || diagnostics?.myArchetypeScore != null && diagnostics.myArchetypeScore < 30 || isAllBenchPieces(pkg);
 }
 function isAllBenchPieces(pkg) {
-  return pkg.headlineRank != null && pkg.headlineRank > MIN_HEADLINE_RANK;
+  return pkg.startableCount === 0;
 }
 function weakReason(pkg, diagnostics) {
   if (isAllBenchPieces(pkg)) {
-    return `Nobody in this deal ranks inside the league's top ${MIN_HEADLINE_RANK}. The pieces fit each other, but none of them is worth much on its own.`;
+    return "Not one player in this deal would start anywhere in this league at his own position. The pieces fit each other, but none of them is getting on a field.";
   }
   if (diagnostics?.myArchetypeScore != null && diagnostics.myArchetypeScore < 30) {
     return "This roster does not really fit the shape you asked for, so this is the closest thing available rather than a natural move.";

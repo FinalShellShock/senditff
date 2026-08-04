@@ -22,6 +22,13 @@ export type TradeAsset = {
   ownerName: string;
   ownerRosterId: number;
   age?: number | null;
+  /**
+   * Picks only. The overall pick number in THIS league: a 2.03 in a 12 team
+   * league is pick 15. Absent when the slot is only projected, because those
+   * are a standings-derived guess and printing "pick 15" would dress a guess
+   * up as a fact.
+   */
+  pickOverall?: number;
 };
 
 export type AssetFilters = {
@@ -58,7 +65,7 @@ export function assetFiltersActive(f: AssetFilters): boolean {
 }
 
 /** Every player and pick in the league, value-sorted descending. */
-export function buildAssetPool(profiles: TeamProfile[]): TradeAsset[] {
+export function buildAssetPool(profiles: TeamProfile[], teamCount?: number): TradeAsset[] {
   const players: TradeAsset[] = profiles.flatMap((p) =>
     p.players.map((pl): TradeAsset => ({
       id: `p:${pl.id}`,
@@ -79,6 +86,11 @@ export function buildAssetPool(profiles: TeamProfile[]): TradeAsset[] {
       value: pk.value,
       ownerName: p.ownerName,
       ownerRosterId: p.rosterId,
+      // Only when Sleeper published a real draft order. A projected slot is a
+      // guess off current standings, and "pick 15" reads as a fact.
+      ...(teamCount && pk.slotKnown && pk.slot > 0
+        ? { pickOverall: (pk.round - 1) * teamCount + pk.slot }
+        : {}),
     })),
   );
   // Ties broken by id so the list order is stable, matching the determinism

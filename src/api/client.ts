@@ -60,8 +60,8 @@ export type TradePackage = {
     /** Why it is only an idea, in plain words. Absent when it isn't. */
     note?: string;
   };
-  /** League rank of the best asset in the deal. Signal, not a gate. */
-  headlineRank?: number;
+  /** How many players in the deal would start in this league. Signal, not a gate. */
+  startableCount?: number;
   rationale: string;
   // The exact prompt sent to Haiku to write `rationale`. Optional: responses
   // from an older API deploy won't have it.

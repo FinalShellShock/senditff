@@ -10,7 +10,6 @@
 // Editing the prompt moves the hash, so feedback stays attributable to the
 // wording that produced it.
 
-import { MIN_HEADLINE_RANK } from "../../src/algo/constants";
 import { fairnessText } from "../../src/algo/fairness";
 import type { TeamProfile } from "../../src/algo/types";
 import { confidenceTier, type TradePackage } from "./tradeEngine";
@@ -84,9 +83,9 @@ function isWeakMatch(
   );
 }
 
-/** Nobody in the deal ranks inside the league's top MIN_HEADLINE_RANK. */
+/** Not one player in the deal would start anywhere in this league. */
 function isAllBenchPieces(pkg: Omit<TradePackage, "rationale">): boolean {
-  return pkg.headlineRank != null && pkg.headlineRank > MIN_HEADLINE_RANK;
+  return pkg.startableCount === 0;
 }
 
 /**
@@ -103,7 +102,7 @@ export function weakReason(
   diagnostics?: { degraded?: string; myArchetypeScore?: number },
 ): string | null {
   if (isAllBenchPieces(pkg)) {
-    return `Nobody in this deal ranks inside the league's top ${MIN_HEADLINE_RANK}. The pieces fit each other, but none of them is worth much on its own.`;
+    return "Not one player in this deal would start anywhere in this league at his own position. The pieces fit each other, but none of them is getting on a field.";
   }
   if (diagnostics?.myArchetypeScore != null && diagnostics.myArchetypeScore < 30) {
     return "This roster does not really fit the shape you asked for, so this is the closest thing available rather than a natural move.";
