@@ -7,6 +7,7 @@ import LeagueOverview from "./pages/LeagueOverview.tsx";
 import TeamDeepDive from "./pages/TeamDeepDive.tsx";
 import SendIt from "./pages/SendIt.tsx";
 import Calc from "./pages/Calc.tsx";
+import Rankings from "./pages/Rankings.tsx";
 import TradeGrades from "./pages/TradeGrades.tsx";
 import Footer from "./pages/Footer.tsx";
 
@@ -72,6 +73,7 @@ function AuthGate() {
           <Route path="team/:rosterId" element={<TeamDeepDive />} />
           <Route path="sendit/:rosterId" element={<SendIt />} />
           <Route path="calc" element={<Calc />} />
+          <Route path="rankings" element={<Rankings />} />
           <Route path="trades" element={<TradeGrades />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

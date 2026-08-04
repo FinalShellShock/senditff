@@ -48,6 +48,26 @@ function currentRelease() {
 var PATCH_NOTES = [
   {
     branch: "daniels",
+    release: "1.28",
+    algo: "Shotgun",
+    algoFingerprint: "c73e12cc9692",
+    date: "2026-08-04",
+    title: "Six things that had been waiting: pick prices, bench value, a rankings tab and a rebuilt calculator",
+    changes: [
+      "Draft picks are priced on YOUR league's scale now. FantasyCalc publishes slotted pick values for a 12 team league and only a 12 team league, and we were reading our own slots straight off that list. In a 16 team league your 2.09 is the 25th pick overall but was being priced as if it were the 21st, about 14% too high, and every pick in the league was inflated the same way. Picks 1.13 through 1.16 were worse: they matched nothing at all and quietly fell back to an estimate, so one round had exact prices for its first twelve picks and guesses for the rest.",
+      "The engine stops paying you extra for a trade the other manager loves. Whether they would accept is a yes or no question, and past the point where the answer is clearly yes, more enthusiasm on their side means you are paying more than you needed to. The two most one-sided deals in the feedback so far were both ones you rejected.",
+      "It also stops treating value you cannot start as full value. In a one quarterback league a second quarterback cannot get on the field, and the engine was pricing him as if he could. Rebuilding teams are exempt, because stashing players who cannot start yet is the entire point of a rebuild.",
+      "New RANKINGS tab: every rostered player and pick in the league by dynasty value, with who owns it, and how much of its value is still ahead of it. Filter by position, age, value, players or picks.",
+      "The trade calculator has been rebuilt around how it is actually used. Search is at the top now, because on a phone the keyboard covers the bottom of the screen and the results were landing underneath it. A one-line summary of the trade sticks to the top of the page, so the numbers never disappear while you are typing.",
+      "And the calculator can now balance a trade for you. Pick whether you want the deal to read as fair, an overpay or an underpay, and it works out how much the lighter side needs to add and lists that team's own assets that land in the range, closest first.",
+      "Positional leverage now also sits at the bottom of the calculator page."
+    ],
+    knownIssues: [
+      "A package can pass every rule and still not be worth making, because nothing yet measures whether the players involved are any good in absolute terms."
+    ]
+  },
+  {
+    branch: "daniels",
     release: "1.27",
     algo: "Shotgun",
     algoFingerprint: "b768314c1638",

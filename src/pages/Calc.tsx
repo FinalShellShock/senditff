@@ -1,10 +1,19 @@
 import { useState, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
-import { fairnessColor, fairnessLabel, fairnessText, tradeEffectiveValues } from "../algo/fairness.ts";
+import {
+  FAIRNESS_FAIR_ABS,
+  FAIRNESS_FAIR_PCT,
+  FAIRNESS_SLIGHT_PCT,
+  fairnessColor,
+  fairnessLabel,
+  fairnessText,
+  tradeEffectiveValues,
+} from "../algo/fairness.ts";
 import type { Position } from "../algo/types.ts";
 import type { TeamProfile } from "../algo/types.ts";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 import AssetFilterBar from "./shared/AssetFilterBar.tsx";
+import LeverageBoard from "./overview/LeverageBoard.tsx";
 import {
   EMPTY_ASSET_FILTERS,
   buildAssetPool,
@@ -139,6 +148,126 @@ function TradePanel({
         )}
       </div>
     </div>
+  );
+}
+
+// ── Balance builder ──────────────────────────────────────────────────────────
+//
+// "We should be able to choose underpay, fair, or overpay and then have a
+// picklist of options we could add to that side of the trade to balance it out
+// based on the selection."
+//
+// Works backwards from the target. Pick what you want the deal to READ as, and
+// it computes how much value the light side has to add, then lists that team's
+// own assets that land in the window, closest first.
+//
+// Targets are stated from the light side's point of view, because that is the
+// side doing the adding:
+//
+//   FAIR      land inside the fairness band, which is the same band the badge
+//             on this page and on every Send It card reads
+//   OVERPAY   go past it deliberately, for when you are the one who wants the
+//             deal badly enough to pay for it
+//   UNDERPAY  stop short, for when you are testing what you could get away with
+//
+// Bands come from fairness.ts rather than being redefined here, so the picklist
+// and the verdict above it can never disagree.
+
+type BalanceTarget = "UNDERPAY" | "FAIR" | "OVERPAY";
+
+function BalanceBuilder({
+  sideA, sideB, profiles, pool, addedIds, onAdd,
+}: {
+  sideA: TradeSide;
+  sideB: TradeSide;
+  profiles: TeamProfile[];
+  pool: TradeAsset[];
+  addedIds: Set<string>;
+  onAdd: (asset: TradeAsset, side: "A" | "B") => void;
+}) {
+  const [target, setTarget] = useState<BalanceTarget>("FAIR");
+
+  const totalA = sideA.assets.reduce((s, a) => s + a.value, 0);
+  const totalB = sideB.assets.reduce((s, a) => s + a.value, 0);
+  if (totalA === 0 || totalB === 0) return null;
+
+  // The LIGHT side is the one sending less, so it is the one that adds.
+  const light: "A" | "B" = totalA <= totalB ? "A" : "B";
+  const lightSide = light === "A" ? sideA : sideB;
+  const heavy = Math.max(totalA, totalB);
+  const lightTotal = Math.min(totalA, totalB);
+  const gap = heavy - lightTotal;
+  if (lightSide.rosterId == null) return null;
+
+  // How much to add, as a window. FAIR aims to land inside the fairness band;
+  // the other two aim deliberately outside it.
+  const fairSlack = Math.max(FAIRNESS_FAIR_ABS, heavy * FAIRNESS_FAIR_PCT);
+  const slightSlack = heavy * FAIRNESS_SLIGHT_PCT;
+  const window: [number, number] =
+    target === "FAIR" ? [Math.max(0, gap - fairSlack), gap + fairSlack]
+    : target === "OVERPAY" ? [gap + slightSlack, gap + slightSlack + heavy * 0.25]
+    : [Math.max(0, gap - slightSlack - heavy * 0.25), Math.max(0, gap - fairSlack)];
+
+  const owner = lightSide.rosterId;
+  const options = pool
+    .filter((a) => a.ownerRosterId === owner && !addedIds.has(a.id))
+    .filter((a) => a.value >= window[0] && a.value <= window[1])
+    .sort((a, b) => Math.abs(a.value - gap) - Math.abs(b.value - gap))
+    .slice(0, 8);
+
+  const lightName =
+    profiles.find((p) => p.rosterId === owner)?.ownerName ?? (light === "A" ? "Side A" : "Side B");
+
+  return (
+    <section className="calc-balance">
+      <div className="calc-balance-head">
+        <h2 className="section-title">Balance it</h2>
+        <div className="calc-balance-targets">
+          {(["UNDERPAY", "FAIR", "OVERPAY"] as BalanceTarget[]).map((t) => (
+            <button
+              key={t}
+              type="button"
+              className={`calc-balance-chip${target === t ? " active" : ""}`}
+              onClick={() => setTarget(t)}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="dim-text calc-balance-sub">
+        {lightName} is light by {gap.toLocaleString()}. To land on {target.toLowerCase()}, add
+        something worth {Math.round(window[0]).toLocaleString()} to{" "}
+        {Math.round(window[1]).toLocaleString()} from their roster.
+      </p>
+      {options.length === 0 ? (
+        <p className="dim-text calc-balance-empty">
+          Nothing on {lightName}'s roster lands in that range. Try a different target, or add a
+          piece from the other side instead.
+        </p>
+      ) : (
+        <div className="calc-balance-rows">
+          {options.map((a) => (
+            <div key={a.id} className="calc-result-row">
+              <div className="calc-result-left">
+                <PosTag position={a.position} />
+                <span className="calc-result-name">{a.name}</span>
+                {a.age != null && <span className="calc-result-meta">{a.age.toFixed(1)}</span>}
+              </div>
+              <div className="calc-result-right">
+                <span className="calc-result-value">{a.value.toLocaleString()}</span>
+                <button
+                  className={`calc-add-btn side-${light.toLowerCase()} natural`}
+                  onClick={() => onAdd(a, light)}
+                >
+                  ADD
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -446,6 +575,90 @@ export default function Calc() {
   return (
     <div className="calc-container">
 
+      {/* Sticky, so the numbers survive the keyboard. One line: both totals,
+          the gap, and the verdict. */}
+      {hasItems && (
+        <div className="calc-sticky">
+          <span className="calc-sticky-side">
+            {profileA?.ownerName?.split(" ")[0] ?? "A"} <b>{totalA.toLocaleString()}</b>
+          </span>
+          <span className="calc-sticky-arrow">⇄</span>
+          <span className="calc-sticky-side">
+            {profileB?.ownerName?.split(" ")[0] ?? "B"} <b>{totalB.toLocaleString()}</b>
+          </span>
+          <span className="calc-sticky-verdict" style={{ color: verdict.color }}>
+            {verdict.text}
+          </span>
+          <span className="calc-sticky-diff" style={{ color: isFair ? "#22c55e" : "#ef4444" }}>
+            {diff >= 0 ? "+" : "−"}{Math.abs(diff).toLocaleString()}
+          </span>
+        </div>
+      )}
+
+      {/* SEARCH FIRST.
+          On a phone the keyboard covers the bottom half of the screen, so
+          whatever you need while typing has to live at the TOP. This used to
+          sit below the trade panels, which put the result rows under the
+          keyboard: "I can't click on him without dismissing the keyboard".
+          The running totals ride along in a sticky bar so the trade never
+          leaves the screen either: "We should not lose view of the trade being
+          calculated while typing." */}
+      {/* ── Search ── */}
+      <div className="calc-search-section">
+        <div className="calc-search-bar">
+          <input
+            className="calc-search-input"
+            placeholder="Search players and picks…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <label className="calc-lock-toggle">
+            <input
+              type="checkbox"
+              checked={rosterLocked}
+              onChange={(e) => setRosterLocked(e.target.checked)}
+            />
+            <span>ROSTER FILTER</span>
+          </label>
+        </div>
+
+        <AssetFilterBar filters={filters} onChange={setFilters} />
+
+        {searchResults.length > 0 ? (
+          <div className="calc-results">
+            {searchResults.map((asset) => {
+              const naturalA = asset.ownerRosterId === sideA.rosterId;
+              const naturalB = asset.ownerRosterId === sideB.rosterId;
+              return (
+                <div key={asset.id} className="calc-result-row">
+                  <div className="calc-result-left">
+                    <PosTag position={asset.position} />
+                    <span className="calc-result-name">{asset.name}</span>
+                    {asset.age != null && <span className="calc-result-meta">{typeof asset.age === "number" ? asset.age.toFixed(1) : asset.age}</span>}
+                    <span className="calc-result-owner">{asset.ownerName}</span>
+                  </div>
+                  <div className="calc-result-right">
+                    <span className="calc-result-value">{asset.value.toLocaleString()}</span>
+                    <button
+                      className={`calc-add-btn side-a${naturalA ? " natural" : ""}`}
+                      onClick={() => addAsset(asset, "A")}
+                    >A</button>
+                    <button
+                      className={`calc-add-btn side-b${naturalB ? " natural" : ""}`}
+                      onClick={() => addAsset(asset, "B")}
+                    >B</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="dim-text" style={{ textAlign: "center", fontSize: 11, padding: "16px 0" }}>
+            {emptyHint}
+          </p>
+        )}
+      </div>
+
       {/* ── Trade panels + verdict ── */}
       <div className="calc-panels">
         <TradePanel
@@ -510,63 +723,25 @@ export default function Calc() {
         />
       </div>
 
-      {/* ── Search ── */}
-      <div className="calc-search-section">
-        <div className="calc-search-bar">
-          <input
-            className="calc-search-input"
-            placeholder="Search players and picks…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <label className="calc-lock-toggle">
-            <input
-              type="checkbox"
-              checked={rosterLocked}
-              onChange={(e) => setRosterLocked(e.target.checked)}
-            />
-            <span>ROSTER FILTER</span>
-          </label>
-        </div>
-
-        <AssetFilterBar filters={filters} onChange={setFilters} />
-
-        {searchResults.length > 0 ? (
-          <div className="calc-results">
-            {searchResults.map((asset) => {
-              const naturalA = asset.ownerRosterId === sideA.rosterId;
-              const naturalB = asset.ownerRosterId === sideB.rosterId;
-              return (
-                <div key={asset.id} className="calc-result-row">
-                  <div className="calc-result-left">
-                    <PosTag position={asset.position} />
-                    <span className="calc-result-name">{asset.name}</span>
-                    {asset.age != null && <span className="calc-result-meta">{typeof asset.age === "number" ? asset.age.toFixed(1) : asset.age}</span>}
-                    <span className="calc-result-owner">{asset.ownerName}</span>
-                  </div>
-                  <div className="calc-result-right">
-                    <span className="calc-result-value">{asset.value.toLocaleString()}</span>
-                    <button
-                      className={`calc-add-btn side-a${naturalA ? " natural" : ""}`}
-                      onClick={() => addAsset(asset, "A")}
-                    >A</button>
-                    <button
-                      className={`calc-add-btn side-b${naturalB ? " natural" : ""}`}
-                      onClick={() => addAsset(asset, "B")}
-                    >B</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="dim-text" style={{ textAlign: "center", fontSize: 11, padding: "16px 0" }}>
-            {emptyHint}
-          </p>
-        )}
-      </div>
+      <BalanceBuilder
+        sideA={sideA}
+        sideB={sideB}
+        profiles={profiles}
+        pool={allAssets}
+        addedIds={addedIds}
+        onAdd={addAsset}
+      />
 
       <TradeImpactReport sideA={sideA} sideB={sideB} profiles={profiles} />
+
+      {/* Positional leverage at the bottom, per the Discord thread: "Bottom of
+          calc page doesn't hurt". Below the calculator rather than above it
+          because the calculator is the reason you came, and leverage is what
+          you consult when you are deciding WHO to build a trade with. */}
+      <section className="calc-leverage">
+        <h2 className="section-title">Positional Leverage</h2>
+        <LeverageBoard profiles={profiles} />
+      </section>
     </div>
   );
 }

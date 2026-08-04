@@ -140,6 +140,12 @@ export default function LeagueShell() {
           CALC
         </NavLink>
         <NavLink
+          to={`/league/${id}/rankings`}
+          className={({ isActive }) => `league-nav-tab${isActive ? " active" : ""}`}
+        >
+          RANKINGS
+        </NavLink>
+        <NavLink
           to={`/league/${id}/trades`}
           className={({ isActive }) => `league-nav-tab${isActive ? " active" : ""}`}
         >

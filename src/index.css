@@ -4404,3 +4404,117 @@ body {
 }
 
 
+
+/* ── Rankings ────────────────────────────────────────────────────────────────
+   Reuses the calc search input and the shared asset filter bar, so this page
+   is layout over components that already exist. */
+.rankings-panel {
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 4px;
+  background: rgba(255,255,255,0.02);
+  overflow: hidden;
+}
+.rankings-panel > .calc-search-input { width: 100%; box-sizing: border-box; }
+.rankings-head,
+.rankings-row {
+  display: grid;
+  grid-template-columns: 34px 26px minmax(0,1fr) 110px 46px 74px 68px;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+}
+.rankings-head {
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  color: #475569;
+}
+.rankings-rows { max-height: 68vh; overflow-y: auto; }
+.rankings-row { border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 12px; }
+.rankings-row:hover { background: rgba(255,255,255,0.02); }
+.rk-rank { color: #475569; font-size: 10px; text-align: right; }
+.rk-pos {
+  border-radius: 2px;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  text-align: center;
+  padding: 1px 0;
+}
+.rk-name { color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rk-owner { color: #64748b; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rk-num { text-align: right; font-size: 11px; color: #94a3b8; }
+.rk-dim { color: #475569; }
+.rk-value { color: #e2e8f0; font-weight: 600; }
+/* Negative unbanked: he already out-produces his own dynasty price. */
+.rk-banked { color: #22c55e; }
+
+@media (max-width: 640px) {
+  /* Owner and age are the first things to go: the ranking, the name, how much
+     is still to come and the price are the columns worth the width. */
+  .rankings-head,
+  .rankings-row { grid-template-columns: 28px 24px minmax(0,1fr) 60px 62px; gap: 6px; padding: 5px 10px; }
+  .rk-owner, .rk-dim { display: none; }
+}
+
+.calc-leverage { margin-top: 24px; }
+
+/* ── Calc: sticky totals ─────────────────────────────────────────────────────
+   The trade has to stay on screen while you type, and on a phone the keyboard
+   owns the bottom half. One line, pinned to the top. */
+.calc-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 7px 12px;
+  margin-bottom: 10px;
+  background: #0f1318;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 4px;
+  font-size: 11px;
+}
+.calc-sticky-side { color: #64748b; }
+.calc-sticky-side b { color: #e2e8f0; font-weight: 600; }
+.calc-sticky-arrow { color: #334155; }
+.calc-sticky-verdict { font-size: 9px; font-weight: 700; letter-spacing: 1px; margin-left: auto; }
+.calc-sticky-diff { font-size: 11px; font-weight: 600; }
+
+/* ── Calc: balance builder ── */
+.calc-balance { margin-top: 22px; }
+.calc-balance-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.calc-balance-targets { display: flex; gap: 4px; }
+.calc-balance-chip {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 3px;
+  color: #64748b;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 4px 9px;
+}
+.calc-balance-chip:hover { color: #cbd5e1; border-color: rgba(255,255,255,0.22); }
+.calc-balance-chip.active {
+  background: rgba(245,158,11,0.12);
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+.calc-balance-sub { font-size: 11px; line-height: 1.6; margin: 6px 0 8px; }
+.calc-balance-empty { font-size: 11px; padding: 10px 0; }
+.calc-balance-rows {
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 4px;
+  overflow: hidden;
+}
