@@ -405,3 +405,49 @@ Sensitivity sweep, measured the way the 1.11 loss-floor sweep was: zero the age
 terms one at a time, re-run `validate:trades`, and report top-24 landings and
 recommendation counts per variant. If zeroing a term moves nothing, it was
 never earning its place.
+
+### Johnny's counter-proposal, tested 2026-08-04: derive window from dynasty/redraft
+
+> "even for the window it seems like we could show more about the window by
+> measuring the delta between redraft and dynasty. Age pressure should come more
+> from that difference."
+
+Tested on the 16 team league. `dynasty / redraft` summed over a roster is the
+market's own statement of how much of that roster's value is unrealised. No age
+curve is involved anywhere in it.
+
+**On STARTERS it works and is well behaved.** Range 0.92 to 3.69, and it sorts
+the league sensibly with no age input at all:
+
+    owner            tier    starterAgePressure   STARTERS dyn/red
+    starknet         SHORT                 25.8              0.968
+    Daneo29          SHORT                 21.7              0.943
+    FinalShellShock  SHORT                 20.2              0.941
+    stillblazzin2    LONG                  20.0              2.454   <- disagrees
+    kwescoe3         LONG                  11.6              1.039
+    supermiro        LONG                   5.8              1.343
+    Gibbs16          LONG                   0.1              3.688
+
+**On the BENCH it is unusable.** Stashed rookies carry real dynasty value and
+almost no redraft value, so the ratio explodes: Numlckr's bench reads 162.3,
+while two teams read 0.000 because their benches have no redraft value at all.
+Any implementation has to be starters-only, or use a floor. The first pass at
+this measured the whole roster and the numbers were mostly bench artefact.
+
+**It is not a drop-in replacement.** Comparing like for like, starters against
+starters, Spearman(starterAgePressure, -starters dyn/red) = **0.603**. Related,
+not the same. And the disagreements look real rather than noisy: stillblazzin2
+has the 5th oldest starting lineup in the league AND the 2nd most unrealised
+one, which is a genuine situation (older players priced above what they produce
+today) that the age curve cannot represent at all.
+
+**Recommendation: add it as a second axis, do not swap the math.** The two
+answer different questions:
+
+  starterAgePressure   how much longer can this lineup keep producing
+  starters dyn/red     how much of this lineup's value is still unbanked
+
+Cheapest honest next step: surface starters dyn/red on TEAM STATE next to the
+existing window reading, so the disagreements are visible on real rosters before
+any scoring depends on it. Changing the window math first would be committing to
+a 0.60 correlation sight unseen.
