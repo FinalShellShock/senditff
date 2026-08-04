@@ -348,3 +348,60 @@ week ago:
 Whatever is decided, record the reasoning here. This is the second foundational
 challenge to survive contact (the first was the flat age cutoff, which was
 wrong and got fixed); it deserves an answer with numbers, not a preference.
+
+### ANSWERED, empirically, 2026-08-04: the market does price age, clearly
+
+Measured against FantasyCalc's own payload, which carries dynasty value,
+redraft value and age per player. `dynasty / redraft` is the market's own
+future premium: how much more it pays for the dynasty right than for this
+season's production.
+
+The WR 3,000-4,200 dynasty band, which is exactly the comparison Gibbs drew:
+
+    player              age    dyn    red   dyn/red   agePressure
+    Makai Lemon        22.2   3150   1273     2.47          0
+    Jordyn Tyson       22.0   3640   1778     2.05          0
+    Luther Burden      22.7   3647   2052     1.78          0
+    Rome Odunze        24.2   3384   2307     1.47          4
+    Ladd McConkey      24.7   3925   3386     1.16         10
+    Chris Olave        26.1   3849   3882     0.99         17
+    Rashee Rice        26.3   3706   3718     1.00         18
+    Jaylen Waddle      27.7   3106   3210     0.97         23
+    A.J. Brown         29.1   3744   4920     0.76         24
+
+Monotone, and large. At the SAME dynasty price, Makai Lemon delivers a third of
+Olave's current-season production. The market is charging roughly 2.5x the
+dynasty price per unit of production for the 22 year old and 0.76x for the 29
+year old. **The youth premium is already in the number the engine reads.**
+
+Two further findings from the same run (n=200 per format, 1QB and superflex):
+
+1. **agePressure has no resolution where the market has the most.** It is 0
+   for everyone from 22.0 to 23.8, across which the market's premium moves from
+   2.47 to 1.80. At the old end it rises (16 -> 24) exactly where the premium
+   falls (0.99 -> 0.76): the same signal, counted twice.
+2. **QB is inverted.** corr(agePressure, dyn/red) is NEGATIVE for RB, WR and TE
+   as expected, but +0.38 for QB in 1QB scoring. The market does not discount QB
+   age the way our curve does. Worth its own look.
+
+### What this does NOT license
+
+"Remove age pressure" is still the wrong action, because most of the app's age
+usage is not re-pricing an asset:
+
+- **Window / timeline math** asks when THIS ROSTER needs to win. No individual
+  player's price answers that. Not a double-count.
+- **`youngAssetQuality`** is backed by the trade study's fringe-band outcome
+  (young players ranked 61-100 beat drift two in three). Claiming the market
+  misprices a specific measured segment is alpha, not duplication.
+- **age-arb archetypes** use age as a SEARCH SHAPE, not a valuation.
+
+The double-count bites specifically where age adjusts what an asset is WORTH
+without outcome evidence behind the adjustment. That is the set to audit.
+
+### Next step, unstarted
+
+Sensitivity sweep, measured the way the 1.11 loss-floor sweep was: zero the age
+terms one at a time, re-run `validate:trades`, and report top-24 landings and
+recommendation counts per variant. If zeroing a term moves nothing, it was
+never earning its place.
