@@ -893,11 +893,47 @@ export function computeAllProfiles(
     windowPressure: number;
     pickFlag: PickFlag;
   };
+  // How much of each roster's dynasty value is sitting in picks. Picks cannot
+  // score this season, so this is the share of a team's assets that is purely
+  // unrealised: the same "unbanked" reading TEAM STATE shows, restricted to the
+  // part of it picks are responsible for.
+  const shareOf = (t: Stage1): number => {
+    const pickDyn = t.picks.reduce((s, k) => s + (k.value || 0), 0);
+    const playerDyn = t.players.reduce((s, p) => s + (p.valueDynasty || 0), 0);
+    return pickDyn / Math.max(1, pickDyn + playerDyn);
+  };
+  const shares = stage1.map(shareOf);
+  const meanShare = shares.reduce((s, v) => s + v, 0) / shares.length;
+  const stdShare =
+    Math.sqrt(shares.reduce((s, v) => s + (v - meanShare) ** 2, 0) / shares.length) || 1;
+
+  // The pick contribution to the window, CONTINUOUS rather than bucketed.
+  //
+  // It used to read PICK_ADJUSTMENT_BY_FLAG, which is -8 / 0 / +12 off a flag
+  // set at +/-1.5 standard deviations. So the input was already a z-score; the
+  // flag just rounded it to three values and threw the rest away. Measured on
+  // the 16 team league, NEUTRAL covered everything from 9% to 47% of assets
+  // held in picks, which called FustinJerguson (49%, PICK_RICH) different from
+  // Numlckr (47%, NEUTRAL) while calling Numlckr the same as a team at 9%.
+  //
+  // Piecewise so it reproduces the old behaviour exactly at the points that
+  // were actually tuned: 0 at the mean, -8 at +1.5sd, +12 at -1.5sd. Clamped
+  // to that same range rather than extrapolating past values nobody chose.
+  //
+  // Measured effect on the test league: 2 of 16 teams change window tier
+  // (cwescoe1511 MID -> SHORT, kwescoe3 LONG -> MID). Using raw pickCapital
+  // instead of the share moves the identical two teams, so the de-bucketing is
+  // the whole effect and the choice of statistic is not load bearing.
+  const pickAdjustment = (share: number): number => {
+    const z = (share - meanShare) / stdShare;
+    const raw = z >= 0 ? -(8 / 1.5) * z : -(12 / 1.5) * z;
+    return Math.max(PICK_ADJUSTMENT_BY_FLAG.PICK_RICH, Math.min(PICK_ADJUSTMENT_BY_FLAG.PICK_POOR, raw));
+  };
+
   const stage2: Stage2[] = stage1.map((t) => {
-    // Window pressure is age pressure shifted by the pick flag adjustment.
-    // PICK_RICH eases the window (-8); PICK_POOR tightens it (+12).
+    // The flag is still computed, but only as a LABEL. Nothing scores on it.
     const pickFlag = pickFlagFor(t.pickCapValue);
-    const windowPressure = Math.max(0, t.starterAgePressure + PICK_ADJUSTMENT_BY_FLAG[pickFlag]);
+    const windowPressure = Math.max(0, t.starterAgePressure + pickAdjustment(shareOf(t)));
     return {
       ...t,
       competitiveness: compFor(t.starterTotalValue),

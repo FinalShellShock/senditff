@@ -71,6 +71,25 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "1.26",
+    algo: "Shotgun",
+    algoFingerprint: "231cb8145742",
+    date: "2026-08-04",
+    title: "Your picks now count toward your window by how many you have, not which bucket you land in",
+    changes: [
+      "Draft picks have always nudged your window, but only through a three-way label: pick rich eased it, pick poor tightened it, and everyone else got nothing at all. The problem is that \"everyone else\" was most of the league. In the test league that middle bucket covered teams holding 9% of their value in picks and teams holding 47%, treating them identically while drawing a hard line between the 47% team and a 49% one.",
+      "Picks now count continuously. The label was already a standard-deviation calculation under the hood; it was just rounding the answer to three values and discarding the rest. Same maths, nothing thrown away.",
+      "Calibrated to change nothing where the old version was actually tuned: a team at the league average still gets no adjustment, and the teams at the old pick rich and pick poor cutoffs get exactly what they got before. Only the teams in between move, which is the point.",
+      "Two of sixteen teams in the test league shift window tier as a result, both by one step. Trade suggestions are otherwise unchanged: still five packages for every roster, still identical across repeated runs.",
+      "This is the first piece of the unbanked value idea from the last release feeding into an actual number rather than just being displayed.",
+    ],
+    knownIssues: [
+      "The trade calculator still needs a proper layout pass. It was built before the impact panel, the fairness badge and the player filters existed, and has never been reorganised around them.",
+      "A package can pass every rule and still not be worth making, because nothing yet measures whether the players involved are any good in absolute terms.",
+    ],
+  },
+  {
+    branch: "daniels",
     release: "1.25",
     algo: "Shotgun",
     algoFingerprint: "66d9bdc652c8",

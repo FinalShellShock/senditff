@@ -587,9 +587,22 @@ function computeAllProfiles(teams, format, thisYear, globalPlayerPools) {
     if (cap < meanCap - 1.5 * stdCap) return "PICK_POOR";
     return "NEUTRAL";
   };
+  const shareOf = (t) => {
+    const pickDyn = t.picks.reduce((s, k) => s + (k.value || 0), 0);
+    const playerDyn = t.players.reduce((s, p) => s + (p.valueDynasty || 0), 0);
+    return pickDyn / Math.max(1, pickDyn + playerDyn);
+  };
+  const shares = stage1.map(shareOf);
+  const meanShare = shares.reduce((s, v) => s + v, 0) / shares.length;
+  const stdShare = Math.sqrt(shares.reduce((s, v) => s + (v - meanShare) ** 2, 0) / shares.length) || 1;
+  const pickAdjustment = (share) => {
+    const z = (share - meanShare) / stdShare;
+    const raw = z >= 0 ? -(8 / 1.5) * z : -(12 / 1.5) * z;
+    return Math.max(PICK_ADJUSTMENT_BY_FLAG.PICK_RICH, Math.min(PICK_ADJUSTMENT_BY_FLAG.PICK_POOR, raw));
+  };
   const stage2 = stage1.map((t) => {
     const pickFlag = pickFlagFor(t.pickCapValue);
-    const windowPressure = Math.max(0, t.starterAgePressure + PICK_ADJUSTMENT_BY_FLAG[pickFlag]);
+    const windowPressure = Math.max(0, t.starterAgePressure + pickAdjustment(shareOf(t)));
     return {
       ...t,
       competitiveness: compFor(t.starterTotalValue),
