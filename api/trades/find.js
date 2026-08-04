@@ -89,6 +89,7 @@ var SHAPE_FIT_BY_COMPETITIVENESS = {
 };
 var SIDEGRADE_PENALTY = 0.12;
 var THEIR_FIT_SATISFIED = 0.6;
+var BENCHED_VALUE_PENALTY = 0.1;
 
 // src/algo/archetypes.ts
 var ARCHETYPE_FAMILIES = [
@@ -646,6 +647,27 @@ function sidegradePenalty(give, receive) {
   );
   return gainsElsewhere ? 0 : -SIDEGRADE_PENALTY;
 }
+function benchedValuePenalty(team, give, receive, format) {
+  if (team.windowTier === "LONG") return 0;
+  const incoming = receive.filter((a) => a.kind === "player");
+  if (incoming.length === 0) return 0;
+  const goneIds = new Set(give.map(assetId));
+  const after = team.players.filter((p) => !goneIds.has(`p:${p.id}`));
+  for (const a of incoming) if (a.kind === "player") after.push(a.player);
+  const { starters } = fillStarters(after, format);
+  const startingIds = /* @__PURE__ */ new Set();
+  for (const pos of POSITIONS) for (const p of starters[pos]) startingIds.add(p.id);
+  let received = 0;
+  let benched = 0;
+  for (const a of incoming) {
+    if (a.kind !== "player") continue;
+    const v = assetValue(a);
+    received += v;
+    if (!startingIds.has(a.player.id)) benched += v;
+  }
+  if (received <= 0) return 0;
+  return -BENCHED_VALUE_PENALTY * (benched / received);
+}
 function shapeFitAdjustment(team, give, receive) {
   const w = SHAPE_FIT_BY_COMPETITIVENESS[team.competitiveness];
   if (w === 0) return 0;
@@ -843,8 +865,8 @@ function scoreCandidate(cand, myProfile, others, ctx) {
   const theirImpact = simulateImpact(them, cand.receive, cand.give, ctx.format, ctx.averages, ctx.thisYear);
   const myFit = fitScore(myImpact);
   const theirFit = fitScore(theirImpact);
-  const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give) + shapeFitAdjustment(myProfile, cand.give, cand.receive) + youngAssetQuality(myProfile, cand.receive, ctx.averages) + bestPlayerEdge(cand.receive, cand.give, ctx.averages) + sidegradePenalty(cand.give, cand.receive);
-  const theirTimeline = timelinePenalty(them, cand.give, cand.receive) + shapeFitAdjustment(them, cand.receive, cand.give) + youngAssetQuality(them, cand.give, ctx.averages) + bestPlayerEdge(cand.give, cand.receive, ctx.averages) + sidegradePenalty(cand.receive, cand.give);
+  const myTimeline = timelinePenalty(myProfile, cand.receive, cand.give) + shapeFitAdjustment(myProfile, cand.give, cand.receive) + youngAssetQuality(myProfile, cand.receive, ctx.averages) + bestPlayerEdge(cand.receive, cand.give, ctx.averages) + sidegradePenalty(cand.give, cand.receive) + benchedValuePenalty(myProfile, cand.give, cand.receive, ctx.format);
+  const theirTimeline = timelinePenalty(them, cand.give, cand.receive) + shapeFitAdjustment(them, cand.receive, cand.give) + youngAssetQuality(them, cand.give, ctx.averages) + bestPlayerEdge(cand.give, cand.receive, ctx.averages) + sidegradePenalty(cand.receive, cand.give) + benchedValuePenalty(them, cand.receive, cand.give, ctx.format);
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);
   const { give: adjGive, receive: adjReceive } = tradeEffectiveValues(

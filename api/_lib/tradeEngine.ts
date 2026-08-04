@@ -11,6 +11,7 @@ import type { ArchetypeFamily } from "../../src/algo/archetypes";
 import {
   AGE_ARB_MIN_DISCOUNT,
   AGING_LOSS_RATE,
+  BENCHED_VALUE_PENALTY,
   AGING_MAX_PENALTY,
   AGING_TAKEON_SCALE,
   DECLINING_LOSS_RATE,
@@ -531,6 +532,62 @@ function sidegradePenalty(give: Asset[], receive: Asset[]): number {
   return gainsElsewhere ? 0 : -SIDEGRADE_PENALTY;
 }
 
+// Value you cannot put in a lineup is worth less to you than the price says.
+//
+// Reported twice, in two leagues, on the same package shape:
+//
+//   Daniel Jones (1,320) + Caleb Williams (3,740) for Tetairoa McMillan
+//   "Unless Miro has absolutely zero starting quarterbacks on his team, he
+//    should not be trading for two of them while trading away a top WR and not
+//    filling that gap in return."
+//   "wouldn't trade this much value while a chunk of the value he's getting in
+//    return will sit on the bench. It's a 1QB league."
+//
+// simulateImpact is already format-aware, so the FIT terms knew. The value
+// terms did not: `balance` and `fairness` run off raw dynasty value, which
+// prices a second quarterback in a 1QB league exactly like a startable one.
+//
+// Deliberately a scoring term rather than a change to fairness.ts. Fairness is
+// shared with the calculator and trade-history grading, where a trade has to
+// look the same to everyone; "can I start this" is by definition a question
+// about ONE roster, so it belongs here next to the other per-side adjustments.
+//
+// Format-aware rather than a QB rule: in superflex a second quarterback starts,
+// and the same logic then correctly charges nothing. It reads the post-trade
+// lineup, so it also stays quiet when the incoming player displaces someone.
+//
+// Rebuilding teams are exempt. Stashing players who cannot start yet is what a
+// rebuild IS, and the trade study measured that shape working.
+function benchedValuePenalty(
+  team: TeamProfile,
+  give: Asset[],
+  receive: Asset[],
+  format: LeagueFormat,
+): number {
+  if (team.windowTier === "LONG") return 0;
+  const incoming = receive.filter((a) => a.kind === "player");
+  if (incoming.length === 0) return 0;
+
+  const goneIds = new Set(give.map(assetId));
+  const after = team.players.filter((p) => !goneIds.has(`p:${p.id}`));
+  for (const a of incoming) if (a.kind === "player") after.push(a.player);
+
+  const { starters } = fillStarters(after, format);
+  const startingIds = new Set<string>();
+  for (const pos of POSITIONS) for (const p of starters[pos]) startingIds.add(p.id);
+
+  let received = 0;
+  let benched = 0;
+  for (const a of incoming) {
+    if (a.kind !== "player") continue;
+    const v = assetValue(a);
+    received += v;
+    if (!startingIds.has(a.player.id)) benched += v;
+  }
+  if (received <= 0) return 0;
+  return -BENCHED_VALUE_PENALTY * (benched / received);
+}
+
 function shapeFitAdjustment(team: TeamProfile, give: Asset[], receive: Asset[]): number {
   const w = SHAPE_FIT_BY_COMPETITIVENESS[team.competitiveness];
   if (w === 0) return 0;
@@ -833,12 +890,14 @@ function scoreCandidate(
     + shapeFitAdjustment(myProfile, cand.give, cand.receive)
     + youngAssetQuality(myProfile, cand.receive, ctx.averages)
     + bestPlayerEdge(cand.receive, cand.give, ctx.averages)
-    + sidegradePenalty(cand.give, cand.receive);
+    + sidegradePenalty(cand.give, cand.receive)
+    + benchedValuePenalty(myProfile, cand.give, cand.receive, ctx.format);
   const theirTimeline = timelinePenalty(them, cand.give, cand.receive)
     + shapeFitAdjustment(them, cand.receive, cand.give)
     + youngAssetQuality(them, cand.give, ctx.averages)
     + bestPlayerEdge(cand.give, cand.receive, ctx.averages)
-    + sidegradePenalty(cand.receive, cand.give);
+    + sidegradePenalty(cand.receive, cand.give)
+    + benchedValuePenalty(them, cand.receive, cand.give, ctx.format);
 
   const valueGive = cand.give.reduce((s, a) => s + assetValue(a), 0);
   const valueReceive = cand.receive.reduce((s, a) => s + assetValue(a), 0);

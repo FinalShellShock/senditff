@@ -380,6 +380,17 @@ export const SIDEGRADE_PENALTY = 0.12;
 // package a human actually liked still clears the cap or lands near it.
 export const THEIR_FIT_SATISFIED = 0.60;
 
+// Charge for acquiring value that cannot reach the starting lineup.
+//
+// Scales with the SHARE of incoming value that ends up benched, so a package
+// where everything starts pays nothing and one where it all sits pays the full
+// amount. Sized like the other per-side adjustments, where meaningful
+// differences in `total` run 0.1-0.3.
+//
+// Rebuilders are exempt in the function itself: stashing players who cannot
+// start yet is what a rebuild is for.
+export const BENCHED_VALUE_PENALTY = 0.10;
+
 export const CONSOLIDATE_BY_COMPETITIVENESS: Record<Competitiveness, number> = {
   STRONG: 1.0,
   AVERAGE: 0.85,
