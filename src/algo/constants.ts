@@ -437,3 +437,32 @@ export const COMPETITIVENESS_GRID: Record<Competitiveness, Record<WindowTier, Wi
   AVERAGE: { LONG: "RISING", MID: "AVERAGE", SHORT: "MIDDLING" },
   WEAK: { LONG: "REBUILD", MID: "TRANSITION", SHORT: "STUCK" },
 };
+
+// Absolute quality floor: the best asset in a trade must be at least this good
+// in the LEAGUE, not merely better than the other junk in the same package.
+//
+// Everything else the engine checks is RELATIVE, which is how a package of
+// nobodies passes every rule at once:
+//
+//   balance            compares the two sides to each other, so two piles of
+//                      junk balance perfectly
+//   bundleShapeOk      compares each piece to its own side's total
+//   CONSOLIDATE_UPGRADE compares the incoming player to the best outgoing one
+//   myFit / theirFit   are position-score deltas, and upgrading from terrible
+//                      to slightly-less-terrible is a positive delta
+//   archMatch          is about shape, not quality
+//
+// Nothing anywhere asked "are these players any good". Reported as "It's a
+// bunch of back ups for back ups", and it survived both the passenger rule and
+// the consolidation rule because it broke neither.
+//
+// 100 is not arbitrary: it is the band the trade study itself measured.
+// Landing a top-24 dynasty player beat expectations 60% of the time against
+// 48% when the best piece was outside the top 100, so outside-100 is the
+// region the outcome data already calls a coin flip.
+//
+// Measured on the 16 team league, as a floor on the best asset in the deal:
+//   top-24  removes 48 of 80 packages (60%)  <- guts the list
+//   top-100 removes  6 of 80 packages ( 8%)  <- this
+//   top-150 removes  2 of 80 packages ( 3%)
+export const MIN_HEADLINE_RANK = 100;

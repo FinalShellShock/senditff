@@ -90,6 +90,7 @@ var SHAPE_FIT_BY_COMPETITIVENESS = {
 var SIDEGRADE_PENALTY = 0.12;
 var THEIR_FIT_SATISFIED = 0.6;
 var BENCHED_VALUE_PENALTY = 0.1;
+var MIN_HEADLINE_RANK = 100;
 
 // src/algo/archetypes.ts
 var ARCHETYPE_FAMILIES = [
@@ -1357,7 +1358,18 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
     }
     return true;
   };
-  const shapeFilter = (cands) => cands.filter((c) => sideOk(c.give) && sideOk(c.receive) && lateralSwapOk(c.give, c.receive));
+  const headlineOk = (c) => {
+    if (forced || (opts.mustGive?.length ?? 0) > 0 || (opts.mustReceive?.length ?? 0) > 0) {
+      return true;
+    }
+    let best = 0;
+    for (const a of [...c.give, ...c.receive]) best = Math.max(best, assetValue(a));
+    const rank = overallRankOf(best, averages);
+    return rank == null || rank <= MIN_HEADLINE_RANK;
+  };
+  const shapeFilter = (cands) => cands.filter(
+    (c) => sideOk(c.give) && sideOk(c.receive) && lateralSwapOk(c.give, c.receive) && headlineOk(c)
+  );
   let degraded;
   const generated = shapeFilter(generators.flatMap((g) => g(ctx)));
   const mustGive = opts.mustGive ?? [];

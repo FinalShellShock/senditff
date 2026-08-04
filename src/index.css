@@ -4459,29 +4459,86 @@ body {
 
 .calc-leverage { margin-top: 24px; }
 
-/* ── Calc: sticky totals ─────────────────────────────────────────────────────
-   The trade has to stay on screen while you type, and on a phone the keyboard
-   owns the bottom half. One line, pinned to the top. */
-.calc-sticky {
+/* ── Calc: the dock ──────────────────────────────────────────────────────────
+   Search, results and running totals live at the BOTTOM of the screen, pinned,
+   because that is where a thumb already is. A text field at the top of a phone
+   is the furthest point from your hand, and a text field is the one control
+   you actually have to fiddle with to fix a typo.
+
+   Results stack ABOVE the input so the whole cluster sits in the reachable
+   third, with the trade still readable above it. iOS keeps a focused input
+   above the keyboard by itself, so nothing here fights the OS. */
+.calc-dock {
   position: sticky;
-  top: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 7px 12px;
-  margin-bottom: 10px;
+  bottom: 0;
+  z-index: 30;
+  margin-top: 18px;
   background: #0f1318;
   border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 4px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 -6px 20px rgba(0,0,0,0.45);
+}
+.calc-dock-totals {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
   font-size: 11px;
 }
-.calc-sticky-side { color: #64748b; }
-.calc-sticky-side b { color: #e2e8f0; font-weight: 600; }
-.calc-sticky-arrow { color: #334155; }
-.calc-sticky-verdict { font-size: 9px; font-weight: 700; letter-spacing: 1px; margin-left: auto; }
-.calc-sticky-diff { font-size: 11px; font-weight: 600; }
+.calc-dock-side { color: #64748b; }
+.calc-dock-side b { color: #e2e8f0; font-weight: 600; }
+.calc-dock-arrow { color: #334155; }
+.calc-dock-verdict { font-size: 9px; font-weight: 700; letter-spacing: 1px; margin-left: auto; }
+.calc-dock-diff { font-size: 11px; font-weight: 600; }
+
+.calc-dock-results {
+  max-height: 44vh;
+  overflow-y: auto;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  -webkit-overflow-scrolling: touch;
+}
+.calc-dock-empty { text-align: center; font-size: 11px; padding: 16px 0; }
+
+.calc-dock-bar {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.02);
+}
+.calc-dock-bar > .calc-search-input { flex: 1; min-width: 0; }
+.calc-dock-btn {
+  background: none;
+  border: none;
+  border-left: 1px solid rgba(255,255,255,0.07);
+  color: #f59e0b;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  /* 44px tall: a real tap target, not a 20px one you have to aim at. */
+  padding: 0 16px;
+  align-self: stretch;
+  min-height: 44px;
+}
+
+@media (max-width: 640px) {
+  /* Full-bleed at the bottom edge on a phone, and taller rows so the A/B
+     buttons are thumb-sized rather than cursor-sized. */
+  .calc-dock {
+    margin-left: -12px;
+    margin-right: -12px;
+    border-left: none;
+    border-right: none;
+    border-radius: 6px 6px 0 0;
+  }
+  .calc-dock-results { max-height: 38vh; }
+  .calc-dock-results .calc-result-row { padding-top: 9px; padding-bottom: 9px; }
+  .calc-dock-results .calc-add-btn { min-width: 38px; min-height: 34px; }
+  .calc-dock-results .calc-result-owner { display: none; }
+}
 
 /* ── Calc: balance builder ── */
 .calc-balance { margin-top: 22px; }

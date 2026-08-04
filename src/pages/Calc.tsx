@@ -432,6 +432,8 @@ export default function Calc() {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<AssetFilters>(EMPTY_ASSET_FILTERS);
   const [rosterLocked, setRosterLocked] = useState(true);
+  // The dock stays one line until you actually reach for it.
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const allAssets = useMemo(() => buildAssetPool(profiles), [profiles]);
 
@@ -575,89 +577,7 @@ export default function Calc() {
   return (
     <div className="calc-container">
 
-      {/* Sticky, so the numbers survive the keyboard. One line: both totals,
-          the gap, and the verdict. */}
-      {hasItems && (
-        <div className="calc-sticky">
-          <span className="calc-sticky-side">
-            {profileA?.ownerName?.split(" ")[0] ?? "A"} <b>{totalA.toLocaleString()}</b>
-          </span>
-          <span className="calc-sticky-arrow">⇄</span>
-          <span className="calc-sticky-side">
-            {profileB?.ownerName?.split(" ")[0] ?? "B"} <b>{totalB.toLocaleString()}</b>
-          </span>
-          <span className="calc-sticky-verdict" style={{ color: verdict.color }}>
-            {verdict.text}
-          </span>
-          <span className="calc-sticky-diff" style={{ color: isFair ? "#22c55e" : "#ef4444" }}>
-            {diff >= 0 ? "+" : "−"}{Math.abs(diff).toLocaleString()}
-          </span>
-        </div>
-      )}
 
-      {/* SEARCH FIRST.
-          On a phone the keyboard covers the bottom half of the screen, so
-          whatever you need while typing has to live at the TOP. This used to
-          sit below the trade panels, which put the result rows under the
-          keyboard: "I can't click on him without dismissing the keyboard".
-          The running totals ride along in a sticky bar so the trade never
-          leaves the screen either: "We should not lose view of the trade being
-          calculated while typing." */}
-      {/* ── Search ── */}
-      <div className="calc-search-section">
-        <div className="calc-search-bar">
-          <input
-            className="calc-search-input"
-            placeholder="Search players and picks…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <label className="calc-lock-toggle">
-            <input
-              type="checkbox"
-              checked={rosterLocked}
-              onChange={(e) => setRosterLocked(e.target.checked)}
-            />
-            <span>ROSTER FILTER</span>
-          </label>
-        </div>
-
-        <AssetFilterBar filters={filters} onChange={setFilters} />
-
-        {searchResults.length > 0 ? (
-          <div className="calc-results">
-            {searchResults.map((asset) => {
-              const naturalA = asset.ownerRosterId === sideA.rosterId;
-              const naturalB = asset.ownerRosterId === sideB.rosterId;
-              return (
-                <div key={asset.id} className="calc-result-row">
-                  <div className="calc-result-left">
-                    <PosTag position={asset.position} />
-                    <span className="calc-result-name">{asset.name}</span>
-                    {asset.age != null && <span className="calc-result-meta">{typeof asset.age === "number" ? asset.age.toFixed(1) : asset.age}</span>}
-                    <span className="calc-result-owner">{asset.ownerName}</span>
-                  </div>
-                  <div className="calc-result-right">
-                    <span className="calc-result-value">{asset.value.toLocaleString()}</span>
-                    <button
-                      className={`calc-add-btn side-a${naturalA ? " natural" : ""}`}
-                      onClick={() => addAsset(asset, "A")}
-                    >A</button>
-                    <button
-                      className={`calc-add-btn side-b${naturalB ? " natural" : ""}`}
-                      onClick={() => addAsset(asset, "B")}
-                    >B</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="dim-text" style={{ textAlign: "center", fontSize: 11, padding: "16px 0" }}>
-            {emptyHint}
-          </p>
-        )}
-      </div>
 
       {/* ── Trade panels + verdict ── */}
       <div className="calc-panels">
@@ -742,6 +662,113 @@ export default function Calc() {
         <h2 className="section-title">Positional Leverage</h2>
         <LeverageBoard profiles={profiles} />
       </section>
+
+      {/* ── The dock ──────────────────────────────────────────────────────────
+          Everything you touch while building a trade, pinned to the BOTTOM of
+          the screen where a thumb already is.
+
+          Two earlier attempts got this wrong in opposite directions. Originally
+          the search sat under the trade panels and the results landed beneath
+          the on-screen keyboard, so you could not tap a player without
+          dismissing it. Moving it to the TOP fixed that and broke something
+          else: "you want thumbs to be able to reach up and adjust the cursor."
+          A text field at the top of a phone screen is the furthest point from
+          your thumb, and text fields are the one control you genuinely have to
+          fiddle with.
+
+          So: input at the bottom, results stacked directly ABOVE it, running
+          totals above those. iOS keeps a focused input above the keyboard on
+          its own, which puts the whole cluster in the reachable third of the
+          screen with the trade still visible above it. Same shape as every
+          messaging app, for the same reason. */}
+      <div className="calc-dock">
+        {hasItems && (
+          <div className="calc-dock-totals">
+            <span className="calc-dock-side">
+              {profileA?.ownerName?.split(" ")[0] ?? "A"} <b>{totalA.toLocaleString()}</b>
+            </span>
+            <span className="calc-dock-arrow">⇄</span>
+            <span className="calc-dock-side">
+              {profileB?.ownerName?.split(" ")[0] ?? "B"} <b>{totalB.toLocaleString()}</b>
+            </span>
+            <span className="calc-dock-verdict" style={{ color: verdict.color }}>
+              {verdict.text}
+            </span>
+            <span className="calc-dock-diff" style={{ color: isFair ? "#22c55e" : "#ef4444" }}>
+              {diff >= 0 ? "+" : "−"}{Math.abs(diff).toLocaleString()}
+            </span>
+          </div>
+        )}
+
+        {/* Results ABOVE the input. Rendered only when you are actually
+            searching, so the dock stays one line at rest instead of eating a
+            third of the screen for a list nobody asked for. */}
+        {searchOpen && (
+          <div className="calc-dock-results">
+            {searchResults.length === 0 ? (
+              <p className="dim-text calc-dock-empty">{emptyHint}</p>
+            ) : (
+              searchResults.map((asset) => {
+                const naturalA = asset.ownerRosterId === sideA.rosterId;
+                const naturalB = asset.ownerRosterId === sideB.rosterId;
+                return (
+                  <div key={asset.id} className="calc-result-row">
+                    <div className="calc-result-left">
+                      <PosTag position={asset.position} />
+                      <span className="calc-result-name">{asset.name}</span>
+                      {asset.age != null && (
+                        <span className="calc-result-meta">{asset.age.toFixed(1)}</span>
+                      )}
+                      <span className="calc-result-owner">{asset.ownerName}</span>
+                    </div>
+                    <div className="calc-result-right">
+                      <span className="calc-result-value">{asset.value.toLocaleString()}</span>
+                      <button
+                        className={`calc-add-btn side-a${naturalA ? " natural" : ""}`}
+                        onClick={() => addAsset(asset, "A")}
+                      >A</button>
+                      <button
+                        className={`calc-add-btn side-b${naturalB ? " natural" : ""}`}
+                        onClick={() => addAsset(asset, "B")}
+                      >B</button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {searchOpen && <AssetFilterBar filters={filters} onChange={setFilters} />}
+
+        <div className="calc-dock-bar">
+          <input
+            className="calc-search-input"
+            placeholder="Search players and picks…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setSearchOpen(true)}
+          />
+          {searchOpen ? (
+            <button
+              type="button"
+              className="calc-dock-btn"
+              onClick={() => { setSearchOpen(false); setQuery(""); }}
+            >
+              DONE
+            </button>
+          ) : (
+            <label className="calc-lock-toggle">
+              <input
+                type="checkbox"
+                checked={rosterLocked}
+                onChange={(e) => setRosterLocked(e.target.checked)}
+              />
+              <span>ROSTER FILTER</span>
+            </label>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

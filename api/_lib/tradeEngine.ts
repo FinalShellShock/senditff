@@ -17,6 +17,7 @@ import {
   DECLINING_LOSS_RATE,
   DEPTH_RESILIENCE_WEIGHT,
   LATERAL_SWAP_MIN_AGE_GAP,
+  MIN_HEADLINE_RANK,
   PICK_DECAY,
   ACQUIRED_QUALITY_BONUS,
   BEST_PLAYER_EDGE,
@@ -1663,8 +1664,32 @@ export function generatePackages(
     }
     return true;
   };
+  // Absolute quality floor. Every other check in this engine is relative, so a
+  // package of nobodies passes all of them at once: the sides balance against
+  // each other, each piece clears a share of its own side, the consolidation
+  // beats the best outgoing piece, and the fit deltas are positive because
+  // terrible upgraded to slightly-less-terrible is still an upgrade. Nothing
+  // asked whether the players were any good. "It's a bunch of back ups for back
+  // ups."
+  //
+  // Exempt whenever the user asked for something SPECIFIC: a forced archetype,
+  // or a named asset. Both are explicit intent, and the honest answer to "show
+  // me trades for my WR5" is the trades that exist, not a blank page. Dropped
+  // asset-scoped searches from 64/64 to 61/64 before this exemption, and the
+  // three it lost were exactly the lowest-value players anyone would scope to.
+  const headlineOk = (c: Candidate): boolean => {
+    if (forced || (opts.mustGive?.length ?? 0) > 0 || (opts.mustReceive?.length ?? 0) > 0) {
+      return true;
+    }
+    let best = 0;
+    for (const a of [...c.give, ...c.receive]) best = Math.max(best, assetValue(a));
+    const rank = overallRankOf(best, averages);
+    return rank == null || rank <= MIN_HEADLINE_RANK;
+  };
   const shapeFilter = (cands: Candidate[]) =>
-    cands.filter((c) => sideOk(c.give) && sideOk(c.receive) && lateralSwapOk(c.give, c.receive));
+    cands.filter(
+      (c) => sideOk(c.give) && sideOk(c.receive) && lateralSwapOk(c.give, c.receive) && headlineOk(c),
+    );
 
   let degraded: GenerateDiagnostics["degraded"];
   const generated = shapeFilter(generators.flatMap((g) => g(ctx)));

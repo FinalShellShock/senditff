@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "c73e12cc9692";
+var ALGO_FINGERPRINT_BUILD = "fdec63255448";
 var SCOUT_FINGERPRINT_BUILD = "8a16d2504d13";
 
 // src/algo/version.ts
@@ -46,6 +46,21 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "1.29",
+    algo: "Shotgun",
+    algoFingerprint: "fdec63255448",
+    date: "2026-08-04",
+    title: "Trades have to involve someone actually good, and the calculator moves to your thumbs",
+    changes: [
+      "The engine now refuses trades where nobody involved is any good. Every check it ran was relative: the two sides balanced against each other, each piece was a fair share of its own side, the player coming back beat the one going out. None of them ever asked whether the players were worth having, so a deal made entirely of bench pieces passed all of them at once.",
+      "The best asset in a deal now has to rank inside the league's top 100. That is not a made-up line: it is the band the trade research already measured, where landing a top-24 player beat expectations 60% of the time against 48% once the best piece fell outside the top 100. Forced searches and searches pinned to a specific player are exempt, because if you asked for something specific you should see what exists rather than a blank page.",
+      "The calculator has been rebuilt around the bottom of the screen. Search, the results and your running totals now sit in a dock pinned above the keyboard, because that is where your thumb already is. Results stack above the input so you can read the trade, see the matches and type without any of them moving.",
+      "The dock stays a single line until you tap into it, so the page is not carrying a list you did not ask for."
+    ],
+    knownIssues: []
+  },
   {
     branch: "daniels",
     release: "1.28",
