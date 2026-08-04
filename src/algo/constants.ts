@@ -367,6 +367,19 @@ export const SHAPE_FIT_BY_COMPETITIVENESS: Record<Competitiveness, number> = {
 // league. Strong separation, thin sample.
 export const SIDEGRADE_PENALTY = 0.12;
 
+// Ceiling on the normalised theirFit term in `total`.
+//
+// theirFit answers "would they accept", which is a threshold question, not a
+// merit one. It is already gated at DEFAULT_GATES.theirFit; rewarding it
+// linearly above that bar pays extra for being fleeced. Across 12 logged
+// verdicts it was the only term that failed to separate upvotes from downvotes
+// (+0.311 vs +0.335), and the two highest readings in the set were both
+// downvotes.
+//
+// 0.60 sits just above the upvoted band (0.17-0.71 normalised), so every
+// package a human actually liked still clears the cap or lands near it.
+export const THEIR_FIT_SATISFIED = 0.60;
+
 export const CONSOLIDATE_BY_COMPETITIVENESS: Record<Competitiveness, number> = {
   STRONG: 1.0,
   AVERAGE: 0.85,

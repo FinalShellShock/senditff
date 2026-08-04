@@ -88,6 +88,7 @@ var SHAPE_FIT_BY_COMPETITIVENESS = {
   WEAK: 0
 };
 var SIDEGRADE_PENALTY = 0.12;
+var THEIR_FIT_SATISFIED = 0.6;
 
 // src/algo/archetypes.ts
 var ARCHETYPE_FAMILIES = [
@@ -858,7 +859,11 @@ function scoreCandidate(cand, myProfile, others, ctx) {
   const theirArch = counterArchetypeScore(cand.archetype, them);
   const archMatch = myArch * 0.7 + theirArch * 0.3;
   const norm = (v, floor) => Math.max(0, Math.min(1, (v - floor) / (1 - floor)));
-  const total = norm(myFit + myTimeline, DEFAULT_GATES.myFit) * 0.32 + norm(theirFit + theirTimeline, DEFAULT_GATES.theirFit) * 0.28 + archMatch * 0.22 + norm(balance, DEFAULT_GATES.balance) * 0.18;
+  const theirFitScore = Math.min(
+    norm(theirFit + theirTimeline, DEFAULT_GATES.theirFit),
+    THEIR_FIT_SATISFIED
+  );
+  const total = norm(myFit + myTimeline, DEFAULT_GATES.myFit) * 0.32 + theirFitScore * 0.28 + archMatch * 0.22 + norm(balance, DEFAULT_GATES.balance) * 0.18;
   return {
     ...cand,
     total,

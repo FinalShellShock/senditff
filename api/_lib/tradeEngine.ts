@@ -24,6 +24,7 @@ import {
   POSITIONS,
   SHAPE_FIT_BY_COMPETITIVENESS,
   SIDEGRADE_PENALTY,
+  THEIR_FIT_SATISFIED,
   YOUNG_ASSET_BONUS,
   YOUNG_ASSET_MAX_AGE,
   STANCE_CAUTION_TOTAL,
@@ -878,9 +879,32 @@ function scoreCandidate(
   // acceptance bar at zero, so score measures merit ABOVE the bar.
   const norm = (v: number, floor: number) =>
     Math.max(0, Math.min(1, (v - floor) / (1 - floor)));
+  // "Will they say yes" SATURATES. It is a gate question, and past the point
+  // where the answer is plainly yes, more enthusiasm on their side is not a
+  // better trade for you, it is a worse one: it means you are paying more than
+  // you had to.
+  //
+  // Measured across 12 logged verdicts, theirFit was the one term that did not
+  // discriminate at all (upvotes +0.311, downvotes +0.335), and the two highest
+  // readings in the whole set were BOTH downvotes:
+  //
+  //   theirFit 1.000  Trevor Lawrence for Kirk Cousins (37.9) + Watson
+  //                   myFit 0.040, archMatch 0.000, and it shipped as card #1
+  //                   badged RECOMMENDED, with theirFit contributing 0.28 of
+  //                   its 0.43 total.
+  //   theirFit 0.866  Daniel Jones + Caleb Williams for McMillan, downvoted in
+  //                   two different leagues on two different days.
+  //
+  // Upvoted packages sat between 0.17 and 0.71 once normalised, so the cap goes
+  // just above that band: everything a human liked still earns full credit, and
+  // the runaway stops.
+  const theirFitScore = Math.min(
+    norm(theirFit + theirTimeline, DEFAULT_GATES.theirFit),
+    THEIR_FIT_SATISFIED,
+  );
   const total =
     norm(myFit + myTimeline, DEFAULT_GATES.myFit) * 0.32 +
-    norm(theirFit + theirTimeline, DEFAULT_GATES.theirFit) * 0.28 +
+    theirFitScore * 0.28 +
     archMatch * 0.22 +
     norm(balance, DEFAULT_GATES.balance) * 0.18;
 
