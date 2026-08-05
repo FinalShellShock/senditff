@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import type { Pick as DraftPick, Player, Position, TeamProfile, WindowLabel } from "../algo/types.ts";
+import type {
+  Pick as DraftPick,
+  Player,
+  Position,
+  TeamProfile,
+} from "../algo/types.ts";
 import { makeApiClient, type LedgerRow } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
@@ -8,18 +13,7 @@ import { scoutingPlays, type Play } from "../algo/plays.ts";
 import { intentShortLabel } from "../data/intentLabels.ts";
 import { FeedbackBlock } from "../components/FeedbackBlock.tsx";
 import TeamState, { pickFlagText } from "./team/TeamState.tsx";
-
-const LABEL_COLOR: Record<WindowLabel, string> = {
-  JUGGERNAUT: "#16a34a",
-  CONTEND:    "#22c55e",
-  CLOSING:    "#ef4444",
-  RISING:     "#06b6d4",
-  AVERAGE:    "#94a3b8",
-  MIDDLING:   "#eab308",
-  REBUILD:    "#3b82f6",
-  TRANSITION: "#a855f7",
-  STUCK:      "#dc2626",
-};
+import { STATE_COLOR, STATE_TEXT } from "../ui/teamState.ts";
 
 // CRITICAL and SURPLUS are the two states worth acting on, so they own the
 // loud colors. HEALTHY is deliberately neutral: it is the absence of leverage,
@@ -31,19 +25,28 @@ const POSITIONS = ["QB", "RB", "WR", "TE"] as const;
 
 // Deep-links a play into the trade finder. Plays without an archetype are
 // guidance rather than a searchable shape, and render without the button.
-function playLink(leagueId: string | undefined, rosterId: number, play: Play): string {
+function playLink(
+  leagueId: string | undefined,
+  rosterId: number,
+  play: Play,
+): string {
   const params = new URLSearchParams();
   if (play.archetype) params.set("archetype", play.archetype);
   if (play.position) params.set("pos", play.position);
   return `/league/${leagueId}/sendit/${rosterId}?${params.toString()}`;
 }
 
-
-
-type RosterItem = { divider: (typeof POSITIONS)[number]; player?: undefined } | { divider?: undefined; player: Player };
+type RosterItem =
+  | { divider: (typeof POSITIONS)[number]; player?: undefined }
+  | { divider?: undefined; player: Player };
 
 function posColor(pos: string) {
-  const map: Record<string, string> = { QB: "#f97316", RB: "#22c55e", WR: "#3b82f6", TE: "#a855f7" };
+  const map: Record<string, string> = {
+    QB: "#f97316",
+    RB: "#22c55e",
+    WR: "#3b82f6",
+    TE: "#a855f7",
+  };
   return map[pos] ?? "#94a3b8";
 }
 
@@ -83,7 +86,10 @@ const playUpReasonsFor = (team: string) => [
 ];
 
 export default function TeamDeepDive() {
-  const { id: leagueId, rosterId: rosterIdStr } = useParams<{ id: string; rosterId: string }>();
+  const { id: leagueId, rosterId: rosterIdStr } = useParams<{
+    id: string;
+    rosterId: string;
+  }>();
   const rosterId = Number(rosterIdStr);
   const navigate = useNavigate();
   const { getToken } = useAuth();
@@ -108,13 +114,18 @@ export default function TeamDeepDive() {
         if (!cancelled && !d.needsBackfill) setLedger(d.ledger);
       })
       .catch(() => {}); // stats chip is optional garnish
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [leagueId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tradeRow = ledger?.find((r) => r.rosterId === rosterId) ?? null;
 
-  const profile = overview.profiles.find((p) => p.rosterId === rosterId) as TeamProfile | undefined;
-  const sortedTeams = [...overview.profiles].sort((a, b) => a.starterRank - b.starterRank);
+  const profile = overview.profiles.find((p) => p.rosterId === rosterId) as
+    TeamProfile | undefined;
+  const sortedTeams = [...overview.profiles].sort(
+    (a, b) => a.starterRank - b.starterRank,
+  );
 
   const rosterItems = useMemo(() => {
     if (!profile) return [] as RosterItem[];
@@ -141,10 +152,12 @@ export default function TeamDeepDive() {
   const intentKey = (archetype: string, position?: string | null) =>
     `${archetype}|${position ?? ""}`;
   const playHasTrades = (play: Play) =>
-    liveIntents === null || liveIntents.has(intentKey(play.archetype!, play.position ?? null));
+    liveIntents === null ||
+    liveIntents.has(intentKey(play.archetype!, play.position ?? null));
 
   const plays = useMemo(
-    () => (profile ? scoutingPlays(profile, overview.profiles as TeamProfile[]) : []),
+    () =>
+      profile ? scoutingPlays(profile, overview.profiles as TeamProfile[]) : [],
     [profile, overview.profiles],
   );
 
@@ -152,7 +165,9 @@ export default function TeamDeepDive() {
   // Re-runs when the roster changes, since a play that had no match yesterday
   // can have one after a trade.
   const linkable = plays.filter((p) => p.archetype);
-  const probeKey = linkable.map((p) => intentKey(p.archetype!, p.position ?? null)).join(",");
+  const probeKey = linkable
+    .map((p) => intentKey(p.archetype!, p.position ?? null))
+    .join(",");
   useEffect(() => {
     if (!leagueId || linkable.length === 0) {
       setLiveIntents(null);
@@ -164,25 +179,38 @@ export default function TeamDeepDive() {
       .probeTrades(
         leagueId,
         rosterId,
-        linkable.map((p) => ({ archetype: p.archetype!, position: p.position ?? null })),
+        linkable.map((p) => ({
+          archetype: p.archetype!,
+          position: p.position ?? null,
+        })),
       )
       .then((d) => {
         if (cancelled) return;
         setLiveIntents(
-          new Set(d.results.filter((r) => r.count > 0).map((r) => intentKey(r.archetype, r.position))),
+          new Set(
+            d.results
+              .filter((r) => r.count > 0)
+              .map((r) => intentKey(r.archetype, r.position)),
+          ),
         );
       })
       // Leave it null: every button shows, exactly as before this existed.
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leagueId, rosterId, probeKey]);
 
   if (!profile) {
-    return <p className="dim-text" style={{ marginTop: 48, textAlign: "center" }}>Team not found.</p>;
+    return (
+      <p className="dim-text" style={{ marginTop: 48, textAlign: "center" }}>
+        Team not found.
+      </p>
+    );
   }
 
-  const labelColor = LABEL_COLOR[profile.windowLabel];
+  const stateColor = STATE_COLOR[profile.teamState] ?? "#94a3b8";
 
   const sortedPicks = [...profile.picks].sort((a, b) => {
     if (a.year !== b.year) return a.year - b.year;
@@ -190,9 +218,12 @@ export default function TeamDeepDive() {
     return a.slot - b.slot;
   });
 
-  const pickFlagColor = profile.pickCapital.flag === "PICK_RICH" ? "#22c55e"
-    : profile.pickCapital.flag === "PICK_POOR" ? "#ef4444"
-    : "#94a3b8";
+  const pickFlagColor =
+    profile.pickCapital.flag === "PICK_RICH"
+      ? "#22c55e"
+      : profile.pickCapital.flag === "PICK_POOR"
+        ? "#ef4444"
+        : "#94a3b8";
 
   return (
     <>
@@ -203,16 +234,33 @@ export default function TeamDeepDive() {
             {profile.ownerName}
             {profile.isMine && <span className="mine-mark">★ YOU</span>}
           </h1>
-          <span className="window-label" style={{ background: labelColor }}>{profile.windowLabel}</span>
+          <span className="window-label" style={{ background: stateColor }}>
+            {STATE_TEXT[profile.teamState]}
+          </span>
         </div>
         <div className="dive-header-row">
           <div className="team-meta" style={{ marginBottom: 0 }}>
-            <span className="meta-pill">{profile.competitiveness} / {profile.windowTier}</span>
-            <span className="meta-pill">rank <strong>#{profile.starterRank}</strong></span>
-            <span className="meta-pill">age <strong>{profile.starterCalAge.toFixed(1)}</strong></span>
+            {/* The two ranks the state is assigned from. Showing them beside
+                the state means the label is checkable rather than asserted. */}
             <span className="meta-pill">
-              picks <strong style={{ color: pickFlagColor }}>{pickFlagText(profile.pickCapital.flag)}</strong>
-              <span style={{ color: "#475569" }}> · {profile.pickCapital.score.toFixed(0)}</span>
+              contender <strong>#{profile.starterRank}</strong> · dynasty{" "}
+              <strong>#{profile.dynastyRank}</strong>
+            </span>
+            <span className="meta-pill">
+              rank <strong>#{profile.starterRank}</strong>
+            </span>
+            <span className="meta-pill">
+              age <strong>{profile.starterCalAge.toFixed(1)}</strong>
+            </span>
+            <span className="meta-pill">
+              picks{" "}
+              <strong style={{ color: pickFlagColor }}>
+                {pickFlagText(profile.pickCapital.flag)}
+              </strong>
+              <span style={{ color: "#475569" }}>
+                {" "}
+                · {profile.pickCapital.score.toFixed(0)}
+              </span>
             </span>
             <span className="meta-pill">{profile.record}</span>
             {tradeRow && (
@@ -220,26 +268,49 @@ export default function TeamDeepDive() {
                 className="meta-pill"
                 style={{ cursor: "pointer" }}
                 title="Open trade grades"
-                onClick={() => navigate(`/league/${leagueId}/trades?manager=${rosterId}`)}
+                onClick={() =>
+                  navigate(`/league/${leagueId}/trades?manager=${rosterId}`)
+                }
               >
                 trades <strong>{tradeRow.trades}</strong>
-                <span style={{ color: "#475569" }}> · {tradeRow.wins}-{tradeRow.losses}-{tradeRow.ties} · </span>
-                <strong style={{ color: tradeRow.netValue > 0 ? "#22c55e" : tradeRow.netValue < 0 ? "#ef4444" : "#94a3b8" }}>
-                  {tradeRow.netValue >= 0 ? "+" : "−"}{(Math.abs(tradeRow.netValue) / 1000).toFixed(1)}k
+                <span style={{ color: "#475569" }}>
+                  {" "}
+                  · {tradeRow.wins}-{tradeRow.losses}-{tradeRow.ties} ·{" "}
+                </span>
+                <strong
+                  style={{
+                    color:
+                      tradeRow.netValue > 0
+                        ? "#22c55e"
+                        : tradeRow.netValue < 0
+                          ? "#ef4444"
+                          : "#94a3b8",
+                  }}
+                >
+                  {tradeRow.netValue >= 0 ? "+" : "−"}
+                  {(Math.abs(tradeRow.netValue) / 1000).toFixed(1)}k
                 </strong>
               </span>
             )}
           </div>
           <div className="team-switcher">
-            <span className="dim-text" style={{ fontSize: 10, letterSpacing: 1 }}>TEAM</span>
+            <span
+              className="dim-text"
+              style={{ fontSize: 10, letterSpacing: 1 }}
+            >
+              TEAM
+            </span>
             <select
               className="team-switcher-select"
               value={rosterId}
-              onChange={(e) => navigate(`/league/${leagueId}/team/${e.target.value}`)}
+              onChange={(e) =>
+                navigate(`/league/${leagueId}/team/${e.target.value}`)
+              }
             >
               {sortedTeams.map((t) => (
                 <option key={t.rosterId} value={t.rosterId}>
-                  #{t.starterRank} {t.ownerName}{t.isMine ? " ★" : ""}
+                  #{t.starterRank} {t.ownerName}
+                  {t.isMine ? " ★" : ""}
                 </option>
               ))}
             </select>
@@ -248,48 +319,73 @@ export default function TeamDeepDive() {
       </div>
 
       {/* Scouting Report — what the outcome data says to do */}
-      <TeamState me={profile} league={overview.profiles as TeamProfile[]} format={overview.format} />
+      <TeamState
+        me={profile}
+        league={overview.profiles as TeamProfile[]}
+        format={overview.format}
+      />
 
       <section className="dive-pos-section">
         <h2 className="section-title">SCOUTING REPORT</h2>
         <p className="dim-text scout-intro">
-          What worked for teams in your situation, across 14,343 real dynasty trades. Each
-          percentage says what it counts, and none of them are a prediction for this roster.
+          What worked for teams in your situation, across 14,343 real dynasty
+          trades. Each percentage says what it counts, and none of them are a
+          prediction for this roster.
         </p>
         {plays.length === 0 && (
-          <p className="scout-caveat">Nothing stands out for this roster right now.</p>
+          <p className="scout-caveat">
+            Nothing stands out for this roster right now.
+          </p>
         )}
         <div className="scout-list">
           {plays.map((play) => (
-            <div key={play.key} className={`scout-row${play.kind === "avoid" ? " scout-row-avoid" : ""}`}>
+            <div
+              key={play.key}
+              className={`scout-row${play.kind === "avoid" ? " scout-row-avoid" : ""}`}
+            >
               <div className="scout-row-main">
                 <span className="scout-title">
-                  {play.kind === "avoid" && <span className="scout-avoid-tag">AVOID</span>}
+                  {play.kind === "avoid" && (
+                    <span className="scout-avoid-tag">AVOID</span>
+                  )}
                   {play.title}
                 </span>
                 <span className="scout-data">{play.detail}</span>
                 <span className="scout-evidence">{play.evidence}</span>
               </div>
-              <div className="scout-row-meter">
-                <span className={`scout-rate${play.kind === "avoid" ? " scout-rate-avoid" : ""}`}>
-                  {play.hitRate}%
-                </span>
-                <span className="scout-strength">{play.rateLabel}</span>
-                {/* Only offered once the engine confirms it would return
+              {/* Skipped entirely when there is neither a rate nor a CTA, so a
+                  play with no measured number does not leave an empty gutter. */}
+              {(play.hitRate !== null ||
+                (play.archetype && playHasTrades(play))) && (
+                <div className="scout-row-meter">
+                  {play.hitRate !== null && (
+                    <>
+                      <span
+                        className={`scout-rate${play.kind === "avoid" ? " scout-rate-avoid" : ""}`}
+                      >
+                        {play.hitRate}%
+                      </span>
+                      <span className="scout-strength">{play.rateLabel}</span>
+                    </>
+                  )}
+                  {/* Only offered once the engine confirms it would return
                     something. A play whose link lands on "none survived
                     scoring" is worse than a play with no link. */}
-                {play.archetype && playHasTrades(play) && (
-                  <button
-                    className="sendit-reset-btn scout-cta"
-                    onClick={() => navigate(playLink(leagueId, rosterId, play))}
-                  >
-                    {/* Names the intent it opens. "Find these trades" gave no
+                  {play.archetype && playHasTrades(play) && (
+                    <button
+                      className="sendit-reset-btn scout-cta"
+                      onClick={() =>
+                        navigate(playLink(leagueId, rosterId, play))
+                      }
+                    >
+                      {/* Names the intent it opens. "Find these trades" gave no
                         clue, so landing on a differently-worded picker read as
                         the wrong page. */}
-                    Find: {intentShortLabel(play.archetype)}
-                  </button>
-                )}
-              </div>
+                      Find: {intentShortLabel(play.archetype)}
+                    </button>
+                  )}
+                </div>
+              )}
               {/* flex-basis 100% in CSS drops this onto its own line inside the
                   wrapping row, so the thumbs sit under the whole card rather
                   than competing with the rate for the right-hand column. */}
@@ -345,22 +441,41 @@ export default function TeamDeepDive() {
         <div className="roster-compact">
           {rosterItems.map((item) =>
             item.divider !== undefined ? (
-              <div key={`div-${item.divider}`} className="roster-pos-divider" style={{ color: posColor(item.divider) }}>
+              <div
+                key={`div-${item.divider}`}
+                className="roster-pos-divider"
+                style={{ color: posColor(item.divider) }}
+              >
                 {item.divider}
               </div>
             ) : (
               <div key={item.player.id} className="roster-row">
                 <span
                   className="pos-tag"
-                  style={{ background: posColor(item.player.position), color: "#fff", padding: "1px 4px", borderRadius: 2, fontSize: 8, fontWeight: 700, letterSpacing: 0.5, flexShrink: 0 }}
+                  style={{
+                    background: posColor(item.player.position),
+                    color: "#fff",
+                    padding: "1px 4px",
+                    borderRadius: 2,
+                    fontSize: 8,
+                    fontWeight: 700,
+                    letterSpacing: 0.5,
+                    flexShrink: 0,
+                  }}
                 >
                   {item.player.position}
                 </span>
                 <span className="roster-name">{item.player.name}</span>
-                {item.player.age != null && <span className="roster-age">{Number(item.player.age).toFixed(1)}</span>}
-                <span className="roster-val">{item.player.valueDynasty.toLocaleString()}</span>
+                {item.player.age != null && (
+                  <span className="roster-age">
+                    {Number(item.player.age).toFixed(1)}
+                  </span>
+                )}
+                <span className="roster-val">
+                  {item.player.valueDynasty.toLocaleString()}
+                </span>
               </div>
-            )
+            ),
           )}
         </div>
       </section>
@@ -369,18 +484,39 @@ export default function TeamDeepDive() {
       {sortedPicks.length > 0 && (
         <section className="dive-pos-section">
           <div className="dive-pos-header">
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: 2 }}>PICKS</span>
-            <span className="meta-pill" style={{ fontSize: 10 }}>
-              total <strong>{sortedPicks.reduce((s, p) => s + p.value, 0).toLocaleString()}</strong>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#f59e0b",
+                letterSpacing: 2,
+              }}
+            >
+              PICKS
             </span>
             <span className="meta-pill" style={{ fontSize: 10 }}>
-              capital <strong style={{ color: pickFlagColor }}>{pickFlagText(profile.pickCapital.flag)}</strong>
-              <span style={{ color: "#475569" }}> · {profile.pickCapital.score.toFixed(0)}</span>
+              total{" "}
+              <strong>
+                {sortedPicks.reduce((s, p) => s + p.value, 0).toLocaleString()}
+              </strong>
+            </span>
+            <span className="meta-pill" style={{ fontSize: 10 }}>
+              capital{" "}
+              <strong style={{ color: pickFlagColor }}>
+                {pickFlagText(profile.pickCapital.flag)}
+              </strong>
+              <span style={{ color: "#475569" }}>
+                {" "}
+                · {profile.pickCapital.score.toFixed(0)}
+              </span>
             </span>
           </div>
           <div className="dive-pick-list">
             {sortedPicks.map((pick) => (
-              <PickRow key={`${pick.year}-${pick.round}-${pick.origRosterId}`} pick={pick} />
+              <PickRow
+                key={`${pick.year}-${pick.round}-${pick.origRosterId}`}
+                pick={pick}
+              />
             ))}
           </div>
         </section>

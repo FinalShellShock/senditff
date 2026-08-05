@@ -1545,7 +1545,7 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
 }
 
 // api/_lib/rationalePrompt.ts
-var PROMPT_VERSION = 5;
+var PROMPT_VERSION = 6;
 function describeAsset(a) {
   const v = a.valueDynasty != null ? ` ${Math.round(a.valueDynasty)}` : "";
   if (a.kind !== "player") return `${a.name}${v}`;
@@ -1581,6 +1581,20 @@ function confidenceForPackage(pkg, diagnostics) {
     ...note ? { note } : {}
   };
 }
+var STATE_WORDS = {
+  JUGGERNAUT: "the best roster in the league both now and later",
+  CONTENDER: "built to win now with a solid future behind it",
+  WIN_NOW: "built to win now with little behind it",
+  RISING: "not quite competitive yet, but holding a lot of future value",
+  MIDDLING: "middle of the league now and later",
+  FADING: "still competitive, with the future draining away",
+  REBUILD: "not competitive now, holding a lot of future value",
+  EARLY_REBUILD: "not competitive now, with an ordinary amount of future value",
+  STUCK: "not competitive now and not holding much for later"
+};
+function stateWords(p) {
+  return STATE_WORDS[p.teamState] ?? "in an unclear spot";
+}
 function buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics) {
   const giveNames = pkg.give.map(describeAsset).join(", ");
   const receiveNames = pkg.receive.map(describeAsset).join(", ");
@@ -1615,8 +1629,8 @@ function buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics) {
     return ps ? `${pos} ${ps.classification}` : null;
   }).filter(Boolean) : [];
   const theirNeedNote = theirNeeds.length ? `Their need at what they're getting: ${theirNeeds.join(", ")}.` : "";
-  const theirs = counterProfile ? `${pkg.counterTeam} is ${counterProfile.windowLabel} (${counterProfile.competitiveness}, ${counterProfile.windowTier}).` : "";
-  return `Dynasty fantasy football trade. You are ${myProfile.windowLabel} (${myProfile.competitiveness}, ${myProfile.windowTier} window). ${theirs}
+  const theirs = counterProfile ? `${pkg.counterTeam} is ${stateWords(counterProfile)}.` : "";
+  return `Dynasty fantasy football trade. You are ${stateWords(myProfile)}. ${theirs}
 
 Send: ${giveNames}
 Get: ${receiveNames}

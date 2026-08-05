@@ -84,6 +84,27 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "3.1",
+    algo: "Empty",
+    algoFingerprint: "1f1c67468d6e",
+    date: "2026-08-05",
+    title: "The whole app speaks in team states now, and stuck teams get a scouting report again",
+    changes: [
+      "Three teams had a blank scouting report. All three were stuck, which is the one state where a manager most wants to be told something. The plays were still written for contenders and rebuilders, so a stuck roster matched nothing and got an empty page. Stuck teams now get the rebuild plays, led by a card that says plainly why: this roster is not built to do either, so pick a direction.",
+      "That card carries no percentage. There is no study finding for a roster ranked in the bottom third on both axes, so it does not pretend to have one. Plays without a measured number no longer show a hit rate at all rather than showing a filler one.",
+      "The league page had two different 3x3 grids on it. The map moved to the nine states last release and the grid below it did not, so it was still sorting teams by the old age-derived window while the map sorted them by rank. Both now read the same field, and the grid's axes say what they measure: contending down the side, future across the top.",
+      "A dot on the map could sit in one region while wearing another region's colour, because the regions came from the new states and the colours came from the old labels. The regions and the colours are now generated from the same grid, so that cannot happen.",
+      "Your team page showed a pair of internal codes. It now shows the two ranks your state is actually assigned from, so you can check the label instead of taking it on faith.",
+      "The trade rationale used to open by naming your window as long or short. It now says where you stand in plain words, for both sides of the deal.",
+      "Positional leverage no longer counts a stuck team as a buyer of veteran production. It is not contending and has nothing banked, so that was the one thing it should not have been shopping for.",
+      "No change to the trades themselves. Same five per roster, same packages, same order.",
+    ],
+    knownIssues: [
+      "Scouting plays for a stuck team are the rebuild plays. They are the closest measured path out, but the study behind them measured teams that had already committed to rebuilding, not teams deciding whether to.",
+    ],
+  },
+  {
+    branch: "daniels",
     release: "3.0",
     algo: "Empty",
     algoFingerprint: "a69fade1aba1",
@@ -99,7 +120,7 @@ export const PATCH_NOTES: PatchNote[] = [
       "Trade suggestions are unchanged in volume: five per roster, identical across repeated runs.",
     ],
     knownIssues: [
-      "The scouting report and trade engine read the new nine states, but some older copy still talks in terms of long and short windows. Same underlying number, older wording.",
+      "The scouting report and trade engine read the new nine states, but some older copy still talks in terms of long and short windows. Same underlying number, older wording. (Fixed in 3.1.)",
     ],
   },
   {

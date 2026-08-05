@@ -129,7 +129,7 @@ export type PlayFeedbackPayload = {
   play: {
     key: string;
     title: string;
-    hitRate: number;
+    hitRate: number | null;
     kind: "do" | "avoid";
     detail: string;
     evidence: string;

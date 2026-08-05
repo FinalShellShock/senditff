@@ -20,7 +20,10 @@ import { confidenceTier, type TradePackage } from "./tradeEngine";
 //    cache key, and without it every trade already in rationaleCache would keep
 //    serving the old long rationale and the change would look like it did
 //    nothing.
-export const PROMPT_VERSION = 5;
+// 6: the team's situation is described in words from teamState instead of
+//    handing over windowLabel + competitiveness + windowTier, which were three
+//    overlapping labels off an age curve that no longer decides anything.
+export const PROMPT_VERSION = 6;
 
 // Ages are included because the model was otherwise inventing them, and on an
 // age-arbitrage trade the age IS the argument. Real feedback caught a rationale
@@ -127,6 +130,31 @@ export function confidenceForPackage(
   };
 }
 
+
+// The team's situation in words the model can use, from the two things the
+// engine now classifies on: what the lineup scores this season, and what the
+// whole roster is worth long term.
+//
+// It used to hand over `windowLabel (competitiveness, windowTier window)`, three
+// overlapping labels all derived from an age curve that no longer decides
+// anything. The model has no way to know that "MIDDLING (AVERAGE, SHORT)" is
+// three views of one fact, and it wrote as though they were three facts.
+const STATE_WORDS: Record<string, string> = {
+  JUGGERNAUT: "the best roster in the league both now and later",
+  CONTENDER: "built to win now with a solid future behind it",
+  WIN_NOW: "built to win now with little behind it",
+  RISING: "not quite competitive yet, but holding a lot of future value",
+  MIDDLING: "middle of the league now and later",
+  FADING: "still competitive, with the future draining away",
+  REBUILD: "not competitive now, holding a lot of future value",
+  EARLY_REBUILD: "not competitive now, with an ordinary amount of future value",
+  STUCK: "not competitive now and not holding much for later",
+};
+
+function stateWords(p: TeamProfile): string {
+  return STATE_WORDS[p.teamState] ?? "in an unclear spot";
+}
+
 export function buildRationalePrompt(
   pkg: Omit<TradePackage, "rationale">,
   myProfile: TeamProfile,
@@ -227,10 +255,10 @@ export function buildRationalePrompt(
     : "";
 
   const theirs = counterProfile
-    ? `${pkg.counterTeam} is ${counterProfile.windowLabel} (${counterProfile.competitiveness}, ${counterProfile.windowTier}).`
+    ? `${pkg.counterTeam} is ${stateWords(counterProfile)}.`
     : "";
 
-  return `Dynasty fantasy football trade. You are ${myProfile.windowLabel} (${myProfile.competitiveness}, ${myProfile.windowTier} window). ${theirs}
+  return `Dynasty fantasy football trade. You are ${stateWords(myProfile)}. ${theirs}
 
 Send: ${giveNames}
 Get: ${receiveNames}

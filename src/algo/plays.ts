@@ -33,8 +33,10 @@ export type Play = {
   title: string;
   /** The measured claim behind it. */
   evidence: string;
-  /** The measured number. 50 = no effect. */
-  hitRate: number;
+  /** The measured number. 50 = no effect. null when there is no study finding
+   *  for this situation — the meter is then hidden rather than showing a
+   *  fabricated rate. */
+  hitRate: number | null;
   /** What that number COUNTS. Team-outcome rates and player-level rates are
    *  different units and must not share an unlabelled column. */
   rateLabel: string;
@@ -81,7 +83,9 @@ export const FRINGE_MAX_AGE = 25;
 
 /** Dynasty values bounding the fringe band in THIS league, high end first.
  *  Null when the league does not roster enough players to have a 100th. */
-export function fringeBand(ranking: number[]): { hi: number; lo: number } | null {
+export function fringeBand(
+  ranking: number[],
+): { hi: number; lo: number } | null {
   const hi = ranking[FRINGE_RANK_LO - 1];
   const lo = ranking[FRINGE_RANK_HI - 1];
   if (!hi || !lo) return null;
@@ -96,10 +100,12 @@ export function leagueRanking(league: TeamProfile[]): number[] {
   return all.sort((a, b) => b - a);
 }
 export function rankOf(value: number, ranking: number[]): number {
-  let lo = 0, hi = ranking.length;
+  let lo = 0,
+    hi = ranking.length;
   while (lo < hi) {
     const mid = (lo + hi) >> 1;
-    if (ranking[mid]! > value) lo = mid + 1; else hi = mid;
+    if (ranking[mid]! > value) lo = mid + 1;
+    else hi = mid;
   }
   return lo + 1;
 }
@@ -107,7 +113,8 @@ export function rankOf(value: number, ranking: number[]): number {
 const fmt = (n: number) => n.toLocaleString();
 const ordinal = (n: number) => {
   const t = n % 100;
-  const suffix = t >= 11 && t <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th";
+  const suffix =
+    t >= 11 && t <= 13 ? "th" : (["th", "st", "nd", "rd"][n % 10] ?? "th");
   return `${n}${suffix}`;
 };
 
@@ -115,11 +122,31 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
   const ranking = leagueRanking(league);
   const roster = [...me.players].sort(byValue);
   const best = roster[0];
-  const isContender = me.competitiveness === "STRONG";
+  // Contending states are the top row of the grid: the lineup is among the best
+  // in the league right now. Previously this read `competitiveness === STRONG`,
+  // a separate classification off the same starter value, so a roster could be
+  // STRONG and yet not sit in a contending cell. One classification, not two.
+  const isContender =
+    me.teamState === "JUGGERNAUT" ||
+    me.teamState === "CONTENDER" ||
+    me.teamState === "WIN_NOW";
   // Building states from the grid, not a window bucket. A team ranked 16th in
   // both contender and dynasty used to read LONG and get rebuild advice; it is
   // STUCK, which is a different problem and gets different plays.
-  const isRebuild = me.teamState === "REBUILD" || me.teamState === "EARLY_REBUILD";
+  // REBUILD and EARLY_REBUILD are the deliberate builders. STUCK is included
+  // because the rebuild plays are the ones that apply to a team that is not
+  // competing, and a stuck roster's only measured way out is to start behaving
+  // like a rebuild: sell the veterans who still carry value, bank picks, buy the
+  // fringe rather than deep fliers.
+  //
+  // This is restoring advice, not widening a gate to buy coverage. Before the
+  // grid replaced the window, these three teams read windowTier LONG and got
+  // exactly these plays; the state change silently took them away and left three
+  // of sixteen rosters with a blank scouting report.
+  const isRebuild =
+    me.teamState === "REBUILD" ||
+    me.teamState === "EARLY_REBUILD" ||
+    me.teamState === "STUCK";
   const plays: Play[] = [];
 
   // What a consolidation would actually package: everything past the top man at
@@ -144,7 +171,8 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
     spares.push(...roster.filter((p) => p.position === pos).slice(1, 3));
   }
   spares.sort(byValue);
-  if (spares.length >= 2 && spares[0] && spares[1]) pair = [spares[0], spares[1]];
+  if (spares.length >= 2 && spares[0] && spares[1])
+    pair = [spares[0], spares[1]];
 
   // ── Universal: quality is the strongest measured predictor ────────────────
   const pairValue = pair ? pair[0].valueDynasty + pair[1].valueDynasty : 0;
@@ -188,9 +216,29 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
   }
 
   // ── Rebuilders ────────────────────────────────────────────────────────────
+  if (me.teamState === "STUCK") {
+    // Named first so the plays underneath read as a recommended direction
+    // rather than a description of a rebuild this team has not started. The
+    // study measured rebuilding teams; applying it here is an inference, and
+    // the copy says so instead of implying they are already rebuilding.
+    plays.push({
+      key: "commit_to_a_direction",
+      title: "Pick a direction — this roster is not built to do either",
+      evidence:
+        "Your starters rank in the bottom third of the league and so does your long-term value. There is no study finding for a roster in both positions at once, because teams in it are the ones that pick a side.",
+      hitRate: null,
+      rateLabel: "",
+      detail:
+        "The plays below are the rebuild ones. They are what worked for teams that committed to the future, and they are the closest measured path out. If you would rather push the other way, force a Send It archetype and check what a win-now move actually costs you.",
+      kind: "do",
+    });
+  }
+
   if (isRebuild) {
     const agingAsset = roster.find(
-      (p) => (p.age ?? 0) >= VETERAN_SELL_AGE && p.valueDynasty >= VETERAN_SELL_VALUE,
+      (p) =>
+        (p.age ?? 0) >= VETERAN_SELL_AGE &&
+        p.valueDynasty >= VETERAN_SELL_VALUE,
     );
     if (agingAsset) {
       plays.push({
@@ -270,10 +318,16 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
 
   // Rank by how far the measured rate sits from a coin flip, "do" first on
   // ties. No padding: a team only sees plays that actually apply to it.
+  // A play with no measured rate sorts first rather than last: the only one is
+  // the STUCK framing card, whose copy explicitly introduces the plays beneath
+  // it. Ranking it by a missing number would put it at the bottom, under the
+  // plays it is supposed to set up.
+  const effect = (p: Play) => (p.hitRate === null ? Infinity : Math.abs(p.hitRate - 50));
+
   return plays
     .sort((a, b) => {
-      const ea = Math.abs(a.hitRate - 50);
-      const eb = Math.abs(b.hitRate - 50);
+      const ea = effect(a);
+      const eb = effect(b);
       if (eb !== ea) return eb - ea;
       if (a.kind !== b.kind) return a.kind === "do" ? -1 : 1;
       return a.key.localeCompare(b.key);

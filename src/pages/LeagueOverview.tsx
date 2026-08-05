@@ -2,23 +2,26 @@ import { useMemo, useState } from "react";
 import { useOutletContext, useParams, useNavigate } from "react-router-dom";
 import { makeApiClient } from "../api/client.ts";
 import { fillStarters } from "../algo/profile.ts";
-import type { LeagueFormat, TeamProfile, WindowLabel, PickFlag, Position, Pick as DraftPick, SubClassification } from "../algo/types.ts";
+import type {
+  LeagueFormat,
+  TeamProfile,
+  PickFlag,
+  Position,
+  Pick as DraftPick,
+  SubClassification,
+} from "../algo/types.ts";
+import {
+  STATE_GRID,
+  STATE_COLOR,
+  STATE_TEXT,
+  CONTENDER_BAND_LABEL,
+  DYNASTY_BAND_LABEL,
+  GRID_CORNER_LABEL,
+} from "../ui/teamState.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 import LeverageBoard from "./overview/LeverageBoard.tsx";
 import WindowMap from "./overview/WindowMap.tsx";
-
-const LABEL_COLOR: Record<WindowLabel, string> = {
-  JUGGERNAUT: "#16a34a",
-  CONTEND:    "#22c55e",
-  CLOSING:    "#ef4444",
-  RISING:     "#06b6d4",
-  AVERAGE:    "#94a3b8",
-  MIDDLING:   "#eab308",
-  REBUILD:    "#3b82f6",
-  TRANSITION: "#a855f7",
-  STUCK:      "#dc2626",
-};
 
 // CRITICAL and SURPLUS are the two states worth acting on, so they own the
 // loud colors. HEALTHY is deliberately neutral: it is the absence of leverage,
@@ -28,10 +31,10 @@ const LABEL_COLOR: Record<WindowLabel, string> = {
 // the signal.
 const POS_CLASS_COLOR: Record<string, string> = {
   CRITICAL_NEED: "#ef4444",
-  CRITICAL:      "#ef4444",
-  NEED:          "#eab308",
-  HEALTHY:       "#64748b",
-  SURPLUS:       "#22c55e",
+  CRITICAL: "#ef4444",
+  NEED: "#eab308",
+  HEALTHY: "#64748b",
+  SURPLUS: "#22c55e",
 };
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
@@ -42,28 +45,43 @@ const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 //   Medium:     POS / Starter / Depth stacked vertically per column (2-char
 //               numbers, no bars)
 //   Mobile:     rank + name only, no positional info, no picks
-function GridTeamCard({ profile, onClick }: { profile: TeamProfile; onClick: () => void }) {
-  const labelColor = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
+function GridTeamCard({
+  profile,
+  onClick,
+}: {
+  profile: TeamProfile;
+  onClick: () => void;
+}) {
+  const stateColor = STATE_COLOR[profile.teamState] ?? "#94a3b8";
+  const stateText = STATE_TEXT[profile.teamState] ?? "—";
   return (
-    <div className={`grid-team-card${profile.isMine ? " mine" : ""}`} onClick={onClick}>
+    <div
+      className={`grid-team-card${profile.isMine ? " mine" : ""}`}
+      onClick={onClick}
+    >
       <div className="gtc-name-line">
         <span className="gtc-rank">#{profile.starterRank}</span>
-        <span className="gtc-name">{profile.ownerName}{profile.isMine && " ★"}</span>
+        <span className="gtc-name">
+          {profile.ownerName}
+          {profile.isMine && " ★"}
+        </span>
         <span className="gtc-meta">
           <span
             className="window-label"
-            style={{ background: labelColor }}
-            title={profile.windowLabel ?? "—"}
+            style={{ background: stateColor }}
+            title={stateText}
           >
-            {profile.windowLabel ?? "—"}
+            {stateText}
           </span>
           <span
             className="window-dot"
-            style={{ background: labelColor }}
-            title={profile.windowLabel ?? "—"}
-            aria-label={profile.windowLabel ?? ""}
+            style={{ background: stateColor }}
+            title={stateText}
+            aria-label={stateText}
           />
-          <span className="gtc-age">{(profile.starterCalAge ?? 0).toFixed(1)}y</span>
+          <span className="gtc-age">
+            {(profile.starterCalAge ?? 0).toFixed(1)}y
+          </span>
         </span>
       </div>
 
@@ -80,15 +98,25 @@ function GridTeamCard({ profile, onClick }: { profile: TeamProfile; onClick: () 
               <div className="gtc-pos-lines">
                 <div className="gtc-pos-line">
                   <ThickBar score={ps?.starterScore ?? 0} kind={sClass} />
-                  <span className="gtc-pos-num">{(ps?.starterScore ?? 0).toFixed(0)}</span>
-                  <span className="gtc-pos-class" style={{ color: POS_CLASS_COLOR[sClass] }}>
+                  <span className="gtc-pos-num">
+                    {(ps?.starterScore ?? 0).toFixed(0)}
+                  </span>
+                  <span
+                    className="gtc-pos-class"
+                    style={{ color: POS_CLASS_COLOR[sClass] }}
+                  >
                     {sClass}
                   </span>
                 </div>
                 <div className="gtc-pos-line">
                   <ThickBar score={ps?.depthScore ?? 0} kind={dClass} />
-                  <span className="gtc-pos-num">{(ps?.depthScore ?? 0).toFixed(0)}</span>
-                  <span className="gtc-pos-class" style={{ color: POS_CLASS_COLOR[dClass] }}>
+                  <span className="gtc-pos-num">
+                    {(ps?.depthScore ?? 0).toFixed(0)}
+                  </span>
+                  <span
+                    className="gtc-pos-class"
+                    style={{ color: POS_CLASS_COLOR[dClass] }}
+                  >
                     {dClass}
                   </span>
                 </div>
@@ -107,10 +135,16 @@ function GridTeamCard({ profile, onClick }: { profile: TeamProfile; onClick: () 
           return (
             <div key={pos} className="gtc-numbers-col">
               <span className="gtc-numbers-pos">{pos}</span>
-              <span className="gtc-numbers-val gtc-numbers-starter" style={{ color: POS_CLASS_COLOR[sClass] }}>
+              <span
+                className="gtc-numbers-val gtc-numbers-starter"
+                style={{ color: POS_CLASS_COLOR[sClass] }}
+              >
                 {(ps?.starterScore ?? 0).toFixed(0)}
               </span>
-              <span className="gtc-numbers-val gtc-numbers-depth" style={{ color: POS_CLASS_COLOR[dClass] }}>
+              <span
+                className="gtc-numbers-val gtc-numbers-depth"
+                style={{ color: POS_CLASS_COLOR[dClass] }}
+              >
                 {(ps?.depthScore ?? 0).toFixed(0)}
               </span>
             </div>
@@ -125,37 +159,58 @@ function LeagueGrid({ profiles }: { profiles: TeamProfile[] }) {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
 
-  const grid: Record<string, TeamProfile[]> = {};
-  for (const p of profiles) {
-    const key = `${p.competitiveness}-${p.windowTier}`;
-    (grid[key] ??= []).push(p);
-  }
-
-  const rows = ["STRONG", "AVERAGE", "WEAK"] as const;
-  const cols = ["LONG", "MID", "SHORT"] as const;
-  const colLabel = { LONG: "LONG WINDOW", MID: "MID WINDOW", SHORT: "SHORT WINDOW" };
+  // Bucketed by teamState, so this grid and the map above cannot disagree:
+  // both read the single field the engine actually gates on. The previous
+  // version keyed on `${competitiveness}-${windowTier}`, a second 3x3 that
+  // survived the move to the state grid and quietly told a different story.
+  const grid: Partial<Record<string, TeamProfile[]>> = {};
+  for (const p of profiles) (grid[p.teamState] ??= []).push(p);
 
   return (
     <div className="grid-scroll-wrap">
       <div className="league-grid">
         <div className="grid-header-row">
-          <div className="grid-corner" />
-          {cols.map((c) => <div key={c} className="grid-col-label">{colLabel[c]}</div>)}
+          {/* Names both axes once, so the short band labels around the grid
+              do not have to carry "contending" and "future" in every cell. */}
+          <div className="grid-corner">
+            <span className="grid-corner-row">{GRID_CORNER_LABEL.row} ↓</span>
+            <span className="grid-corner-col">{GRID_CORNER_LABEL.col} →</span>
+          </div>
+          {DYNASTY_BAND_LABEL.map((c) => (
+            <div key={c} className="grid-col-label">
+              {c}
+            </div>
+          ))}
         </div>
-        {rows.map((comp) => (
-          <div key={comp} className="grid-row">
-            <div className="grid-row-label">{comp}</div>
-            {cols.map((tier) => {
-              const teams = grid[`${comp}-${tier}`] ?? [];
+        {STATE_GRID.map((stateRow, contBand) => (
+          <div key={contBand} className="grid-row">
+            <div className="grid-row-label">
+              {CONTENDER_BAND_LABEL[contBand]}
+            </div>
+            {stateRow.map((state) => {
+              const teams = grid[state] ?? [];
               return (
-                <div key={tier} className={`grid-cell${!teams.length ? " empty" : ""}`} data-comp={comp}>
+                <div
+                  key={state}
+                  className={`grid-cell${!teams.length ? " empty" : ""}`}
+                  data-comp={
+                    contBand === 0
+                      ? "STRONG"
+                      : contBand === 1
+                        ? "AVERAGE"
+                        : "WEAK"
+                  }
+                  title={STATE_TEXT[state]}
+                >
                   {teams.length === 0
-                    ? "—"
+                    ? STATE_TEXT[state]
                     : teams.map((t) => (
                         <GridTeamCard
                           key={t.rosterId}
                           profile={t}
-                          onClick={() => navigate(`/league/${id}/team/${t.rosterId}`)}
+                          onClick={() =>
+                            navigate(`/league/${id}/team/${t.rosterId}`)
+                          }
                         />
                       ))}
                 </div>
@@ -168,10 +223,14 @@ function LeagueGrid({ profiles }: { profiles: TeamProfile[] }) {
   );
 }
 
-
 function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
   const years = [...new Set(picks.map((p) => p.year))].sort().slice(0, 3);
-  const flagColor = flag === "PICK_RICH" ? "#22c55e" : flag === "PICK_POOR" ? "#ef4444" : "#475569";
+  const flagColor =
+    flag === "PICK_RICH"
+      ? "#22c55e"
+      : flag === "PICK_POOR"
+        ? "#ef4444"
+        : "#475569";
   return (
     <div className="picks-visual">
       <span className="picks-flag" style={{ color: flagColor }}>
@@ -180,13 +239,19 @@ function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
       <div className="picks-years">
         {years.length === 0 && <span className="picks-none">none</span>}
         {years.map((year) => {
-          const yp = picks.filter((p) => p.year === year).sort((a, b) => a.round - b.round);
+          const yp = picks
+            .filter((p) => p.year === year)
+            .sort((a, b) => a.round - b.round);
           return (
             <div key={year} className="picks-year-row">
               <span className="picks-year-label">'{String(year).slice(2)}</span>
               <div className="picks-dots">
                 {yp.map((pick, i) => (
-                  <div key={i} className={`pick-dot pick-dot-r${Math.min(pick.round, 3)}`} title={pick.label} />
+                  <div
+                    key={i}
+                    className={`pick-dot pick-dot-r${Math.min(pick.round, 3)}`}
+                    title={pick.label}
+                  />
                 ))}
               </div>
             </div>
@@ -201,12 +266,21 @@ function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
 // Bar color = classification (green/yellow/red), bar length = score 0-100.
 // Color does the work that text/numbers used to. Exact numbers live in
 // the expanded detail view.
-function ThickBar({ score, kind }: { score: number; kind?: SubClassification }) {
+function ThickBar({
+  score,
+  kind,
+}: {
+  score: number;
+  kind?: SubClassification;
+}) {
   const color = POS_CLASS_COLOR[kind ?? "HEALTHY"] ?? "#64748b";
   const width = Math.max(4, Math.min(100, score));
   return (
     <div className="lt-thick-bar-track">
-      <div className="lt-thick-bar-fill" style={{ width: `${width}%`, background: color }} />
+      <div
+        className="lt-thick-bar-fill"
+        style={{ width: `${width}%`, background: color }}
+      />
     </div>
   );
 }
@@ -220,7 +294,8 @@ function combinedLabel(s?: SubClassification, d?: SubClassification): string {
   return "OK";
 }
 function combinedColor(s?: SubClassification, d?: SubClassification): string {
-  if (s === "CRITICAL" || d === "CRITICAL") return POS_CLASS_COLOR.CRITICAL ?? "#ef4444";
+  if (s === "CRITICAL" || d === "CRITICAL")
+    return POS_CLASS_COLOR.CRITICAL ?? "#ef4444";
   if (s === "NEED" || d === "NEED") return POS_CLASS_COLOR.NEED ?? "#eab308";
   return POS_CLASS_COLOR.HEALTHY ?? "#64748b";
 }
@@ -230,10 +305,14 @@ function ordinal(n: number): string {
   const rem100 = n % 100;
   if (rem100 >= 11 && rem100 <= 13) return `${n}th`;
   switch (n % 10) {
-    case 1: return `${n}st`;
-    case 2: return `${n}nd`;
-    case 3: return `${n}rd`;
-    default: return `${n}th`;
+    case 1:
+      return `${n}st`;
+    case 2:
+      return `${n}nd`;
+    case 3:
+      return `${n}rd`;
+    default:
+      return `${n}th`;
   }
 }
 
@@ -252,7 +331,13 @@ function teamAxisValue(profile: TeamProfile, axis: RadarAxis): number {
     .reduce((s, p) => s + p.valueDynasty, 0);
 }
 
-function RadarChart({ profile, allProfiles }: { profile: TeamProfile; allProfiles: TeamProfile[] }) {
+function RadarChart({
+  profile,
+  allProfiles,
+}: {
+  profile: TeamProfile;
+  allProfiles: TeamProfile[];
+}) {
   const size = 200;
   const cx = size / 2;
   const cy = size / 2;
@@ -261,12 +346,20 @@ function RadarChart({ profile, allProfiles }: { profile: TeamProfile; allProfile
   // Normalize each axis against league max for that axis
   const axisData = RADAR_AXES.map((axis) => {
     const teamVal = teamAxisValue(profile, axis);
-    const leagueMax = Math.max(1, ...allProfiles.map((p) => teamAxisValue(p, axis)));
-    return { axis, value: teamVal, normalized: Math.max(0, Math.min(1, teamVal / leagueMax)) };
+    const leagueMax = Math.max(
+      1,
+      ...allProfiles.map((p) => teamAxisValue(p, axis)),
+    );
+    return {
+      axis,
+      value: teamVal,
+      normalized: Math.max(0, Math.min(1, teamVal / leagueMax)),
+    };
   });
 
   // Vertex positions (start at top, clockwise)
-  const angle = (i: number) => -Math.PI / 2 + i * ((2 * Math.PI) / RADAR_AXES.length);
+  const angle = (i: number) =>
+    -Math.PI / 2 + i * ((2 * Math.PI) / RADAR_AXES.length);
   const point = (i: number, r: number) => ({
     x: cx + r * Math.cos(angle(i)),
     y: cy + r * Math.sin(angle(i)),
@@ -277,7 +370,9 @@ function RadarChart({ profile, allProfiles }: { profile: TeamProfile; allProfile
 
   // Data polygon points
   const dataPoints = axisData.map((d, i) => point(i, maxR * d.normalized));
-  const dataPath = dataPoints.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const dataPath = dataPoints
+    .map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(" ");
 
   // Axis-end labels
   const labelOffset = 14;
@@ -304,7 +399,16 @@ function RadarChart({ profile, allProfiles }: { profile: TeamProfile; allProfile
       {/* Axis lines */}
       {RADAR_AXES.map((_, i) => {
         const p = point(i, maxR);
-        return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.06)" />;
+        return (
+          <line
+            key={i}
+            x1={cx}
+            y1={cy}
+            x2={p.x}
+            y2={p.y}
+            stroke="rgba(255,255,255,0.06)"
+          />
+        );
       })}
       {/* Data polygon */}
       <polygon
@@ -355,7 +459,8 @@ function PositionColumn({
   const totalDynasty = players.reduce((s, p) => s + p.valueDynasty, 0);
   const weightedAge =
     totalDynasty > 0
-      ? players.reduce((s, p) => s + (p.age ?? 0) * p.valueDynasty, 0) / totalDynasty
+      ? players.reduce((s, p) => s + (p.age ?? 0) * p.valueDynasty, 0) /
+        totalDynasty
       : 0;
 
   // Position rank: where this team's starter value at pos ranks across league
@@ -379,9 +484,14 @@ function PositionColumn({
       </div>
       <div className="pos-column-players">
         {players.map((p) => (
-          <div key={p.id} className={`pos-column-player${starterIds.has(p.id) ? " is-starter" : ""}`}>
+          <div
+            key={p.id}
+            className={`pos-column-player${starterIds.has(p.id) ? " is-starter" : ""}`}
+          >
             <span className="pos-column-player-name">{p.name}</span>
-            <span className="pos-column-player-val">{p.valueDynasty.toLocaleString()}</span>
+            <span className="pos-column-player-val">
+              {p.valueDynasty.toLocaleString()}
+            </span>
           </div>
         ))}
         {players.length === 0 && (
@@ -413,19 +523,28 @@ function LeagueTableRow({
   onToggle: () => void;
 }) {
   const navigate = useNavigate();
-  const labelColor = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
+  const stateColor = STATE_COLOR[profile.teamState] ?? "#94a3b8";
+  const stateText = STATE_TEXT[profile.teamState] ?? "—";
 
   // Real lineup fill (same math the algorithm scores): base slots + flex.
   const starterIds = useMemo(() => {
     if (!expanded) return new Set<string>();
     const { starters } = fillStarters(profile.players ?? [], format);
-    return new Set<string>(Object.values(starters).flat().map((p) => p.id));
+    return new Set<string>(
+      Object.values(starters)
+        .flat()
+        .map((p) => p.id),
+    );
   }, [expanded, profile, format]);
 
   return (
-    <div className={`lt-row${profile.isMine ? " mine" : ""}${expanded ? " expanded" : ""}`}>
+    <div
+      className={`lt-row${profile.isMine ? " mine" : ""}${expanded ? " expanded" : ""}`}
+    >
       <div className="lt-row-main" onClick={onToggle}>
-        <div className={`lt-col-sticky lt-row-sticky${profile.isMine ? " mine-bg" : ""}`}>
+        <div
+          className={`lt-col-sticky lt-row-sticky${profile.isMine ? " mine-bg" : ""}`}
+        >
           <div className="lt-row-stack">
             <div className="lt-row-header">
               <span className="lt-rank">#{profile.starterRank}</span>
@@ -435,18 +554,27 @@ function LeagueTableRow({
               </span>
             </div>
             <div className="lt-row-meta">
-              <span className="window-label" style={{ background: labelColor }}>
-                {profile.windowLabel ?? "—"}
+              <span
+                className="window-label"
+                style={{
+                  background: STATE_COLOR[profile.teamState] ?? "#94a3b8",
+                }}
+              >
+                {STATE_TEXT[profile.teamState] ?? "—"}
               </span>
               {profile.currentPlace != null && (
-                <span className="lt-row-meta-dim">now {ordinal(profile.currentPlace)}</span>
+                <span className="lt-row-meta-dim">
+                  now {ordinal(profile.currentPlace)}
+                </span>
               )}
               {(profile.placements ?? []).slice(0, 2).map((pl) => (
                 <span key={pl.season} className="lt-row-meta-dim">
                   '{String(pl.season).slice(2)} {ordinal(pl.place)}
                 </span>
               ))}
-              <span className="lt-row-meta-dim">age {(profile.starterCalAge ?? 0).toFixed(1)}</span>
+              <span className="lt-row-meta-dim">
+                age {(profile.starterCalAge ?? 0).toFixed(1)}
+              </span>
             </div>
           </div>
         </div>
@@ -455,7 +583,9 @@ function LeagueTableRow({
           {/* Header row */}
           <div className="lt-pos-grid-corner" />
           {POSITIONS.map((pos) => (
-            <div key={`h-${pos}`} className="lt-pos-grid-pos-header">{pos}</div>
+            <div key={`h-${pos}`} className="lt-pos-grid-pos-header">
+              {pos}
+            </div>
           ))}
 
           {/* Starter row */}
@@ -500,10 +630,16 @@ function LeagueTableRow({
             return (
               <div key={pos} className="lt-mn-col">
                 <span className="lt-mn-pos">{pos}</span>
-                <span className="lt-mn-val" style={{ color: POS_CLASS_COLOR[sClass] }}>
+                <span
+                  className="lt-mn-val"
+                  style={{ color: POS_CLASS_COLOR[sClass] }}
+                >
                   {Math.round(ps?.starterScore ?? 0)}
                 </span>
-                <span className="lt-mn-val lt-mn-depth" style={{ color: POS_CLASS_COLOR[dClass] }}>
+                <span
+                  className="lt-mn-val lt-mn-depth"
+                  style={{ color: POS_CLASS_COLOR[dClass] }}
+                >
                   {Math.round(ps?.depthScore ?? 0)}
                 </span>
               </div>
@@ -512,7 +648,10 @@ function LeagueTableRow({
         </div>
 
         <div className="lt-col-picks">
-          <PicksDots picks={profile.picks ?? []} flag={profile.pickCapital?.flag ?? "NEUTRAL"} />
+          <PicksDots
+            picks={profile.picks ?? []}
+            flag={profile.pickCapital?.flag ?? "NEUTRAL"}
+          />
         </div>
 
         <button
@@ -585,18 +724,36 @@ export default function LeagueOverview() {
     }
   }
 
-  const sorted = [...overview.profiles].sort((a, b) => a.starterRank - b.starterRank);
-  const needsResync = overview.profiles.some((p) => !p.positionScores || !p.pickCapital);
+  const sorted = [...overview.profiles].sort(
+    (a, b) => a.starterRank - b.starterRank,
+  );
+  const needsResync = overview.profiles.some(
+    (p) => !p.positionScores || !p.pickCapital,
+  );
 
   return (
     <>
       {error && <div className="error-banner">{error}</div>}
 
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, marginBottom: 32 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 32,
+        }}
+      >
         {needsResync && (
-          <span className="dim-text" style={{ fontSize: 12 }}>League data is outdated — refresh to see full analysis</span>
+          <span className="dim-text" style={{ fontSize: 12 }}>
+            League data is outdated — refresh to see full analysis
+          </span>
         )}
-        <button className="btn-secondary" disabled={refreshing} onClick={handleRefresh}>
+        <button
+          className="btn-secondary"
+          disabled={refreshing}
+          onClick={handleRefresh}
+        >
           {refreshing ? "Refreshing..." : "Refresh Data"}
         </button>
       </div>
@@ -617,9 +774,11 @@ export default function LeagueOverview() {
               profiles={overview.profiles}
               format={overview.format}
               thisYear={
-                overview.upcomingDraftYear
-                ?? Math.min(
-                  ...overview.profiles.flatMap((p) => p.picks.map((pk) => pk.year)),
+                overview.upcomingDraftYear ??
+                Math.min(
+                  ...overview.profiles.flatMap((p) =>
+                    p.picks.map((pk) => pk.year),
+                  ),
                   new Date().getFullYear() + 1,
                 )
               }
@@ -648,7 +807,11 @@ export default function LeagueOverview() {
                 format={overview.format}
                 allProfiles={overview.profiles}
                 expanded={expandedRoster === p.rosterId}
-                onToggle={() => setExpandedRoster(expandedRoster === p.rosterId ? null : p.rosterId)}
+                onToggle={() =>
+                  setExpandedRoster(
+                    expandedRoster === p.rosterId ? null : p.rosterId,
+                  )
+                }
               />
             ))}
           </div>

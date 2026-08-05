@@ -381,7 +381,19 @@ body {
   display: contents;
 }
 
-.grid-corner {}
+/* Names the two axes once. Stacked and tiny because it lives in the same 52px
+   gutter as the row labels (32px on phones). */
+.grid-corner {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 1px;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #475569;
+  padding: 4px 4px 4px 0;
+  line-height: 1.1;
+}
 
 .grid-col-label, .grid-row-label {
   font-size: 10px;

@@ -1,5 +1,7 @@
 import { writeFileSync } from "node:fs";
-import type { LeagueFormat, TeamProfile, WindowLabel } from "../../src/algo/index.ts";
+import type { LeagueFormat, TeamProfile } from "../../src/algo/index.ts";
+import type { TeamState } from "../../src/algo/types.ts";
+import { STATE_COLOR, STATE_TEXT } from "../../src/ui/teamState.ts";
 
 const ALGO_NAME = "West Coast";
 
@@ -18,15 +20,15 @@ const C = {
   gray: "\x1b[90m",
 };
 
-const LABEL_COLOR: Record<WindowLabel, string> = {
+const LABEL_COLOR: Record<TeamState, string> = {
   JUGGERNAUT: C.green,
-  CONTEND: C.green,
-  CLOSING: C.red,
+  CONTENDER: C.green,
+  WIN_NOW: C.yellow,
   RISING: C.cyan,
-  AVERAGE: C.gray,
-  MIDDLING: C.yellow,
+  MIDDLING: C.gray,
+  FADING: C.yellow,
   REBUILD: C.blue,
-  TRANSITION: C.magenta,
+  EARLY_REBUILD: C.magenta,
   STUCK: C.red,
 };
 
@@ -80,7 +82,7 @@ export function printTerminal(
 }
 
 function printTeam(t: TeamProfile): void {
-  const lColor = LABEL_COLOR[t.windowLabel] ?? C.cyan;
+  const lColor = LABEL_COLOR[t.teamState] ?? C.cyan;
   const pickColor = PICK_FLAG_COLOR[t.pickCapital.flag] ?? C.gray;
   const mine = t.isMine ? C.bold + C.yellow + " ★ YOU" + C.reset : "";
 
@@ -92,8 +94,10 @@ function printTeam(t: TeamProfile): void {
   );
   console.log(
     "  " +
-    lColor + C.bold + pad(t.windowLabel, 12) + C.reset +
-    C.gray + "(" + t.competitiveness + "/" + t.windowTier + ")  " + C.reset +
+    lColor + C.bold + pad(STATE_TEXT[t.teamState], 14) + C.reset +
+    // The two ranks the state comes from, so a surprising label can be checked
+    // against its inputs without opening the profile.
+    C.gray + "(cont #" + String(t.starterRank).padEnd(2) + " dyn #" + String(t.dynastyRank).padEnd(2) + ")  " + C.reset +
     C.gray + "cal_age " + C.reset + t.starterCalAge.toFixed(1).padEnd(5) +
     C.gray + "age_pres " + C.reset + t.starterAgePressure.toFixed(0).padEnd(4) +
     C.gray + "starter " + C.reset + Math.round(t.starterTotalValue).toLocaleString().padEnd(8) +
@@ -124,10 +128,10 @@ function printLeagueSummary(profiles: TeamProfile[]): void {
   console.log(C.bold + C.cyan + "─".repeat(80) + C.reset);
   console.log(C.bold + " LEAGUE SHAPE" + C.reset);
   const counts: Record<string, number> = {};
-  for (const t of profiles) counts[t.windowLabel] = (counts[t.windowLabel] ?? 0) + 1;
+  for (const t of profiles) counts[t.teamState] = (counts[t.teamState] ?? 0) + 1;
   const lines: string[] = [];
   for (const [label, n] of Object.entries(counts)) {
-    const color = LABEL_COLOR[label as WindowLabel] ?? C.cyan;
+    const color = LABEL_COLOR[label as TeamState] ?? C.cyan;
     lines.push(`${color}${label}${C.reset}: ${n}`);
   }
   console.log(" " + lines.join("  ·  "));
@@ -137,17 +141,8 @@ function printLeagueSummary(profiles: TeamProfile[]): void {
 
 // ── HTML output (for Johnny to actually read) ───────────────────────────────
 
-const LABEL_HEX: Record<WindowLabel, string> = {
-  JUGGERNAUT: "#16a34a",
-  CONTEND: "#22c55e",
-  CLOSING: "#ef4444",
-  RISING: "#06b6d4",
-  AVERAGE: "#94a3b8",
-  MIDDLING: "#eab308",
-  REBUILD: "#3b82f6",
-  TRANSITION: "#a855f7",
-  STUCK: "#dc2626",
-};
+const LABEL_HEX = STATE_COLOR;
+
 
 const POS_CLASS_HEX: Record<string, string> = {
   CRITICAL_NEED: "#ef4444",
@@ -182,7 +177,7 @@ function progressBar(score: number, label: string): string {
 }
 
 function teamCardHtml(t: TeamProfile): string {
-  const labelColor = LABEL_HEX[t.windowLabel];
+  const labelColor = LABEL_HEX[t.teamState];
   const pickColor = PICK_HEX[t.pickCapital.flag];
   const archetypes = t.archetypes.length > 0
     ? `<div class="archetypes">${t.archetypes.map(a => `<span class="arch-tag">${escapeHtml(a)}</span>`).join("")}</div>`
@@ -210,7 +205,7 @@ function teamCardHtml(t: TeamProfile): string {
         <div class="team-rank">rank #${t.starterRank} · ${escapeHtml(t.record)}</div>
       </div>
       <div class="team-meta">
-        <span class="window-label" style="background:${labelColor}">${t.windowLabel}</span>
+        <span class="window-label" style="background:${labelColor}">${STATE_TEXT[t.teamState]}</span>
         <span class="meta-pill">${t.competitiveness} / ${t.windowTier}</span>
         <span class="meta-pill">cal_age <strong>${t.starterCalAge.toFixed(1)}</strong></span>
         <span class="meta-pill">age_pres <strong>${t.starterAgePressure.toFixed(0)}</strong></span>
@@ -233,7 +228,7 @@ function gridSummaryHtml(profiles: TeamProfile[]): string {
     const teams = grid[`${comp}-${tier}`] ?? [];
     if (teams.length === 0) return `<td class="grid-cell empty">—</td>`;
     const label = teams[0]!.windowLabel;
-    const color = LABEL_HEX[label];
+    const color = LABEL_HEX[teams[0]!.teamState];
     const names = teams.map(t => `<div class="grid-name${t.isMine ? " mine-name" : ""}">${escapeHtml(t.ownerName)}</div>`).join("");
     return `<td class="grid-cell"><div class="grid-label" style="background:${color}">${label}</div>${names}</td>`;
   };

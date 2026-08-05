@@ -1,15 +1,15 @@
-// Window Map: the league plotted on a continuous 2D field. x = window
-// pressure (LONG left → SHORT right), y = starter strength (STRONG top) at
-// EVERY viewport: same mental model on phone and desktop. Phones just get a
-// taller, narrower field (labels stack via decollision) so nothing scrolls
-// horizontally. The 3x3 band boundaries reproduce the classic grid cells;
-// dots land in the region matching their windowLabel because both derive
-// from the same numbers. Dashed trails project each team 1-2 years out
-// (Shotgun).
+// Window Map: the league plotted on a continuous 2D field. x = dynasty rank
+// (deep future left → thin future right), y = contender rank (strongest
+// starters top) at EVERY viewport: same mental model on phone and desktop.
+// Phones just get a taller, narrower field (labels stack via decollision) so
+// nothing scrolls horizontally. The 3x3 band boundaries ARE the state grid;
+// a dot lands in the region matching its teamState because the regions are
+// generated from the same STATE_GRID the engine assigns from. Dashed trails
+// project each team 1-2 years out (Shotgun).
 //
 // Readability rules (dataviz): identity comes from an ink-colored name label
 // beside each dot, never text inside the mark; the dot's color carries the
-// windowLabel (the region names double as the legend); dots wear a 2px
+// teamState (the region names double as the legend); dots wear a 2px
 // surface ring; band boundaries are solid hairlines; hover targets are
 // bigger than the marks.
 
@@ -21,19 +21,8 @@ import {
   WINDOW_SHORT_THRESHOLD,
 } from "../../algo/constants.ts";
 import { projectTeam } from "../../algo/projection.ts";
-import type { LeagueFormat, TeamProfile, WindowLabel } from "../../algo/types.ts";
-
-const LABEL_COLOR: Record<WindowLabel, string> = {
-  JUGGERNAUT: "#16a34a",
-  CONTEND:    "#22c55e",
-  CLOSING:    "#ef4444",
-  RISING:     "#06b6d4",
-  AVERAGE:    "#94a3b8",
-  MIDDLING:   "#eab308",
-  REBUILD:    "#3b82f6",
-  TRANSITION: "#a855f7",
-  STUCK:      "#dc2626",
-};
+import type { LeagueFormat, TeamProfile } from "../../algo/types.ts";
+import { STATE_GRID, STATE_COLOR, STATE_TEXT } from "../../ui/teamState.ts";
 
 const SURFACE = "#0a0c0f";
 
@@ -44,13 +33,6 @@ const Z_MAX = 2.0;
 
 const DOT_R = 7;
 const HIT_R = 15;
-
-// Plain-English stand-in for the "window pressure" number in tooltips.
-function windowTierPhrase(tier: "LONG" | "MID" | "SHORT"): string {
-  if (tier === "LONG") return "young core, long window";
-  if (tier === "MID") return "prime window";
-  return "win-now, window closing";
-}
 
 type Geometry = {
   W: number;
@@ -70,7 +52,9 @@ function makeGeometry(portrait: boolean): Geometry {
     const H = 680;
     const pad = { top: 22, right: 12, bottom: 30, left: 40 };
     return {
-      W, H, pad,
+      W,
+      H,
+      pad,
       fw: W - pad.left - pad.right,
       fh: H - pad.top - pad.bottom,
       portrait,
@@ -83,7 +67,9 @@ function makeGeometry(portrait: boolean): Geometry {
   const H = 480;
   const pad = { top: 30, right: 18, bottom: 34, left: 70 };
   return {
-    W, H, pad,
+    W,
+    H,
+    pad,
     fw: W - pad.left - pad.right,
     fh: H - pad.top - pad.bottom,
     portrait,
@@ -118,7 +104,11 @@ function rankFrac(rank: number, n: number): number {
 
 // Map (window, strength) fractions to viewBox coordinates. Window is always
 // the x axis, strength always the y axis, regardless of orientation.
-function toPoint(g: Geometry, fWindow: number, fStrength: number): { x: number; y: number } {
+function toPoint(
+  g: Geometry,
+  fWindow: number,
+  fStrength: number,
+): { x: number; y: number } {
   return {
     x: g.pad.left + fWindow * g.fw,
     y: g.pad.top + fStrength * g.fh,
@@ -147,18 +137,19 @@ type Placed = {
   contRankNum: number;
 };
 
-// Region labels by (dynasty band, contender band): 0 = best.
-const REGIONS: Array<{ label: string; windowBand: number; strengthBand: number }> = [
-  { label: "JUGGERNAUT", windowBand: 0, strengthBand: 0 },
-  { label: "CONTENDER", windowBand: 1, strengthBand: 0 },
-  { label: "WIN NOW", windowBand: 2, strengthBand: 0 },
-  { label: "RISING", windowBand: 0, strengthBand: 1 },
-  { label: "MIDDLING", windowBand: 1, strengthBand: 1 },
-  { label: "FADING", windowBand: 2, strengthBand: 1 },
-  { label: "REBUILD", windowBand: 0, strengthBand: 2 },
-  { label: "EARLY REBUILD", windowBand: 1, strengthBand: 2 },
-  { label: "STUCK", windowBand: 2, strengthBand: 2 },
-];
+// Derived from the same grid the engine assigns states with, so a dot can
+// never land in one region while carrying another region's colour. Previously
+// these labels were hand-listed here and the dots were coloured by the old
+// windowLabel enum, which let a team sit in STUCK wearing TRANSITION purple.
+const REGIONS = STATE_GRID.flatMap((row, strengthBand) =>
+  row.map((state, windowBand) => ({
+    label: STATE_TEXT[state],
+    state,
+    windowBand,
+    strengthBand,
+  })),
+);
+
 export default function WindowMap({
   profiles,
   format,
@@ -196,7 +187,9 @@ export default function WindowMap({
 
     // Rank helper: 1 = best. Ties break on rosterId so the plot is stable.
     const rankMap = (score: (p: TeamProfile) => number) => {
-      const order = [...sorted].sort((a, b) => score(b) - score(a) || a.rosterId - b.rosterId);
+      const order = [...sorted].sort(
+        (a, b) => score(b) - score(a) || a.rosterId - b.rosterId,
+      );
       const m = new Map<number, number>();
       order.forEach((p, i) => m.set(p.rosterId, i + 1));
       return m;
@@ -211,10 +204,12 @@ export default function WindowMap({
     const horizons = [0, 1, 2].map((years) => {
       const proj = sorted.map((p) => projectTeam(p, years, thisYear, format));
       const byTotal = [...proj.keys()].sort(
-        (a, b) => proj[b]!.totalDynastyValue - proj[a]!.totalDynastyValue || a - b,
+        (a, b) =>
+          proj[b]!.totalDynastyValue - proj[a]!.totalDynastyValue || a - b,
       );
       const byStarter = [...proj.keys()].sort(
-        (a, b) => proj[b]!.starterDynastyValue - proj[a]!.starterDynastyValue || a - b,
+        (a, b) =>
+          proj[b]!.starterDynastyValue - proj[a]!.starterDynastyValue || a - b,
       );
       const dyn = new Map<number, number>();
       const str = new Map<number, number>();
@@ -229,8 +224,10 @@ export default function WindowMap({
       const dNow = dynRank.get(p.rosterId) ?? 1;
       const cNow = p.starterRank;
       const trail = [1, 2].map((h) => {
-        const dDyn = (horizons[h]!.dyn.get(idx) ?? 1) - (horizons[0]!.dyn.get(idx) ?? 1);
-        const dStr = (horizons[h]!.str.get(idx) ?? 1) - (horizons[0]!.str.get(idx) ?? 1);
+        const dDyn =
+          (horizons[h]!.dyn.get(idx) ?? 1) - (horizons[0]!.dyn.get(idx) ?? 1);
+        const dStr =
+          (horizons[h]!.str.get(idx) ?? 1) - (horizons[0]!.str.get(idx) ?? 1);
         return toPoint(
           g,
           rankFrac(clampRank(dNow + dDyn), n),
@@ -244,7 +241,10 @@ export default function WindowMap({
         contRankNum: cNow,
         x: pt.x,
         y: pt.y,
-        labelSide: pt.x > g.pad.left + g.fw - g.labelFlipMargin ? ("left" as const) : ("right" as const),
+        labelSide:
+          pt.x > g.pad.left + g.fw - g.labelFlipMargin
+            ? ("left" as const)
+            : ("right" as const),
         trail,
       };
     });
@@ -286,22 +286,32 @@ export default function WindowMap({
         {[1, 2].map((i) => (
           <line
             key={`v${i}`}
-            x1={g.pad.left + (i * g.fw) / 3} y1={g.pad.top}
-            x2={g.pad.left + (i * g.fw) / 3} y2={g.pad.top + g.fh}
-            stroke="rgba(255,255,255,0.07)" strokeWidth={1}
+            x1={g.pad.left + (i * g.fw) / 3}
+            y1={g.pad.top}
+            x2={g.pad.left + (i * g.fw) / 3}
+            y2={g.pad.top + g.fh}
+            stroke="rgba(255,255,255,0.07)"
+            strokeWidth={1}
           />
         ))}
         {[1, 2].map((i) => (
           <line
             key={`h${i}`}
-            x1={g.pad.left} y1={g.pad.top + (i * g.fh) / 3}
-            x2={g.pad.left + g.fw} y2={g.pad.top + (i * g.fh) / 3}
-            stroke="rgba(255,255,255,0.07)" strokeWidth={1}
+            x1={g.pad.left}
+            y1={g.pad.top + (i * g.fh) / 3}
+            x2={g.pad.left + g.fw}
+            y2={g.pad.top + (i * g.fh) / 3}
+            stroke="rgba(255,255,255,0.07)"
+            strokeWidth={1}
           />
         ))}
         <rect
-          x={g.pad.left} y={g.pad.top} width={g.fw} height={g.fh}
-          fill="none" stroke="rgba(255,255,255,0.06)"
+          x={g.pad.left}
+          y={g.pad.top}
+          width={g.fw}
+          height={g.fh}
+          fill="none"
+          stroke="rgba(255,255,255,0.06)"
         />
 
         {/* Region labels (double as the color legend) */}
@@ -310,9 +320,15 @@ export default function WindowMap({
           return (
             <text
               key={r.label}
-              x={c.x} y={c.y}
-              textAnchor="middle" dominantBaseline="central"
-              className={portrait ? "wm-region-label wm-region-label-sm" : "wm-region-label"}
+              x={c.x}
+              y={c.y}
+              textAnchor="middle"
+              dominantBaseline="central"
+              className={
+                portrait
+                  ? "wm-region-label wm-region-label-sm"
+                  : "wm-region-label"
+              }
             >
               {r.label}
             </text>
@@ -320,17 +336,52 @@ export default function WindowMap({
         })}
 
         {/* Axis labels: same arrangement in both orientations */}
-        <text x={g.pad.left} y={g.H - 10} className="wm-axis-label" textAnchor="start">◀ HIGH DYNASTY</text>
-        <text x={g.pad.left + g.fw} y={g.H - 10} className="wm-axis-label" textAnchor="end">LOW DYNASTY ▶</text>
-        <text x={portrait ? 4 : 16} y={g.pad.top + 10} className="wm-axis-label" textAnchor="start">CONTENDS ▲</text>
-        <text x={portrait ? 4 : 16} y={g.pad.top + g.fh} className="wm-axis-label" textAnchor="start">CANNOT ▼</text>
-        <text x={g.pad.left + g.fw} y={portrait ? 14 : 16} className="wm-axis-label wm-axis-hint" textAnchor="end">
-          {portrait ? "dashed = drift (+1y, +2y)" : "dashed trail = projected drift (+1y, +2y)"}
+        <text
+          x={g.pad.left}
+          y={g.H - 10}
+          className="wm-axis-label"
+          textAnchor="start"
+        >
+          ◀ HIGH DYNASTY
+        </text>
+        <text
+          x={g.pad.left + g.fw}
+          y={g.H - 10}
+          className="wm-axis-label"
+          textAnchor="end"
+        >
+          LOW DYNASTY ▶
+        </text>
+        <text
+          x={portrait ? 4 : 16}
+          y={g.pad.top + 10}
+          className="wm-axis-label"
+          textAnchor="start"
+        >
+          CONTENDS ▲
+        </text>
+        <text
+          x={portrait ? 4 : 16}
+          y={g.pad.top + g.fh}
+          className="wm-axis-label"
+          textAnchor="start"
+        >
+          CANNOT ▼
+        </text>
+        <text
+          x={g.pad.left + g.fw}
+          y={portrait ? 14 : 16}
+          className="wm-axis-label wm-axis-hint"
+          textAnchor="end"
+        >
+          {portrait
+            ? "dashed = drift (+1y, +2y)"
+            : "dashed trail = projected drift (+1y, +2y)"}
         </text>
 
         {/* Trajectory trails under the dots (dashed = projection) */}
         {placed.map(({ profile, x, y, trail }) => {
-          const color = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
+          const color = STATE_COLOR[profile.teamState] ?? "#94a3b8";
           const pts = [{ x, y }, ...trail];
           const last = pts[pts.length - 1]!;
           const prev = pts[pts.length - 2]!;
@@ -340,7 +391,10 @@ export default function WindowMap({
             <g key={`trail-${profile.rosterId}`} opacity={0.45}>
               <polyline
                 points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
-                fill="none" stroke={color} strokeWidth={1.5} strokeDasharray="4 3"
+                fill="none"
+                stroke={color}
+                strokeWidth={1.5}
+                strokeDasharray="4 3"
               />
               <path
                 d={`M ${last.x} ${last.y}
@@ -354,7 +408,7 @@ export default function WindowMap({
 
         {/* Team dots + ink name labels */}
         {placed.map(({ profile, x, y, labelSide, dynRankNum, contRankNum }) => {
-          const color = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
+          const color = STATE_COLOR[profile.teamState] ?? "#94a3b8";
           const name = displayName(profile.ownerName, g.nameMax);
           return (
             <g
@@ -363,12 +417,14 @@ export default function WindowMap({
               onClick={() => navigate(`/league/${id}/team/${profile.rosterId}`)}
             >
               <title>
-                {`${profile.ownerName}\ncontender #${contRankNum} · dynasty #${dynRankNum} of ${placed.length}\n${windowTierPhrase(profile.windowTier)}`}
+                {`${profile.ownerName}\ncontender #${contRankNum} · dynasty #${dynRankNum} of ${placed.length}\n${STATE_TEXT[profile.teamState]}`}
               </title>
               {/* hover/click target, larger than the mark */}
               <circle cx={x} cy={y} r={HIT_R} fill="transparent" />
               <circle
-                cx={x} cy={y} r={DOT_R}
+                cx={x}
+                cy={y}
+                r={DOT_R}
                 fill={color}
                 stroke={profile.isMine ? "#f59e0b" : SURFACE}
                 strokeWidth={2}
