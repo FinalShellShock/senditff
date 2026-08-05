@@ -95,22 +95,25 @@ function makeGeometry(portrait: boolean): Geometry {
 
 // Piecewise window fraction: each band (LONG / MID / SHORT) gets a third,
 // so band boundaries line up with the visual grid. 0 = longest window.
-function windowFrac(pressure: number): number {
-  const p = Math.max(0, Math.min(PRESSURE_MAX, pressure));
-  if (p <= WINDOW_LONG_THRESHOLD) return (p / WINDOW_LONG_THRESHOLD) / 3;
-  if (p <= WINDOW_SHORT_THRESHOLD) {
-    return 1 / 3 + ((p - WINDOW_LONG_THRESHOLD) / (WINDOW_SHORT_THRESHOLD - WINDOW_LONG_THRESHOLD)) / 3;
-  }
-  return 2 / 3 + ((p - WINDOW_SHORT_THRESHOLD) / (PRESSURE_MAX - WINDOW_SHORT_THRESHOLD)) / 3;
-}
-
-// Piecewise strength fraction: STRONG band (z >= +0.5σ) is the first third.
-// 0 = strongest.
-function strengthFrac(z: number): number {
-  const zc = Math.max(-Z_MAX, Math.min(Z_MAX, z));
-  if (zc >= STD_THRESHOLD) return ((Z_MAX - zc) / (Z_MAX - STD_THRESHOLD)) / 3;
-  if (zc >= -STD_THRESHOLD) return 1 / 3 + ((STD_THRESHOLD - zc) / (2 * STD_THRESHOLD)) / 3;
-  return 2 / 3 + ((-STD_THRESHOLD - zc) / (Z_MAX - STD_THRESHOLD)) / 3;
+// Position is RANK, not value.
+//
+// Gibbs: "Plotting rank in league and not on actual value would help to
+// separate all the teams better in that chart as well. Which makes sense
+// because you are competing against others in the league, not against anyone
+// else."
+//
+// He is right about separation: ranks spread the field evenly so nobody hides
+// in a cluster. The cost, stated plainly, is that magnitude is gone. Two
+// adjacent dots are one rank apart whether that is 40 points or 4,000.
+//
+// X is DYNASTY rank, best on the left, which is the flip Gibbs asked for and
+// Johnny agreed to. It replaces windowPressure, so the horizontal axis is no
+// longer derived from age curves at all: it is what the market says the roster
+// is worth. Y is CONTENDER rank, best at the top, which is starterRank and was
+// already computed.
+function rankFrac(rank: number, n: number): number {
+  if (n <= 1) return 0.5;
+  return (rank - 0.5) / n;
 }
 
 // Map (window, strength) fractions to viewBox coordinates. Window is always
@@ -139,21 +142,23 @@ type Placed = {
   y: number;
   labelSide: "right" | "left";
   trail: Array<{ x: number; y: number }>;
+  /** 1 = best in league. These two ARE the axes, so the tooltip states them. */
+  dynRankNum: number;
+  contRankNum: number;
 };
 
-// Region labels by (windowBand, strengthBand): 0 = LONG / STRONG.
+// Region labels by (dynasty band, contender band): 0 = best.
 const REGIONS: Array<{ label: string; windowBand: number; strengthBand: number }> = [
   { label: "JUGGERNAUT", windowBand: 0, strengthBand: 0 },
-  { label: "CONTEND", windowBand: 1, strengthBand: 0 },
-  { label: "CLOSING", windowBand: 2, strengthBand: 0 },
+  { label: "CONTENDER", windowBand: 1, strengthBand: 0 },
+  { label: "WIN NOW", windowBand: 2, strengthBand: 0 },
   { label: "RISING", windowBand: 0, strengthBand: 1 },
-  { label: "AVERAGE", windowBand: 1, strengthBand: 1 },
-  { label: "MIDDLING", windowBand: 2, strengthBand: 1 },
+  { label: "MIDDLING", windowBand: 1, strengthBand: 1 },
+  { label: "FADING", windowBand: 2, strengthBand: 1 },
   { label: "REBUILD", windowBand: 0, strengthBand: 2 },
-  { label: "TRANSITION", windowBand: 1, strengthBand: 2 },
+  { label: "EARLY REBUILD", windowBand: 1, strengthBand: 2 },
   { label: "STUCK", windowBand: 2, strengthBand: 2 },
 ];
-
 export default function WindowMap({
   profiles,
   format,
@@ -179,33 +184,64 @@ export default function WindowMap({
 
   const placed: Placed[] = useMemo(() => {
     const sorted = [...profiles].sort((a, b) => a.rosterId - b.rosterId);
-    const { mean, std } = meanStd(sorted.map((p) => p.starterTotalValue));
-    const zNow = (p: TeamProfile) => (std > 0 ? (p.starterTotalValue - mean) / std : 0);
+    const n = sorted.length;
 
-    // Projected starter-dynasty distributions per horizon; drift is relative
-    // to the league at the same horizon (if everyone ages equally, nobody
-    // moves — strength is relative).
+    // Total dynasty value: every player plus every pick. This is the X axis,
+    // and it is deliberately the raw market number rather than anything the
+    // engine derives. Gibbs: "that's why I am advocating for dynasty value ...
+    // don't create dyno value from contender."
+    const dynastyOf = (p: TeamProfile) =>
+      p.players.reduce((s, x) => s + (x.valueDynasty || 0), 0) +
+      p.picks.reduce((s, k) => s + (k.value || 0), 0);
+
+    // Rank helper: 1 = best. Ties break on rosterId so the plot is stable.
+    const rankMap = (score: (p: TeamProfile) => number) => {
+      const order = [...sorted].sort((a, b) => score(b) - score(a) || a.rosterId - b.rosterId);
+      const m = new Map<number, number>();
+      order.forEach((p, i) => m.set(p.rosterId, i + 1));
+      return m;
+    };
+    const dynRank = rankMap(dynastyOf);
+
+    // Projected horizons, ranked the same way so a trail is movement THROUGH
+    // the league rather than movement in raw value. Applied as a rank DELTA off
+    // today's position, because the projection reports starter DYNASTY value
+    // while the live Y axis is starter REDRAFT value: the delta is comparable
+    // even though the absolute numbers are not.
     const horizons = [0, 1, 2].map((years) => {
       const proj = sorted.map((p) => projectTeam(p, years, thisYear, format));
-      const dist = meanStd(proj.map((t) => t.starterDynastyValue));
-      return { proj, dist };
+      const byTotal = [...proj.keys()].sort(
+        (a, b) => proj[b]!.totalDynastyValue - proj[a]!.totalDynastyValue || a - b,
+      );
+      const byStarter = [...proj.keys()].sort(
+        (a, b) => proj[b]!.starterDynastyValue - proj[a]!.starterDynastyValue || a - b,
+      );
+      const dyn = new Map<number, number>();
+      const str = new Map<number, number>();
+      byTotal.forEach((idx, i) => dyn.set(idx, i + 1));
+      byStarter.forEach((idx, i) => str.set(idx, i + 1));
+      return { dyn, str };
     });
-    const zAt = (idx: number, h: number) => {
-      const { proj, dist } = horizons[h]!;
-      return dist.std > 0 ? (proj[idx]!.starterDynastyValue - dist.mean) / dist.std : 0;
-    };
+
+    const clampRank = (r: number) => Math.max(1, Math.min(n, r));
 
     const result: Placed[] = sorted.map((p, idx) => {
-      const baseWindow = p.windowPressure;
-      const baseZ = zNow(p);
+      const dNow = dynRank.get(p.rosterId) ?? 1;
+      const cNow = p.starterRank;
       const trail = [1, 2].map((h) => {
-        const dPressure = horizons[h]!.proj[idx]!.agePressure - horizons[0]!.proj[idx]!.agePressure;
-        const dz = zAt(idx, h) - zAt(idx, 0);
-        return toPoint(g, windowFrac(baseWindow + dPressure), strengthFrac(baseZ + dz));
+        const dDyn = (horizons[h]!.dyn.get(idx) ?? 1) - (horizons[0]!.dyn.get(idx) ?? 1);
+        const dStr = (horizons[h]!.str.get(idx) ?? 1) - (horizons[0]!.str.get(idx) ?? 1);
+        return toPoint(
+          g,
+          rankFrac(clampRank(dNow + dDyn), n),
+          rankFrac(clampRank(cNow + dStr), n),
+        );
       });
-      const pt = toPoint(g, windowFrac(baseWindow), strengthFrac(baseZ));
+      const pt = toPoint(g, rankFrac(dNow, n), rankFrac(cNow, n));
       return {
         profile: p,
+        dynRankNum: dNow,
+        contRankNum: cNow,
         x: pt.x,
         y: pt.y,
         labelSide: pt.x > g.pad.left + g.fw - g.labelFlipMargin ? ("left" as const) : ("right" as const),
@@ -284,10 +320,10 @@ export default function WindowMap({
         })}
 
         {/* Axis labels: same arrangement in both orientations */}
-        <text x={g.pad.left} y={g.H - 10} className="wm-axis-label" textAnchor="start">◀ LONG WINDOW</text>
-        <text x={g.pad.left + g.fw} y={g.H - 10} className="wm-axis-label" textAnchor="end">SHORT WINDOW ▶</text>
-        <text x={portrait ? 4 : 16} y={g.pad.top + 10} className="wm-axis-label" textAnchor="start">STRONG ▲</text>
-        <text x={portrait ? 4 : 16} y={g.pad.top + g.fh} className="wm-axis-label" textAnchor="start">WEAK ▼</text>
+        <text x={g.pad.left} y={g.H - 10} className="wm-axis-label" textAnchor="start">◀ HIGH DYNASTY</text>
+        <text x={g.pad.left + g.fw} y={g.H - 10} className="wm-axis-label" textAnchor="end">LOW DYNASTY ▶</text>
+        <text x={portrait ? 4 : 16} y={g.pad.top + 10} className="wm-axis-label" textAnchor="start">CONTENDS ▲</text>
+        <text x={portrait ? 4 : 16} y={g.pad.top + g.fh} className="wm-axis-label" textAnchor="start">CANNOT ▼</text>
         <text x={g.pad.left + g.fw} y={portrait ? 14 : 16} className="wm-axis-label wm-axis-hint" textAnchor="end">
           {portrait ? "dashed = drift (+1y, +2y)" : "dashed trail = projected drift (+1y, +2y)"}
         </text>
@@ -317,7 +353,7 @@ export default function WindowMap({
         })}
 
         {/* Team dots + ink name labels */}
-        {placed.map(({ profile, x, y, labelSide }) => {
+        {placed.map(({ profile, x, y, labelSide, dynRankNum, contRankNum }) => {
           const color = LABEL_COLOR[profile.windowLabel] ?? "#94a3b8";
           const name = displayName(profile.ownerName, g.nameMax);
           return (
@@ -327,7 +363,7 @@ export default function WindowMap({
               onClick={() => navigate(`/league/${id}/team/${profile.rosterId}`)}
             >
               <title>
-                {`${profile.ownerName} (${profile.windowLabel})\nstarter rank #${profile.starterRank} · ${windowTierPhrase(profile.windowTier)}`}
+                {`${profile.ownerName}\ncontender #${contRankNum} · dynasty #${dynRankNum} of ${placed.length}\n${windowTierPhrase(profile.windowTier)}`}
               </title>
               {/* hover/click target, larger than the mark */}
               <circle cx={x} cy={y} r={HIT_R} fill="transparent" />

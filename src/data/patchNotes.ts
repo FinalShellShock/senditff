@@ -84,6 +84,25 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "2.2",
+    algo: "Pistol",
+    algoFingerprint: "234857bba55b",
+    date: "2026-08-04",
+    title: "The league map is plotted on rank now, against a 3x3 grid",
+    changes: [
+      "The map's horizontal axis was window pressure, worked out from age curves and pick capital. It is now simply where your roster ranks in the league by dynasty value, best on the left. The vertical axis is where your starting lineup ranks by what it scores this season.",
+      "Thanks to Gibbs for the design, and for being right about why: \"you are competing against others in the league, not against anyone else.\" Plotting rank instead of raw value also spreads the teams out, so nobody hides in a cluster.",
+      "Nine cells instead of the old bands: juggernaut, contender, win now across the top, then rising, middling, fading, then rebuild, early rebuild and stuck along the bottom. Stuck is bottom right, where a team with no present and no future belongs.",
+      "The dashed drift trails survive and now show where a team is projected to RANK in one and two years, rather than where its value drifts.",
+      "Hovering a team gives you both numbers behind its position.",
+      "Worth knowing: the trade engine has not changed. This is how the league is drawn, not how trades are found.",
+    ],
+    knownIssues: [
+      "The map and the window badge on a team's page can now disagree, because they answer different questions: the map reads dynasty value rank, the badge still reads the age-and-picks window. A team can sit in STUCK on the map and read LONG on its badge. Reconciling the two is the next thing to settle.",
+    ],
+  },
+  {
+    branch: "daniels",
     release: "2.1",
     algo: "Pistol",
     algoFingerprint: "234857bba55b",
