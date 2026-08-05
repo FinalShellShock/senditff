@@ -224,11 +224,17 @@ function PullBar({ pull, scale }: { pull: number; scale: number }) {
 
 /** windowPressure on the scale that actually decides the tier. */
 function WindowGauge({ pressure }: { pressure: number }) {
-  // The bands are narrow and low: LONG ends at 14, SHORT starts at 19, on a
-  // number that is nominally 0-100. Printing "20 of 100" makes a SHORT badge
-  // look like a bug, which is the same trap urgency fell into. Top of scale is
-  // a little past SHORT so the live value has somewhere to sit.
-  const MAX = 34;
+  // Full 0-100, because that is what windowPressure now is: profile.ts clamps
+  // it to that range by construction.
+  //
+  // This was 34, from the age-pressure era when the cuts sat at 14 and 19 and a
+  // top of 34 kept the narrow bands readable. The cuts moved to 40 and 60 when
+  // the window became the standardised gap between contender and dynasty value,
+  // and this number did not follow: both band markers pinned to the right edge,
+  // MID rendered zero pixels wide, and every roster at or above 34 drew a
+  // completely full bar. So 41 and 78 looked identical, and the bar disagreed
+  // with the badge beside it.
+  const MAX = 100;
   const pct = (v: number) => Math.max(0, Math.min(100, (v / MAX) * 100));
   return (
     <div className="state-window-gauge">

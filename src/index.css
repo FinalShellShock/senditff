@@ -3508,6 +3508,22 @@ body {
   margin: 9px 0 2px;
 }
 
+/* Tick marks at the two band cuts. The markup has carried these since the
+   gauge shipped and there was never a rule behind them, so they rendered 0x0
+   and transparent: the bar showed a fill and a colour but never showed WHERE
+   LONG became MID or MID became SHORT. Both cuts get the same neutral hairline
+   because they are boundaries, not severities; the fill colour already carries
+   which side you are on. Taller than the track so a full-width fill cannot
+   swallow them. */
+.state-floor {
+  position: absolute;
+  top: -3px;
+  width: 1px;
+  height: calc(100% + 6px);
+  background: rgba(226, 232, 240, 0.45);
+  pointer-events: none;
+}
+
 .state-window-bands {
   display: flex;
   margin-top: 5px;

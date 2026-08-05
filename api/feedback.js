@@ -48,6 +48,20 @@ function currentRelease() {
 var PATCH_NOTES = [
   {
     branch: "daniels",
+    release: "3.3",
+    algo: "Empty",
+    algoFingerprint: "530ce0f18047",
+    date: "2026-08-05",
+    title: "The window bar on your team page was lying to thirteen of sixteen teams",
+    changes: [
+      "The window gauge was still drawn on the old scale. When the window stopped being an age number its cuts moved from 14 and 19 to 40 and 60, and the bar's top end stayed at 34. Anything at or above 34 drew a completely full bar, so thirteen of sixteen teams looked identical and maxed out, including three the app was calling LONG. It now runs the full 0 to 100 the number actually uses.",
+      "The two tick marks showing where LONG becomes MID and MID becomes SHORT have been in the page since the gauge shipped with no styling behind them, so they rendered at zero pixels wide and were never visible. You could see a colour but not where the boundary was. They are drawn now.",
+      "No change to any number. The bar was misdrawing values that were correct underneath."
+    ],
+    knownIssues: []
+  },
+  {
+    branch: "daniels",
     release: "3.2",
     algo: "Empty",
     algoFingerprint: "530ce0f18047",
