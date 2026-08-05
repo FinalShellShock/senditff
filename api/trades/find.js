@@ -560,7 +560,7 @@ function isDeclining(p) {
 }
 function spentShare(p) {
   if (!p.valueDynasty || p.valueDynasty <= 0) return 0;
-  return Math.max(0, Math.min(1, (p.valueRedraft ?? 0) / p.valueDynasty));
+  return Math.max(0, (p.valueRedraft ?? 0) / p.valueDynasty);
 }
 function rosterUnbankedShare(team) {
   let dyn = 0;
@@ -576,7 +576,7 @@ function rosterUnbankedShare(team) {
 function timelinePenalty(team, receives, sends) {
   const building = rosterUnbankedShare(team);
   if (building <= 0) return 0;
-  const spent = (p) => spentShare(p);
+  const spent = (p) => agePressure(effectiveAge(p), p.position) / 100;
   const redraft = (assets) => assets.reduce((sum, a) => sum + (a.kind === "player" ? a.player.valueRedraft : 0), 0);
   const aging = (assets) => assets.reduce((sum, a) => sum + (a.kind === "player" ? assetValue(a) * spent(a.player) : 0), 0);
   const remaining = (assets) => assets.reduce(

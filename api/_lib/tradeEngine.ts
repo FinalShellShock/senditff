@@ -426,9 +426,28 @@ function isDeclining(p: Player): boolean {
  * Clamped, because redraft can exceed dynasty for a pure win-now asset (that is
  * fully spent, not negatively spent) and can be missing.
  */
+// NOT capped at 1. A player whose win-now price EXCEEDS his dynasty price is
+// not merely "fully spent", he is a liability to a roster that is building: the
+// market is saying he is worth more this season than the rights to him are
+// worth at all.
+//
+// Capping it erased exactly that group. Measured on the test league, 40 of 317
+// rostered players carry redraft above dynasty, almost all of them running
+// backs, and every one read as spent 1.00 with nothing left. McCaffrey's true
+// remaining is -3,545 and Derrick Henry's is -3,306; the cap called both zero
+// and charged a rebuilding team nothing for taking them on.
+//
+// Uncapped, the two quantities downstream collapse to exactly the difference
+// Gibbs was sorting on, which is the reassuring part:
+//
+//   aging(x)     = dynasty x (redraft/dynasty)     = redraft
+//   remaining(x) = dynasty x (1 - redraft/dynasty) = dynasty - redraft
+//
+// The floor stays: a negative redraft is not a thing, and dividing by a zero
+// dynasty is not either.
 function spentShare(p: Player): number {
   if (!p.valueDynasty || p.valueDynasty <= 0) return 0;
-  return Math.max(0, Math.min(1, (p.valueRedraft ?? 0) / p.valueDynasty));
+  return Math.max(0, (p.valueRedraft ?? 0) / p.valueDynasty);
 }
 
 /** The same reading for a whole roster. Picks count as wholly unspent. */
@@ -453,7 +472,31 @@ function timelinePenalty(team: TeamProfile, receives: Asset[], sends: Asset[]): 
   const building = rosterUnbankedShare(team);
   if (building <= 0) return 0;
 
-  const spent = (p: Player) => spentShare(p);
+  // HOW MUCH CAREER IS LEFT is an aging question, and the age curve is the only
+  // thing that answers it. This briefly read spentShare instead, and Gibbs
+  // killed it in one line: Bijan and Jahmyr have contender value equal to
+  // dynasty value "by being the best assets to own period", so they came out at
+  // 5% and 3% "left" and the engine told rebuilding teams not to buy them.
+  //
+  // The error was conflating two different things:
+  //
+  //   deferral       redraft vs dynasty. Is this player's value POSTPONED?
+  //   career left    how much of him is still in front of him?
+  //
+  // An elite 24 year old is elite now AND later, so nothing is postponed and
+  // deferral reads ~0. That says nothing whatsoever about his future. Deferral
+  // and remaining career are simply not the same quantity.
+  //
+  // This is also Gibbs' "don't remove contender value from a player's dynasty
+  // value, then artificially put it back in with age curves ... you're doing
+  // extra steps". Correct, and the extra step is gone: dynasty value is never
+  // decomposed by redraft here any more.
+  //
+  // Deferral is still used, in the two places where it IS the question: the
+  // roster-level building share just above, and the fringe-flier bet in
+  // youngAssetQuality, which is literally asking "has the market postponed this
+  // player's value".
+  const spent = (p: Player) => agePressure(effectiveAge(p), p.position) / 100;
   const redraft = (assets: Asset[]) =>
     assets.reduce((sum, a) => sum + (a.kind === "player" ? a.player.valueRedraft : 0), 0);
   const aging = (assets: Asset[]) =>

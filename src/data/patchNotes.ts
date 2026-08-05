@@ -84,6 +84,24 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "2.1",
+    algo: "Pistol",
+    algoFingerprint: "234857bba55b",
+    date: "2026-08-04",
+    title: "Correcting 2.0: an elite young player is not the same as a deferred one",
+    changes: [
+      "2.0 went too far. It started reading how much a player had left from the gap between his dynasty and redraft price, and that gap does not measure what I claimed it did.",
+      "Thanks to Gibbs for spotting it in one line. Bijan Robinson and Jahmyr Gibbs have redraft value almost identical to their dynasty value, because they are the best assets to own right now AND in three years. Under 2.0 that made them read as 5% and 3% future remaining, so the engine started telling rebuilding teams not to acquire them. That is obviously wrong.",
+      "The gap between dynasty and redraft measures whether a player's value is POSTPONED, not how much of it is left. A young player who is already elite has nothing postponed and everything ahead of him, and those are different facts.",
+      "So the two ideas are now separated. How much career a player has left goes back to the aging curves. Whether a ROSTER is building or contending still comes from the market prices, which is what 2.0 got right and is unchanged.",
+      "The fringe flier bet also keeps using the market gap, because there the question really is whether the market has postponed a player's value.",
+    ],
+    knownIssues: [
+      "The aging curves have known gaps: they are flat between 22 and 24, where the market clearly is not, and quarterbacks read backwards against the market. Those are real and unfixed; they are just a better wrong than the alternative.",
+    ],
+  },
+  {
+    branch: "daniels",
     release: "2.0",
     algo: "Pistol",
     algoFingerprint: "746028c4a43d",
