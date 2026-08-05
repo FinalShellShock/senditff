@@ -58,6 +58,31 @@ export type Pick = {
 export type Competitiveness = "STRONG" | "AVERAGE" | "WEAK";
 export type WindowTier = "LONG" | "MID" | "SHORT";
 
+/**
+ * Where a roster sits on the two things a dynasty manager is actually
+ * balancing: winning now, and being set up later.
+ *
+ * Rows are contender rank (what the starting lineup scores this season), columns
+ * are dynasty rank (what the whole roster plus picks is worth). Both are ranks
+ * within the league, because you compete against the league and not an absolute
+ * scale.
+ *
+ * This replaces windowTier as the thing the engine gates on. A single window
+ * number cannot describe this: collapsing the grid to one axis throws the LEVEL
+ * away, so a team ranked 16th in both came out identical to a team ranked 1st in
+ * both. Both read "balanced". One is a juggernaut and one is Gibbs.
+ */
+export type TeamState =
+  | "JUGGERNAUT"     // wins now, set up later
+  | "CONTENDER"      // wins now, average future
+  | "WIN_NOW"        // wins now, nothing behind it
+  | "RISING"         // not yet, but loaded
+  | "MIDDLING"       // average at both
+  | "FADING"         // still competitive, future draining
+  | "REBUILD"        // losing now, loaded later
+  | "EARLY_REBUILD"  // losing now, average future
+  | "STUCK";         // losing now, nothing later
+
 // 9 cells: Competitiveness × WindowTier
 //                LONG          MID         SHORT
 //   STRONG       JUGGERNAUT    CONTEND     CLOSING
@@ -150,6 +175,10 @@ export type TeamProfile = {
   windowPressure: number; // 0-100, blended age + pick pressure
   windowRank: number; // 1 = longest window in league
   windowTier: WindowTier;
+  /** 1 = most total dynasty value (players + picks) in the league. */
+  dynastyRank: number;
+  /** Grid cell from (contender rank, dynasty rank). What the engine gates on. */
+  teamState: TeamState;
   windowLabel: WindowLabel;
   positionScores: Record<Position, PositionScore>;
   flex: FlexScore;

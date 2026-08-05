@@ -11,6 +11,7 @@ import {
   STD_THRESHOLD,
   TEP_MULTIPLIER,
   VALUE_LOSS_RATE,
+  WINDOW_DELTA_SCALE,
   WINDOW_LONG_THRESHOLD,
   WINDOW_SHORT_THRESHOLD,
 } from "./constants";
@@ -29,6 +30,7 @@ import type {
   SubClassification,
   TeamInput,
   TeamProfile,
+  TeamState,
   WindowTier,
 } from "./types";
 
@@ -890,6 +892,7 @@ export function computeAllProfiles(
 
   type Stage2 = Stage1 & {
     competitiveness: Competitiveness;
+    totalDynastyValue: number;
     windowPressure: number;
     pickFlag: PickFlag;
   };
@@ -953,14 +956,49 @@ export function computeAllProfiles(
   const stage2: Stage2[] = stage1.map((t) => {
     // The flag is still computed, but only as a LABEL. Nothing scores on it.
     const pickFlag = pickFlagFor(t.pickCapValue);
-    const windowPressure = Math.max(0, t.starterAgePressure + pickAdjustment(shareOf(t)));
     return {
       ...t,
       competitiveness: compFor(t.starterTotalValue),
-      windowPressure,
+      totalDynastyValue:
+        t.players.reduce((s, p) => s + (p.valueDynasty || 0), 0) +
+        t.picks.reduce((s, k) => s + (k.value || 0), 0),
+      windowPressure: 0, // filled below, once the league distributions exist
       pickFlag,
     };
   });
+
+  // WINDOW IS THE DELTA BETWEEN THE TWO THINGS A MANAGER BALANCES.
+  //
+  // Johnny: "teams are trying to balance winning and long term success ... that
+  // means we remove the agepressure and use the delta between the two values."
+  //
+  // Contender value is what the starting lineup scores this season. Dynasty
+  // value is what the whole roster plus picks is worth. Both are standardised
+  // against the league first, because they are on different scales, and the
+  // window is the gap between them:
+  //
+  //   more dynasty than contender  -> value is ahead of you  -> LONG
+  //   more contender than dynasty  -> value is behind you    -> SHORT
+  //
+  // No age curve anywhere in it. A 25 year old QB starting his career and a 25
+  // year old RB halfway through his do not need a curve to tell them apart: the
+  // market already prices one higher in dynasty than in redraft and the other
+  // the other way round.
+  const zOf = (values: number[]) => {
+    const n = Math.max(1, values.length);
+    const mean = values.reduce((a, b) => a + b, 0) / n;
+    const sd = Math.sqrt(values.reduce((s, v) => s + (v - mean) ** 2, 0) / n) || 1;
+    return (v: number) => (v - mean) / sd;
+  };
+  const zCont = zOf(stage2.map((t) => t.starterTotalValue));
+  const zDyn = zOf(stage2.map((t) => t.totalDynastyValue));
+  for (const t of stage2) {
+    // 50 is balanced. Below 50 the future outweighs the present.
+    t.windowPressure = Math.max(
+      0,
+      Math.min(100, 50 - (zDyn(t.totalDynastyValue) - zCont(t.starterTotalValue)) * WINDOW_DELTA_SCALE),
+    );
+  }
 
   const sortedByPressure = [...stage2].sort((a, b) => {
     if (a.windowPressure !== b.windowPressure) return a.windowPressure - b.windowPressure;
@@ -968,6 +1006,34 @@ export function computeAllProfiles(
   });
   const windowRank = new Map<number, number>();
   sortedByPressure.forEach((t, i) => windowRank.set(t.rosterId, i + 1));
+
+  // Grid cell from the two ranks. Rows are contender, columns are dynasty,
+  // thirds of the league on each. This is what the engine gates on now: a
+  // single window number cannot say the difference between 1st-and-1st and
+  // 16th-and-16th, and those are opposite situations.
+  const dynastyOrder = [...stage2].sort(
+    (a, b) => b.totalDynastyValue - a.totalDynastyValue || a.rosterId - b.rosterId,
+  );
+  const dynastyRankOf = new Map<number, number>();
+  dynastyOrder.forEach((t, i) => dynastyRankOf.set(t.rosterId, i + 1));
+  const contenderOrder = [...stage2].sort(
+    (a, b) => b.starterTotalValue - a.starterTotalValue || a.rosterId - b.rosterId,
+  );
+  const contenderRankOf = new Map<number, number>();
+  contenderOrder.forEach((t, i) => contenderRankOf.set(t.rosterId, i + 1));
+
+  const teamCount = Math.max(1, stage2.length);
+  const bandOf = (rank: number): 0 | 1 | 2 =>
+    Math.min(2, Math.floor(((rank - 0.5) / teamCount) * 3)) as 0 | 1 | 2;
+  const STATE_GRID: TeamState[][] = [
+    ["JUGGERNAUT", "CONTENDER", "WIN_NOW"],
+    ["RISING", "MIDDLING", "FADING"],
+    ["REBUILD", "EARLY_REBUILD", "STUCK"],
+  ];
+  const stateOf = (rosterId: number): TeamState =>
+    STATE_GRID[bandOf(contenderRankOf.get(rosterId) ?? 1)]![
+      bandOf(dynastyRankOf.get(rosterId) ?? 1)
+    ]!;
 
   const windowTierFor = (pressure: number): WindowTier => {
     if (pressure < WINDOW_LONG_THRESHOLD) return "LONG";
@@ -1076,6 +1142,8 @@ export function computeAllProfiles(
       windowPressure: t.windowPressure,
       windowRank: windowRank.get(t.rosterId)!,
       windowTier: tier,
+      dynastyRank: dynastyRankOf.get(t.rosterId)!,
+      teamState: stateOf(t.rosterId),
       windowLabel: COMPETITIVENESS_GRID[t.competitiveness][tier],
       positionScores,
       flex: {

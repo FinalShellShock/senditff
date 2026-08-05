@@ -28,7 +28,6 @@ import {
   THEIR_FIT_SATISFIED,
   YOUNG_ASSET_BONUS,
   YOUNG_ASSET_MIN_UNBANKED,
-  ROSTER_BUILDING_SHARE,
   STANCE_CAUTION_TOTAL,
   STANCE_CONFIDENT_TOTAL,
   TANK_MAX_PENALTY,
@@ -450,26 +449,28 @@ function spentShare(p: Player): number {
   return Math.max(0, (p.valueRedraft ?? 0) / p.valueDynasty);
 }
 
-/** The same reading for a whole roster. Picks count as wholly unspent. */
-function rosterUnbankedShare(team: TeamProfile): number {
-  let dyn = 0;
-  let red = 0;
-  for (const p of team.players) {
-    if (!p.valueDynasty) continue;
-    dyn += p.valueDynasty;
-    red += p.valueRedraft ?? 0;
-  }
-  for (const k of team.picks) dyn += k.value || 0;
-  return dyn > 0 ? Math.max(0, Math.min(1, 1 - red / dyn)) : 0;
-}
-
 function timelinePenalty(team: TeamProfile, receives: Asset[], sends: Asset[]): number {
   // Scaled by how much of this roster is still unbanked, not gated on a window
   // BUCKET. windowTier === "LONG" was a proxy for "is building", and a team can
   // have nothing banked because it has been managed badly rather than because
   // it is deliberately rebuilding. The share says which team this actually is,
   // continuously, and a contending roster lands near zero on its own.
-  const building = rosterUnbankedShare(team);
+  // Building weight from the GRID, not from unbanked share.
+  //
+  // rosterUnbankedShare turned out to be a quality proxy, not a timeline one:
+  // measured against contender rank it lands at -0.918, so it was mostly saying
+  // "this roster is bad". Stripping picks barely moved it (-0.885), so it was
+  // not the picks. Scaling a rebuild charge on it charged bad teams and excused
+  // good ones, which is the opposite of the distinction it was added to make.
+  //
+  // The grid says it directly: REBUILD and RISING are the states with more
+  // ahead than behind.
+  const building =
+    team.teamState === "REBUILD" ? 1
+    : team.teamState === "EARLY_REBUILD" ? 0.7
+    : team.teamState === "RISING" ? 0.5
+    : team.teamState === "STUCK" ? 0.4
+    : 0;
   if (building <= 0) return 0;
 
   // HOW MUCH CAREER IS LEFT is an aging question, and the age curve is the only
@@ -632,7 +633,16 @@ function bestPlayerEdge(
 // it. Dated snapshots have been accumulating since 2026-07-25 and are the way
 // to settle it later.
 function youngAssetQuality(team: TeamProfile, receives: Asset[], averages: LeagueAverages): number {
-  if (rosterUnbankedShare(team) < ROSTER_BUILDING_SHARE) return 0;
+  // Same correction as timelinePenalty: unbanked share reads -0.918 against
+  // contender rank, so it was gating this on "is the roster bad" rather than
+  // "is the roster building". The grid states say it directly.
+  if (
+    team.teamState !== "REBUILD" &&
+    team.teamState !== "EARLY_REBUILD" &&
+    team.teamState !== "RISING"
+  ) {
+    return 0;
+  }
   let score = 0;
   for (const a of receives) {
     if (a.kind !== "player") continue;
@@ -1586,7 +1596,7 @@ function genAgeArbSell(ctx: GenContext): Candidate[] {
     for (const them of others) {
       // Rebuilders (LONG window) punt veteran holes, they don't buy vets.
       // Win-now teams (MID/SHORT) are the ones who pay for production.
-      if (them.windowTier === "LONG") continue;
+      if (them.teamState === "REBUILD" || them.teamState === "EARLY_REBUILD") continue;
       // Receive: their younger high-value player at same pos (or any pos), or picks
       const theirYouth = them.players
         .filter((p) => (p.age ?? 99) <= 25 && p.valueDynasty >= 1000)

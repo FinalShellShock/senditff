@@ -71,13 +71,14 @@ var TIER_DOWN_BY_COMPETITIVENESS = {
   WEAK: 1
 };
 var STD_THRESHOLD = 0.5;
-var WINDOW_LONG_THRESHOLD = 14;
-var WINDOW_SHORT_THRESHOLD = 19;
+var WINDOW_LONG_THRESHOLD = 40;
+var WINDOW_SHORT_THRESHOLD = 60;
 var COMPETITIVENESS_GRID = {
   STRONG: { LONG: "JUGGERNAUT", MID: "CONTEND", SHORT: "CLOSING" },
   AVERAGE: { LONG: "RISING", MID: "AVERAGE", SHORT: "MIDDLING" },
   WEAK: { LONG: "REBUILD", MID: "TRANSITION", SHORT: "STUCK" }
 };
+var WINDOW_DELTA_SCALE = 25;
 
 // src/algo/archetypes.ts
 var ARCHETYPE_THRESHOLD = 50;
@@ -607,20 +608,53 @@ function computeAllProfiles(teams, format, thisYear, globalPlayerPools) {
   };
   const stage2 = stage1.map((t) => {
     const pickFlag = pickFlagFor(t.pickCapValue);
-    const windowPressure = Math.max(0, t.starterAgePressure + pickAdjustment(shareOf(t)));
     return {
       ...t,
       competitiveness: compFor(t.starterTotalValue),
-      windowPressure,
+      totalDynastyValue: t.players.reduce((s, p) => s + (p.valueDynasty || 0), 0) + t.picks.reduce((s, k) => s + (k.value || 0), 0),
+      windowPressure: 0,
+      // filled below, once the league distributions exist
       pickFlag
     };
   });
+  const zOf = (values) => {
+    const n = Math.max(1, values.length);
+    const mean = values.reduce((a, b) => a + b, 0) / n;
+    const sd = Math.sqrt(values.reduce((s, v) => s + (v - mean) ** 2, 0) / n) || 1;
+    return (v) => (v - mean) / sd;
+  };
+  const zCont = zOf(stage2.map((t) => t.starterTotalValue));
+  const zDyn = zOf(stage2.map((t) => t.totalDynastyValue));
+  for (const t of stage2) {
+    t.windowPressure = Math.max(
+      0,
+      Math.min(100, 50 - (zDyn(t.totalDynastyValue) - zCont(t.starterTotalValue)) * WINDOW_DELTA_SCALE)
+    );
+  }
   const sortedByPressure = [...stage2].sort((a, b) => {
     if (a.windowPressure !== b.windowPressure) return a.windowPressure - b.windowPressure;
     return a.rosterId - b.rosterId;
   });
   const windowRank = /* @__PURE__ */ new Map();
   sortedByPressure.forEach((t, i) => windowRank.set(t.rosterId, i + 1));
+  const dynastyOrder = [...stage2].sort(
+    (a, b) => b.totalDynastyValue - a.totalDynastyValue || a.rosterId - b.rosterId
+  );
+  const dynastyRankOf = /* @__PURE__ */ new Map();
+  dynastyOrder.forEach((t, i) => dynastyRankOf.set(t.rosterId, i + 1));
+  const contenderOrder = [...stage2].sort(
+    (a, b) => b.starterTotalValue - a.starterTotalValue || a.rosterId - b.rosterId
+  );
+  const contenderRankOf = /* @__PURE__ */ new Map();
+  contenderOrder.forEach((t, i) => contenderRankOf.set(t.rosterId, i + 1));
+  const teamCount = Math.max(1, stage2.length);
+  const bandOf = (rank) => Math.min(2, Math.floor((rank - 0.5) / teamCount * 3));
+  const STATE_GRID = [
+    ["JUGGERNAUT", "CONTENDER", "WIN_NOW"],
+    ["RISING", "MIDDLING", "FADING"],
+    ["REBUILD", "EARLY_REBUILD", "STUCK"]
+  ];
+  const stateOf = (rosterId) => STATE_GRID[bandOf(contenderRankOf.get(rosterId) ?? 1)][bandOf(dynastyRankOf.get(rosterId) ?? 1)];
   const windowTierFor = (pressure) => {
     if (pressure < WINDOW_LONG_THRESHOLD) return "LONG";
     if (pressure > WINDOW_SHORT_THRESHOLD) return "SHORT";
@@ -710,6 +744,8 @@ function computeAllProfiles(teams, format, thisYear, globalPlayerPools) {
       windowPressure: t.windowPressure,
       windowRank: windowRank.get(t.rosterId),
       windowTier: tier,
+      dynastyRank: dynastyRankOf.get(t.rosterId),
+      teamState: stateOf(t.rosterId),
       windowLabel: COMPETITIVENESS_GRID[t.competitiveness][tier],
       positionScores,
       flex: {

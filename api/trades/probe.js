@@ -77,7 +77,6 @@ var ACQUIRED_QUALITY_BONUS = [
 var FRINGE_RANK_MIN = 61;
 var FRINGE_RANK_MAX = 100;
 var YOUNG_ASSET_MIN_UNBANKED = 0.4;
-var ROSTER_BUILDING_SHARE = 0.35;
 var YOUNG_ASSET_BONUS = 0.05;
 var SHAPE_FIT_BY_COMPETITIVENESS = {
   STRONG: 0.06,
@@ -550,19 +549,8 @@ function spentShare(p) {
   if (!p.valueDynasty || p.valueDynasty <= 0) return 0;
   return Math.max(0, (p.valueRedraft ?? 0) / p.valueDynasty);
 }
-function rosterUnbankedShare(team) {
-  let dyn = 0;
-  let red = 0;
-  for (const p of team.players) {
-    if (!p.valueDynasty) continue;
-    dyn += p.valueDynasty;
-    red += p.valueRedraft ?? 0;
-  }
-  for (const k of team.picks) dyn += k.value || 0;
-  return dyn > 0 ? Math.max(0, Math.min(1, 1 - red / dyn)) : 0;
-}
 function timelinePenalty(team, receives, sends) {
-  const building = rosterUnbankedShare(team);
+  const building = team.teamState === "REBUILD" ? 1 : team.teamState === "EARLY_REBUILD" ? 0.7 : team.teamState === "RISING" ? 0.5 : team.teamState === "STUCK" ? 0.4 : 0;
   if (building <= 0) return 0;
   const spent = (p) => agePressure(effectiveAge(p), p.position) / 100;
   const redraft = (assets) => assets.reduce((sum, a) => sum + (a.kind === "player" ? a.player.valueRedraft : 0), 0);
@@ -637,7 +625,9 @@ function bestPlayerEdge(receives, gives, averages) {
   return adj;
 }
 function youngAssetQuality(team, receives, averages) {
-  if (rosterUnbankedShare(team) < ROSTER_BUILDING_SHARE) return 0;
+  if (team.teamState !== "REBUILD" && team.teamState !== "EARLY_REBUILD" && team.teamState !== "RISING") {
+    return 0;
+  }
   let score = 0;
   for (const a of receives) {
     if (a.kind !== "player") continue;
@@ -1221,7 +1211,7 @@ function genAgeArbSell(ctx) {
     const myAging = mine.players.filter((p) => p.position === pos && isDeclining(p) && p.valueDynasty >= 1500).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
     if (!myAging) continue;
     for (const them of others) {
-      if (them.windowTier === "LONG") continue;
+      if (them.teamState === "REBUILD" || them.teamState === "EARLY_REBUILD") continue;
       const theirYouth = them.players.filter((p) => (p.age ?? 99) <= 25 && p.valueDynasty >= 1e3).sort((a, b) => b.valueDynasty - a.valueDynasty)[0];
       if (theirYouth) {
         out.push({

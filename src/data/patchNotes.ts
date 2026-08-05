@@ -84,6 +84,26 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "3.0",
+    algo: "Empty",
+    algoFingerprint: "a69fade1aba1",
+    date: "2026-08-04",
+    title: "Your window is the gap between winning now and being set up later. No age curves.",
+    pivot: "A roster is classified by where it sits on two axes, what its lineup scores now and what the whole roster is worth long term, instead of by an age-derived window number. Age no longer classifies anything.",
+    changes: [
+      "The engine used to decide your window from the ages of your starters, adjusted for how many picks you held. It no longer does. Your window is now the gap between two things you can look up: what your starting lineup scores this season, and what your whole roster plus picks is worth long term.",
+      "If your roster is worth more than your lineup scores, your value is ahead of you and your window is long. If your lineup scores more than your roster is worth, your value is behind you and your window is short. Nothing about birthdays is involved.",
+      "Every team also gets a state from the same two numbers: juggernaut, contender, win now, rising, middling, fading, rebuild, early rebuild or stuck. That is what the trade engine now reads when it decides which trades suit you.",
+      "This fixes a real problem. A single window number could not tell the difference between a team ranked first in both and a team ranked last in both. Both looked balanced. One is the best team in the league and one has nothing now and nothing later. There is a team in the test league that had been reading as a rebuild for weeks and is plainly stuck, and it now says so.",
+      "Age is still shown on your team page, because it is real and it explains why the gap looks the way it does. It just no longer decides anything.",
+      "Trade suggestions are unchanged in volume: five per roster, identical across repeated runs.",
+    ],
+    knownIssues: [
+      "The scouting report and trade engine read the new nine states, but some older copy still talks in terms of long and short windows. Same underlying number, older wording.",
+    ],
+  },
+  {
+    branch: "daniels",
     release: "2.2",
     algo: "Pistol",
     algoFingerprint: "234857bba55b",

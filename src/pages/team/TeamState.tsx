@@ -12,12 +12,16 @@
 //              derived from FantasyCalc values, and the one number a manager
 //              can check against his own memory of the season.
 //
-//   WINDOW     windowPressure is blended from starterAgePressure, which is
-//              itself the value-weighted share of each starter's career that
-//              is already spent, read off the measured aging curves. So the
-//              report is per starter: how much career is left, and how much of
-//              your lineup value is sitting on players with little of it. That
-//              IS the window calculation, one level down.
+//   WINDOW     Per-starter age: how much career each one has left, read off
+//              the measured curves, and how much of your lineup value sits on
+//              players with little of it.
+//
+//              NOTE: this no longer explains windowPressure. The window is now
+//              the standardised gap between contender value and dynasty value,
+//              with no age term in it at all. Age is still real and still worth
+//              seeing, it just is not what classifies the roster any more. Do
+//              not reword this back into "that IS the window calculation": that
+//              claim was true and is not.
 //
 //   POSITIONS  Each side against the floors classifySide actually tested.
 //              Previously this showed a league-rank plot beside the label, and
@@ -29,7 +33,6 @@
 
 import { agePressure, depthByPosition, effectiveAge, fillStarters } from "../../algo/profile.ts";
 import {
-  PICK_ADJUSTMENT_BY_FLAG,
   WINDOW_LONG_THRESHOLD,
   WINDOW_SHORT_THRESHOLD,
 } from "../../algo/constants.ts";
@@ -301,7 +304,6 @@ function StarterLine({
 
 function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat }) {
   const rows = starterRows(me, format);
-  const pickAdj = PICK_ADJUSTMENT_BY_FLAG[me.pickCapital.flag];
   // Two from each end of one ordering. No dedupe needed: pulls sum to zero, so
   // a player at the top cannot also be at the bottom.
   // Scaled against the biggest mover in the WHOLE lineup, not just the four
@@ -317,22 +319,21 @@ function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat })
     <div className="state-panel">
       <div className="state-report-head">
         <span className="state-report-title">WINDOW · WHERE THE PRESSURE COMES FROM</span>
-        <span className="state-report-value">{me.windowTier}</span>
+        <span className="state-report-value">{me.teamState.replace("_", " ")}</span>
       </div>
       <p className="state-report-sub">
-        Age pressure {me.starterAgePressure.toFixed(1)}
-        {pickAdj !== 0
-          ? `, ${pickAdj > 0 ? "plus" : "minus"} ${Math.abs(pickAdj)} for being ${pickFlagText(me.pickCapital.flag).toLowerCase()}`
-          : ", with no pick adjustment"}
-        , gives {me.windowPressure.toFixed(1)}
-        {me.starterAgePressure + pickAdj < 0 ? " (it floors at zero)" : ""}. MID starts at{" "}
-        {WINDOW_LONG_THRESHOLD}, SHORT at {WINDOW_SHORT_THRESHOLD}. The scale is tighter than it
-        looks.
+        Your lineup ranks #{me.starterRank} in the league for what it scores now, and your whole
+        roster plus picks ranks #{me.dynastyRank} for what it is worth long term. The gap between
+        those two, measured against the league, is your window: {me.windowPressure.toFixed(1)}.
+        Under {WINDOW_LONG_THRESHOLD} the future outweighs the present, over{" "}
+        {WINDOW_SHORT_THRESHOLD} the present outweighs the future.
       </p>
       <WindowGauge pressure={me.windowPressure} />
       <p className="state-report-sub">
-        Value-weighted across every startable slot. WEAR is how much of a 23 year old's career is
-        already gone AT THAT POSITION, so it is not comparable between them.
+        Age no longer sets your window, the gap above does. This is still worth seeing, because it
+        is WHY the gap looks the way it does. Value-weighted across every startable slot, and WEAR
+        is how much of a 23 year old's career is already gone AT THAT POSITION, so it is not
+        comparable between them.
       </p>
       <div className="state-runways">
         <div className="state-runway-head">

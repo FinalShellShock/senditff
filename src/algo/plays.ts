@@ -116,7 +116,10 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
   const roster = [...me.players].sort(byValue);
   const best = roster[0];
   const isContender = me.competitiveness === "STRONG";
-  const isRebuild = me.windowTier === "LONG";
+  // Building states from the grid, not a window bucket. A team ranked 16th in
+  // both contender and dynasty used to read LONG and get rebuild advice; it is
+  // STUCK, which is a different problem and gets different plays.
+  const isRebuild = me.teamState === "REBUILD" || me.teamState === "EARLY_REBUILD";
   const plays: Play[] = [];
 
   // What a consolidation would actually package: everything past the top man at

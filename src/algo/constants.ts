@@ -435,8 +435,12 @@ export const STD_THRESHOLD = 0.5;
 //     18.4/19.3 pair and keeps the tier sizes near what the league had
 //     before (8 LONG / 2 MID / 6 SHORT). This one is a judgment call, not a
 //     natural boundary: re-derive it if a second league disagrees.
-export const WINDOW_LONG_THRESHOLD = 14;
-export const WINDOW_SHORT_THRESHOLD = 19;
+// Recalibrated for the new windowPressure scale. It used to be age pressure,
+// which ran 0-60 on real rosters, so the cuts sat at 14 and 19. It is now the
+// standardised gap between contender value and dynasty value, centred on 50,
+// so the same cuts left 15 of 16 teams reading SHORT.
+export const WINDOW_LONG_THRESHOLD = 40;
+export const WINDOW_SHORT_THRESHOLD = 60;
 
 // In-season COMPETITIVENESS weights (parked here so we don't lose the formula).
 //   w_season = 0.25 + 0.04 * week
@@ -460,3 +464,9 @@ export const COMPETITIVENESS_GRID: Record<Competitiveness, Record<WindowTier, Wi
 // list and applied to one league's rostered pool, and being league-wide it
 // treated a TE and a WR at the same overall rank as equally useful in a league
 // that starts one of the first and two of the second.
+
+// How hard the contender/dynasty gap moves the window, in pressure points per
+// standard deviation of gap. windowPressure sits on 0-100 with 50 balanced, so
+// 25 puts a team two standard deviations clear of the league at the extremes
+// while keeping ordinary rosters inside the middle band.
+export const WINDOW_DELTA_SCALE = 25;
