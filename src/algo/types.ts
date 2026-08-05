@@ -237,6 +237,12 @@ export type LeagueAverages = {
   // is biased negative for every team, because everyone's lineup gets worse.
   resiliencePool: Record<Position, number[]>;
   resilienceStats: Record<Position, { mean: number; std: number }>;
+  /**
+   * Every player rostered in this league, dynasty value descending. The basis
+   * for overall rank, so the trade engine and the scouting report measure the
+   * same 61-100 band against the same population.
+   */
+  rosteredOverallPool: number[];
 };
 
 // Input row for `computeAllProfiles`. The pipeline owns producing the full profile.

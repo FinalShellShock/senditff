@@ -75,8 +75,17 @@ export type TradeDiagnostics = {
   forced: boolean;
   myArchetypeScore?: number;
   counterNote?: string;
-  assetScope?: { before: number; after: number; give: number; receive: number };
-  degraded?: "no_archetype" | "gates";
+  assetScope?: {
+    before: number;
+    after: number;
+    give: number;
+    receive: number;
+    /** A value-matched package was built because no trade shape reached the asset. */
+    builtFallback?: boolean;
+    /** Why even that fallback could not build anything. */
+    note?: string;
+  };
+  degraded?: "no_archetype" | "gates" | "scope";
 };
 
 export type FindTradesOptions = {

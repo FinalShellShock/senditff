@@ -454,9 +454,17 @@ function EmptyState({
   const scope = diagnostics.assetScope;
   if (scope && scope.after === 0) {
     const named = scope.give + scope.receive;
-    lines.push(
-      `Built ${scope.before} candidate package${scope.before === 1 ? "" : "s"}${targetName ? ` with ${targetName}` : ""}, but none of them involved ${named === 1 ? "the asset" : "all the assets"} you named. The finder builds packages from each roster's position leaders, so a specific piece only turns up when a trade shape naturally reaches for it.`,
-    );
+    // The engine now builds a value-matched package when no trade shape reaches
+    // an asset, so reaching this branch means even that failed and the engine
+    // said why. The old copy explained the position-leader limitation, which is
+    // no longer the reason a scoped search comes back empty.
+    if (scope.note) {
+      lines.push(scope.note);
+    } else {
+      lines.push(
+        `Built ${scope.before} candidate package${scope.before === 1 ? "" : "s"}${targetName ? ` with ${targetName}` : ""}, but none could be matched against ${named === 1 ? "the asset" : "all the assets"} you named.`,
+      );
+    }
     if (named > 1) lines.push("Naming fewer assets is the quickest way to widen this.");
     return (
       <div className="sendit-empty">

@@ -177,7 +177,16 @@ export type GenerateDiagnostics = {
   // a healthy `before` is the honest "nobody in your league would build that
   // deal today" answer, and is also the number that decides whether a seeded
   // generator is worth building.
-  assetScope?: { before: number; after: number; give: number; receive: number };
+  assetScope?: {
+    before: number;
+    after: number;
+    give: number;
+    receive: number;
+    /** No generator produced a package with this asset, so one was built. */
+    builtFallback?: boolean;
+    /** Why even the value-matching fallback could not build anything. */
+    note?: string;
+  };
   // mine.archetypeScores for the forced family (0-100), when forced.
   myArchetypeScore?: number;
   // One deterministic sentence about the target team, when one was set.
@@ -185,7 +194,7 @@ export type GenerateDiagnostics = {
   // Auto mode only: candidates existed but none cleared the strict quality
   // gates, so results came from the relaxed labeled pass. Should be rare;
   // the UI warns on it.
-  degraded?: "gates";
+  degraded?: "gates" | "scope";
 };
 
 export type GenerateResult = {
@@ -526,10 +535,6 @@ function timelinePenalty(team: TeamProfile, receives: Asset[], sends: Asset[]): 
   return -(cost - offset) * building;
 }
 
-// Overall dynasty ranking, merged across positions and cached per context.
-// The pools are the FantasyCalc universe, so this is a real overall rank
-// rather than a rank among rostered players.
-let overallCache: { pools: unknown; sorted: number[] } | null = null;
 /**
  * Would this player start somewhere in this league, at his own position?
  *
@@ -553,14 +558,28 @@ function isStartableInLeague(p: Player, averages: LeagueAverages): boolean {
   return better < slots;
 }
 
+// Overall dynasty rank, measured against the players actually ROSTERED in this
+// league.
+//
+// This used to rank against FantasyCalc's global pool while the scouting report
+// (src/algo/plays.ts, leagueRanking) ranked the same 61-100 band against the
+// league. Two bases for one band, so the engine and the play copy could
+// disagree about whether a player was a fringe bet.
+//
+// The league pool is the right one of the two. Measured in the 16-team test
+// league, it tracks the global ranks the study's bands were drawn on almost
+// exactly (league #24 = global #25, #61 = global #66, #100 = global #111),
+// because managers roster the best available and the rostered set IS roughly
+// the global top N. So it keeps the tie to the study while scaling with league
+// size and roster size instead of ignoring both.
+//
+// Deliberately NOT a percentile. 61-100 as a share of rostered players would
+// mean a different tier of player in every league size, which is the one thing
+// that WOULD break the study's numbers.
 function overallRankOf(value: number, averages: LeagueAverages): number | null {
-  if (overallCache?.pools !== averages.depthPlayerPool) {
-    const all: number[] = [];
-    for (const pos of POSITIONS) all.push(...averages.depthPlayerPool[pos]);
-    all.sort((a, b) => b - a);
-    overallCache = { pools: averages.depthPlayerPool, sorted: all };
-  }
-  const arr = overallCache.sorted;
+  const arr = averages.rosteredOverallPool;
+  // A league too shallow to have a 100th rostered player cannot place anyone in
+  // a 61-100 band, so the signal reports "unknown" rather than a clipped rank.
   if (arr.length < FRINGE_RANK_MAX) return null;
   // Binary search for the first index whose value is below this one.
   let lo = 0, hi = arr.length;
@@ -846,6 +865,9 @@ export function computeLeagueAverages(
   const startersInUse: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depthSlotsTotal: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const resiliencePool: Record<Position, number[]> = { QB: [], RB: [], WR: [], TE: [] };
+  // Every player actually rostered in THIS league, by dynasty value. This is
+  // the pool overall rank is measured against; see rosteredOverallPool below.
+  const rosteredOverallPool: number[] = [];
   let flex = 0;
   let cap = 0;
   for (const p of profiles) {
@@ -865,6 +887,7 @@ export function computeLeagueAverages(
         postInjuryValues(starters[pos], depthByPos[pos]).reduce((a, v) => a + v, 0),
       );
     }
+    for (const pl of p.players) rosteredOverallPool.push(pl.valueDynasty);
     if (!globalPlayerPools) {
       for (const pl of p.players) {
         starterPlayerPool[pl.position].push(pl.valueRedraft);
@@ -899,6 +922,7 @@ export function computeLeagueAverages(
     starterStats, depthStats,
     startersInUse, depthSlotsTotal,
     resiliencePool, resilienceStats,
+    rosteredOverallPool: rosteredOverallPool.sort((a, b) => b - a),
   };
 }
 
@@ -1715,6 +1739,131 @@ function genCapitalConvertProductionToPicks(ctx: GenContext): Candidate[] {
 
 // Keyed by family; insertion order matters (dedup keeps first occurrence, so
 // this must match the historical generator order).
+// ── Scoped fallback ──────────────────────────────────────────────────────────
+//
+// Every generator above starts from `topPlayersByPos(profile, pos, 1)` or a
+// similar "best at the position" pick, because each one models a specific
+// archetype and archetypes are about your best pieces. The consequence, which
+// only showed up once asset scoping shipped: a player who is nobody's best at
+// their position is invisible to the whole engine. Scoping filters the
+// generated pool for packages containing your guy, and if no generator ever
+// built one, the filter has nothing to filter.
+//
+// Measured across the test league: 154 of 370 "trade away this player"
+// searches returned zero packages, every one of them a player under ~1,700
+// dynasty value. That is a blank page for 42% of a roster, which reads as the
+// app being broken rather than the app having an opinion.
+//
+// This builds a package AROUND the named assets instead of hoping one exists.
+// It is value matching and nothing else: no archetype thesis, no claim that
+// the move helps. Results are marked degraded so they carry the inspiration
+// badge and an honest note, and they skip the Haiku call entirely.
+type ScopedFallbackResult = { candidates: Candidate[]; reason?: string };
+
+function genScopedFallback(
+  ctx: GenContext,
+  mustGive: string[],
+  mustReceive: string[],
+): ScopedFallbackResult {
+  const { mine, others } = ctx;
+  const out: Candidate[] = [];
+
+  const myAssets: Asset[] = [
+    ...mine.players.map((p) => playerAsset(p, mine.rosterId)),
+    ...mine.picks.map((pk) => pickAsset(pk, mine.rosterId)),
+  ];
+  const assetsOf = (t: TeamProfile): Asset[] => [
+    ...t.players.map((p) => playerAsset(p, t.rosterId)),
+    ...t.picks.map((pk) => pickAsset(pk, t.rosterId)),
+  ];
+
+  const pinnedGive = myAssets.filter((a) => mustGive.includes(assetId(a)));
+  // A named incoming asset also names its owner, so only that team is a
+  // possible counterparty.
+  const pinnedReceiveAll = others.flatMap((t) =>
+    assetsOf(t).filter((a) => mustReceive.includes(assetId(a))),
+  );
+  if (pinnedGive.length !== mustGive.length) return { candidates: out };
+  if (pinnedReceiveAll.length !== mustReceive.length) return { candidates: out };
+
+  // Value matching is the only tool here, so an asset the market prices at
+  // zero has nothing to match against. Say that rather than reporting a
+  // generic miss.
+  const named = [...pinnedGive, ...pinnedReceiveAll];
+  if (named.every((a) => assetValue(a) <= 0)) {
+    return {
+      candidates: out,
+      reason:
+        named.length === 1
+          ? "That asset carries no dynasty value in our data, so there is nothing to build a trade around. Nobody gives up anything to get him."
+          : "None of the assets you named carries any dynasty value in our data, so there is nothing to build a trade around.",
+    };
+  }
+
+  const receiveOwners = new Set(pinnedReceiveAll.map((a) => a.ownerRosterId));
+  if (receiveOwners.size > 1) {
+    return {
+      candidates: out,
+      reason:
+        "The players you named to receive are on different teams, and a single trade only has one other side. Name assets from one roster.",
+    };
+  }
+  const partners =
+    receiveOwners.size === 1
+      ? others.filter((t) => t.rosterId === [...receiveOwners][0])
+      : others;
+
+  // Tolerance is wider than any archetype generator uses. The point is to
+  // return the closest honest match, not to only return good trades; the
+  // fairness badge and confidence tier do the judging downstream.
+  const TOL = 0.25;
+  const PER_PARTNER = 3;
+
+  for (const them of partners) {
+    const pinnedRecv = pinnedReceiveAll.filter((a) => a.ownerRosterId === them.rosterId);
+    const giveVal = packageValue(pinnedGive.map(assetValue));
+    const recvVal = packageValue(pinnedRecv.map(assetValue));
+
+    // Whichever side is light gets topped up from that side's owner.
+    const gap = giveVal - recvVal;
+    const fillFrom = gap >= 0 ? assetsOf(them) : myAssets;
+    const alreadyUsed = new Set([...pinnedGive, ...pinnedRecv].map(assetId));
+    const need = Math.abs(gap);
+    // Sorted by CLOSENESS to what the deal needs, not by value. combinations()
+    // only looks at the first 12 entries, so a descending sort meant a 527-value
+    // player was matched against a roster's twelve most expensive assets and
+    // nothing else. Every low-value player in the league came back empty.
+    const pool = fillFrom
+      .filter((a) => !alreadyUsed.has(assetId(a)))
+      .sort(
+        (a, b) =>
+          Math.abs(assetValue(a) - need) - Math.abs(assetValue(b) - need) ||
+          assetId(a).localeCompare(assetId(b)),
+      );
+
+    const found: Candidate[] = [];
+    for (const combo of combinations(pool, 2)) {
+      if (found.length >= PER_PARTNER) break;
+      if (combo.length === 0) continue;
+      const comboVal = packageValue(combo.map(assetValue));
+      if (!within(comboVal + Math.min(giveVal, recvVal), Math.max(giveVal, recvVal), TOL)) {
+        continue;
+      }
+      const give = gap >= 0 ? pinnedGive : [...pinnedGive, ...combo];
+      const receive = gap >= 0 ? [...pinnedRecv, ...combo] : pinnedRecv;
+      if (receive.length === 0 || give.length === 0) continue;
+      found.push({
+        give,
+        receive,
+        counterRosterId: them.rosterId,
+        archetype: "need_fill",
+      });
+    }
+    out.push(...found);
+  }
+  return { candidates: out };
+}
+
 const GENERATORS: Record<ArchetypeFamily, (ctx: GenContext) => Candidate[]> = {
   need_fill: genNeedFill,
   tier_down: genTierDown,
@@ -1838,7 +1987,7 @@ export function generatePackages(
   const mustGive = opts.mustGive ?? [];
   const mustReceive = opts.mustReceive ?? [];
   const scoped = mustGive.length > 0 || mustReceive.length > 0;
-  const rawCandidates = scoped
+  let rawCandidates = scoped
     ? generated.filter((c) => {
         const give = new Set(c.give.map(assetId));
         const receive = new Set(c.receive.map(assetId));
@@ -1847,12 +1996,30 @@ export function generatePackages(
         );
       })
     : generated;
+  // No generator ever built a package containing the named asset, so there is
+  // nothing for the filter to keep. Build one instead of returning a blank
+  // page. Marked degraded, which downstream turns into the inspiration badge,
+  // an honest note, and a skipped Haiku call.
+  let scopeFallbackUsed = false;
+  let scopeNote: string | undefined;
+  if (scoped && rawCandidates.length === 0) {
+    const fb = genScopedFallback(ctx, mustGive, mustReceive);
+    const built = shapeFilter(fb.candidates);
+    scopeNote = fb.reason;
+    if (built.length > 0) {
+      rawCandidates = built;
+      scopeFallbackUsed = true;
+      degraded = "scope";
+    }
+  }
   const assetScope: GenerateDiagnostics["assetScope"] = scoped
     ? {
         before: generated.length,
         after: rawCandidates.length,
         give: mustGive.length,
         receive: mustReceive.length,
+        ...(scopeFallbackUsed ? { builtFallback: true } : {}),
+        ...(scopeNote ? { note: scopeNote } : {}),
       }
     : undefined;
 
@@ -1889,11 +2056,18 @@ export function generatePackages(
     return { passed, rej };
   };
 
-  let gatePass = applyGates(forced ? FORCED_GATES : DEFAULT_GATES);
+  // A built-from-scratch scoped package skips the gates outright. It was never
+  // claiming to clear a quality bar: the user named an asset, and the honest
+  // answer is the closest match plus a label saying it is not a recommendation.
+  // Running gates here would reproduce the blank page the fallback exists to
+  // fix, just one stage later.
+  let gatePass = scopeFallbackUsed
+    ? { passed: [...scored], rej: { myFit: 0, theirFit: 0, balance: 0, ageArbPrice: 0 } }
+    : applyGates(forced ? FORCED_GATES : DEFAULT_GATES);
   // Auto mode second chance: strict gates rejected everything, so relax to
   // the labeled gates; if even those reject everything, surface the
   // top-scored candidates as-is. Fairness badges keep it honest either way.
-  if (!forced && gatePass.passed.length === 0 && scored.length > 0) {
+  if (!forced && !scopeFallbackUsed && gatePass.passed.length === 0 && scored.length > 0) {
     degraded = "gates";
     gatePass = applyGates(FORCED_GATES);
     if (gatePass.passed.length === 0) {

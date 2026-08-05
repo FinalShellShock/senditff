@@ -104,6 +104,13 @@ export function weakReason(
   pkg: Omit<TradePackage, "rationale">,
   diagnostics?: { degraded?: string; myArchetypeScore?: number },
 ): string | null {
+  // Scope first. It explains where the whole package came from, which is the
+  // thing a user cannot see from the card; the other two describe properties
+  // of the pieces, which they can. Ordered the other way, a value-matched
+  // package reads as an ordinary suggestion that happens to be all bench guys.
+  if (diagnostics?.degraded === "scope") {
+    return "No trade shape the engine looks for involves this asset, so this was built by matching value alone. It is what a deal would have to look like, not a deal worth making.";
+  }
   if (isAllBenchPieces(pkg)) {
     return "Not one player in this deal would start anywhere in this league at his own position. The pieces fit each other, but none of them is getting on a field.";
   }
@@ -114,6 +121,31 @@ export function weakReason(
     return "Nothing cleared the usual quality bar for this roster, so these are the closest options rather than recommendations.";
   }
   return null;
+}
+
+/**
+ * Rationale for a value-matched scoped package, written here instead of by
+ * Haiku.
+ *
+ * These packages exist because the user named an asset no generator builds
+ * around, so there is no thesis to explain: the engine matched value and
+ * stopped. Asking a model to justify one produces confident prose about a
+ * trade nobody is recommending, which is the worst possible output. It is also
+ * free and instant, which matters because this path fires on roughly a third
+ * of all players.
+ */
+export function scopedFallbackRationale(
+  pkg: Omit<TradePackage, "rationale">,
+  counterName?: string,
+): string {
+  const give = pkg.give.map(describeAsset).join(", ");
+  const receive = pkg.receive.map(describeAsset).join(", ");
+  const who = counterName ? `${counterName} ` : "the other side ";
+  return (
+    `Nothing in the engine's playbook trades for ${give}, so this is a straight value match: ` +
+    `you send ${give} and ${who}sends back ${receive}. ` +
+    `The numbers line up. Whether it helps either roster is not something this deal was built to answer.`
+  );
 }
 
 // The badge the UI shows, from the same inputs the prompt stance uses.

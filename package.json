@@ -15,7 +15,7 @@
     "feedback:export": "tsx scripts/feedback-export.ts",
     "validate:prompt": "tsx scripts/validate/prompt.ts",
     "validate:repro": "tsx scripts/validate/repro.ts",
-    "validate:scope": "tsx scripts/validate/asset-scope.ts",
+    "validate:scope": "tsx scripts/validate/scope-coverage.ts",
     "validate:shape": "tsx scripts/validate/package-shape.ts"
   },
   "dependencies": {

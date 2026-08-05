@@ -11,6 +11,7 @@ import { generatePackages, type TradePackage } from "../_lib/tradeEngine";
 import {
   buildRationalePrompt,
   confidenceForPackage,
+  scopedFallbackRationale,
   PROMPT_VERSION,
   sanitizeRationale,
 } from "../_lib/rationalePrompt";
@@ -77,9 +78,22 @@ async function addRationale(
   counterProfile?: TeamProfile,
   diagnostics?: { degraded?: string; myArchetypeScore?: number },
 ): Promise<TradePackage> {
+  const confidence = confidenceForPackage(pkg, diagnostics);
+
+  // A value-matched scoped package gets a written-here rationale and never
+  // reaches Haiku. There is no thesis to explain, a model asked to explain one
+  // invents a justification for a trade we are explicitly not recommending, and
+  // this path fires on about a third of all players so the calls would add up.
+  if (diagnostics?.degraded === "scope") {
+    return {
+      ...pkg,
+      confidence,
+      rationale: scopedFallbackRationale(pkg, counterProfile?.ownerName),
+    };
+  }
+
   const hash = rationaleHash(pkg, myProfile, counterProfile, diagnostics);
   const prompt = buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics);
-  const confidence = confidenceForPackage(pkg, diagnostics);
   const cacheRef = adminDb.collection("rationaleCache").doc(hash);
   const cached = await cacheRef.get();
 

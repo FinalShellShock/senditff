@@ -706,6 +706,8 @@ function computeAllProfiles(teams, format, thisYear, globalPlayerPools) {
   }
   avgFlex /= stage2.length;
   const averages = {
+    // Same basis the trade engine and the scouting report use for overall rank.
+    rosteredOverallPool: stage2.flatMap((t) => t.players.map((p) => p.valueDynasty)).sort((a, b) => b - a),
     starter: avgStarter,
     depth: avgDepth,
     flex: avgFlex,

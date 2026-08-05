@@ -581,7 +581,6 @@ function timelinePenalty(team, receives, sends) {
   const offset = Math.min(cost, surplus / TANK_SURPLUS_SCALE);
   return -(cost - offset) * building;
 }
-var overallCache = null;
 function isStartableInLeague(p, averages) {
   const pool = averages.depthPlayerPool[p.position];
   const slots = averages.startersInUse[p.position];
@@ -591,13 +590,7 @@ function isStartableInLeague(p, averages) {
   return better < slots;
 }
 function overallRankOf(value, averages) {
-  if (overallCache?.pools !== averages.depthPlayerPool) {
-    const all = [];
-    for (const pos of POSITIONS) all.push(...averages.depthPlayerPool[pos]);
-    all.sort((a, b) => b - a);
-    overallCache = { pools: averages.depthPlayerPool, sorted: all };
-  }
-  const arr = overallCache.sorted;
+  const arr = averages.rosteredOverallPool;
   if (arr.length < FRINGE_RANK_MAX) return null;
   let lo = 0, hi = arr.length;
   while (lo < hi) {
@@ -729,6 +722,7 @@ function computeLeagueAverages(profiles, format, globalPlayerPools) {
   const startersInUse = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const depthSlotsTotal = { QB: 0, RB: 0, WR: 0, TE: 0 };
   const resiliencePool = { QB: [], RB: [], WR: [], TE: [] };
+  const rosteredOverallPool = [];
   let flex = 0;
   let cap = 0;
   for (const p of profiles) {
@@ -746,6 +740,7 @@ function computeLeagueAverages(profiles, format, globalPlayerPools) {
         postInjuryValues(starters[pos], depthByPos[pos]).reduce((a, v) => a + v, 0)
       );
     }
+    for (const pl of p.players) rosteredOverallPool.push(pl.valueDynasty);
     if (!globalPlayerPools) {
       for (const pl of p.players) {
         starterPlayerPool[pl.position].push(pl.valueRedraft);
@@ -787,7 +782,8 @@ function computeLeagueAverages(profiles, format, globalPlayerPools) {
     startersInUse,
     depthSlotsTotal,
     resiliencePool,
-    resilienceStats
+    resilienceStats,
+    rosteredOverallPool: rosteredOverallPool.sort((a, b) => b - a)
   };
 }
 function simulateImpact(team, give, receive, format, averages, thisYear) {
@@ -1319,6 +1315,73 @@ function genCapitalConvertProductionToPicks(ctx) {
   }
   return out;
 }
+function genScopedFallback(ctx, mustGive, mustReceive) {
+  const { mine, others } = ctx;
+  const out = [];
+  const myAssets = [
+    ...mine.players.map((p) => playerAsset(p, mine.rosterId)),
+    ...mine.picks.map((pk) => pickAsset(pk, mine.rosterId))
+  ];
+  const assetsOf = (t) => [
+    ...t.players.map((p) => playerAsset(p, t.rosterId)),
+    ...t.picks.map((pk) => pickAsset(pk, t.rosterId))
+  ];
+  const pinnedGive = myAssets.filter((a) => mustGive.includes(assetId(a)));
+  const pinnedReceiveAll = others.flatMap(
+    (t) => assetsOf(t).filter((a) => mustReceive.includes(assetId(a)))
+  );
+  if (pinnedGive.length !== mustGive.length) return { candidates: out };
+  if (pinnedReceiveAll.length !== mustReceive.length) return { candidates: out };
+  const named = [...pinnedGive, ...pinnedReceiveAll];
+  if (named.every((a) => assetValue(a) <= 0)) {
+    return {
+      candidates: out,
+      reason: named.length === 1 ? "That asset carries no dynasty value in our data, so there is nothing to build a trade around. Nobody gives up anything to get him." : "None of the assets you named carries any dynasty value in our data, so there is nothing to build a trade around."
+    };
+  }
+  const receiveOwners = new Set(pinnedReceiveAll.map((a) => a.ownerRosterId));
+  if (receiveOwners.size > 1) {
+    return {
+      candidates: out,
+      reason: "The players you named to receive are on different teams, and a single trade only has one other side. Name assets from one roster."
+    };
+  }
+  const partners = receiveOwners.size === 1 ? others.filter((t) => t.rosterId === [...receiveOwners][0]) : others;
+  const TOL = 0.25;
+  const PER_PARTNER = 3;
+  for (const them of partners) {
+    const pinnedRecv = pinnedReceiveAll.filter((a) => a.ownerRosterId === them.rosterId);
+    const giveVal = packageValue(pinnedGive.map(assetValue));
+    const recvVal = packageValue(pinnedRecv.map(assetValue));
+    const gap = giveVal - recvVal;
+    const fillFrom = gap >= 0 ? assetsOf(them) : myAssets;
+    const alreadyUsed = new Set([...pinnedGive, ...pinnedRecv].map(assetId));
+    const need = Math.abs(gap);
+    const pool = fillFrom.filter((a) => !alreadyUsed.has(assetId(a))).sort(
+      (a, b) => Math.abs(assetValue(a) - need) - Math.abs(assetValue(b) - need) || assetId(a).localeCompare(assetId(b))
+    );
+    const found = [];
+    for (const combo of combinations(pool, 2)) {
+      if (found.length >= PER_PARTNER) break;
+      if (combo.length === 0) continue;
+      const comboVal = packageValue(combo.map(assetValue));
+      if (!within(comboVal + Math.min(giveVal, recvVal), Math.max(giveVal, recvVal), TOL)) {
+        continue;
+      }
+      const give = gap >= 0 ? pinnedGive : [...pinnedGive, ...combo];
+      const receive = gap >= 0 ? [...pinnedRecv, ...combo] : pinnedRecv;
+      if (receive.length === 0 || give.length === 0) continue;
+      found.push({
+        give,
+        receive,
+        counterRosterId: them.rosterId,
+        archetype: "need_fill"
+      });
+    }
+    out.push(...found);
+  }
+  return { candidates: out };
+}
 var GENERATORS = {
   need_fill: genNeedFill,
   tier_down: genTierDown,
@@ -1378,16 +1441,30 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
   const mustGive = opts.mustGive ?? [];
   const mustReceive = opts.mustReceive ?? [];
   const scoped = mustGive.length > 0 || mustReceive.length > 0;
-  const rawCandidates = scoped ? generated.filter((c) => {
+  let rawCandidates = scoped ? generated.filter((c) => {
     const give = new Set(c.give.map(assetId));
     const receive = new Set(c.receive.map(assetId));
     return mustGive.every((id) => give.has(id)) && mustReceive.every((id) => receive.has(id));
   }) : generated;
+  let scopeFallbackUsed = false;
+  let scopeNote;
+  if (scoped && rawCandidates.length === 0) {
+    const fb = genScopedFallback(ctx, mustGive, mustReceive);
+    const built = shapeFilter(fb.candidates);
+    scopeNote = fb.reason;
+    if (built.length > 0) {
+      rawCandidates = built;
+      scopeFallbackUsed = true;
+      degraded = "scope";
+    }
+  }
   const assetScope = scoped ? {
     before: generated.length,
     after: rawCandidates.length,
     give: mustGive.length,
-    receive: mustReceive.length
+    receive: mustReceive.length,
+    ...scopeFallbackUsed ? { builtFallback: true } : {},
+    ...scopeNote ? { note: scopeNote } : {}
   } : void 0;
   const seen = /* @__PURE__ */ new Set();
   const unique = [];
@@ -1422,8 +1499,8 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
     });
     return { passed, rej };
   };
-  let gatePass = applyGates(forced ? FORCED_GATES : DEFAULT_GATES);
-  if (!forced && gatePass.passed.length === 0 && scored.length > 0) {
+  let gatePass = scopeFallbackUsed ? { passed: [...scored], rej: { myFit: 0, theirFit: 0, balance: 0, ageArbPrice: 0 } } : applyGates(forced ? FORCED_GATES : DEFAULT_GATES);
+  if (!forced && !scopeFallbackUsed && gatePass.passed.length === 0 && scored.length > 0) {
     degraded = "gates";
     gatePass = applyGates(FORCED_GATES);
     if (gatePass.passed.length === 0) {
@@ -1561,6 +1638,9 @@ function isAllBenchPieces(pkg) {
   return pkg.startableCount === 0;
 }
 function weakReason(pkg, diagnostics) {
+  if (diagnostics?.degraded === "scope") {
+    return "No trade shape the engine looks for involves this asset, so this was built by matching value alone. It is what a deal would have to look like, not a deal worth making.";
+  }
   if (isAllBenchPieces(pkg)) {
     return "Not one player in this deal would start anywhere in this league at his own position. The pieces fit each other, but none of them is getting on a field.";
   }
@@ -1571,6 +1651,12 @@ function weakReason(pkg, diagnostics) {
     return "Nothing cleared the usual quality bar for this roster, so these are the closest options rather than recommendations.";
   }
   return null;
+}
+function scopedFallbackRationale(pkg, counterName) {
+  const give = pkg.give.map(describeAsset).join(", ");
+  const receive = pkg.receive.map(describeAsset).join(", ");
+  const who = counterName ? `${counterName} ` : "the other side ";
+  return `Nothing in the engine's playbook trades for ${give}, so this is a straight value match: you send ${give} and ${who}sends back ${receive}. The numbers line up. Whether it helps either roster is not something this deal was built to answer.`;
 }
 function confidenceForPackage(pkg, diagnostics) {
   const archMatch = pkg.scores?.archMatch ?? 0;
@@ -1689,9 +1775,16 @@ async function generateRationale(prompt) {
   return data.content?.[0]?.text?.trim() ?? "Rationale unavailable.";
 }
 async function addRationale(pkg, myProfile, counterProfile, diagnostics) {
+  const confidence = confidenceForPackage(pkg, diagnostics);
+  if (diagnostics?.degraded === "scope") {
+    return {
+      ...pkg,
+      confidence,
+      rationale: scopedFallbackRationale(pkg, counterProfile?.ownerName)
+    };
+  }
   const hash = rationaleHash(pkg, myProfile, counterProfile, diagnostics);
   const prompt = buildRationalePrompt(pkg, myProfile, counterProfile, diagnostics);
-  const confidence = confidenceForPackage(pkg, diagnostics);
   const cacheRef = adminDb.collection("rationaleCache").doc(hash);
   const cached = await cacheRef.get();
   if (cached.exists) {

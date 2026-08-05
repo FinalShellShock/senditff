@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "1f1c67468d6e";
+var ALGO_FINGERPRINT_BUILD = "530ce0f18047";
 var SCOUT_FINGERPRINT_BUILD = "06d7fc6fdd55";
 
 // src/algo/version.ts
@@ -46,6 +46,26 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "3.2",
+    algo: "Empty",
+    algoFingerprint: "530ce0f18047",
+    date: "2026-08-05",
+    title: "Pick any player and get trade ideas, even the ones we would not recommend",
+    changes: [
+      'Picking a player and getting "no trades involve this player" was not a judgement, it was a gap. Every trade shape the engine looks for starts from a position leader, so anyone who was not your best at his position was invisible to it. In the test league that was 154 of 370 players, every one of them worth under about 1,700. Your WR4 simply could not be searched.',
+      "Now, when no trade shape reaches a player, the engine builds one anyway by matching value across the league. Those results say plainly what they are: not recommendations, just what a deal would have to look like. They carry the inspiration badge and a note saying no strategy produced them.",
+      "That covers everyone with a dynasty value above zero. The only players who still return nothing are the ones the market prices at zero, and the app now says that instead of implying the finder came up short.",
+      "These value-matched ideas are written by the app rather than by the AI. There is no strategy to explain, and asking for one produces a confident argument for a trade nobody is recommending.",
+      "Player quality is now measured against the players rostered in your league rather than against a global list. The two nearly agree in a 16-team league, which is how we checked it, but they come apart in shallower and deeper ones, and the trade engine and the scouting report were using different lists for the same thing.",
+      "Auto mode is untouched. Same five per roster, same packages."
+    ],
+    knownIssues: [
+      "The value-matched ideas do not consider whether the other manager would want the trade. They balance value and stop, which is why they are labelled the way they are.",
+      "Scouting plays for a stuck team are the rebuild plays. They are the closest measured path out, but the study behind them measured teams that had already committed to rebuilding, not teams deciding whether to."
+    ]
+  },
   {
     branch: "daniels",
     release: "3.1",
