@@ -1380,6 +1380,12 @@ function genScopedFallback(ctx, mustGive, mustReceive) {
     }
     out.push(...found);
   }
+  if (out.length === 0) {
+    return {
+      candidates: out,
+      reason: "Nothing in the league is close enough in value to match, so there is no balanced deal to build. That usually means the asset is priced far below anything anyone else would give up."
+    };
+  }
   return { candidates: out };
 }
 var GENERATORS = {
@@ -1750,8 +1756,14 @@ function rationaleHash(pkg, myProfile, counterProfile, diagnostics) {
     give: pkg.give.map((a) => a.id).sort(),
     receive: pkg.receive.map((a) => a.id).sort(),
     archetype: pkg.archetype,
-    myWindow: myProfile.windowLabel,
-    theirWindow: counterProfile?.windowLabel ?? null,
+    // teamState, NOT windowLabel. The prompt describes both rosters via
+    // stateWords(teamState); keying on the old label let two teams in
+    // different states share a cache entry and serve each other's rationale.
+    // The two are derived differently and collide often: in the test league
+    // 3 of 7 labels covered more than one state, and REBUILD covered three
+    // (REBUILD, EARLY_REBUILD, STUCK).
+    myState: myProfile.teamState,
+    theirState: counterProfile?.teamState ?? null,
     fairness: pkg.fairness
   });
   return (0, import_crypto.createHash)("sha256").update(key).digest("hex");

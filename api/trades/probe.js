@@ -1368,6 +1368,12 @@ function genScopedFallback(ctx, mustGive, mustReceive) {
     }
     out.push(...found);
   }
+  if (out.length === 0) {
+    return {
+      candidates: out,
+      reason: "Nothing in the league is close enough in value to match, so there is no balanced deal to build. That usually means the asset is priced far below anything anyone else would give up."
+    };
+  }
   return { candidates: out };
 }
 var GENERATORS = {

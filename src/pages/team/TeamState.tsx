@@ -12,18 +12,18 @@
 //              derived from FantasyCalc values, and the one number a manager
 //              can check against his own memory of the season.
 //
-//   WINDOW     Which assets create the gap the window is made of. Everything
-//              you own counts toward what you are worth LATER; only your
-//              starting lineup counts toward what you score NOW, and a pick
-//              never can. An asset pulls your window shorter when it holds a
-//              bigger share of the first total than of the second.
+//   UNBANKED   How much of what you own has not been paid out yet.
 //
-//              This used to be a per-starter age breakdown, kept after the
-//              engine stopped using age with a note admitting it no longer
-//              explained the number above it. A panel headed WHERE THE
-//              PRESSURE COMES FROM that decomposes a formula the app retired
-//              is worse than no panel. Age is genuinely absent now: an old
-//              starter appears here for producing, not for his birthday.
+//   NO WINDOW PANEL. There was one, showing a gauge and a per-asset breakdown
+//   of the pressure number, and it is gone on purpose. Do not add it back
+//   without a reason that is not "the number exists so it should be shown".
+//
+//   The window is a one-dimensional collapse of the two ranks the page already
+//   prints in its header, and the state grid replaced it as the thing the
+//   engine gates on. A panel decomposing it explained how we get from two
+//   numbers a manager can read to one he cannot, which is motion, not
+//   explanation. Its previous two incarnations both had to be retired for
+//   describing formulas the app had already stopped using.
 //
 //   POSITIONS  Each side against the floors classifySide actually tested.
 //              Previously this showed a league-rank plot beside the label, and
@@ -33,11 +33,7 @@
 //              pool, and never a league rank. Drawing the real floors makes
 //              the label self-evident instead of arbitrary.
 
-import { applyTep, depthByPosition, fillStarters } from "../../algo/profile.ts";
-import {
-  WINDOW_LONG_THRESHOLD,
-  WINDOW_SHORT_THRESHOLD,
-} from "../../algo/constants.ts";
+import { depthByPosition, fillStarters } from "../../algo/profile.ts";
 import type {
   ClassifyEvidence,
   LeagueFormat,
@@ -151,296 +147,6 @@ function Scoring({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
           );
         })}
       </div>
-    </div>
-  );
-}
-
-// ── Window ───────────────────────────────────────────────────────────────────
-
-type WindowRow = {
-  id: string;
-  name: string;
-  position: Position | null;
-  /** Dynasty value: what this asset is worth long term. */
-  dyn: number;
-  /** Redraft value, but only if he is actually starting. Zero otherwise. */
-  now: number;
-  /** In the starting lineup. Distinct from now > 0: a rebuilding roster can
-   *  start players the market prices at nothing, and "starting but worth 0"
-   *  is a different fact from "on your bench". */
-  starting: boolean;
-  /** Share of your now-value minus share of your later-value, in points.
-   *  Positive pushes the window shorter. Sums to zero across the roster. */
-  pull: number;
-};
-
-/**
- * What each asset does to the gap the window is made of.
- *
- * The window compares two totals: your starting lineup's redraft value (NOW)
- * and your whole roster plus picks in dynasty value (LATER). An asset pushes
- * your window shorter when it carries a bigger share of the first than of the
- * second, and holds it open when it does the reverse:
- *
- *     pull = (its share of your NOW total) - (its share of your LATER total)
- *
- * Those shares each sum to one, so the pulls sum to zero: the midpoint is a
- * real thing, meaning "contributes to both sides in the same proportion".
- *
- * A first attempt attributed literal points of window pressure, using each
- * asset's marginal effect on the two z-scores. That reconciled to the gauge
- * exactly and was useless to look at: every asset has dynasty value and most
- * have no now value, so every single row came out negative and the PULLING IT
- * SHORTER group was empty on every team in the league. Exactly summing to the
- * headline is worth less than having a midpoint that means something.
- *
- * This replaces an age-curve breakdown that survived the move off age
- * pressure. That version ranked starters by (agePressure - teamAverage) *
- * valueShare, a correct decomposition of the OLD window, printed under a
- * heading that promised to explain the current one.
- */
-function windowRows(me: TeamProfile, format: LeagueFormat): WindowRow[] {
-  const nowTotal = me.starterTotalValue > 0 ? me.starterTotalValue : 1;
-  const laterTotal =
-    me.players.reduce((s, p) => s + (p.valueDynasty || 0), 0) +
-      me.picks.reduce((s, k) => s + (k.value || 0), 0) || 1;
-
-  // applyTep, because starterTotalValue upstream is computed on TEP-adjusted
-  // players. Skipping it would make these rows disagree with the total.
-  const adjusted = applyTep(me.players, format);
-  const { starters } = fillStarters(adjusted, format);
-  const startingIds = new Set(
-    POSITIONS.flatMap((pos) => starters[pos]).map((p) => p.id),
-  );
-
-  const pullOf = (dyn: number, now: number) =>
-    (now / nowTotal - dyn / laterTotal) * 100;
-
-  const rows: WindowRow[] = adjusted.map((p) => {
-    const dyn = p.valueDynasty || 0;
-    const starting = startingIds.has(p.id);
-    const now = starting ? p.valueRedraft || 0 : 0;
-    return {
-      id: p.id,
-      name: p.name,
-      position: p.position,
-      dyn,
-      now,
-      starting,
-      pull: pullOf(dyn, now),
-    };
-  });
-  for (const k of me.picks) {
-    // A pick cannot score a point this season, so its NOW value is zero by
-    // construction. It is the purest window-holder there is.
-    rows.push({
-      id: `pick:${k.year}-${k.round}-${k.origRosterId}`,
-      name: k.label,
-      position: null,
-      dyn: k.value || 0,
-      now: 0,
-      starting: false,
-      pull: pullOf(k.value || 0, 0),
-    });
-  }
-  return rows.sort((a, b) => b.pull - a.pull || a.id.localeCompare(b.id));
-}
-
-/** Diverging bar for a signed, zero-sum quantity.
- *
- *  The bar used to be career-left as a percentage, which was the wrong picture:
- *  it is a per-player attribute on a 0-100 scale, so every bar sat somewhere in
- *  the 70-100 range and the group a player was in had no visible relationship
- *  to the length of his bar. This draws the thing the groups are actually
- *  built on, right of centre for pushing the window shorter and left for
- *  holding it open, scaled against the biggest mover in the lineup. */
-function PullBar({ pull, scale }: { pull: number; scale: number }) {
-  const half = Math.max(0, Math.min(50, (Math.abs(pull) / scale) * 50));
-  const up = pull > 0;
-  return (
-    <span className="state-pull-track">
-      <span className="state-pull-axis" />
-      <span
-        className={`state-pull-fill${up ? " state-pull-fill-up" : " state-pull-fill-down"}`}
-        style={
-          up
-            ? { left: "50%", width: `${half}%` }
-            : { right: "50%", width: `${half}%` }
-        }
-      />
-    </span>
-  );
-}
-
-/** windowPressure on the scale that actually decides the tier. */
-function WindowGauge({ pressure }: { pressure: number }) {
-  // Full 0-100, because that is what windowPressure now is: profile.ts clamps
-  // it to that range by construction.
-  //
-  // This was 34, from the age-pressure era when the cuts sat at 14 and 19 and a
-  // top of 34 kept the narrow bands readable. The cuts moved to 40 and 60 when
-  // the window became the standardised gap between contender and dynasty value,
-  // and this number did not follow: both band markers pinned to the right edge,
-  // MID rendered zero pixels wide, and every roster at or above 34 drew a
-  // completely full bar. So 41 and 78 looked identical, and the bar disagreed
-  // with the badge beside it.
-  const MAX = 100;
-  const pct = (v: number) => Math.max(0, Math.min(100, (v / MAX) * 100));
-  return (
-    <div className="state-window-gauge">
-      <span className="state-bar-track">
-        <span
-          className="state-bar-fill"
-          style={{
-            width: `${pct(pressure)}%`,
-            background:
-              pressure > WINDOW_SHORT_THRESHOLD
-                ? "#ef4444"
-                : pressure > WINDOW_LONG_THRESHOLD
-                  ? "#eab308"
-                  : "#22c55e",
-          }}
-        />
-        <span
-          className="state-floor state-floor-need"
-          style={{ left: `${pct(WINDOW_LONG_THRESHOLD)}%` }}
-        />
-        <span
-          className="state-floor state-floor-crit"
-          style={{ left: `${pct(WINDOW_SHORT_THRESHOLD)}%` }}
-        />
-      </span>
-      <span className="state-window-bands">
-        <span style={{ width: `${pct(WINDOW_LONG_THRESHOLD)}%` }}>LONG</span>
-        <span
-          style={{
-            width: `${pct(WINDOW_SHORT_THRESHOLD) - pct(WINDOW_LONG_THRESHOLD)}%`,
-          }}
-        >
-          MID
-        </span>
-        <span>SHORT</span>
-      </span>
-    </div>
-  );
-}
-
-function WindowLine({ row, scale }: { row: WindowRow; scale: number }) {
-  const short = row.pull > 0;
-  return (
-    <div className="state-runway-row">
-      <span
-        className="pos-tag"
-        style={{
-          background: row.position ? posColor(row.position) : "#475569",
-        }}
-      >
-        {row.position ?? "PK"}
-      </span>
-      <span className="state-runway-name">{row.name}</span>
-      {/* Column order must match the header strip above: LATER then NOW. */}
-      <span
-        className="state-runway-age"
-        title={`Worth ${fmt(row.dyn)} long term`}
-      >
-        {fmt(row.dyn)}
-      </span>
-      <span
-        className="state-runway-wear"
-        title={
-          row.starting
-            ? `In your starting lineup, worth ${fmt(row.now)} this season`
-            : row.position === null
-              ? "A pick cannot score this season, so it counts for nothing on the NOW side"
-              : "Not in your starting lineup, so he counts for nothing on the NOW side"
-        }
-      >
-        {row.starting ? fmt(row.now) : "—"}
-      </span>
-      <PullBar pull={row.pull} scale={scale} />
-      <span
-        className={`state-runway-runway${short ? " state-pull-up" : " state-pull-down"}`}
-        title={`${row.name} moves your window ${Math.abs(row.pull).toFixed(1)} points ${short ? "shorter" : "longer"}`}
-      >
-        {short ? "+" : ""}
-        {row.pull.toFixed(1)}
-      </span>
-    </div>
-  );
-}
-
-function WindowReport({
-  me,
-  format,
-}: {
-  me: TeamProfile;
-  format: LeagueFormat;
-}) {
-  const rows = windowRows(me, format);
-  // Three from each end of one ordering. A row cannot appear in both: the sort
-  // is on a single signed number.
-  // Scaled against the biggest mover on the WHOLE roster, not just the six
-  // shown, so the bars keep their meaning when a team has no strong movers.
-  const scale = Math.max(0.1, ...rows.map((r) => Math.abs(r.pull)));
-  const shorter = rows.filter((r) => r.pull > 0).slice(0, 3);
-  const open = rows
-    .filter((r) => r.pull < 0)
-    .slice(-3)
-    .reverse();
-
-  return (
-    <div className="state-panel">
-      <div className="state-report-head">
-        <span className="state-report-title">
-          WINDOW · WHERE THE PRESSURE COMES FROM
-        </span>
-        <span className="state-report-value">
-          {me.teamState.replace("_", " ")}
-        </span>
-      </div>
-      <p className="state-report-sub">
-        Your lineup ranks #{me.starterRank} in the league for what it scores
-        now, and your whole roster plus picks ranks #{me.dynastyRank} for what
-        it is worth long term. The gap between those two, measured against the
-        league, is your window: {me.windowPressure.toFixed(1)}. Under{" "}
-        {WINDOW_LONG_THRESHOLD} the future outweighs the present, over{" "}
-        {WINDOW_SHORT_THRESHOLD} the present outweighs the future.
-      </p>
-      <WindowGauge pressure={me.windowPressure} />
-      <p className="state-report-sub">
-        Everything you own counts toward LATER. Only what is in your starting
-        lineup counts toward NOW, and a pick never can. So an asset pushes your
-        window shorter when it carries a bigger share of your lineup than of
-        your long-term value, and holds it open when it does the reverse. Shown
-        in points of share, which cancel out across the roster.
-      </p>
-      <div className="state-runways">
-        <div className="state-runway-head">
-          <span />
-          <span />
-          <span>LATER</span>
-          <span>NOW</span>
-          <span />
-          <span>PULL</span>
-        </div>
-        {shorter.length > 0 && (
-          <div className="state-runway-group">PULLING IT SHORTER</div>
-        )}
-        {shorter.map((r) => (
-          <WindowLine key={r.id} row={r} scale={scale} />
-        ))}
-        {open.length > 0 && (
-          <div className="state-runway-group">HOLDING IT OPEN</div>
-        )}
-        {open.map((r) => (
-          <WindowLine key={r.id} row={r} scale={scale} />
-        ))}
-      </div>
-      <p className="state-foot">
-        Age is not in this calculation at all. An old starter shows up here
-        because he is producing now, not because of his birthday, and a 22 year
-        old on your bench holds the window open for the same reason a pick does.
-      </p>
     </div>
   );
 }
@@ -634,7 +340,7 @@ function PositionTable({
 function unbanked(
   players: Player[],
   picks: Pick[] = [],
-): { amount: number; share: number } | null {
+): { amount: number; share: number; fromPicks: number } | null {
   let dyn = 0;
   let red = 0;
   for (const p of players) {
@@ -642,9 +348,12 @@ function unbanked(
     dyn += p.valueDynasty;
     red += p.valueRedraft ?? 0;
   }
-  for (const k of picks) dyn += k.value || 0; // redraft contribution is zero
+  // A pick has dynasty value and cannot score a point this season, so it is
+  // 100% unbanked by construction: its full value is part of the amount.
+  const fromPicks = picks.reduce((s, k) => s + (k.value || 0), 0);
+  dyn += fromPicks;
   if (dyn <= 0) return null;
-  return { amount: dyn - red, share: 1 - red / dyn };
+  return { amount: dyn - red, share: 1 - red / dyn, fromPicks };
 }
 
 function UnbankedReport({
@@ -743,12 +452,28 @@ function UnbankedReport({
               className={`state-bar-row${isMe ? " state-bar-mine" : ""}`}
             >
               <span className="state-bar-name">{r.ownerName}</span>
-              <span className="state-bar-track">
+              <span
+                className="state-bar-track"
+                title={`${fmt(r.roster.fromPicks)} of ${fmt(r.roster.amount)} is picks`}
+              >
                 <span
                   className="state-bar-fill"
                   style={{
                     width: `${Math.max(0, (r.roster.amount / span) * 100)}%`,
                     background: isMe ? ACCENT : "rgba(148,163,184,0.30)",
+                  }}
+                />
+                {/* The pick portion, drawn over the left of the same bar. Picks
+                    are unbanked by definition, so a team can lead this chart on
+                    picks alone; without the split, "most unbanked value" and
+                    "most deferred PLAYER value" look like the same claim. */}
+                <span
+                  className="state-bar-fill state-bar-fill-picks"
+                  style={{
+                    width: `${Math.max(0, (r.roster.fromPicks / span) * 100)}%`,
+                    background: isMe
+                      ? "rgba(255,255,255,0.55)"
+                      : "rgba(226,232,240,0.22)",
                   }}
                 />
               </span>
@@ -775,13 +500,12 @@ export default function TeamState({
     <section className="dive-pos-section">
       <h2 className="section-title">TEAM STATE</h2>
       <p className="dim-text scout-intro">
-        The numbers under the badges: what you actually scored, how much career
-        your starters have left, and where each position sits against the
-        thresholds that label it.
+        The numbers under the badges: what you actually scored, how much of what
+        you own has not been paid out yet, and where each position sits against
+        the thresholds that label it.
       </p>
       <div className="state-grid">
         <Scoring me={me} league={league} />
-        <WindowReport me={me} format={format} />
         <UnbankedReport me={me} league={league} format={format} />
       </div>
       <div className="state-panel">

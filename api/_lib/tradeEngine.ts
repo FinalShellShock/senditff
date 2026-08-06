@@ -1861,6 +1861,17 @@ function genScopedFallback(
     }
     out.push(...found);
   }
+  if (out.length === 0) {
+    // Not a threshold, just a report of what happened. An asset priced at 8
+    // when the next cheapest thing in the league is priced at 40 has no match
+    // at any sane tolerance, and saying so beats an empty page or a trade
+    // whose two sides are both rounding errors.
+    return {
+      candidates: out,
+      reason:
+        "Nothing in the league is close enough in value to match, so there is no balanced deal to build. That usually means the asset is priced far below anything anyone else would give up.",
+    };
+  }
   return { candidates: out };
 }
 
