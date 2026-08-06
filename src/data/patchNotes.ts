@@ -84,6 +84,21 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "3.4",
+    algo: "Empty",
+    algoFingerprint: "530ce0f18047",
+    date: "2026-08-05",
+    title: "Unbanked value is an amount, not a percentage",
+    changes: [
+      "The unbanked value panel ranked the league by what percentage of a roster had not been paid out yet, and put a league rank next to it. That is the wrong number to rank on. A percentage is measured against the size of your own roster, so the highest percentage is not the most unbanked value.",
+      "It was wrong in this league right now. Gibbs16 led at 92% and was third in actual unbanked value, because 92% of a smaller roster is less than 84% of a bigger one. The panel said number one next to the words UNBANKED VALUE.",
+      "The panel now shows the amount, ranks on the amount, and draws the bars on the amount. The percentage is still there in the sentence, because how much of your own roster is deferred is a real thing to know. It is just not a league ranking.",
+      "The player rankings tab is unaffected. A single player's unbanked percentage is a property of that player, not a claim about who holds the most.",
+    ],
+    knownIssues: [],
+  },
+  {
+    branch: "daniels",
     release: "3.3",
     algo: "Empty",
     algoFingerprint: "530ce0f18047",

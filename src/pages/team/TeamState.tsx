@@ -544,7 +544,10 @@ function PositionTable({ me, format }: { me: TeamProfile; format: LeagueFormat }
 // league NEUTRAL covers everything from 9% to 47% of assets held in picks, so
 // it separates FustinJerguson (PICK_RICH, 49%) from Numlckr (NEUTRAL, 47%)
 // while calling Numlckr the same as a team with 9%.
-function unbankedShare(players: Player[], picks: Pick[] = []): number | null {
+function unbanked(
+  players: Player[],
+  picks: Pick[] = [],
+): { amount: number; share: number } | null {
   let dyn = 0;
   let red = 0;
   for (const p of players) {
@@ -553,7 +556,8 @@ function unbankedShare(players: Player[], picks: Pick[] = []): number | null {
     red += p.valueRedraft ?? 0;
   }
   for (const k of picks) dyn += k.value || 0; // redraft contribution is zero
-  return dyn > 0 ? 1 - red / dyn : null;
+  if (dyn <= 0) return null;
+  return { amount: dyn - red, share: 1 - red / dyn };
 }
 
 function UnbankedReport({
@@ -570,24 +574,40 @@ function UnbankedReport({
     return POSITIONS.flatMap((p) => starters[p]);
   };
 
+  // Ranked and drawn on the AMOUNT, not the share.
+  //
+  // This used to sort on share, which answers a different question than the
+  // panel's title. A share is normalised by the size of your own roster, so the
+  // team with the highest percentage is not the team holding the most unbanked
+  // value: in this league Gibbs16 leads on share at 92% and sits third on
+  // amount, because 92% of a small roster is less than 84% of a big one. The
+  // panel said "#1" next to the word UNBANKED VALUE and meant "#1 in a ratio".
+  //
+  // The share is still shown, because how much of YOUR OWN roster is deferred
+  // is a real and different fact. It just is not a league ranking.
   const rows = league
-    .map((t) => ({
-      rosterId: t.rosterId,
-      ownerName: t.ownerName,
-      roster: unbankedShare(t.players, t.picks),
-      starters: unbankedShare(startersOf(t)),
-      pickShare:
-        t.picks.reduce((s, k) => s + (k.value || 0), 0) /
-        Math.max(
-          1,
-          t.players.reduce((s, x) => s + (x.valueDynasty || 0), 0) +
-            t.picks.reduce((s, k) => s + (k.value || 0), 0),
-        ),
-    }))
-    .filter((r): r is typeof r & { roster: number; starters: number } =>
-      r.roster != null && r.starters != null,
+    .map((t) => {
+      const all = unbanked(t.players, t.picks);
+      const st = unbanked(startersOf(t));
+      return {
+        rosterId: t.rosterId,
+        ownerName: t.ownerName,
+        roster: all,
+        starters: st,
+        pickShare:
+          t.picks.reduce((s, k) => s + (k.value || 0), 0) /
+          Math.max(
+            1,
+            t.players.reduce((s, x) => s + (x.valueDynasty || 0), 0) +
+              t.picks.reduce((s, k) => s + (k.value || 0), 0),
+          ),
+      };
+    })
+    .filter(
+      (r): r is typeof r & { roster: { amount: number; share: number }; starters: { amount: number; share: number } } =>
+        r.roster != null && r.starters != null,
     )
-    .sort((a, b) => b.roster - a.roster || a.rosterId - b.rosterId);
+    .sort((a, b) => b.roster.amount - a.roster.amount || a.rosterId - b.rosterId);
 
   const mine = rows.find((r) => r.rosterId === me.rosterId);
   if (!mine || rows.length < 2) return null;
@@ -595,10 +615,10 @@ function UnbankedReport({
 
   // Left-aligned from zero, like SCORING, rather than diverging from a centre.
   // The first pass used a signed bar and it was wasted: once picks are counted
-  // every roster in the league is positive (28% to 93% here), so half the track
-  // was dead and the centre line marked an edge nothing ever crossed. The sign
-  // only flips on the STARTERS figure, which is a sentence, not a bar.
-  const span = Math.max(...rows.map((r) => r.roster), 0.05);
+  // every roster in the league is positive, so half the track was dead and the
+  // centre line marked an edge nothing ever crossed. The sign only flips on the
+  // STARTERS figure, which is a sentence, not a bar.
+  const span = Math.max(...rows.map((r) => r.roster.amount), 1);
   const pct = (n: number) => `${n < 0 ? "" : "+"}${Math.round(n * 100)}%`;
 
   return (
@@ -606,17 +626,19 @@ function UnbankedReport({
       <div className="state-report-head">
         <span className="state-report-title">UNBANKED VALUE</span>
         <span className="state-report-value">
-          {pct(mine.roster)} · #{rank}
+          {fmt(mine.roster.amount)} · #{rank}
         </span>
       </div>
       <p className="state-report-sub">
-        Share of everything you own that has not been paid out yet, from the gap between each
-        player's dynasty and redraft price. Picks count in full, since they cannot score this
-        season, and they are {Math.round(mine.pickShare * 100)}% of your assets. Your starting
-        lineup alone is {pct(mine.starters)}.{" "}
-        {mine.starters < 0
-          ? "Negative means it out-produces its own dynasty price: that value is already banked."
-          : "Higher means more of it is still in front of you."}
+        How much of what you own has not been paid out yet, from the gap between each player's
+        dynasty and redraft price. Picks count in full, since they cannot score this season, and
+        they are {Math.round(mine.pickShare * 100)}% of your assets. That is{" "}
+        {pct(mine.roster.share)} of your roster's total value, and your starting lineup alone is{" "}
+        {pct(mine.starters.share)}.{" "}
+        {mine.starters.share < 0 &&
+          "Negative there means your lineup out-produces its own dynasty price, so that value is already banked. "}
+        The ranking is on the amount, not the percentage: a high share of a small roster is less
+        deferred value than a lower share of a big one.
       </p>
       <div className="state-bars">
         {rows.map((r) => {
@@ -628,12 +650,12 @@ function UnbankedReport({
                 <span
                   className="state-bar-fill"
                   style={{
-                    width: `${Math.max(0, (r.roster / span) * 100)}%`,
+                    width: `${Math.max(0, (r.roster.amount / span) * 100)}%`,
                     background: isMe ? ACCENT : "rgba(148,163,184,0.30)",
                   }}
                 />
               </span>
-              <span className="state-bar-num">{pct(r.roster)}</span>
+              <span className="state-bar-num">{fmt(r.roster.amount)}</span>
             </div>
           );
         })}
