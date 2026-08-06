@@ -3455,8 +3455,10 @@ body {
 .state-runway-row,
 .state-runway-head {
   display: grid;
-  /* The bar carries the finding, so it gets more room than the name. */
-  grid-template-columns: 24px minmax(0, 0.9fr) 30px 26px 1.7fr 34px;
+  /* The bar carries the finding, so it gets more room than the name. Columns 3
+     and 4 hold LATER and NOW, which are four- and five-digit values; they were
+     30px and 26px back when they held an age and a two-digit wear number. */
+  grid-template-columns: 24px minmax(0, 0.9fr) 44px 44px 1.4fr 34px;
   align-items: center;
   gap: 7px;
 }
@@ -3669,15 +3671,20 @@ body {
   /* Six columns overflow a 390px panel. The signed pull stays, since it is the
      point of the panel; the career-left percentage goes, because the bar right
      next to it already shows the same thing. */
-  /* Age goes at this width; WEAR is the number that explains the grouping and
-     the pull is the result, so those two stay. */
+  /* The BAR goes at this width, not a number.
+     LATER and NOW are the two things being compared, so dropping either one
+     leaves the pull unexplainable: "NOW 2,467" means nothing without the
+     long-term value beside it. The bar is the redundant element here, because
+     the PULL value it sits next to is already signed and coloured. This used
+     to hide LATER instead, from when that column was a calendar age and the
+     WEAR number beside it said the same thing. */
   .state-runway-row,
   .state-runway-head {
-    grid-template-columns: 22px minmax(0, 0.9fr) 26px 1.5fr 34px;
-    gap: 6px;
+    grid-template-columns: 20px minmax(0, 0.8fr) 42px 42px 38px;
+    gap: 5px;
   }
-  .state-runway-age,
-  .state-runway-head span:nth-child(3) {
+  .state-pull-track,
+  .state-runway-head span:nth-child(5) {
     display: none;
   }
 }

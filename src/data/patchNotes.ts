@@ -84,6 +84,24 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "3.5",
+    algo: "Empty",
+    algoFingerprint: "530ce0f18047",
+    date: "2026-08-05",
+    title: "Where the pressure comes from now explains the window you actually have",
+    changes: [
+      "That panel was listing your starters by age, ranked with the formula the app used to set your window before it stopped using age at all. It was decomposing a calculation that no longer exists, directly underneath the number it claimed to explain.",
+      "It now breaks down the real thing. Everything you own counts toward what you are worth LATER. Only your starting lineup counts toward what you score NOW, and a pick never can. An asset pulls your window shorter when it holds a bigger share of your lineup than of your long-term value, and holds it open when it does the reverse.",
+      "Picks and bench players appear in it now, which they could not before. On most rebuilding rosters they are the entire reason the window is open, so leaving them out was leaving out the answer.",
+      "Age is not in this panel anywhere. An old starter shows up because he is producing, not because of his birthday, and a 22 year old on your bench holds the window open for exactly the same reason a pick does.",
+      "On phones the panel now keeps both numbers being compared and drops the bar instead. It used to drop one of the two numbers, which left the result unexplainable.",
+    ],
+    knownIssues: [
+      "The pull figures show each asset's share of one total minus its share of the other. They rank correctly and cancel out across your roster, but they are not points off the gauge above.",
+    ],
+  },
+  {
+    branch: "daniels",
     release: "3.4",
     algo: "Empty",
     algoFingerprint: "530ce0f18047",

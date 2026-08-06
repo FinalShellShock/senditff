@@ -12,16 +12,18 @@
 //              derived from FantasyCalc values, and the one number a manager
 //              can check against his own memory of the season.
 //
-//   WINDOW     Per-starter age: how much career each one has left, read off
-//              the measured curves, and how much of your lineup value sits on
-//              players with little of it.
+//   WINDOW     Which assets create the gap the window is made of. Everything
+//              you own counts toward what you are worth LATER; only your
+//              starting lineup counts toward what you score NOW, and a pick
+//              never can. An asset pulls your window shorter when it holds a
+//              bigger share of the first total than of the second.
 //
-//              NOTE: this no longer explains windowPressure. The window is now
-//              the standardised gap between contender value and dynasty value,
-//              with no age term in it at all. Age is still real and still worth
-//              seeing, it just is not what classifies the roster any more. Do
-//              not reword this back into "that IS the window calculation": that
-//              claim was true and is not.
+//              This used to be a per-starter age breakdown, kept after the
+//              engine stopped using age with a note admitting it no longer
+//              explained the number above it. A panel headed WHERE THE
+//              PRESSURE COMES FROM that decomposes a formula the app retired
+//              is worse than no panel. Age is genuinely absent now: an old
+//              starter appears here for producing, not for his birthday.
 //
 //   POSITIONS  Each side against the floors classifySide actually tested.
 //              Previously this showed a league-rank plot beside the label, and
@@ -31,7 +33,7 @@
 //              pool, and never a league rank. Drawing the real floors makes
 //              the label self-evident instead of arbitrary.
 
-import { agePressure, depthByPosition, effectiveAge, fillStarters } from "../../algo/profile.ts";
+import { applyTep, depthByPosition, fillStarters } from "../../algo/profile.ts";
 import {
   WINDOW_LONG_THRESHOLD,
   WINDOW_SHORT_THRESHOLD,
@@ -54,14 +56,19 @@ const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 
 const POS_CLASS_COLOR: Record<string, string> = {
   CRITICAL_NEED: "#ef4444",
-  CRITICAL:      "#ef4444",
-  NEED:          "#eab308",
-  HEALTHY:       "#64748b",
-  SURPLUS:       "#22c55e",
+  CRITICAL: "#ef4444",
+  NEED: "#eab308",
+  HEALTHY: "#64748b",
+  SURPLUS: "#22c55e",
 };
 
 function posColor(pos: string) {
-  const map: Record<string, string> = { QB: "#c2410c", RB: "#ca8a04", WR: "#3b82f6", TE: "#a855f7" };
+  const map: Record<string, string> = {
+    QB: "#c2410c",
+    RB: "#ca8a04",
+    WR: "#3b82f6",
+    TE: "#a855f7",
+  };
   return map[pos] ?? "#94a3b8";
 }
 
@@ -78,7 +85,9 @@ function Scoring({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
   // leave a team carrying an older season's numbers, and ranking those against
   // this year's would invent a standing that never happened.
   const season = me.scoring?.season;
-  const field = league.filter((t) => t.scoring && t.scoring.weeks > 0 && t.scoring.season === season);
+  const field = league.filter(
+    (t) => t.scoring && t.scoring.weeks > 0 && t.scoring.season === season,
+  );
 
   if (!me.scoring || field.length < 2) {
     return (
@@ -87,8 +96,9 @@ function Scoring({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
           <span className="state-report-title">SCORING</span>
         </div>
         <p className="state-empty">
-          No completed season on record for this league yet, so there is no real points per game to
-          compare. It appears here once games have been played.
+          No completed season on record for this league yet, so there is no real
+          points per game to compare. It appears here once games have been
+          played.
         </p>
       </div>
     );
@@ -115,14 +125,17 @@ function Scoring({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
       </div>
       <p className="state-report-sub">
         {diff >= 0 ? "+" : ""}
-        {diff.toFixed(1)} a game against the league average of {mean.toFixed(1)}, over{" "}
-        {me.scoring.weeks} weeks.
+        {diff.toFixed(1)} a game against the league average of {mean.toFixed(1)}
+        , over {me.scoring.weeks} weeks.
       </p>
       <div className="state-bars">
         {rows.map((t) => {
           const mine = t.rosterId === me.rosterId;
           return (
-            <div key={t.rosterId} className={`state-bar-row${mine ? " state-bar-mine" : ""}`}>
+            <div
+              key={t.rosterId}
+              className={`state-bar-row${mine ? " state-bar-mine" : ""}`}
+            >
               <span className="state-bar-name">{t.ownerName}</span>
               <span className="state-bar-track">
                 <span
@@ -142,62 +155,95 @@ function Scoring({ me, league }: { me: TeamProfile; league: TeamProfile[] }) {
   );
 }
 
-// ── Window / age ─────────────────────────────────────────────────────────────
+// ── Window ───────────────────────────────────────────────────────────────────
 
-type StarterRow = {
-  player: Player;
-  /** The age the model actually judges him on. Equals calendar age unless an
-   *  aging signal (rushing QBs today) knocks his remaining value down. */
-  effAge: number;
-  /** Age pressure, 0-100: the share of a 23 year old's remaining production at
-   *  the same position that is already gone. */
-  pressure: number;
-  /** Share of the starting lineup's redraft value, 0-1. This is exactly the
-   *  weight starterAgePressure gives him. */
-  share: number;
-  /** How hard this starter pulls the team average, in points: his distance
-   *  from it times his share of lineup value.
-   *
-   *  These sum to ZERO by construction, which is what makes the two ends a
-   *  real decomposition. Ranking on raw contribution (pressure x share) does
-   *  not work: that number and its mirror both scale with share, so the single
-   *  biggest starter tops BOTH lists and only a dedupe hides it. On this
-   *  roster that put two 27.5 year old running backs in opposite groups. */
+type WindowRow = {
+  id: string;
+  name: string;
+  position: Position | null;
+  /** Dynasty value: what this asset is worth long term. */
+  dyn: number;
+  /** Redraft value, but only if he is actually starting. Zero otherwise. */
+  now: number;
+  /** In the starting lineup. Distinct from now > 0: a rebuilding roster can
+   *  start players the market prices at nothing, and "starting but worth 0"
+   *  is a different fact from "on your bench". */
+  starting: boolean;
+  /** Share of your now-value minus share of your later-value, in points.
+   *  Positive pushes the window shorter. Sums to zero across the roster. */
   pull: number;
 };
 
-function starterRows(me: TeamProfile, format: LeagueFormat): StarterRow[] {
-  const { starters } = fillStarters(me.players, format);
-  const flat: Player[] = [];
-  for (const pos of POSITIONS) flat.push(...starters[pos]);
-  // Filter BEFORE totalling. starterAgePressure skips players with no age on
-  // both sides of its fraction, so including them in the denominator here
-  // would make the shares sum to less than one and the contributions come up
-  // short of the total they claim to explain.
-  const aged = flat.filter((p) => p.age != null);
-  const total = aged.reduce((s, p) => s + p.valueRedraft, 0) || 1;
-  // The team average these are measured against. Recomputed from the same
-  // inputs rather than read off the profile so the pulls provably sum to zero
-  // even if one is ever rounded differently upstream.
-  const avg =
-    aged.reduce((s, p) => s + agePressure(effectiveAge(p), p.position) * p.valueRedraft, 0) / total;
-  return aged
-    .map((p) => {
-      // effectiveAge, not p.age: that is what starterAgePressure averages, so
-      // reading calendar age here would print rows that do not reconcile with
-      // the total they are supposed to explain.
-      const effAge = effectiveAge(p);
-      const pressure = agePressure(effAge, p.position);
-      const share = p.valueRedraft / total;
-      return {
-        player: p,
-        effAge,
-        pressure,
-        share,
-        pull: (pressure - avg) * share,
-      };
-    })
-    .sort((a, b) => b.pull - a.pull || a.player.id.localeCompare(b.player.id));
+/**
+ * What each asset does to the gap the window is made of.
+ *
+ * The window compares two totals: your starting lineup's redraft value (NOW)
+ * and your whole roster plus picks in dynasty value (LATER). An asset pushes
+ * your window shorter when it carries a bigger share of the first than of the
+ * second, and holds it open when it does the reverse:
+ *
+ *     pull = (its share of your NOW total) - (its share of your LATER total)
+ *
+ * Those shares each sum to one, so the pulls sum to zero: the midpoint is a
+ * real thing, meaning "contributes to both sides in the same proportion".
+ *
+ * A first attempt attributed literal points of window pressure, using each
+ * asset's marginal effect on the two z-scores. That reconciled to the gauge
+ * exactly and was useless to look at: every asset has dynasty value and most
+ * have no now value, so every single row came out negative and the PULLING IT
+ * SHORTER group was empty on every team in the league. Exactly summing to the
+ * headline is worth less than having a midpoint that means something.
+ *
+ * This replaces an age-curve breakdown that survived the move off age
+ * pressure. That version ranked starters by (agePressure - teamAverage) *
+ * valueShare, a correct decomposition of the OLD window, printed under a
+ * heading that promised to explain the current one.
+ */
+function windowRows(me: TeamProfile, format: LeagueFormat): WindowRow[] {
+  const nowTotal = me.starterTotalValue > 0 ? me.starterTotalValue : 1;
+  const laterTotal =
+    me.players.reduce((s, p) => s + (p.valueDynasty || 0), 0) +
+      me.picks.reduce((s, k) => s + (k.value || 0), 0) || 1;
+
+  // applyTep, because starterTotalValue upstream is computed on TEP-adjusted
+  // players. Skipping it would make these rows disagree with the total.
+  const adjusted = applyTep(me.players, format);
+  const { starters } = fillStarters(adjusted, format);
+  const startingIds = new Set(
+    POSITIONS.flatMap((pos) => starters[pos]).map((p) => p.id),
+  );
+
+  const pullOf = (dyn: number, now: number) =>
+    (now / nowTotal - dyn / laterTotal) * 100;
+
+  const rows: WindowRow[] = adjusted.map((p) => {
+    const dyn = p.valueDynasty || 0;
+    const starting = startingIds.has(p.id);
+    const now = starting ? p.valueRedraft || 0 : 0;
+    return {
+      id: p.id,
+      name: p.name,
+      position: p.position,
+      dyn,
+      now,
+      starting,
+      pull: pullOf(dyn, now),
+    };
+  });
+  for (const k of me.picks) {
+    // A pick cannot score a point this season, so its NOW value is zero by
+    // construction. It is the purest window-holder there is.
+    rows.push({
+      id: `pick:${k.year}-${k.round}-${k.origRosterId}`,
+      name: k.label,
+      position: null,
+      dyn: k.value || 0,
+      now: 0,
+      starting: false,
+      pull: pullOf(k.value || 0, 0),
+    });
+  }
+  return rows.sort((a, b) => b.pull - a.pull || a.id.localeCompare(b.id));
 }
 
 /** Diverging bar for a signed, zero-sum quantity.
@@ -216,7 +262,11 @@ function PullBar({ pull, scale }: { pull: number; scale: number }) {
       <span className="state-pull-axis" />
       <span
         className={`state-pull-fill${up ? " state-pull-fill-up" : " state-pull-fill-down"}`}
-        style={up ? { left: "50%", width: `${half}%` } : { right: "50%", width: `${half}%` }}
+        style={
+          up
+            ? { left: "50%", width: `${half}%` }
+            : { right: "50%", width: `${half}%` }
+        }
       />
     </span>
   );
@@ -251,102 +301,125 @@ function WindowGauge({ pressure }: { pressure: number }) {
                   : "#22c55e",
           }}
         />
-        <span className="state-floor state-floor-need" style={{ left: `${pct(WINDOW_LONG_THRESHOLD)}%` }} />
-        <span className="state-floor state-floor-crit" style={{ left: `${pct(WINDOW_SHORT_THRESHOLD)}%` }} />
+        <span
+          className="state-floor state-floor-need"
+          style={{ left: `${pct(WINDOW_LONG_THRESHOLD)}%` }}
+        />
+        <span
+          className="state-floor state-floor-crit"
+          style={{ left: `${pct(WINDOW_SHORT_THRESHOLD)}%` }}
+        />
       </span>
       <span className="state-window-bands">
         <span style={{ width: `${pct(WINDOW_LONG_THRESHOLD)}%` }}>LONG</span>
-        <span style={{ width: `${pct(WINDOW_SHORT_THRESHOLD) - pct(WINDOW_LONG_THRESHOLD)}%` }}>MID</span>
+        <span
+          style={{
+            width: `${pct(WINDOW_SHORT_THRESHOLD) - pct(WINDOW_LONG_THRESHOLD)}%`,
+          }}
+        >
+          MID
+        </span>
         <span>SHORT</span>
       </span>
     </div>
   );
 }
 
-function StarterLine({
-  row,
-  scale,
-  metricTitle,
-}: {
-  row: StarterRow;
-  scale: number;
-  metricTitle: string;
-}) {
-  const cal = row.player.age as number;
-  const adjusted = Math.abs(row.effAge - cal) >= 0.05;
+function WindowLine({ row, scale }: { row: WindowRow; scale: number }) {
+  const short = row.pull > 0;
   return (
     <div className="state-runway-row">
-      <span className="pos-tag" style={{ background: posColor(row.player.position) }}>
-        {row.player.position}
+      <span
+        className="pos-tag"
+        style={{
+          background: row.position ? posColor(row.position) : "#475569",
+        }}
+      >
+        {row.position ?? "PK"}
       </span>
-      <span className="state-runway-name">{row.player.name}</span>
+      <span className="state-runway-name">{row.name}</span>
+      {/* Column order must match the header strip above: LATER then NOW. */}
       <span
         className="state-runway-age"
-        {...(adjusted
-          ? { title: `${cal.toFixed(1)} calendar, judged as ${row.effAge.toFixed(1)} on his aging signal` }
-          : {})}
+        title={`Worth ${fmt(row.dyn)} long term`}
       >
-        {cal.toFixed(1)}
-        {adjusted ? "*" : ""}
+        {fmt(row.dyn)}
       </span>
-      {/* Column order must match the header strip above: AGE then WEAR. */}
       <span
         className="state-runway-wear"
-        title={`${row.pressure.toFixed(0)}% of a 23 year old ${row.player.position}'s remaining career is already gone`}
+        title={
+          row.starting
+            ? `In your starting lineup, worth ${fmt(row.now)} this season`
+            : row.position === null
+              ? "A pick cannot score this season, so it counts for nothing on the NOW side"
+              : "Not in your starting lineup, so he counts for nothing on the NOW side"
+        }
       >
-        {row.pressure.toFixed(0)}
+        {row.starting ? fmt(row.now) : "—"}
       </span>
       <PullBar pull={row.pull} scale={scale} />
       <span
-        className={`state-runway-runway${row.pull > 0 ? " state-pull-up" : " state-pull-down"}`}
-        title={metricTitle}
+        className={`state-runway-runway${short ? " state-pull-up" : " state-pull-down"}`}
+        title={`${row.name} moves your window ${Math.abs(row.pull).toFixed(1)} points ${short ? "shorter" : "longer"}`}
       >
-        {row.pull > 0 ? "+" : ""}
+        {short ? "+" : ""}
         {row.pull.toFixed(1)}
       </span>
     </div>
   );
 }
 
-function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat }) {
-  const rows = starterRows(me, format);
-  // Two from each end of one ordering. No dedupe needed: pulls sum to zero, so
-  // a player at the top cannot also be at the bottom.
-  // Scaled against the biggest mover in the WHOLE lineup, not just the four
+function WindowReport({
+  me,
+  format,
+}: {
+  me: TeamProfile;
+  format: LeagueFormat;
+}) {
+  const rows = windowRows(me, format);
+  // Three from each end of one ordering. A row cannot appear in both: the sort
+  // is on a single signed number.
+  // Scaled against the biggest mover on the WHOLE roster, not just the six
   // shown, so the bars keep their meaning when a team has no strong movers.
   const scale = Math.max(0.1, ...rows.map((r) => Math.abs(r.pull)));
-  const shorter = rows.filter((r) => r.pull > 0).slice(0, 2);
+  const shorter = rows.filter((r) => r.pull > 0).slice(0, 3);
   const open = rows
     .filter((r) => r.pull < 0)
-    .slice(-2)
+    .slice(-3)
     .reverse();
 
   return (
     <div className="state-panel">
       <div className="state-report-head">
-        <span className="state-report-title">WINDOW · WHERE THE PRESSURE COMES FROM</span>
-        <span className="state-report-value">{me.teamState.replace("_", " ")}</span>
+        <span className="state-report-title">
+          WINDOW · WHERE THE PRESSURE COMES FROM
+        </span>
+        <span className="state-report-value">
+          {me.teamState.replace("_", " ")}
+        </span>
       </div>
       <p className="state-report-sub">
-        Your lineup ranks #{me.starterRank} in the league for what it scores now, and your whole
-        roster plus picks ranks #{me.dynastyRank} for what it is worth long term. The gap between
-        those two, measured against the league, is your window: {me.windowPressure.toFixed(1)}.
-        Under {WINDOW_LONG_THRESHOLD} the future outweighs the present, over{" "}
+        Your lineup ranks #{me.starterRank} in the league for what it scores
+        now, and your whole roster plus picks ranks #{me.dynastyRank} for what
+        it is worth long term. The gap between those two, measured against the
+        league, is your window: {me.windowPressure.toFixed(1)}. Under{" "}
+        {WINDOW_LONG_THRESHOLD} the future outweighs the present, over{" "}
         {WINDOW_SHORT_THRESHOLD} the present outweighs the future.
       </p>
       <WindowGauge pressure={me.windowPressure} />
       <p className="state-report-sub">
-        Age no longer sets your window, the gap above does. This is still worth seeing, because it
-        is WHY the gap looks the way it does. Value-weighted across every startable slot, and WEAR
-        is how much of a 23 year old's career is already gone AT THAT POSITION, so it is not
-        comparable between them.
+        Everything you own counts toward LATER. Only what is in your starting
+        lineup counts toward NOW, and a pick never can. So an asset pushes your
+        window shorter when it carries a bigger share of your lineup than of
+        your long-term value, and holds it open when it does the reverse. Shown
+        in points of share, which cancel out across the roster.
       </p>
       <div className="state-runways">
         <div className="state-runway-head">
           <span />
           <span />
-          <span>AGE</span>
-          <span>WEAR</span>
+          <span>LATER</span>
+          <span>NOW</span>
           <span />
           <span>PULL</span>
         </div>
@@ -354,27 +427,19 @@ function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat })
           <div className="state-runway-group">PULLING IT SHORTER</div>
         )}
         {shorter.map((r) => (
-          <StarterLine
-            key={r.player.id}
-            row={r}
-            scale={scale}
-            metricTitle={`${r.player.name} pushes your age pressure up ${r.pull.toFixed(1)} points: he is ${(r.pressure - me.starterAgePressure).toFixed(0)} above the team average and carries ${(r.share * 100).toFixed(0)}% of your lineup value`}
-          />
+          <WindowLine key={r.id} row={r} scale={scale} />
         ))}
-        {open.length > 0 && <div className="state-runway-group">HOLDING IT OPEN</div>}
+        {open.length > 0 && (
+          <div className="state-runway-group">HOLDING IT OPEN</div>
+        )}
         {open.map((r) => (
-          <StarterLine
-            key={r.player.id}
-            row={r}
-            scale={scale}
-            metricTitle={`${r.player.name} pulls your age pressure down ${Math.abs(r.pull).toFixed(1)} points: he is ${Math.abs(r.pressure - me.starterAgePressure).toFixed(0)} below the team average and carries ${(r.share * 100).toFixed(0)}% of your lineup value`}
-          />
+          <WindowLine key={r.id} row={r} scale={scale} />
         ))}
       </div>
       <p className="state-foot">
-        Quarterbacks barely wear at all before 30, so an older one can still read lower than a
-        younger receiver. Curves are measured, nflverse 1999-2024. An asterisk means an aging
-        signal moved him.
+        Age is not in this calculation at all. An old starter shows up here
+        because he is producing now, not because of his birthday, and a 22 year
+        old on your bench holds the window open for the same reason a pick does.
       </p>
     </div>
   );
@@ -394,7 +459,12 @@ function WindowReport({ me, format }: { me: TeamProfile; format: LeagueFormat })
 // the sigma, and which test actually bound) move into the tooltip, where they
 // are available without being in the way.
 
-const SEVERITY_STEPS: SubClassification[] = ["CRITICAL", "NEED", "HEALTHY", "SURPLUS"];
+const SEVERITY_STEPS: SubClassification[] = [
+  "CRITICAL",
+  "NEED",
+  "HEALTHY",
+  "SURPLUS",
+];
 
 function SeverityCell({
   label,
@@ -422,14 +492,22 @@ function SeverityCell({
             />
           ))}
         </span>
-        <span className="state-sev-label" style={{ color }}>{label}</span>
+        <span className="state-sev-label" style={{ color }}>
+          {label}
+        </span>
       </div>
       <div className="state-sev-sub">
-        <span className="state-sev-player">{player ? player.name : "nobody"}</span>
+        <span className="state-sev-player">
+          {player ? player.name : "nobody"}
+        </span>
         {ev && (
           <span className="state-sev-nums">
             {fmt(ev.minSlotValue)} · floor {fmt(ev.needFloor)} ·{" "}
-            <span className={Math.min(ev.minSlotZ, ev.weightedZ) < -1 ? "state-z-bad" : ""}>
+            <span
+              className={
+                Math.min(ev.minSlotZ, ev.weightedZ) < -1 ? "state-z-bad" : ""
+              }
+            >
               {Math.min(ev.minSlotZ, ev.weightedZ).toFixed(1)}σ
             </span>
           </span>
@@ -453,7 +531,9 @@ function PositionRow({
   const ps = me.positionScores[pos];
   return (
     <div className="pos-dash-row">
-      <span className="pos-tag" style={{ background: posColor(pos) }}>{pos}</span>
+      <span className="pos-tag" style={{ background: posColor(pos) }}>
+        {pos}
+      </span>
       <div className="pos-dash-metric" data-label="WEAKEST STARTER">
         <SeverityCell
           label={ps.starterClassification ?? "HEALTHY"}
@@ -472,7 +552,13 @@ function PositionRow({
   );
 }
 
-function PositionTable({ me, format }: { me: TeamProfile; format: LeagueFormat }) {
+function PositionTable({
+  me,
+  format,
+}: {
+  me: TeamProfile;
+  format: LeagueFormat;
+}) {
   // The exact slots each label is judged on: the base starter slots for the
   // starter side, the first cover slot for depth. Same helpers profile.ts uses.
   const { starters } = fillStarters(me.players, format);
@@ -487,10 +573,11 @@ function PositionTable({ me, format }: { me: TeamProfile; format: LeagueFormat }
         <span className="state-report-title">POSITIONS</span>
       </div>
       <p className="state-report-sub">
-        Judged on the weakest slot you would have to start, and on the one man behind him. Each
-        shows his value, the need floor he has to clear, and how far he sits from a typical player
-        at that spot. Below -1 sigma is a need, below -2 is critical, and either that or the floor
-        is enough to flag it.
+        Judged on the weakest slot you would have to start, and on the one man
+        behind him. Each shows his value, the need floor he has to clear, and
+        how far he sits from a typical player at that spot. Below -1 sigma is a
+        need, below -2 is critical, and either that or the floor is enough to
+        flag it.
       </p>
       <div className="pos-dash-header-row">
         <div />
@@ -604,10 +691,16 @@ function UnbankedReport({
       };
     })
     .filter(
-      (r): r is typeof r & { roster: { amount: number; share: number }; starters: { amount: number; share: number } } =>
-        r.roster != null && r.starters != null,
+      (
+        r,
+      ): r is typeof r & {
+        roster: { amount: number; share: number };
+        starters: { amount: number; share: number };
+      } => r.roster != null && r.starters != null,
     )
-    .sort((a, b) => b.roster.amount - a.roster.amount || a.rosterId - b.rosterId);
+    .sort(
+      (a, b) => b.roster.amount - a.roster.amount || a.rosterId - b.rosterId,
+    );
 
   const mine = rows.find((r) => r.rosterId === me.rosterId);
   if (!mine || rows.length < 2) return null;
@@ -630,21 +723,25 @@ function UnbankedReport({
         </span>
       </div>
       <p className="state-report-sub">
-        How much of what you own has not been paid out yet, from the gap between each player's
-        dynasty and redraft price. Picks count in full, since they cannot score this season, and
-        they are {Math.round(mine.pickShare * 100)}% of your assets. That is{" "}
-        {pct(mine.roster.share)} of your roster's total value, and your starting lineup alone is{" "}
-        {pct(mine.starters.share)}.{" "}
+        How much of what you own has not been paid out yet, from the gap between
+        each player's dynasty and redraft price. Picks count in full, since they
+        cannot score this season, and they are{" "}
+        {Math.round(mine.pickShare * 100)}% of your assets. That is{" "}
+        {pct(mine.roster.share)} of your roster's total value, and your starting
+        lineup alone is {pct(mine.starters.share)}.{" "}
         {mine.starters.share < 0 &&
           "Negative there means your lineup out-produces its own dynasty price, so that value is already banked. "}
-        The ranking is on the amount, not the percentage: a high share of a small roster is less
-        deferred value than a lower share of a big one.
+        The ranking is on the amount, not the percentage: a high share of a
+        small roster is less deferred value than a lower share of a big one.
       </p>
       <div className="state-bars">
         {rows.map((r) => {
           const isMe = r.rosterId === me.rosterId;
           return (
-            <div key={r.rosterId} className={`state-bar-row${isMe ? " state-bar-mine" : ""}`}>
+            <div
+              key={r.rosterId}
+              className={`state-bar-row${isMe ? " state-bar-mine" : ""}`}
+            >
               <span className="state-bar-name">{r.ownerName}</span>
               <span className="state-bar-track">
                 <span
@@ -678,8 +775,9 @@ export default function TeamState({
     <section className="dive-pos-section">
       <h2 className="section-title">TEAM STATE</h2>
       <p className="dim-text scout-intro">
-        The numbers under the badges: what you actually scored, how much career your starters have
-        left, and where each position sits against the thresholds that label it.
+        The numbers under the badges: what you actually scored, how much career
+        your starters have left, and where each position sits against the
+        thresholds that label it.
       </p>
       <div className="state-grid">
         <Scoring me={me} league={league} />
