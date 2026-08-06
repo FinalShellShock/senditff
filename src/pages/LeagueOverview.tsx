@@ -11,12 +11,8 @@ import type {
   SubClassification,
 } from "../algo/types.ts";
 import {
-  STATE_GRID,
   STATE_COLOR,
   STATE_TEXT,
-  CONTENDER_BAND_LABEL,
-  DYNASTY_BAND_LABEL,
-  GRID_CORNER_LABEL,
 } from "../ui/teamState.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
@@ -38,190 +34,6 @@ const POS_CLASS_COLOR: Record<string, string> = {
 };
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
-
-// Rich grid team card. Three responsive density modes (controlled entirely
-// via CSS media queries — same markup):
-//   Desktop:    bars for Starter + Depth × 4 positions + picks
-//   Medium:     POS / Starter / Depth stacked vertically per column (2-char
-//               numbers, no bars)
-//   Mobile:     rank + name only, no positional info, no picks
-function GridTeamCard({
-  profile,
-  onClick,
-}: {
-  profile: TeamProfile;
-  onClick: () => void;
-}) {
-  const stateColor = STATE_COLOR[profile.teamState] ?? "#94a3b8";
-  const stateText = STATE_TEXT[profile.teamState] ?? "—";
-  return (
-    <div
-      className={`grid-team-card${profile.isMine ? " mine" : ""}`}
-      onClick={onClick}
-    >
-      <div className="gtc-name-line">
-        <span className="gtc-rank">#{profile.starterRank}</span>
-        <span className="gtc-name">
-          {profile.ownerName}
-          {profile.isMine && " ★"}
-        </span>
-        <span className="gtc-meta">
-          <span
-            className="window-label"
-            style={{ background: stateColor }}
-            title={stateText}
-          >
-            {stateText}
-          </span>
-          <span
-            className="window-dot"
-            style={{ background: stateColor }}
-            title={stateText}
-            aria-label={stateText}
-          />
-          <span className="gtc-age">
-            {(profile.starterCalAge ?? 0).toFixed(1)}y
-          </span>
-        </span>
-      </div>
-
-      {/* Desktop: vertical position blocks (one per position, starter + depth
-          rows inside each with bar + number + classification text) */}
-      <div className="gtc-bars">
-        {POSITIONS.map((pos) => {
-          const ps = profile.positionScores?.[pos];
-          const sClass = ps?.starterClassification ?? "HEALTHY";
-          const dClass = ps?.depthClassification ?? "HEALTHY";
-          return (
-            <div key={pos} className="gtc-pos-block">
-              <div className="gtc-pos-label">{pos}</div>
-              <div className="gtc-pos-lines">
-                <div className="gtc-pos-line">
-                  <ThickBar score={ps?.starterScore ?? 0} kind={sClass} />
-                  <span className="gtc-pos-num">
-                    {(ps?.starterScore ?? 0).toFixed(0)}
-                  </span>
-                  <span
-                    className="gtc-pos-class"
-                    style={{ color: POS_CLASS_COLOR[sClass] }}
-                  >
-                    {sClass}
-                  </span>
-                </div>
-                <div className="gtc-pos-line">
-                  <ThickBar score={ps?.depthScore ?? 0} kind={dClass} />
-                  <span className="gtc-pos-num">
-                    {(ps?.depthScore ?? 0).toFixed(0)}
-                  </span>
-                  <span
-                    className="gtc-pos-class"
-                    style={{ color: POS_CLASS_COLOR[dClass] }}
-                  >
-                    {dClass}
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Medium: 2-char number columns (POS / starter / depth stacked) */}
-      <div className="gtc-numbers">
-        {POSITIONS.map((pos) => {
-          const ps = profile.positionScores?.[pos];
-          const sClass = ps?.starterClassification ?? "HEALTHY";
-          const dClass = ps?.depthClassification ?? "HEALTHY";
-          return (
-            <div key={pos} className="gtc-numbers-col">
-              <span className="gtc-numbers-pos">{pos}</span>
-              <span
-                className="gtc-numbers-val gtc-numbers-starter"
-                style={{ color: POS_CLASS_COLOR[sClass] }}
-              >
-                {(ps?.starterScore ?? 0).toFixed(0)}
-              </span>
-              <span
-                className="gtc-numbers-val gtc-numbers-depth"
-                style={{ color: POS_CLASS_COLOR[dClass] }}
-              >
-                {(ps?.depthScore ?? 0).toFixed(0)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function LeagueGrid({ profiles }: { profiles: TeamProfile[] }) {
-  const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
-
-  // Bucketed by teamState, so this grid and the map above cannot disagree:
-  // both read the single field the engine actually gates on. The previous
-  // version keyed on `${competitiveness}-${windowTier}`, a second 3x3 that
-  // survived the move to the state grid and quietly told a different story.
-  const grid: Partial<Record<string, TeamProfile[]>> = {};
-  for (const p of profiles) (grid[p.teamState] ??= []).push(p);
-
-  return (
-    <div className="grid-scroll-wrap">
-      <div className="league-grid">
-        <div className="grid-header-row">
-          {/* Names both axes once, so the short band labels around the grid
-              do not have to carry "contending" and "future" in every cell. */}
-          <div className="grid-corner">
-            <span className="grid-corner-row">{GRID_CORNER_LABEL.row} ↓</span>
-            <span className="grid-corner-col">{GRID_CORNER_LABEL.col} →</span>
-          </div>
-          {DYNASTY_BAND_LABEL.map((c) => (
-            <div key={c} className="grid-col-label">
-              {c}
-            </div>
-          ))}
-        </div>
-        {STATE_GRID.map((stateRow, contBand) => (
-          <div key={contBand} className="grid-row">
-            <div className="grid-row-label">
-              {CONTENDER_BAND_LABEL[contBand]}
-            </div>
-            {stateRow.map((state) => {
-              const teams = grid[state] ?? [];
-              return (
-                <div
-                  key={state}
-                  className={`grid-cell${!teams.length ? " empty" : ""}`}
-                  data-comp={
-                    contBand === 0
-                      ? "STRONG"
-                      : contBand === 1
-                        ? "AVERAGE"
-                        : "WEAK"
-                  }
-                  title={STATE_TEXT[state]}
-                >
-                  {teams.length === 0
-                    ? STATE_TEXT[state]
-                    : teams.map((t) => (
-                        <GridTeamCard
-                          key={t.rosterId}
-                          profile={t}
-                          onClick={() =>
-                            navigate(`/league/${id}/team/${t.rosterId}`)
-                          }
-                        />
-                      ))}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
   const years = [...new Set(picks.map((p) => p.year))].sort().slice(0, 3);
@@ -708,7 +520,6 @@ export default function LeagueOverview() {
   const [expandedRoster, setExpandedRoster] = useState<number | null>(null);
   // "map" is the new default; the classic 3x3 grid stays behind a toggle for
   // one release.
-  const [shapeView, setShapeView] = useState<"map" | "grid">("map");
 
   async function handleRefresh() {
     if (!id) return;
@@ -760,32 +571,21 @@ export default function LeagueOverview() {
 
       <div className="table-scroll-wrapper">
         <section className="overview-section">
-          <div className="shape-header">
-            <h2 className="section-title">League Shape</h2>
-            <button
-              className="btn-link shape-toggle"
-              onClick={() => setShapeView(shapeView === "map" ? "grid" : "map")}
-            >
-              {shapeView === "map" ? "grid view" : "map view"}
-            </button>
-          </div>
-          {shapeView === "map" ? (
-            <WindowMap
-              profiles={overview.profiles}
-              format={overview.format}
-              thisYear={
-                overview.upcomingDraftYear ??
-                Math.min(
-                  ...overview.profiles.flatMap((p) =>
-                    p.picks.map((pk) => pk.year),
-                  ),
-                  new Date().getFullYear() + 1,
-                )
-              }
-            />
-          ) : (
-            <LeagueGrid profiles={overview.profiles} />
-          )}
+          <h2 className="section-title">League Shape</h2>
+          {/* Map only. There used to be a grid/map toggle; the grid restacked
+              the same nine states as a table of names, which the map already
+              shows with each team's actual position inside its cell. */}
+          <WindowMap
+            profiles={overview.profiles}
+            format={overview.format}
+            thisYear={
+              overview.upcomingDraftYear ??
+              Math.min(
+                ...overview.profiles.flatMap((p) => p.picks.map((pk) => pk.year)),
+                new Date().getFullYear() + 1,
+              )
+            }
+          />
         </section>
 
         {/* Above the Teams table on purpose. This is the board you read when

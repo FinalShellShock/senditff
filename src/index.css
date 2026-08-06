@@ -162,6 +162,115 @@ body {
 
 /* ── Shared page primitives ──────────────────────────────────────────── */
 
+/* ── League selector ─────────────────────────────────────────────────────
+   Lives in the status bar where a "← Leagues" button used to be. The name is
+   the button; the sync age sits under it as its own line so it is never read
+   as part of the league's name. */
+.league-select {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 1px;
+}
+
+.league-select-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 2px;
+  max-width: 100%;
+}
+
+.league-select-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.league-select-caret {
+  color: #64748b;
+  font-size: 9px;
+  flex-shrink: 0;
+}
+
+.league-select-synced {
+  font-size: 9.5px;
+  letter-spacing: 0.5px;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.league-select-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  min-width: 240px;
+  max-width: min(320px, calc(100vw - 32px));
+  max-height: 60vh;
+  overflow-y: auto;
+  background: #0f1520;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  padding: 4px;
+}
+
+.league-select-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+  color: #e2e8f0;
+  font: inherit;
+  font-size: 12px;
+}
+
+.league-select-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.league-select-item-name {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.league-select-item-meta {
+  font-size: 9.5px;
+  color: #475569;
+}
+
+.league-select-empty {
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #475569;
+}
+
+.league-select-all {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  margin-top: 4px;
+  padding-top: 9px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
 .status-left {
   display: flex;
   align-items: center;

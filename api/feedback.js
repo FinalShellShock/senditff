@@ -48,6 +48,21 @@ function currentRelease() {
 var PATCH_NOTES = [
   {
     branch: "daniels",
+    release: "3.6",
+    algo: "Empty",
+    algoFingerprint: "24e7f5dc5353",
+    date: "2026-08-06",
+    title: "The window panel is gone, and unbanked value shows how much of it is picks",
+    changes: [
+      "The window gauge and its breakdown are removed from your team page. The window is one number squeezed out of the two ranks already printed at the top of that page, and the nine states replaced it as the thing the engine reads. A panel explaining how we get from two numbers you can read to one you cannot was motion, not explanation. Both previous versions of it had to be retired for describing formulas the app had already stopped using.",
+      "Unbanked value now shades the part of each bar that is picks. Picks are unbanked by definition, so a roster can top that chart without holding a single deferred player, and several do: one team in the test league is 81% picks and another is 29%. The bar said the same thing about both.",
+      "Fixed a real bug in trade explanations. The cached rationale was filed under a team's old window label while the writing itself now describes the nine states. Three of seven labels covered more than one state, and one covered three, so a stuck team could be served an explanation written for a rebuilding team. Now filed under the state.",
+      "A scoped search on a player nobody could match on value used to end at a blank page. It now says that is what happened."
+    ],
+    knownIssues: []
+  },
+  {
+    branch: "daniels",
     release: "3.5",
     algo: "Empty",
     algoFingerprint: "530ce0f18047",

@@ -2,6 +2,7 @@ import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { makeApiClient, type OverviewResponse } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
+import LeagueSelector from "./LeagueSelector.tsx";
 
 class ContentErrorBoundary extends Component<
   { children: ReactNode; onReset: () => void },
@@ -37,7 +38,8 @@ export default function LeagueShell() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { getToken } = useAuth();
+  const { getToken, authState } = useAuth();
+  const uid = authState.status === "approved" ? authState.user.uid : "";
   const api = makeApiClient(getToken);
 
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
@@ -110,8 +112,18 @@ export default function LeagueShell() {
     <div className="shell">
       <div className="status-bar">
         <div className="status-left">
-          <button className="btn-link" onClick={() => navigate("/")}>← Leagues</button>
-          {overview && <span className="status-brand">{overview.name}</span>}
+          {overview && id ? (
+            <LeagueSelector
+              uid={uid}
+              currentLeagueId={id}
+              currentName={overview.name}
+              lastRefreshed={overview.lastRefreshed ?? null}
+            />
+          ) : (
+            <button className="btn-link" onClick={() => navigate("/")}>
+              ← Leagues
+            </button>
+          )}
         </div>
         <div className="status-right">
           {resyncing && <span className="dim-text" style={{ color: "#f59e0b" }}>syncing...</span>}

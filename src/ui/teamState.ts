@@ -38,12 +38,20 @@ export const STATE_TEXT: Record<TeamState, string> = {
 };
 
 /**
- * Green = healthy on both axes, red = healthy on neither, and the two
- * lopsided corners get their own hues so WIN_NOW (all now, no later) never
- * reads as the same situation as REBUILD (all later, no now).
+ * Hue tracks the FUTURE axis, which is the grid's columns.
+ *
+ *   deep future   teal -> cyan -> blue     (JUGGERNAUT, RISING, REBUILD)
+ *   middle        green -> slate -> purple (CONTENDER, MIDDLING, EARLY_REBUILD)
+ *   thin future   orange -> yellow -> red  (WIN_NOW, FADING, STUCK)
+ *
+ * JUGGERNAUT was #16a34a and CONTENDER #22c55e, two greens one step apart on
+ * the same ramp, which is a hard pair to tell apart on a small dot and an
+ * impossible one for the ~8% of men with red-green colour deficiency. Moving
+ * JUGGERNAUT to teal separates it AND puts it in the same family as the other
+ * two deep-future states, so the column reads as a column.
  */
 export const STATE_COLOR: Record<TeamState, string> = {
-  JUGGERNAUT: "#16a34a",
+  JUGGERNAUT: "#14b8a6",
   CONTENDER: "#22c55e",
   WIN_NOW: "#f97316",
   RISING: "#06b6d4",
