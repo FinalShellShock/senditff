@@ -451,3 +451,61 @@ Cheapest honest next step: surface starters dyn/red on TEAM STATE next to the
 existing window reading, so the disagreements are visible on real rosters before
 any scoring depends on it. Changing the window math first would be committing to
 a 0.60 correlation sight unseen.
+
+---
+
+## Product redesign: make it feel like a trading terminal
+
+Added 2026-08-06 (Johnny).
+
+Right now the app looks like a generic dark-mode fantasy dashboard, which is
+what every other product in the category looks like. It is a TRADE tool, and it
+should feel like one: the aesthetic reference is a stock trading terminal, not a
+league homepage. Dense numbers, tickers, live-feeling deltas, red and green as
+information rather than decoration, monospace where monospace earns it.
+
+This is a look-and-feel pass, not a re-architecture. The state grid, the map and
+the trade engine all stay.
+
+Worth doing after the current round of correctness work settles, so the redesign
+lands on panels that are not still moving.
+
+---
+
+## Research: what actually predicts a team improving or declining
+
+Added 2026-08-06 (Johnny).
+
+The Window Map's dashed trails project each team 1-2 years out using our aging
+curves: every player's dynasty value is decayed by his remaining-career curve,
+picks re-decay toward their draft year, and picks whose draft has passed mature
+into a neutral 22-year-old WR.
+
+**Johnny's objection, which is correct: dynasty value already prices the
+future.** Decaying it by an age curve is doing the market's job a second time.
+The trails are a projection built on the one input we already decided should not
+classify a roster.
+
+What we actually want is a measured answer to "how much does a team in this
+state typically improve or decline over one and two years", which the outcome
+corpus in scripts/research/ could support: it has 14,343 trades across 1,100
+leagues with outcomes followed into later seasons.
+
+**The hard part, in Johnny's words: "You can't just keep gaining crappy picks
+and selling players cheap and have a bright future."** Twenty third-rounders are
+not three firsts. Any model has to price pick capital by quality, not by count
+or by summed value, because summed value is exactly what makes a pile of late
+picks look like a contender's war chest.
+
+Open questions for the study:
+  - Does banked pick QUALITY (best pick held, top-N concentration) predict
+    improvement better than total pick value?
+  - Is there a diminishing return past some number of picks per draft, given
+    roster spots are finite?
+  - Do teams in each of the nine states have measurably different one and two
+    year trajectories, and is that separable from simple regression to the mean?
+
+Until this exists the trails are a known approximation and are labelled as one.
+See also the trail axis bug in the 3.7 notes: the projection ranks lineups on
+dynasty value while the live axis ranks them on redraft.
+

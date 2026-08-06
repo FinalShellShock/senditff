@@ -6,4 +6,4 @@ export const ALGO_FINGERPRINT_BUILD = "24e7f5dc5353";
 // The scouting report (src/algo/plays.ts) hashed on its own, so a change to
 // a play does not read as a change to the trade engine. Stamped on play
 // feedback only.
-export const SCOUT_FINGERPRINT_BUILD = "06d7fc6fdd55";
+export const SCOUT_FINGERPRINT_BUILD = "353f46cd6c00";

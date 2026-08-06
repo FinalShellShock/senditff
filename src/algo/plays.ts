@@ -24,6 +24,7 @@
 // to the mean). That number is a population statistic, not a prediction for
 // this roster, and the UI must say so.
 
+import { agePressure, effectiveAge } from "./profile";
 import type { ArchetypeFamily } from "./archetypes";
 import type { Player, Position, TeamProfile } from "./types";
 
@@ -46,6 +47,11 @@ export type Play = {
   /** Set when the trade finder can search for this shape. */
   archetype?: ArchetypeFamily;
   position?: Position;
+  /** Opens the finder in auto mode for a play with no single shape behind it.
+   *  Every "do" card should be actionable; without this, a card whose advice is
+   *  "keep working the market" left the reader with nowhere to click. Ignored
+   *  when `archetype` is set. */
+  openFinder?: { label: string };
 };
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
@@ -58,8 +64,19 @@ const byValue = (a: Player, b: Player) =>
 // which reads as a bug even though both numbers are "right".
 
 /** A veteran is worth selling only if he still carries value; these are the
- *  gate the sell_valuable_veteran play uses. */
-export const VETERAN_SELL_AGE = 27;
+ *  gate the sell_valuable_veteran play uses.
+ *
+ *  WEAR, not calendar age. This was `age >= 27`, one number for every
+ *  position, and it told a manager that Jordan Love at 27 was a veteran to
+ *  sell. Our own measured curves put a 27 year old QB at ZERO wear: RB, WR and
+ *  TE sit at 22 to 25 at that age, and a QB does not reach 22 until his very
+ *  late twenties. The gate was calibrated on the positions that age fast and
+ *  then applied to the one that does not.
+ *
+ *  22 is the same cut, expressed in the units the study actually measured. It
+ *  reproduces age 27 for RB and WR, 26 for TE, and holds QBs until they are
+ *  genuinely declining. */
+export const VETERAN_SELL_WEAR = 22;
 export const VETERAN_SELL_VALUE = 1500;
 
 /** Rank band (inclusive, 1-indexed) that Stage 1 of the trade study found
@@ -231,13 +248,14 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
       detail:
         "The plays below are the rebuild ones. They are what worked for teams that committed to the future, and they are the closest measured path out. If you would rather push the other way, force a Send It archetype and check what a win-now move actually costs you.",
       kind: "do",
+      openFinder: { label: "See every angle" },
     });
   }
 
   if (isRebuild) {
     const agingAsset = roster.find(
       (p) =>
-        (p.age ?? 0) >= VETERAN_SELL_AGE &&
+        agePressure(effectiveAge(p), p.position) >= VETERAN_SELL_WEAR &&
         p.valueDynasty >= VETERAN_SELL_VALUE,
     );
     if (agingAsset) {
@@ -248,7 +266,7 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
           "Rebuilding teams that sold a veteran who still carried real value beat expectations 54% of the time by year three. Selling players who were already washed did nothing (52%).",
         hitRate: 54,
         rateLabel: "of rebuilds beat expectations by year three",
-        detail: `${agingAsset.name} is ${(agingAsset.age ?? 0).toFixed(1)} and still worth ${fmt(agingAsset.valueDynasty)}. That is the profile that pays off, not the one nobody wants.`,
+        detail: `${agingAsset.name} is ${(agingAsset.age ?? 0).toFixed(1)} and has already spent ${agePressure(effectiveAge(agingAsset), agingAsset.position).toFixed(0)}% of what a ${agingAsset.position} his age has left, yet he is still worth ${fmt(agingAsset.valueDynasty)}. That is the profile that pays off, not the one nobody wants.`,
         kind: "do",
         archetype: "age_arb_sell",
       });
@@ -306,6 +324,9 @@ export function scoutingPlays(me: TeamProfile, league: TeamProfile[]): Play[] {
       detail:
         "Your window is open now, and it is the one situation where doing nothing measurably costs you.",
       kind: "do",
+      // No single archetype: the finding is about trading at all, not about a
+      // shape. Opens the finder on best-available instead.
+      openFinder: { label: "See what's out there" },
     });
   }
 

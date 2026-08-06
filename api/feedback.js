@@ -35,7 +35,7 @@ module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
 var ALGO_FINGERPRINT_BUILD = "24e7f5dc5353";
-var SCOUT_FINGERPRINT_BUILD = "06d7fc6fdd55";
+var SCOUT_FINGERPRINT_BUILD = "353f46cd6c00";
 
 // src/algo/version.ts
 var ALGO_VERSION = "empty";
@@ -46,6 +46,22 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "3.7",
+    algo: "Empty",
+    algoFingerprint: "24e7f5dc5353",
+    date: "2026-08-06",
+    title: "Switch leagues from anywhere, and juggernaut no longer looks like contender",
+    changes: [
+      "There is a league selector in the top left now. It switches leagues from any tab without dropping you back to a list page, and it shows when each league last synced. That last part used to live only on the overview tab, which meant the one fact you need before trusting a number was on a different page from every number.",
+      "Juggernaut and contender were two greens one step apart and hard to tell apart on a small dot, impossible for anyone with red-green colour deficiency. Juggernaut is teal now, which also puts it in the same family as the other two deep-future states, so that column of the grid reads as a column.",
+      "Grid view is gone from the league shape section, along with its toggle. It restacked the same nine states as a table of names, which the map already shows with each team's real position inside its cell."
+    ],
+    knownIssues: [
+      "The dashed trails on the map project each team's lineup using dynasty value, while the dot itself is placed using redraft value. Twelve of sixteen teams therefore start their trail at a slightly different height than their dot, by up to four places."
+    ]
+  },
   {
     branch: "daniels",
     release: "3.6",

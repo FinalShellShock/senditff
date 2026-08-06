@@ -15,7 +15,7 @@
 //   OWNER      Who holds him. Rankings without ownership are a price list;
 //              with it they are a shopping list.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import AssetFilterBar from "./shared/AssetFilterBar.tsx";
 import {
@@ -82,10 +82,20 @@ export default function Rankings() {
     return m;
   }, [overview.profiles]);
 
-  const rows = useMemo(
-    () => filterAssets(pool, { ...filters, query }, { limit: 300 }),
+  // Paged, not capped. The old version asked filterAssets for 300 and told you
+  // to narrow your search, so the 301st most valuable asset in the league was
+  // simply unreachable by scrolling. Everything matching is loaded and the page
+  // grows a chunk at a time.
+  const PAGE = 100;
+  const allRows = useMemo(
+    () => filterAssets(pool, { ...filters, query }),
     [pool, filters, query],
   );
+  const [shown, setShown] = useState(PAGE);
+  // Any change to the filters puts you back at the top of a new list, so the
+  // page size has to reset with it or the first render dumps 600 rows.
+  useEffect(() => setShown(PAGE), [filters, query]);
+  const rows = useMemo(() => allRows.slice(0, shown), [allRows, shown]);
 
   const unbankedOf = (id: string, kind: string, value: number): number | null => {
     if (kind === "pick") return 1; // cannot score this season, by definition
@@ -157,10 +167,18 @@ export default function Rankings() {
             })}
           </div>
         )}
-        {rows.length >= 300 && (
-          <p className="dim-text" style={{ textAlign: "center", fontSize: 10, padding: "8px 0" }}>
-            Showing the top 300. Narrow with search or the filters above.
-          </p>
+        {rows.length < allRows.length && (
+          <div className="rankings-more">
+            <button
+              className="sendit-reset-btn"
+              onClick={() => setShown((n) => n + PAGE)}
+            >
+              Show {Math.min(PAGE, allRows.length - rows.length)} more
+            </button>
+            <span className="dim-text rankings-more-count">
+              {rows.length} of {allRows.length}
+            </span>
+          </div>
         )}
       </div>
     </>

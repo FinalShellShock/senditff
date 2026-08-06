@@ -4608,3 +4608,18 @@ body {
   letter-spacing: 1.5px;
   flex-shrink: 0;
 }
+
+/* Load-more control under the rankings list. Replaces a "showing the top 300,
+   narrow your search" line, which made every asset past 300 unreachable. */
+.rankings-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 0 6px;
+}
+
+.rankings-more-count {
+  font-size: 10px;
+  letter-spacing: 1px;
+}

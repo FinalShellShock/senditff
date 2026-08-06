@@ -38,26 +38,38 @@ export const STATE_TEXT: Record<TeamState, string> = {
 };
 
 /**
- * Hue tracks the FUTURE axis, which is the grid's columns.
+ * A bivariate palette: both axes of the grid carry a visual channel.
  *
- *   deep future   teal -> cyan -> blue     (JUGGERNAUT, RISING, REBUILD)
- *   middle        green -> slate -> purple (CONTENDER, MIDDLING, EARLY_REBUILD)
- *   thin future   orange -> yellow -> red  (WIN_NOW, FADING, STUCK)
+ * Four corners are fixed, and the five cells between them are Oklab blends of
+ * their neighbours, so a ROW reads as a progression and so does a COLUMN:
  *
- * JUGGERNAUT was #16a34a and CONTENDER #22c55e, two greens one step apart on
- * the same ramp, which is a hard pair to tell apart on a small dot and an
- * impossible one for the ~8% of men with red-green colour deficiency. Moving
- * JUGGERNAUT to teal separates it AND puts it in the same family as the other
- * two deep-future states, so the column reads as a column.
+ *              DEEP FUTURE      MIDDLE          THIN FUTURE
+ *   CONTENDING teal #2dd4bf     green           amber #f59e0b
+ *   MIDDLE     cyan             stone           burnt orange
+ *   WEAK       blue #3b82f6     mauve           red #b91c1c
+ *
+ * Cool means the value is still ahead of you, warm means it has been spent.
+ * Going down a column, the same hue family loses its brightness as the lineup
+ * gets weaker. The muddy centre is not an accident: MIDDLING is the cell with
+ * nothing to say about a roster, and it should not look like a verdict.
+ *
+ * CONTENDER is hand-set rather than blended. A straight teal-to-amber midpoint
+ * lands on a washed-out olive, which is a poor look for one of the strongest
+ * states on the board.
+ *
+ * Checked, not eyeballed: the closest pair in this set is 0.122 apart in Oklab,
+ * against 0.071 for the palette it replaces. That previous worst pair was
+ * JUGGERNAUT and RISING, not the JUGGERNAUT/CONTENDER pair that prompted the
+ * change, so fixing it by eye had moved the collision rather than removed it.
  */
 export const STATE_COLOR: Record<TeamState, string> = {
-  JUGGERNAUT: "#14b8a6",
-  CONTENDER: "#22c55e",
-  WIN_NOW: "#f97316",
-  RISING: "#06b6d4",
-  MIDDLING: "#94a3b8",
-  FADING: "#eab308",
+  JUGGERNAUT: "#2dd4bf",
+  CONTENDER: "#6cbf59",
+  WIN_NOW: "#f59e0b",
+  RISING: "#2faede",
+  MIDDLING: "#a1928c",
+  FADING: "#d9651a",
   REBUILD: "#3b82f6",
-  EARLY_REBUILD: "#a855f7",
-  STUCK: "#dc2626",
+  EARLY_REBUILD: "#8e6491",
+  STUCK: "#b91c1c",
 };

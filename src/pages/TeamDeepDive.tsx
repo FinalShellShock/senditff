@@ -151,9 +151,17 @@ export default function TeamDeepDive() {
   // plays that actually apply to it.
   const intentKey = (archetype: string, position?: string | null) =>
     `${archetype}|${position ?? ""}`;
+  // A play is clickable when the engine confirms its shape returns something,
+  // or when it opens the finder in auto mode (which always has results).
   const playHasTrades = (play: Play) =>
+    !play.archetype ||
     liveIntents === null ||
-    liveIntents.has(intentKey(play.archetype!, play.position ?? null));
+    liveIntents.has(intentKey(play.archetype, play.position ?? null));
+  const playCta = (play: Play): string | null => {
+    if (play.kind === "avoid") return null;
+    if (play.archetype) return playHasTrades(play) ? `Find: ${intentShortLabel(play.archetype)}` : null;
+    return play.openFinder?.label ?? null;
+  };
 
   const plays = useMemo(
     () =>
@@ -356,7 +364,7 @@ export default function TeamDeepDive() {
               {/* Skipped entirely when there is neither a rate nor a CTA, so a
                   play with no measured number does not leave an empty gutter. */}
               {(play.hitRate !== null ||
-                (play.archetype && playHasTrades(play))) && (
+                playCta(play) !== null) && (
                 <div className="scout-row-meter">
                   {play.hitRate !== null && (
                     <>
@@ -371,7 +379,7 @@ export default function TeamDeepDive() {
                   {/* Only offered once the engine confirms it would return
                     something. A play whose link lands on "none survived
                     scoring" is worse than a play with no link. */}
-                  {play.archetype && playHasTrades(play) && (
+                  {playCta(play) && (
                     <button
                       className="sendit-reset-btn scout-cta"
                       onClick={() =>
@@ -381,7 +389,7 @@ export default function TeamDeepDive() {
                       {/* Names the intent it opens. "Find these trades" gave no
                         clue, so landing on a differently-worded picker read as
                         the wrong page. */}
-                      Find: {intentShortLabel(play.archetype)}
+                      {playCta(play)}
                     </button>
                   )}
                 </div>
