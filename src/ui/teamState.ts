@@ -25,18 +25,27 @@ export const DYNASTY_BAND_LABEL = ["DEEP FUTURE", "MIDDLE", "THIN FUTURE"];
 /** Reads down-then-across: rows are this season, columns are the future. */
 export const GRID_CORNER_LABEL = { row: "NOW", col: "LATER" };
 
+/**
+ * Display names. The internal keys never change: they are stored on every
+ * feedback record and are part of the rationale cache key, so renaming them
+ * would orphan history. Names are free to iterate here.
+ *
+ * WATCH THE TWO IN THE BOTTOM ROW. Internal REBUILD shows as STOCKPILING and
+ * internal EARLY_REBUILD shows as REBUILD. That is deliberate: the cell with
+ * the DEEPEST future is the one sitting on a pile, and the ordinary case is
+ * the one in the middle. Do not "fix" the apparent mismatch by swapping them.
+ */
 export const STATE_TEXT: Record<TeamState, string> = {
-  JUGGERNAUT: "JUGGERNAUT",
+  JUGGERNAUT: "BEAUTY",
   CONTENDER: "CONTENDER",
-  WIN_NOW: "WIN NOW",
+  WIN_NOW: "LAST RIDE",
   RISING: "RISING",
-  MIDDLING: "MIDDLING",
-  FADING: "FADING",
-  REBUILD: "REBUILD",
-  EARLY_REBUILD: "EARLY REBUILD",
-  STUCK: "STUCK",
+  MIDDLING: "IN THE MIX",
+  FADING: "ON FUMES",
+  REBUILD: "STOCKPILING",
+  EARLY_REBUILD: "REBUILD",
+  STUCK: "YARD SALE",
 };
-
 /**
  * The ROW carries the verdict; the COLUMN carries the character.
  *
@@ -72,9 +81,9 @@ export const STATE_COLOR: Record<TeamState, string> = {
   WIN_NOW: "#a3e635",
   RISING: "#22d3ee",
   MIDDLING: "#94a3b8",
-  FADING: "#f59e0b",
-  REBUILD: "#3b82f6",
-  EARLY_REBUILD: "#a855f7",
+  FADING: "#eab308",
+  REBUILD: "#7c3aed",
+  EARLY_REBUILD: "#d63384",
   STUCK: "#dc2626",
 };
 /**
