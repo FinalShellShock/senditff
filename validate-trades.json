@@ -49,7 +49,7 @@
               "position": "RB",
               "team": "TEN",
               "valueDynasty": 1656,
-              "age": 29.271141364235557
+              "age": 29.271156125402438
             }
           ],
           "receive": [
@@ -60,7 +60,7 @@
               "position": "TE",
               "team": "LAC",
               "valueDynasty": 1688,
-              "age": 23.11919064583492
+              "age": 23.119205407033487
             }
           ],
           "adjValueGive": 1656,
@@ -137,7 +137,7 @@
               "position": "WR",
               "team": "LAC",
               "valueDynasty": 3982,
-              "age": 24.737260460744796
+              "age": 24.73727522191168
             },
             {
               "id": "8161",
@@ -146,7 +146,7 @@
               "position": "QB",
               "team": "MIA",
               "valueDynasty": 1194,
-              "age": 27.20406401995082
+              "age": 27.2040787811177
             }
           ],
           "receive": [
@@ -157,7 +157,7 @@
               "position": "RB",
               "team": "SF",
               "valueDynasty": 4791,
-              "age": 30.166418571912946
+              "age": 30.166433333111517
             }
           ],
           "adjValueGive": 4937.2,
@@ -220,7 +220,7 @@
               "position": "WR",
               "team": "HOU",
               "valueDynasty": 4302,
-              "age": 27.38750002268867
+              "age": 27.387514783855554
             }
           ],
           "receive": [
@@ -231,7 +231,7 @@
               "position": "RB",
               "team": "BAL",
               "valueDynasty": 3297,
-              "age": 32.58941651855655
+              "age": 32.58943127975512
             },
             {
               "id": "11637",
@@ -240,7 +240,7 @@
               "position": "WR",
               "team": "BUF",
               "valueDynasty": 1243,
-              "age": 23.225966826564758
+              "age": 23.22598158776333
             }
           ],
           "adjValueGive": 4452.75,
@@ -303,7 +303,7 @@
               "position": "RB",
               "team": "NE",
               "valueDynasty": 4076,
-              "age": 23.792701939184223
+              "age": 23.792716700351104
             },
             {
               "id": "9487",
@@ -312,7 +312,7 @@
               "position": "WR",
               "team": "JAX",
               "valueDynasty": 2551,
-              "age": 24.381339858417622
+              "age": 24.381354619584506
             }
           ],
           "receive": [
@@ -323,7 +323,7 @@
               "position": "RB",
               "team": "IND",
               "valueDynasty": 5763,
-              "age": 27.549033219414657
+              "age": 27.549047980613228
             }
           ],
           "adjValueGive": 6116.8,
@@ -386,7 +386,7 @@
               "position": "RB",
               "team": "NE",
               "valueDynasty": 4076,
-              "age": 23.792701939184223
+              "age": 23.792716700351104
             },
             {
               "id": "8161",
@@ -395,7 +395,7 @@
               "position": "QB",
               "team": "MIA",
               "valueDynasty": 1194,
-              "age": 27.20406401995082
+              "age": 27.2040787811177
             },
             {
               "id": "2026-3-1",
@@ -412,7 +412,7 @@
               "position": "RB",
               "team": "BUF",
               "valueDynasty": 5384,
-              "age": 26.867308373418766
+              "age": 26.867323134649023
             }
           ],
           "adjValueGive": 5548.96,
@@ -506,7 +506,7 @@
               "position": "RB",
               "team": "CLE",
               "valueDynasty": 4096,
-              "age": 22.774221446656274
+              "age": 22.774236207854845
             },
             {
               "id": "9756",
@@ -515,7 +515,7 @@
               "position": "WR",
               "team": "MIN",
               "valueDynasty": 2106,
-              "age": 24.52644595042082
+              "age": 24.52646071161939
             }
           ],
           "receive": [
@@ -526,7 +526,7 @@
               "position": "QB",
               "team": "BUF",
               "valueDynasty": 5601,
-              "age": 30.21296203532588
+              "age": 30.21297679652445
             }
           ],
           "adjValueGive": 5780.8,
@@ -589,7 +589,7 @@
               "position": "WR",
               "team": "CAR",
               "valueDynasty": 4597,
-              "age": 23.34095655959262
+              "age": 23.340971320791187
             }
           ],
           "receive": [
@@ -600,7 +600,7 @@
               "position": "QB",
               "team": "NYG",
               "valueDynasty": 2801,
-              "age": 23.236918229713286
+              "age": 23.236932990911857
             },
             {
               "id": "4983",
@@ -609,7 +609,7 @@
               "position": "WR",
               "team": "BUF",
               "valueDynasty": 2287,
-              "age": 29.31494697714655
+              "age": 29.314961738345122
             }
           ],
           "adjValueGive": 4866.4,
@@ -672,7 +672,7 @@
               "position": "WR",
               "team": "CAR",
               "valueDynasty": 4597,
-              "age": 23.34095655959262
+              "age": 23.340971320791187
             }
           ],
           "receive": [
@@ -683,7 +683,7 @@
               "position": "RB",
               "team": "TB",
               "valueDynasty": 3413,
-              "age": 23.967924389877556
+              "age": 23.967939151076127
             },
             {
               "id": "6819",
@@ -692,7 +692,7 @@
               "position": "WR",
               "team": "PIT",
               "valueDynasty": 1814,
-              "age": 28.838560940185566
+              "age": 28.838575701384137
             }
           ],
           "adjValueGive": 4774.6,
@@ -769,7 +769,7 @@
               "position": "RB",
               "team": "CLE",
               "valueDynasty": 1320,
-              "age": 21.89537134398687
+              "age": 21.895386105185437
             },
             {
               "id": "2028-3-2",
@@ -784,7 +784,7 @@
               "position": "TE",
               "team": "CAR",
               "valueDynasty": 309,
-              "age": 23.365597216676807
+              "age": 23.36561197787538
             }
           ],
           "receive": [
@@ -795,7 +795,7 @@
               "position": "QB",
               "team": "GB",
               "valueDynasty": 2135,
-              "age": 27.76258558084265
+              "age": 27.76260034204122
             }
           ],
           "adjValueGive": 2249.76,
@@ -858,7 +858,7 @@
               "position": "RB",
               "team": "CLE",
               "valueDynasty": 4096,
-              "age": 22.774221446656274
+              "age": 22.774236207854845
             },
             {
               "id": "12469",
@@ -867,7 +867,7 @@
               "position": "RB",
               "team": "CLE",
               "valueDynasty": 1320,
-              "age": 21.89537134398687
+              "age": 21.895386105185437
             },
             {
               "id": "2028-3-2",
@@ -884,7 +884,7 @@
               "position": "WR",
               "team": "ATL",
               "valueDynasty": 5584,
-              "age": 25.03842404761452
+              "age": 25.03843880881309
             }
           ],
           "adjValueGive": 5737.6,
@@ -964,7 +964,7 @@
               "position": "RB",
               "team": "JAX",
               "valueDynasty": 2746,
-              "age": 23.477849098949225
+              "age": 23.477863860147792
             },
             {
               "id": "5001",
@@ -973,7 +973,7 @@
               "position": "TE",
               "team": "HOU",
               "valueDynasty": 1105,
-              "age": 30.073331645150454
+              "age": 30.073346406349025
             }
           ],
           "receive": [
@@ -984,7 +984,7 @@
               "position": "RB",
               "team": "LAR",
               "valueDynasty": 3493,
-              "age": 25.947390508974067
+              "age": 25.947405270172638
             }
           ],
           "adjValueGive": 3630,
@@ -994,7 +994,7 @@
           "archetype": "consolidate_RB",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.3985008508209449,
+            "total": 0.39850077155799185,
             "myFit": 0.10839384328118758,
             "theirFit": 0.6975185277174717,
             "balance": 0.9931267217630855,
@@ -1047,7 +1047,7 @@
               "position": "QB",
               "team": "NE",
               "valueDynasty": 4697,
-              "age": 23.937808031187416
+              "age": 23.937822792385987
             }
           ],
           "receive": [
@@ -1058,7 +1058,7 @@
               "position": "RB",
               "team": "TB",
               "valueDynasty": 3413,
-              "age": 23.967924389877556
+              "age": 23.967939151076127
             },
             {
               "id": "3163",
@@ -1067,7 +1067,7 @@
               "position": "QB",
               "team": "DET",
               "valueDynasty": 1837,
-              "age": 31.81460474579816
+              "age": 31.81461950699673
             }
           ],
           "adjValueGive": 4889.6,
@@ -1077,7 +1077,7 @@
           "archetype": "tier_down_QB",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.382001616207139,
+            "total": 0.38200116358471004,
             "myFit": 0.10703816297281915,
             "theirFit": 0.3261342490294509,
             "balance": 0.998568390052356,
@@ -1130,7 +1130,7 @@
               "position": "WR",
               "team": "TB",
               "valueDynasty": 1461,
-              "age": 24.666076340564555
+              "age": 24.666091101763126
             },
             {
               "id": "5001",
@@ -1139,7 +1139,7 @@
               "position": "TE",
               "team": "HOU",
               "valueDynasty": 1105,
-              "age": 30.073331645150454
+              "age": 30.073346406349025
             }
           ],
           "receive": [
@@ -1150,7 +1150,7 @@
               "position": "WR",
               "team": "IND",
               "valueDynasty": 2190,
-              "age": 24.9864048826907
+              "age": 24.98641964388927
             }
           ],
           "adjValueGive": 2345,
@@ -1213,7 +1213,7 @@
               "position": "WR",
               "team": "PHI",
               "valueDynasty": 3750,
-              "age": 27.729731371365375
+              "age": 27.729746132563946
             }
           ],
           "receive": [
@@ -1224,7 +1224,7 @@
               "position": "WR",
               "team": "JAX",
               "valueDynasty": 2551,
-              "age": 24.381339858417622
+              "age": 24.381354619584506
             },
             {
               "id": "5967",
@@ -1233,7 +1233,7 @@
               "position": "RB",
               "team": "TEN",
               "valueDynasty": 1656,
-              "age": 29.271141364235557
+              "age": 29.271156125402438
             }
           ],
           "adjValueGive": 3929.85,
@@ -1296,7 +1296,7 @@
               "position": "QB",
               "team": "NE",
               "valueDynasty": 4697,
-              "age": 23.937808031187416
+              "age": 23.937822792385987
             }
           ],
           "receive": [
@@ -1307,7 +1307,7 @@
               "position": "WR",
               "team": "JAX",
               "valueDynasty": 3203,
-              "age": 23.83103185052095
+              "age": 23.831046611719522
             },
             {
               "id": "3163",
@@ -1316,7 +1316,7 @@
               "position": "QB",
               "team": "DET",
               "valueDynasty": 1837,
-              "age": 31.81460474579816
+              "age": 31.81461950699673
             }
           ],
           "adjValueGive": 4921.1,
@@ -1326,7 +1326,7 @@
           "archetype": "tier_down_QB",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.30073433653966486,
+            "total": 0.3007340635684672,
             "myFit": 0.0005092331680229124,
             "theirFit": 0.28508933555185806,
             "balance": 0.9495031598626323,
@@ -1396,7 +1396,7 @@
               "position": "QB",
               "team": "BAL",
               "valueDynasty": 3909,
-              "age": 29.580518503466678
+              "age": 29.58053326466525
             }
           ],
           "receive": [
@@ -1407,7 +1407,7 @@
               "position": "WR",
               "team": "KC",
               "valueDynasty": 3728,
-              "age": 26.292359708121023
+              "age": 26.29237446935128
             },
             {
               "id": "7591",
@@ -1416,7 +1416,7 @@
               "position": "QB",
               "team": "KC",
               "valueDynasty": 450,
-              "age": 27.425829933993715
+              "age": 27.425844695223972
             }
           ],
           "adjValueGive": 3936.15,
@@ -1479,7 +1479,7 @@
               "position": "TE",
               "team": "IND",
               "valueDynasty": 4240,
-              "age": 24.206117408326364
+              "age": 24.20613216952493
             }
           ],
           "receive": [
@@ -1490,7 +1490,7 @@
               "position": "WR",
               "team": "CHI",
               "valueDynasty": 3772,
-              "age": 22.65375601205415
+              "age": 22.65377077325272
             },
             {
               "id": "9482",
@@ -1499,7 +1499,7 @@
               "position": "TE",
               "team": "LV",
               "valueDynasty": 626,
-              "age": 25.087705361814585
+              "age": 25.087720123013156
             }
           ],
           "adjValueGive": 4310.2,
@@ -1562,7 +1562,7 @@
               "position": "TE",
               "team": "IND",
               "valueDynasty": 4240,
-              "age": 24.206117408326364
+              "age": 24.20613216952493
             }
           ],
           "receive": [
@@ -1573,7 +1573,7 @@
               "position": "RB",
               "team": "CLE",
               "valueDynasty": 4096,
-              "age": 22.774221446656274
+              "age": 22.774236207854845
             }
           ],
           "adjValueGive": 4261.6,
@@ -1583,7 +1583,7 @@
           "archetype": "need_fill_RB",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.4655492899509921,
+            "total": 0.4655499767652456,
             "myFit": 0.11680951061840632,
             "theirFit": 0.46464341260863834,
             "balance": 0.9611413553594893,
@@ -1636,7 +1636,7 @@
               "position": "QB",
               "team": "BAL",
               "valueDynasty": 3909,
-              "age": 29.580518503466678
+              "age": 29.58053326466525
             }
           ],
           "receive": [
@@ -1647,7 +1647,7 @@
               "position": "WR",
               "team": "DEN",
               "valueDynasty": 3239,
-              "age": 27.699615012706925
+              "age": 27.699629773937183
             },
             {
               "id": "4017",
@@ -1656,7 +1656,7 @@
               "position": "QB",
               "team": "CLE",
               "valueDynasty": 681,
-              "age": 30.89742473207722
+              "age": 30.897439493307477
             }
           ],
           "adjValueGive": 4009.5,
@@ -1666,7 +1666,7 @@
           "archetype": "tier_down_QB",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.42569192888261426,
+            "total": 0.4256920288853702,
             "myFit": 0.22235385367623073,
             "theirFit": 0.12279421233997365,
             "balance": 0.94370869185684,
@@ -1719,7 +1719,7 @@
               "position": "TE",
               "team": "TEN",
               "valueDynasty": 1257,
-              "age": 23.91864307567749
+              "age": 23.91865783687606
             },
             {
               "id": "3214",
@@ -1728,7 +1728,7 @@
               "position": "TE",
               "team": "NE",
               "valueDynasty": 1219,
-              "age": 31.666760803261337
+              "age": 31.666775564459908
             }
           ],
           "receive": [
@@ -1739,7 +1739,7 @@
               "position": "RB",
               "team": "PIT",
               "valueDynasty": 2054,
-              "age": 27.76532343162978
+              "age": 27.765338192828352
             }
           ],
           "adjValueGive": 2232.2,
@@ -1749,7 +1749,7 @@
           "archetype": "need_fill_RB",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.4045678869488928,
+            "total": 0.4045677779547065,
             "myFit": 0.3087628213652656,
             "theirFit": 0.13702685359683203,
             "balance": 0.9737254726279009,
@@ -1819,7 +1819,7 @@
               "position": "RB",
               "team": "SF",
               "valueDynasty": 4791,
-              "age": 30.166418571912946
+              "age": 30.166433333111517
             }
           ],
           "receive": [
@@ -1830,7 +1830,7 @@
               "position": "WR",
               "team": "TB",
               "valueDynasty": 4786,
-              "age": 23.81460474579816
+              "age": 23.81461950699673
             }
           ],
           "adjValueGive": 4791.75,
@@ -1893,7 +1893,7 @@
               "position": "WR",
               "team": "ATL",
               "valueDynasty": 5584,
-              "age": 25.03842404761452
+              "age": 25.03843880881309
             }
           ],
           "receive": [
@@ -1904,7 +1904,7 @@
               "position": "RB",
               "team": "TB",
               "valueDynasty": 3413,
-              "age": 23.967924389877556
+              "age": 23.967939151076127
             },
             {
               "id": "11631",
@@ -1913,7 +1913,7 @@
               "position": "WR",
               "team": "JAX",
               "valueDynasty": 3203,
-              "age": 23.83103185052095
+              "age": 23.831046611719522
             }
           ],
           "adjValueGive": 5909.65,
@@ -1976,7 +1976,7 @@
               "position": "RB",
               "team": "SF",
               "valueDynasty": 4791,
-              "age": 30.166418571912946
+              "age": 30.166433333111517
             }
           ],
           "receive": [
@@ -1987,7 +1987,7 @@
               "position": "WR",
               "team": "KC",
               "valueDynasty": 3728,
-              "age": 26.292359708121023
+              "age": 26.29237446935128
             },
             {
               "id": "6806",
@@ -1996,7 +1996,7 @@
               "position": "RB",
               "team": "DEN",
               "valueDynasty": 1757,
-              "age": 27.639382295390018
+              "age": 27.639397056620275
             }
           ],
           "adjValueGive": 4950.45,
@@ -2059,7 +2059,7 @@
               "position": "WR",
               "team": "NYJ",
               "valueDynasty": 4004,
-              "age": 26.043215286492003
+              "age": 26.04323004769057
             },
             {
               "id": "8136",
@@ -2068,7 +2068,7 @@
               "position": "RB",
               "team": "WAS",
               "valueDynasty": 1607,
-              "age": 27.568198174924582
+              "age": 27.568212936123153
             },
             {
               "id": "2026-3-5",
@@ -2085,7 +2085,7 @@
               "position": "RB",
               "team": "IND",
               "valueDynasty": 5763,
-              "age": 27.549033219414657
+              "age": 27.549047980613228
             }
           ],
           "adjValueGive": 5817.6,
@@ -2162,7 +2162,7 @@
               "position": "RB",
               "team": "KC",
               "valueDynasty": 4777,
-              "age": 25.796808715650112
+              "age": 25.796823476848683
             },
             {
               "id": "4033",
@@ -2171,7 +2171,7 @@
               "position": "TE",
               "team": "LAC",
               "valueDynasty": 993,
-              "age": 30.07606949593759
+              "age": 30.076084257136156
             },
             {
               "id": "2026-3-5",
@@ -2188,7 +2188,7 @@
               "position": "WR",
               "team": "DAL",
               "valueDynasty": 6335,
-              "age": 27.33274300726291
+              "age": 27.33275776846148
             }
           ],
           "adjValueGive": 6099.4,
@@ -2282,7 +2282,7 @@
               "position": "RB",
               "team": "NYJ",
               "valueDynasty": 4095,
-              "age": 25.186267990119653
+              "age": 25.186282751349914
             },
             {
               "id": "12493",
@@ -2291,7 +2291,7 @@
               "position": "TE",
               "team": "LAC",
               "valueDynasty": 1688,
-              "age": 23.11919064583492
+              "age": 23.119205407033487
             }
           ],
           "receive": [
@@ -2302,7 +2302,7 @@
               "position": "WR",
               "team": "ATL",
               "valueDynasty": 5584,
-              "age": 25.03842404761452
+              "age": 25.03843880881309
             }
           ],
           "adjValueGive": 5445.4,
@@ -2365,7 +2365,7 @@
               "position": "WR",
               "team": "NO",
               "valueDynasty": 3826,
-              "age": 26.111661556170304
+              "age": 26.111676317368875
             },
             {
               "id": "12493",
@@ -2374,7 +2374,7 @@
               "position": "TE",
               "team": "LAC",
               "valueDynasty": 1688,
-              "age": 23.11919064583492
+              "age": 23.119205407033487
             },
             {
               "id": "2028-3-6",
@@ -2391,7 +2391,7 @@
               "position": "WR",
               "team": "ATL",
               "valueDynasty": 5584,
-              "age": 25.03842404761452
+              "age": 25.03843880881309
             }
           ],
           "adjValueGive": 5738.32,
@@ -2454,7 +2454,7 @@
               "position": "WR",
               "team": "DET",
               "valueDynasty": 7302,
-              "age": 26.787910700591933
+              "age": 26.787925461790504
             }
           ],
           "receive": [
@@ -2465,7 +2465,7 @@
               "position": "WR",
               "team": "MIN",
               "valueDynasty": 6807,
-              "age": 27.143831302950794
+              "age": 27.143846064149365
             },
             {
               "id": "9482",
@@ -2474,7 +2474,7 @@
               "position": "TE",
               "team": "LV",
               "valueDynasty": 626,
-              "age": 25.087705361814585
+              "age": 25.087720123013156
             }
           ],
           "adjValueGive": 7376.25,
@@ -2537,7 +2537,7 @@
               "position": "RB",
               "team": "IND",
               "valueDynasty": 5763,
-              "age": 27.549033219414657
+              "age": 27.549047980613228
             }
           ],
           "receive": [
@@ -2548,7 +2548,7 @@
               "position": "RB",
               "team": "NE",
               "valueDynasty": 4076,
-              "age": 23.792701939184223
+              "age": 23.792716700351104
             },
             {
               "id": "9487",
@@ -2557,7 +2557,7 @@
               "position": "WR",
               "team": "JAX",
               "valueDynasty": 2551,
-              "age": 24.381339858417622
+              "age": 24.381354619584506
             }
           ],
           "adjValueGive": 6016.05,
@@ -2634,7 +2634,7 @@
               "position": "TE",
               "team": "LAC",
               "valueDynasty": 1688,
-              "age": 23.11919064583492
+              "age": 23.119205407033487
             },
             {
               "id": "6768",
@@ -2643,7 +2643,7 @@
               "position": "QB",
               "team": "ATL",
               "valueDynasty": 885,
-              "age": 28.433359023658326
+              "age": 28.433373784856897
             }
           ],
           "receive": [
@@ -2654,7 +2654,7 @@
               "position": "WR",
               "team": "IND",
               "valueDynasty": 2190,
-              "age": 24.9864048826907
+              "age": 24.98641964388927
             }
           ],
           "adjValueGive": 2396,
@@ -2748,7 +2748,7 @@
               "position": "RB",
               "team": "PIT",
               "valueDynasty": 1815,
-              "age": 28.148622541796588
+              "age": 28.148637303026845
             },
             {
               "id": "9480",
@@ -2757,7 +2757,7 @@
               "position": "TE",
               "team": "JAX",
               "valueDynasty": 1418,
-              "age": 25.61063486212513
+              "age": 25.61064962335539
             }
           ],
           "receive": [
@@ -2768,7 +2768,7 @@
               "position": "QB",
               "team": "PHI",
               "valueDynasty": 2875,
-              "age": 28.00077859932314
+              "age": 28.000793360521712
             }
           ],
           "adjValueGive": 2949.4,
@@ -2845,7 +2845,7 @@
               "position": "WR",
               "team": "GB",
               "valueDynasty": 2213,
-              "age": 27.23965608046873
+              "age": 27.239670841698988
             },
             {
               "id": "7021",
@@ -2854,7 +2854,7 @@
               "position": "RB",
               "team": "PIT",
               "valueDynasty": 1815,
-              "age": 28.148622541796588
+              "age": 28.148637303026845
             }
           ],
           "receive": [
@@ -2865,7 +2865,7 @@
               "position": "QB",
               "team": "BAL",
               "valueDynasty": 3909,
-              "age": 29.580518503466678
+              "age": 29.58053326466525
             }
           ],
           "adjValueGive": 3665,
@@ -2875,7 +2875,7 @@
           "archetype": "consolidate_QB",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.4662330790823824,
+            "total": 0.4662331225127892,
             "myFit": 0.7121417642671347,
             "theirFit": 0.8560546404157521,
             "balance": 0.880290147475621,
@@ -2928,7 +2928,7 @@
               "position": "TE",
               "team": "SF",
               "valueDynasty": 1962,
-              "age": 32.82760953700535
+              "age": 32.827624298235605
             },
             {
               "id": "1166",
@@ -2937,7 +2937,7 @@
               "position": "QB",
               "team": "LV",
               "valueDynasty": 645,
-              "age": 37.966555464452306
+              "age": 37.96657022568256
             }
           ],
           "receive": [
@@ -2948,7 +2948,7 @@
               "position": "QB",
               "team": "SF",
               "valueDynasty": 2470,
-              "age": 26.612688250247167
+              "age": 26.61270301144574
             }
           ],
           "adjValueGive": 2478,
@@ -3025,7 +3025,7 @@
               "position": "WR",
               "team": "GB",
               "valueDynasty": 2213,
-              "age": 27.23965608046873
+              "age": 27.239670841698988
             },
             {
               "id": "4217",
@@ -3034,7 +3034,7 @@
               "position": "TE",
               "team": "SF",
               "valueDynasty": 1962,
-              "age": 32.82760953700535
+              "age": 32.827624298235605
             }
           ],
           "receive": [
@@ -3045,7 +3045,7 @@
               "position": "QB",
               "team": "CHI",
               "valueDynasty": 3727,
-              "age": 24.71809550555175
+              "age": 24.718110266750323
             }
           ],
           "adjValueGive": 3782.6000000000004,
@@ -3108,7 +3108,7 @@
               "position": "WR",
               "team": "NE",
               "valueDynasty": 3800,
-              "age": 29.104132466505693
+              "age": 29.10414722773595
             }
           ],
           "receive": [
@@ -3119,7 +3119,7 @@
               "position": "WR",
               "team": "BUF",
               "valueDynasty": 2287,
-              "age": 29.31494697714655
+              "age": 29.314961738345122
             },
             {
               "id": "12522",
@@ -3128,7 +3128,7 @@
               "position": "QB",
               "team": "TEN",
               "valueDynasty": 2013,
-              "age": 24.20337955757092
+              "age": 24.203394318769487
             }
           ],
           "adjValueGive": 4026.95,
@@ -3208,7 +3208,7 @@
               "position": "RB",
               "team": "MIA",
               "valueDynasty": 6119,
-              "age": 24.81665813385682
+              "age": 24.81667289508708
             }
           ],
           "receive": [
@@ -3219,7 +3219,7 @@
               "position": "RB",
               "team": "NE",
               "valueDynasty": 4076,
-              "age": 23.792701939184223
+              "age": 23.792716700351104
             },
             {
               "id": "9487",
@@ -3228,7 +3228,7 @@
               "position": "WR",
               "team": "JAX",
               "valueDynasty": 2551,
-              "age": 24.381339858417622
+              "age": 24.381354619584506
             }
           ],
           "adjValueGive": 6425.45,
@@ -3277,7 +3277,7 @@
               "position": "WR",
               "team": "JAX",
               "valueDynasty": 1829,
-              "age": 23.223228975745936
+              "age": 23.223243736976197
             }
           ],
           "receive": [
@@ -3334,7 +3334,7 @@
               "position": "WR",
               "team": "JAX",
               "valueDynasty": 1829,
-              "age": 23.223228975745936
+              "age": 23.223243736976197
             }
           ],
           "receive": [
@@ -3397,7 +3397,7 @@
               "position": "RB",
               "team": "MIA",
               "valueDynasty": 6119,
-              "age": 24.81665813385682
+              "age": 24.81667289508708
             }
           ],
           "receive": [
@@ -3408,7 +3408,7 @@
               "position": "RB",
               "team": "KC",
               "valueDynasty": 4777,
-              "age": 25.796808715650112
+              "age": 25.796823476848683
             },
             {
               "id": "2027-2-5",
@@ -3424,7 +3424,7 @@
           "archetype": "tier_down_RB",
           "fairness": "SLIGHT_OVERPAY",
           "scores": {
-            "total": 0.2467824999421418,
+            "total": 0.24678241414246202,
             "myFit": 0.03153184696774078,
             "theirFit": 0.01605988128409168,
             "balance": 0.918469060012974,
@@ -3477,7 +3477,7 @@
               "position": "QB",
               "team": "JAX",
               "valueDynasty": 2792,
-              "age": 26.837192014760312
+              "age": 26.83720677599057
             }
           ],
           "receive": [
@@ -3488,7 +3488,7 @@
               "position": "QB",
               "team": "DET",
               "valueDynasty": 1837,
-              "age": 31.81460474579816
+              "age": 31.81461950699673
             },
             {
               "id": "6819",
@@ -3497,7 +3497,7 @@
               "position": "WR",
               "team": "PIT",
               "valueDynasty": 1814,
-              "age": 28.838560940185566
+              "age": 28.838575701384137
             }
           ],
           "adjValueGive": 2935.25,
@@ -3577,7 +3577,7 @@
               "position": "WR",
               "team": "KC",
               "valueDynasty": 3728,
-              "age": 26.292359708121023
+              "age": 26.29237446935128
             },
             {
               "id": "6806",
@@ -3586,7 +3586,7 @@
               "position": "RB",
               "team": "DEN",
               "valueDynasty": 1757,
-              "age": 27.639382295390018
+              "age": 27.639397056620275
             }
           ],
           "receive": [
@@ -3597,7 +3597,7 @@
               "position": "RB",
               "team": "SF",
               "valueDynasty": 4791,
-              "age": 30.166418571912946
+              "age": 30.166433333111517
             }
           ],
           "adjValueGive": 5133.6,
@@ -3674,7 +3674,7 @@
               "position": "WR",
               "team": "DEN",
               "valueDynasty": 3239,
-              "age": 27.699615012706925
+              "age": 27.699629773937183
             },
             {
               "id": "2028-3-9",
@@ -3689,7 +3689,7 @@
               "position": "QB",
               "team": "KC",
               "valueDynasty": 450,
-              "age": 27.425829933993715
+              "age": 27.425844695223972
             }
           ],
           "receive": [
@@ -3700,7 +3700,7 @@
               "position": "RB",
               "team": "PHI",
               "valueDynasty": 4059,
-              "age": 29.490169427523007
+              "age": 29.490184188721575
             }
           ],
           "adjValueGive": 4229.400000000001,
@@ -3763,7 +3763,7 @@
               "position": "WR",
               "team": "DEN",
               "valueDynasty": 3239,
-              "age": 27.699615012706925
+              "age": 27.699629773937183
             },
             {
               "id": "6806",
@@ -3772,7 +3772,7 @@
               "position": "RB",
               "team": "DEN",
               "valueDynasty": 1757,
-              "age": 27.639382295390018
+              "age": 27.639397056620275
             }
           ],
           "receive": [
@@ -3783,7 +3783,7 @@
               "position": "RB",
               "team": "SF",
               "valueDynasty": 4791,
-              "age": 30.166418571912946
+              "age": 30.166433333111517
             }
           ],
           "adjValueGive": 4644.6,
@@ -3832,7 +3832,7 @@
               "position": "RB",
               "team": "GB",
               "valueDynasty": 3011,
-              "age": 28.485378188613836
+              "age": 28.485392949844094
             },
             {
               "id": "6806",
@@ -3841,7 +3841,7 @@
               "position": "RB",
               "team": "DEN",
               "valueDynasty": 1757,
-              "age": 27.639382295390018
+              "age": 27.639397056620275
             }
           ],
           "receive": [
@@ -3852,7 +3852,7 @@
               "position": "RB",
               "team": "PHI",
               "valueDynasty": 4059,
-              "age": 29.490169427523007
+              "age": 29.490184188721575
             }
           ],
           "adjValueGive": 4416.6,
@@ -3915,7 +3915,7 @@
               "position": "WR",
               "team": "KC",
               "valueDynasty": 3728,
-              "age": 26.292359708121023
+              "age": 26.29237446935128
             },
             {
               "id": "6806",
@@ -3924,7 +3924,7 @@
               "position": "RB",
               "team": "DEN",
               "valueDynasty": 1757,
-              "age": 27.639382295390018
+              "age": 27.639397056620275
             },
             {
               "id": "2028-3-9",
@@ -3941,7 +3941,7 @@
               "position": "RB",
               "team": "IND",
               "valueDynasty": 5763,
-              "age": 27.549033219414657
+              "age": 27.549047980613228
             }
           ],
           "adjValueGive": 5695.52,
@@ -4027,7 +4027,7 @@
               "position": "RB",
               "team": "DET",
               "valueDynasty": 10894,
-              "age": 24.384077709521637
+              "age": 24.38409247072021
             }
           ],
           "adjValueGive": 10895.44,
@@ -4037,7 +4037,7 @@
           "archetype": "capital_convert_picks_to_production",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.4042418384840784,
+            "total": 0.4042416479165896,
             "myFit": 0.7973580730119656,
             "theirFit": 0.1220472361587915,
             "balance": 0.94807260576739,
@@ -4104,7 +4104,7 @@
               "position": "QB",
               "team": "GB",
               "valueDynasty": 2135,
-              "age": 27.76258558084265
+              "age": 27.76260034204122
             },
             {
               "id": "8119",
@@ -4113,7 +4113,7 @@
               "position": "WR",
               "team": "ATL",
               "valueDynasty": 284,
-              "age": 26.377233082553808
+              "age": 26.377247843752375
             }
           ],
           "receive": [
@@ -4124,7 +4124,7 @@
               "position": "RB",
               "team": "CHI",
               "valueDynasty": 2456,
-              "age": 27.56272247335032
+              "age": 27.562737234580577
             }
           ],
           "adjValueGive": 2362.2,
@@ -4134,7 +4134,7 @@
           "archetype": "need_fill_RB",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.40067852046149005,
+            "total": 0.40067843950829657,
             "myFit": 0.21837929169940085,
             "theirFit": 0.3029719366250694,
             "balance": 0.94331409859633,
@@ -4193,7 +4193,7 @@
               "position": "RB",
               "team": "ATL",
               "valueDynasty": 11174,
-              "age": 24.518232398091108
+              "age": 24.51824715928968
             }
           ],
           "adjValueGive": 11122,
@@ -4203,7 +4203,7 @@
           "archetype": "capital_convert_picks_to_production",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.3743113717395879,
+            "total": 0.37431117627409133,
             "myFit": 0.7953369410473758,
             "theirFit": 0.006451335960603848,
             "balance": 0.9414094902744155,
@@ -4250,7 +4250,7 @@
               "position": "TE",
               "team": "IND",
               "valueDynasty": 4240,
-              "age": 24.206117408326364
+              "age": 24.20613216952493
             }
           ],
           "adjValueGive": 4218,
@@ -4260,7 +4260,7 @@
           "archetype": "capital_convert_picks_to_production",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.5201975140576052,
+            "total": 0.5201972851195207,
             "myFit": 1,
             "theirFit": -0.20442545939176487,
             "balance": 0.9940376593688873,
@@ -4325,7 +4325,7 @@
               "position": "QB",
               "team": "PIT",
               "valueDynasty": 214,
-              "age": 24.86867729884402
+              "age": 24.868692060042587
             }
           ],
           "receive": [
@@ -4336,7 +4336,7 @@
               "position": "RB",
               "team": "NYG",
               "valueDynasty": 3635,
-              "age": 24.501805293368317
+              "age": 24.50182005456689
             }
           ],
           "adjValueGive": 3613.5600000000004,
@@ -4346,7 +4346,7 @@
           "archetype": "need_fill_RB",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.499740229635645,
+            "total": 0.49974016604900817,
             "myFit": 0.930912265281135,
             "theirFit": -0.17201563298047862,
             "balance": 0.938928441511199,
@@ -4416,7 +4416,7 @@
               "position": "WR",
               "team": "ARI",
               "valueDynasty": 3141,
-              "age": 23.989827196174613
+              "age": 23.989841957373184
             },
             {
               "id": "9504",
@@ -4425,7 +4425,7 @@
               "position": "WR",
               "team": "NE",
               "valueDynasty": 1168,
-              "age": 24.252660871739295
+              "age": 24.252675632937866
             }
           ],
           "receive": [
@@ -4436,7 +4436,7 @@
               "position": "TE",
               "team": "IND",
               "valueDynasty": 4240,
-              "age": 24.206117408326364
+              "age": 24.20613216952493
             }
           ],
           "adjValueGive": 4075.4,
@@ -4513,7 +4513,7 @@
               "position": "WR",
               "team": "CHI",
               "valueDynasty": 3772,
-              "age": 22.65375601205415
+              "age": 22.65377077325272
             },
             {
               "id": "96",
@@ -4522,7 +4522,7 @@
               "position": "QB",
               "team": "PIT",
               "valueDynasty": 724,
-              "age": 42.68113451992547
+              "age": 42.68114928112404
             }
           ],
           "receive": [
@@ -4533,7 +4533,7 @@
               "position": "TE",
               "team": "IND",
               "valueDynasty": 4240,
-              "age": 24.206117408326364
+              "age": 24.20613216952493
             }
           ],
           "adjValueGive": 4351.2,
@@ -4596,7 +4596,7 @@
               "position": "WR",
               "team": "DET",
               "valueDynasty": 2832,
-              "age": 25.36696614210206
+              "age": 25.366980903300632
             }
           ],
           "receive": [
@@ -4607,7 +4607,7 @@
               "position": "TE",
               "team": "CLE",
               "valueDynasty": 2976,
-              "age": 22.048690988066266
+              "age": 22.048705749264837
             }
           ],
           "adjValueGive": 2832,
@@ -4617,7 +4617,7 @@
           "archetype": "need_fill_TE",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.568596032995664,
+            "total": 0.5685959983909632,
             "myFit": 1,
             "theirFit": 0.08761667526818268,
             "balance": 0.944755804643715,
@@ -4670,7 +4670,7 @@
               "position": "RB",
               "team": "LAR",
               "valueDynasty": 3493,
-              "age": 25.947390508974067
+              "age": 25.947405270172638
             }
           ],
           "receive": [
@@ -4681,7 +4681,7 @@
               "position": "RB",
               "team": "JAX",
               "valueDynasty": 2746,
-              "age": 23.477849098949225
+              "age": 23.477863860147792
             },
             {
               "id": "5001",
@@ -4690,7 +4690,7 @@
               "position": "TE",
               "team": "HOU",
               "valueDynasty": 1105,
-              "age": 30.073331645150454
+              "age": 30.073346406349025
             }
           ],
           "adjValueGive": 3605.05,
@@ -4700,7 +4700,7 @@
           "archetype": "tier_down_RB",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.44626529786968566,
+            "total": 0.4462652340630085,
             "myFit": 0.6975185277174717,
             "theirFit": 0.10839384328118758,
             "balance": 0.9931267217630855,
@@ -4767,7 +4767,7 @@
               "position": "WR",
               "team": "CHI",
               "valueDynasty": 3772,
-              "age": 22.65375601205415
+              "age": 22.65377077325272
             },
             {
               "id": "2028-3-11",
@@ -4782,7 +4782,7 @@
               "position": "QB",
               "team": "PIT",
               "valueDynasty": 724,
-              "age": 42.68113451992547
+              "age": 42.68114928112404
             }
           ],
           "receive": [
@@ -4793,7 +4793,7 @@
               "position": "RB",
               "team": "SF",
               "valueDynasty": 4791,
-              "age": 30.166418571912946
+              "age": 30.166433333111517
             }
           ],
           "adjValueGive": 4937.759999999999,
@@ -4873,7 +4873,7 @@
               "position": "QB",
               "team": "LAC",
               "valueDynasty": 3172,
-              "age": 28.411456217392956
+              "age": 28.411470978591527
             }
           ],
           "receive": [
@@ -4884,7 +4884,7 @@
               "position": "QB",
               "team": "DET",
               "valueDynasty": 1837,
-              "age": 31.81460474579816
+              "age": 31.81461950699673
             },
             {
               "id": "6819",
@@ -4893,7 +4893,7 @@
               "position": "WR",
               "team": "PIT",
               "valueDynasty": 1814,
-              "age": 28.838560940185566
+              "age": 28.838575701384137
             }
           ],
           "adjValueGive": 3372.25,
@@ -4970,7 +4970,7 @@
               "position": "WR",
               "team": "CIN",
               "valueDynasty": 3400,
-              "age": 27.551771070233478
+              "age": 27.55178583143205
             },
             {
               "id": "3257",
@@ -4979,7 +4979,7 @@
               "position": "QB",
               "team": "ARI",
               "valueDynasty": 793,
-              "age": 33.654440474750935
+              "age": 33.6544552359495
             }
           ],
           "receive": [
@@ -4990,7 +4990,7 @@
               "position": "RB",
               "team": "PHI",
               "valueDynasty": 4059,
-              "age": 29.490169427523007
+              "age": 29.490184188721575
             }
           ],
           "adjValueGive": 4034.4,
@@ -5053,7 +5053,7 @@
               "position": "TE",
               "team": "GB",
               "valueDynasty": 3328,
-              "age": 25.75847880466195
+              "age": 25.758493565860523
             }
           ],
           "receive": [
@@ -5064,7 +5064,7 @@
               "position": "RB",
               "team": "JAX",
               "valueDynasty": 2746,
-              "age": 23.477849098949225
+              "age": 23.477863860147792
             },
             {
               "id": "5001",
@@ -5073,7 +5073,7 @@
               "position": "TE",
               "team": "HOU",
               "valueDynasty": 1105,
-              "age": 30.073331645150454
+              "age": 30.073346406349025
             }
           ],
           "adjValueGive": 3415.3,
@@ -5083,7 +5083,7 @@
           "archetype": "tier_down_TE",
           "fairness": "SLIGHT_UNDERPAY",
           "scores": {
-            "total": 0.3393662657077707,
+            "total": 0.33936631795736333,
             "myFit": 0.3569772355331973,
             "theirFit": 0.0022893116121870554,
             "balance": 0.9408539944903582,
@@ -5136,7 +5136,7 @@
               "position": "WR",
               "team": "CIN",
               "valueDynasty": 3400,
-              "age": 27.551771070233478
+              "age": 27.55178583143205
             }
           ],
           "receive": [
@@ -5147,7 +5147,7 @@
               "position": "RB",
               "team": "DAL",
               "valueDynasty": 3295,
-              "age": 26.284146155791316
+              "age": 26.284160916989887
             }
           ],
           "adjValueGive": 3415.75,
@@ -5196,7 +5196,7 @@
               "position": "WR",
               "team": "KC",
               "valueDynasty": 1751,
-              "age": 23.2807238423074
+              "age": 23.28073860350597
             }
           ],
           "receive": [
@@ -5290,7 +5290,7 @@
               "position": "QB",
               "team": "CHI",
               "valueDynasty": 3727,
-              "age": 24.71809550555175
+              "age": 24.718110266750323
             }
           ],
           "receive": [
@@ -5301,7 +5301,7 @@
               "position": "WR",
               "team": "NE",
               "valueDynasty": 3800,
-              "age": 29.104132466505693
+              "age": 29.10414722773595
             }
           ],
           "adjValueGive": 3727,
@@ -5378,7 +5378,7 @@
               "position": "QB",
               "team": "CHI",
               "valueDynasty": 3727,
-              "age": 24.71809550555175
+              "age": 24.718110266750323
             },
             {
               "id": "8172",
@@ -5387,7 +5387,7 @@
               "position": "TE",
               "team": "MIA",
               "valueDynasty": 1088,
-              "age": 26.36628167940528
+              "age": 26.366296440603847
             }
           ],
           "receive": [
@@ -5398,7 +5398,7 @@
               "position": "WR",
               "team": "CAR",
               "valueDynasty": 4597,
-              "age": 23.34095655959262
+              "age": 23.340971320791187
             }
           ],
           "adjValueGive": 4597.4,
@@ -5461,7 +5461,7 @@
               "position": "WR",
               "team": "JAX",
               "valueDynasty": 1829,
-              "age": 23.223228975745936
+              "age": 23.223243736976197
             }
           ],
           "adjValueGive": 1822.8000000000002,
@@ -5471,7 +5471,7 @@
           "archetype": "need_fill_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.5144223311552418,
+            "total": 0.5144223133871586,
             "myFit": 0.6260376119653035,
             "theirFit": 0.02397725841797194,
             "balance": 0.9405330099842626,
@@ -5530,7 +5530,7 @@
               "position": "QB",
               "team": "ATL",
               "valueDynasty": 720,
-              "age": 26.248554095558596
+              "age": 26.248568856757167
             }
           ],
           "receive": [
@@ -5541,7 +5541,7 @@
               "position": "WR",
               "team": "BUF",
               "valueDynasty": 1243,
-              "age": 23.225966826564758
+              "age": 23.22598158776333
             }
           ],
           "adjValueGive": 1338,
@@ -5551,7 +5551,7 @@
           "archetype": "need_fill_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.3722403270170247,
+            "total": 0.3722403149417486,
             "myFit": 0.005774316161925859,
             "theirFit": -0.004874792515297207,
             "balance": 0.9829222720478327,
@@ -5598,7 +5598,7 @@
               "position": "WR",
               "team": "BUF",
               "valueDynasty": 1243,
-              "age": 23.225966826564758
+              "age": 23.22598158776333
             }
           ],
           "adjValueGive": 1133,
@@ -5692,7 +5692,7 @@
               "position": "RB",
               "team": "HOU",
               "valueDynasty": 2448,
-              "age": 29.167103034641418
+              "age": 29.16711779583999
             },
             {
               "id": "12522",
@@ -5701,7 +5701,7 @@
               "position": "QB",
               "team": "TEN",
               "valueDynasty": 2013,
-              "age": 24.20337955757092
+              "age": 24.203394318769487
             }
           ],
           "receive": [
@@ -5712,7 +5712,7 @@
               "position": "WR",
               "team": "NE",
               "valueDynasty": 3800,
-              "age": 29.104132466505693
+              "age": 29.10414722773595
             }
           ],
           "adjValueGive": 4058.4,
@@ -5789,7 +5789,7 @@
               "position": "WR",
               "team": "TB",
               "valueDynasty": 4786,
-              "age": 23.81460474579816
+              "age": 23.81461950699673
             },
             {
               "id": "12522",
@@ -5798,7 +5798,7 @@
               "position": "QB",
               "team": "TEN",
               "valueDynasty": 2013,
-              "age": 24.20337955757092
+              "age": 24.203394318769487
             },
             {
               "id": "2026-3-12",
@@ -5815,7 +5815,7 @@
               "position": "RB",
               "team": "LAC",
               "valueDynasty": 6808,
-              "age": 23.39571357533526
+              "age": 23.39572833653383
             }
           ],
           "adjValueGive": 6960.24,
@@ -5878,7 +5878,7 @@
               "position": "RB",
               "team": "PHI",
               "valueDynasty": 4059,
-              "age": 29.490169427523007
+              "age": 29.490184188721575
             }
           ],
           "receive": [
@@ -5889,7 +5889,7 @@
               "position": "RB",
               "team": "NO",
               "valueDynasty": 2861,
-              "age": 27.52986826390473
+              "age": 27.529883025103302
             },
             {
               "id": "12493",
@@ -5898,7 +5898,7 @@
               "position": "TE",
               "team": "LAC",
               "valueDynasty": 1688,
-              "age": 23.11919064583492
+              "age": 23.119205407033487
             }
           ],
           "adjValueGive": 4238.7,
@@ -5975,7 +5975,7 @@
               "position": "QB",
               "team": "NYG",
               "valueDynasty": 2801,
-              "age": 23.236918229713286
+              "age": 23.236932990911857
             },
             {
               "id": "5892",
@@ -5984,7 +5984,7 @@
               "position": "RB",
               "team": "HOU",
               "valueDynasty": 2448,
-              "age": 29.167103034641418
+              "age": 29.16711779583999
             }
           ],
           "receive": [
@@ -5995,7 +5995,7 @@
               "position": "WR",
               "team": "CAR",
               "valueDynasty": 4597,
-              "age": 23.34095655959262
+              "age": 23.340971320791187
             }
           ],
           "adjValueGive": 4759.4,
@@ -6058,7 +6058,7 @@
               "position": "WR",
               "team": "BUF",
               "valueDynasty": 2287,
-              "age": 29.31494697714655
+              "age": 29.314961738345122
             },
             {
               "id": "12522",
@@ -6067,7 +6067,7 @@
               "position": "QB",
               "team": "TEN",
               "valueDynasty": 2013,
-              "age": 24.20337955757092
+              "age": 24.203394318769487
             }
           ],
           "receive": [
@@ -6078,7 +6078,7 @@
               "position": "WR",
               "team": "NE",
               "valueDynasty": 3800,
-              "age": 29.104132466505693
+              "age": 29.10414722773595
             }
           ],
           "adjValueGive": 3897.4,
@@ -6158,7 +6158,7 @@
               "position": "RB",
               "team": "BAL",
               "valueDynasty": 3297,
-              "age": 32.58941651855655
+              "age": 32.58943127975512
             },
             {
               "id": "2026-3-10",
@@ -6175,7 +6175,7 @@
               "position": "WR",
               "team": "NYJ",
               "valueDynasty": 4004,
-              "age": 26.043215286492003
+              "age": 26.04323004769057
             }
           ],
           "adjValueGive": 4070.6,
@@ -6238,7 +6238,7 @@
               "position": "QB",
               "team": "LAR",
               "valueDynasty": 1475,
-              "age": 38.49769851718762
+              "age": 38.497713278386186
             },
             {
               "id": "2026-3-10",
@@ -6255,7 +6255,7 @@
               "position": "WR",
               "team": "MIN",
               "valueDynasty": 2106,
-              "age": 24.52644595042082
+              "age": 24.52646071161939
             }
           ],
           "adjValueGive": 2248.6,
@@ -6318,7 +6318,7 @@
               "position": "QB",
               "team": "LAR",
               "valueDynasty": 1475,
-              "age": 38.49769851718762
+              "age": 38.497713278386186
             },
             {
               "id": "2026-3-10",
@@ -6335,7 +6335,7 @@
               "position": "WR",
               "team": "GB",
               "valueDynasty": 2213,
-              "age": 27.23965608046873
+              "age": 27.239670841698988
             }
           ],
           "adjValueGive": 2248.6,
@@ -6345,7 +6345,7 @@
           "archetype": "need_fill_WR",
           "fairness": "FAIR",
           "scores": {
-            "total": 0.5895019132309407,
+            "total": 0.589501971531531,
             "myFit": 0.3784309923161747,
             "theirFit": 0.5261331777205549,
             "balance": 0.9676808538107329,
@@ -6398,7 +6398,7 @@
               "position": "QB",
               "team": "BUF",
               "valueDynasty": 5601,
-              "age": 30.21296203532588
+              "age": 30.21297679652445
             },
             {
               "id": "2026-2-5",
@@ -6415,7 +6415,7 @@
               "position": "WR",
               "team": "MIN",
               "valueDynasty": 6807,
-              "age": 27.143831302950794
+              "age": 27.143846064149365
             }
           ],
           "adjValueGive": 6593,
@@ -6478,7 +6478,7 @@
               "position": "RB",
               "team": "BAL",
               "valueDynasty": 3297,
-              "age": 32.58941651855655
+              "age": 32.58943127975512
             }
           ],
           "receive": [
@@ -6489,7 +6489,7 @@
               "position": "WR",
               "team": "CIN",
               "valueDynasty": 3400,
-              "age": 27.551771070233478
+              "age": 27.55178583143205
             }
           ],
           "adjValueGive": 3297,
@@ -6583,7 +6583,7 @@
               "position": "RB",
               "team": "TB",
               "valueDynasty": 3413,
-              "age": 23.967924389877556
+              "age": 23.967939151076127
             },
             {
               "id": "11631",
@@ -6592,7 +6592,7 @@
               "position": "WR",
               "team": "JAX",
               "valueDynasty": 3203,
-              "age": 23.83103185052095
+              "age": 23.831046611719522
             }
           ],
           "receive": [
@@ -6603,7 +6603,7 @@
               "position": "QB",
               "team": "BUF",
               "valueDynasty": 5601,
-              "age": 30.21296203532588
+              "age": 30.21297679652445
             }
           ],
           "adjValueGive": 5975.4,
@@ -6666,7 +6666,7 @@
               "position": "RB",
               "team": "TB",
               "valueDynasty": 3413,
-              "age": 23.967924389877556
+              "age": 23.967939151076127
             },
             {
               "id": "11631",
@@ -6675,7 +6675,7 @@
               "position": "WR",
               "team": "JAX",
               "valueDynasty": 3203,
-              "age": 23.83103185052095
+              "age": 23.831046611719522
             }
           ],
           "receive": [
@@ -6686,7 +6686,7 @@
               "position": "WR",
               "team": "ATL",
               "valueDynasty": 5584,
-              "age": 25.03842404761452
+              "age": 25.03843880881309
             }
           ],
           "adjValueGive": 5975.4,
@@ -6749,7 +6749,7 @@
               "position": "RB",
               "team": "NYG",
               "valueDynasty": 3635,
-              "age": 24.501805293368317
+              "age": 24.50182005456689
             },
             {
               "id": "6819",
@@ -6758,7 +6758,7 @@
               "position": "WR",
               "team": "PIT",
               "valueDynasty": 1814,
-              "age": 28.838560940185566
+              "age": 28.838575701384137
             },
             {
               "id": "2026-3-6",
@@ -6775,7 +6775,7 @@
               "position": "WR",
               "team": "ATL",
               "valueDynasty": 5584,
-              "age": 25.03842404761452
+              "age": 25.03843880881309
             }
           ],
           "adjValueGive": 5555.96,
@@ -6838,7 +6838,7 @@
               "position": "RB",
               "team": "NYG",
               "valueDynasty": 3635,
-              "age": 24.501805293368317
+              "age": 24.50182005456689
             },
             {
               "id": "3163",
@@ -6847,7 +6847,7 @@
               "position": "QB",
               "team": "DET",
               "valueDynasty": 1837,
-              "age": 31.81460474579816
+              "age": 31.81461950699673
             },
             {
               "id": "2026-3-6",
@@ -6864,7 +6864,7 @@
               "position": "QB",
               "team": "BUF",
               "valueDynasty": 5601,
-              "age": 30.21296203532588
+              "age": 30.21297679652445
             }
           ],
           "adjValueGive": 5574.360000000001,
@@ -6927,7 +6927,7 @@
               "position": "QB",
               "team": "DET",
               "valueDynasty": 1837,
-              "age": 31.81460474579816
+              "age": 31.81461950699673
             },
             {
               "id": "6819",
@@ -6936,7 +6936,7 @@
               "position": "WR",
               "team": "PIT",
               "valueDynasty": 1814,
-              "age": 28.838560940185566
+              "age": 28.838575701384137
             }
           ],
           "receive": [
@@ -6947,7 +6947,7 @@
               "position": "QB",
               "team": "LAC",
               "valueDynasty": 3172,
-              "age": 28.411456217392956
+              "age": 28.411470978591527
             }
           ],
           "adjValueGive": 3288.2,

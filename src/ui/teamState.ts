@@ -82,8 +82,8 @@ export const STATE_COLOR: Record<TeamState, string> = {
   RISING: "#22d3ee",
   MIDDLING: "#94a3b8",
   FADING: "#eab308",
-  REBUILD: "#7c3aed",
-  EARLY_REBUILD: "#d63384",
+  REBUILD: "#5b63f0",
+  EARLY_REBUILD: "#c026d3",
   STUCK: "#dc2626",
 };
 /**

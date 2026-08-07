@@ -93,7 +93,7 @@ export const PATCH_NOTES: PatchNote[] = [
       "Juggernaut, early rebuild and win now are gone. Every other dynasty site uses those, and two of them did not describe the thing anyway. The nine states are now BEAUTY, CONTENDER and LAST RIDE across the top, RISING, IN THE MIX and ON FUMES through the middle, then STOCKPILING, REBUILD and YARD SALE along the bottom.",
       "Left to right is always more future to less. Top to bottom is always winning now to not. Nothing about a cell needs explaining beyond where it sits.",
       "ON FUMES replaces fading, because it says the actual situation: still a little warm, no fuel left. LAST RIDE replaces win now: a good roster on its final run. YARD SALE is the bottom right corner and means exactly what it looks like.",
-      "Colours rebalanced along with it. The bottom row runs violet to rose to red instead of blue to purple to red, and on fumes is yellow rather than orange.",
+      "Colours nudged along with it: on fumes a step yellower, stockpiling pulled off pure blue toward purple, rebuild pulled off pure purple toward red.",
       "Nothing about your team changed. Same nine states, same maths, different words on them.",
     ],
     knownIssues: [],
