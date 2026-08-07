@@ -84,6 +84,22 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "daniels",
+    release: "3.9",
+    algo: "Empty",
+    algoFingerprint: "24e7f5dc5353",
+    date: "2026-08-07",
+    title: "Win now is green, because winning now is winning",
+    changes: [
+      "The map's colours had the wrong idea baked into them. They ran cool to warm from left to right, so having spent your future came out orange, like a warning. But a win-now team is in the playoffs. Spending the future is that strategy working, not a fault.",
+      "The whole top row is green now, because every team in it is winning. The bottom row runs blue to red: a deliberate rebuild, a drift, and a roster with neither a present nor a future. The middle row is the quiet version of the same idea.",
+      "Juggernaut is silver rather than a fourth green. Three greens in one row is exactly the problem this was meant to fix, and being the best roster in the league on both counts is worth its own mark instead of a slightly different shade.",
+      "The closest pair of colours is now further apart than in either of the last two attempts. Both of those were done by eye and both moved a collision instead of removing one, so each version ships with that number measured.",
+      "Team state badges pick their own text colour. The red one was under the accessibility floor for contrast against the near-black it was hardcoded to use.",
+    ],
+    knownIssues: [],
+  },
+  {
+    branch: "daniels",
     release: "3.8",
     algo: "Empty",
     algoFingerprint: "24e7f5dc5353",

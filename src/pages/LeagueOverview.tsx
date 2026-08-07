@@ -13,6 +13,7 @@ import type {
 import {
   STATE_COLOR,
   STATE_TEXT,
+  stateInk,
 } from "../ui/teamState.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
@@ -370,6 +371,7 @@ function LeagueTableRow({
                 className="window-label"
                 style={{
                   background: STATE_COLOR[profile.teamState] ?? "#94a3b8",
+                  color: stateInk(profile.teamState),
                 }}
               >
                 {STATE_TEXT[profile.teamState] ?? "—"}

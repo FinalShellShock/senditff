@@ -48,6 +48,40 @@ function currentRelease() {
 var PATCH_NOTES = [
   {
     branch: "daniels",
+    release: "3.9",
+    algo: "Empty",
+    algoFingerprint: "24e7f5dc5353",
+    date: "2026-08-07",
+    title: "Win now is green, because winning now is winning",
+    changes: [
+      "The map's colours had the wrong idea baked into them. They ran cool to warm from left to right, so having spent your future came out orange, like a warning. But a win-now team is in the playoffs. Spending the future is that strategy working, not a fault.",
+      "The whole top row is green now, because every team in it is winning. The bottom row runs blue to red: a deliberate rebuild, a drift, and a roster with neither a present nor a future. The middle row is the quiet version of the same idea.",
+      "Juggernaut is silver rather than a fourth green. Three greens in one row is exactly the problem this was meant to fix, and being the best roster in the league on both counts is worth its own mark instead of a slightly different shade.",
+      "The closest pair of colours is now further apart than in either of the last two attempts. Both of those were done by eye and both moved a collision instead of removing one, so each version ships with that number measured.",
+      "Team state badges pick their own text colour. The red one was under the accessibility floor for contrast against the near-black it was hardcoded to use."
+    ],
+    knownIssues: []
+  },
+  {
+    branch: "daniels",
+    release: "3.8",
+    algo: "Empty",
+    algoFingerprint: "24e7f5dc5353",
+    date: "2026-08-06",
+    title: "Quarterbacks are not old at 27, and the map has a real two-axis palette",
+    changes: [
+      "The scouting report told a manager to sell Jordan Love as an aging veteran. He is 27, and our own measured curves put a 27 year old quarterback at zero wear. That play used one calendar age for every position, calibrated on the positions that age fast, and then applied it to the one that does not. It now reads the measured curve, which holds quarterbacks until they are genuinely declining and leaves running backs and receivers exactly where they were.",
+      "New colours on the map. Both directions mean something now: cool to warm across the board is future value still ahead of you versus already spent, and going down a column the same colour family dims as the lineup weakens. The closest pair of colours is now 72% further apart than before. The old worst pair was not even juggernaut and contender, it was juggernaut and rising.",
+      "Every scouting card that tells you to do something now has a button that acts on it. Two of them, including the one telling contenders not to stand pat, previously gave advice with nowhere to click. Cards that tell you to AVOID something still have none, on purpose.",
+      "Rankings loads more instead of stopping. It used to show the top 300 and tell you to narrow your search, which made the 301st most valuable asset in your league unreachable by scrolling."
+    ],
+    knownIssues: [
+      "The dashed trails on the map project each team's lineup using dynasty value, while the dot itself is placed using redraft value. Twelve of sixteen teams therefore start their trail at a slightly different height than their dot, by up to four places.",
+      "Those trails also decay every player by an aging curve, which is doing work dynasty prices already do. Replacing them with a measured model of how teams actually improve or decline is on the wishlist."
+    ]
+  },
+  {
+    branch: "daniels",
     release: "3.7",
     algo: "Empty",
     algoFingerprint: "24e7f5dc5353",

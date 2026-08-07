@@ -13,7 +13,7 @@ import { scoutingPlays, type Play } from "../algo/plays.ts";
 import { intentShortLabel } from "../data/intentLabels.ts";
 import { FeedbackBlock } from "../components/FeedbackBlock.tsx";
 import TeamState, { pickFlagText } from "./team/TeamState.tsx";
-import { STATE_COLOR, STATE_TEXT } from "../ui/teamState.ts";
+import { STATE_COLOR, STATE_TEXT, stateInk } from "../ui/teamState.ts";
 
 // CRITICAL and SURPLUS are the two states worth acting on, so they own the
 // loud colors. HEALTHY is deliberately neutral: it is the absence of leverage,
@@ -242,7 +242,10 @@ export default function TeamDeepDive() {
             {profile.ownerName}
             {profile.isMine && <span className="mine-mark">★ YOU</span>}
           </h1>
-          <span className="window-label" style={{ background: stateColor }}>
+          <span
+            className="window-label"
+            style={{ background: stateColor, color: stateInk(profile.teamState) }}
+          >
             {STATE_TEXT[profile.teamState]}
           </span>
         </div>

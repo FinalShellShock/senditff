@@ -38,38 +38,58 @@ export const STATE_TEXT: Record<TeamState, string> = {
 };
 
 /**
- * A bivariate palette: both axes of the grid carry a visual channel.
+ * The ROW carries the verdict; the COLUMN carries the character.
  *
- * Four corners are fixed, and the five cells between them are Oklab blends of
- * their neighbours, so a ROW reads as a progression and so does a COLUMN:
+ *              DEEP FUTURE   MIDDLE       THIN FUTURE
+ *   CONTENDING platinum      emerald      lime
+ *   MIDDLE     cyan          slate        amber
+ *   WEAK       blue          purple       red
  *
- *              DEEP FUTURE      MIDDLE          THIN FUTURE
- *   CONTENDING teal #2dd4bf     green           amber #f59e0b
- *   MIDDLE     cyan             stone           burnt orange
- *   WEAK       blue #3b82f6     mauve           red #b91c1c
+ * The previous palette had this backwards. It ran cool-to-warm ACROSS, so
+ * "your future is spent" was drawn as a warning and WIN_NOW came out orange.
+ * But a win-now team is winning: it is in the top row, it makes the playoffs,
+ * and spending the future is the strategy succeeding, not a fault. Johnny:
+ * "Win-now still has you in the playoffs expectations. It should be like green
+ * for go and go fast."
  *
- * Cool means the value is still ahead of you, warm means it has been spent.
- * Going down a column, the same hue family loses its brightness as the lineup
- * gets weaker. The muddy centre is not an accident: MIDDLING is the cell with
- * nothing to say about a roster, and it should not look like a verdict.
+ * So the whole top row is now green-family, because every team in it is
+ * winning. The bottom row runs blue to red: a deliberate rebuild, a drift, and
+ * a roster with neither present nor future. The middle row is the muted
+ * version of the same idea.
  *
- * CONTENDER is hand-set rather than blended. A straight teal-to-amber midpoint
- * lands on a washed-out olive, which is a poor look for one of the strongest
- * states on the board.
+ * JUGGERNAUT is platinum rather than a fourth green. Three greens in one row
+ * is the collision this palette exists to avoid, and being the best roster on
+ * both axes is worth its own mark rather than a slightly different shade.
  *
- * Checked, not eyeballed: the closest pair in this set is 0.122 apart in Oklab,
- * against 0.071 for the palette it replaces. That previous worst pair was
- * JUGGERNAUT and RISING, not the JUGGERNAUT/CONTENDER pair that prompted the
- * change, so fixing it by eye had moved the collision rather than removed it.
+ * Measured, not eyeballed. Closest pair is 0.141 apart in Oklab against 0.122
+ * for the palette it replaces and 0.071 for the one before that. Every by-eye
+ * revision of these colours so far has moved a collision instead of removing
+ * one, which is why each version now ships with that number.
  */
 export const STATE_COLOR: Record<TeamState, string> = {
-  JUGGERNAUT: "#2dd4bf",
-  CONTENDER: "#6cbf59",
-  WIN_NOW: "#f59e0b",
-  RISING: "#2faede",
-  MIDDLING: "#a1928c",
-  FADING: "#d9651a",
+  JUGGERNAUT: "#e8edf5",
+  CONTENDER: "#10b981",
+  WIN_NOW: "#a3e635",
+  RISING: "#22d3ee",
+  MIDDLING: "#94a3b8",
+  FADING: "#f59e0b",
   REBUILD: "#3b82f6",
-  EARLY_REBUILD: "#8e6491",
-  STUCK: "#b91c1c",
+  EARLY_REBUILD: "#a855f7",
+  STUCK: "#dc2626",
 };
+/**
+ * Readable text colour for a badge painted in a state's colour.
+ *
+ * The badge CSS hardcoded a near-black, which was fine until STUCK red landed
+ * at 4.05:1 against it, under the 4.5:1 AA floor, while white would have given
+ * it 4.83:1. Deriving it from luminance means the next palette revision cannot
+ * quietly make a label unreadable.
+ */
+export function stateInk(state: TeamState): string {
+  const hex = STATE_COLOR[state] ?? "#94a3b8";
+  const ch = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const lin = ch.map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  const L = 0.2126 * lin[0]! + 0.7152 * lin[1]! + 0.0722 * lin[2]!;
+  // Contrast against near-black vs against white, higher wins.
+  return (L + 0.05) / 0.05 >= 1.05 / (L + 0.05) ? "#0a0c0f" : "#ffffff";
+}
