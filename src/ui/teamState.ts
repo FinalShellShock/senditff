@@ -1,5 +1,5 @@
 import type { TeamState } from "../algo/types.ts";
-import { BAD, BG, GOOD, INK, INK_4, ORANGE, PURPLE, WARN } from "./theme.ts";
+import { BAD, BG, BRAND, GOOD, INK, INK_4, ORANGE, PURPLE, WARN } from "./theme.ts";
 
 /**
  * One source for how the nine team states are drawn and named.
@@ -50,29 +50,35 @@ export const STATE_TEXT: Record<TeamState, string> = {
 /**
  * League Shape scoring. Kelly, 2026-08-07.
  *
- * FIVE hues, each used twice, once filled and once outlined. Red is the only
- * one that appears alone, which is what makes YARD SALE the single unmistakable
- * cell on the board.
+ * COLOUR ENCODES ACTIONABILITY, not identity. How urgently should this manager
+ * do something, and of what kind:
  *
- *              DEEP FUTURE         MIDDLE              THIN FUTURE
- *   CONTENDING BEAUTY  green fill  CONTENDER green out LAST RIDE  yellow fill
- *   MIDDLE     RISING  purple out  IN THE MIX yellow out ON FUMES orange out
- *   NOT CLOSE  STOCKPILING pur fill REBUILD  orange fill YARD SALE red fill
+ *   green   nothing to fix
+ *   blue    healthy, no forced move
+ *   purple  accumulating on purpose
+ *   yellow  the window is closing
+ *   orange  needs a decision
+ *   red     out of road
  *
- * Pairing a hue with itself across fills is the point: RISING and STOCKPILING
- * are the same colour because they are the same idea at different depths, and
- * so are ON FUMES and REBUILD. The fill separates them without spending a
- * sixth and seventh hue the palette does not have.
+ *              DEEP FUTURE          MIDDLE               THIN FUTURE
+ *   CONTENDING BEAUTY  green        CONTENDER  blue      LAST RIDE yellow
+ *   MIDDLE     RISING  blue         IN THE MIX blue/out  ON FUMES  orange
+ *   NOT CLOSE  STOCKPILING purple   REBUILD    orange    YARD SALE red
  *
- * LAST RIDE and YARD SALE were not re-specified in this round and keep what
- * they had.
+ * Cells share colours freely, which is fine because every cell is labelled and
+ * the colour is answering "how urgent", not "which cell". IN THE MIX is the one
+ * outline, separating it from the two solid blues without spending a hue.
+ *
+ * CONTENDER moved off green in this round: it sat directly beside BEAUTY and
+ * the pair was distinguishable only by fill, which is the weakest signal on the
+ * board and the one most likely to be misread at dot size.
  */
 export const STATE_COLOR: Record<TeamState, string> = {
   JUGGERNAUT: GOOD,
-  CONTENDER: GOOD,
+  CONTENDER: BRAND,
   WIN_NOW: WARN,
-  RISING: PURPLE,
-  MIDDLING: WARN,
+  RISING: BRAND,
+  MIDDLING: BRAND,
   FADING: ORANGE,
   REBUILD: PURPLE,
   EARLY_REBUILD: ORANGE,
@@ -83,15 +89,16 @@ export type StateFill = "solid" | "outline";
 
 export const STATE_FILL: Record<TeamState, StateFill> = {
   JUGGERNAUT: "solid",
-  CONTENDER: "outline",
+  CONTENDER: "solid",
   WIN_NOW: "solid",
-  RISING: "outline",
+  RISING: "solid",
   MIDDLING: "outline",
-  FADING: "outline",
+  FADING: "solid",
   REBUILD: "solid",
   EARLY_REBUILD: "solid",
   STUCK: "solid",
 };
+
 
 
 /**
