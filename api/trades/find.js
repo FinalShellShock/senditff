@@ -1457,7 +1457,7 @@ function generatePackages(mine, allProfiles, format, thisYear, opts = {}) {
   if (scoped && rawCandidates.length === 0) {
     const fb = genScopedFallback(ctx, mustGive, mustReceive);
     const built = shapeFilter(fb.candidates);
-    scopeNote = fb.reason;
+    scopeNote = fb.reason ?? (fb.candidates.length > 0 && built.length === 0 ? "The only deals that balance on value would need pieces so lopsided that they break the package rules. There is no clean trade to build around this asset." : void 0);
     if (built.length > 0) {
       rawCandidates = built;
       scopeFallbackUsed = true;

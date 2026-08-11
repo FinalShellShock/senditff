@@ -19,6 +19,7 @@ import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 import LeverageBoard from "./overview/LeverageBoard.tsx";
 import WindowMap from "./overview/WindowMap.tsx";
+import { INK_4 } from "../ui/theme.ts";
 
 // CRITICAL and SURPLUS are the two states worth acting on, so they own the
 // loud colors. HEALTHY is deliberately neutral: it is the absence of leverage,
@@ -27,11 +28,11 @@ import WindowMap from "./overview/WindowMap.tsx";
 // Painting that middle green made 80% of the leverage board green and buried
 // the signal.
 const POS_CLASS_COLOR: Record<string, string> = {
-  CRITICAL_NEED: "#ef4444",
-  CRITICAL: "#ef4444",
-  NEED: "#eab308",
-  HEALTHY: "#64748b",
-  SURPLUS: "#22c55e",
+  CRITICAL_NEED: "#ee4266",
+  CRITICAL: "#ee4266",
+  NEED: "#f6f740",
+  HEALTHY: "#6e756a",
+  SURPLUS: "#18f2b2",
 };
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
@@ -40,10 +41,10 @@ function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
   const years = [...new Set(picks.map((p) => p.year))].sort().slice(0, 3);
   const flagColor =
     flag === "PICK_RICH"
-      ? "#22c55e"
+      ? "#18f2b2"
       : flag === "PICK_POOR"
-        ? "#ef4444"
-        : "#475569";
+        ? "#ee4266"
+        : "#4e5650";
   return (
     <div className="picks-visual">
       <span className="picks-flag" style={{ color: flagColor }}>
@@ -86,7 +87,7 @@ function ThickBar({
   score: number;
   kind?: SubClassification;
 }) {
-  const color = POS_CLASS_COLOR[kind ?? "HEALTHY"] ?? "#64748b";
+  const color = POS_CLASS_COLOR[kind ?? "HEALTHY"] ?? "#6e756a";
   const width = Math.max(4, Math.min(100, score));
   return (
     <div className="lt-thick-bar-track">
@@ -108,9 +109,9 @@ function combinedLabel(s?: SubClassification, d?: SubClassification): string {
 }
 function combinedColor(s?: SubClassification, d?: SubClassification): string {
   if (s === "CRITICAL" || d === "CRITICAL")
-    return POS_CLASS_COLOR.CRITICAL ?? "#ef4444";
-  if (s === "NEED" || d === "NEED") return POS_CLASS_COLOR.NEED ?? "#eab308";
-  return POS_CLASS_COLOR.HEALTHY ?? "#64748b";
+    return POS_CLASS_COLOR.CRITICAL ?? "#ee4266";
+  if (s === "NEED" || d === "NEED") return POS_CLASS_COLOR.NEED ?? "#f6f740";
+  return POS_CLASS_COLOR.HEALTHY ?? "#6e756a";
 }
 
 // 1st / 2nd / 3rd / Nth
@@ -227,12 +228,12 @@ function RadarChart({
       <polygon
         points={dataPath}
         fill="rgba(245,158,11,0.22)"
-        stroke="#f59e0b"
+        stroke="#42bfdd"
         strokeWidth={1.5}
       />
       {/* Vertex dots */}
       {dataPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={2.5} fill="#f59e0b" />
+        <circle key={i} cx={p.x} cy={p.y} r={2.5} fill="#42bfdd" />
       ))}
       {/* Axis labels */}
       {axisLabels.map((l, i) => (
@@ -336,7 +337,7 @@ function LeagueTableRow({
   onToggle: () => void;
 }) {
   const navigate = useNavigate();
-  const stateColor = STATE_COLOR[profile.teamState] ?? "#94a3b8";
+  const stateColor = STATE_COLOR[profile.teamState] ?? INK_4;
   const stateText = STATE_TEXT[profile.teamState] ?? "—";
 
   // Real lineup fill (same math the algorithm scores): base slots + flex.
@@ -370,7 +371,7 @@ function LeagueTableRow({
               <span
                 className="window-label"
                 style={{
-                  background: STATE_COLOR[profile.teamState] ?? "#94a3b8",
+                  background: STATE_COLOR[profile.teamState] ?? INK_4,
                   color: stateInk(profile.teamState),
                 }}
               >
@@ -558,7 +559,7 @@ export default function LeagueOverview() {
         }}
       >
         {needsResync && (
-          <span className="dim-text" style={{ fontSize: 12 }}>
+          <span className="dim-text" style={{ fontSize: 13.8 }}>
             League data is outdated — refresh to see full analysis
           </span>
         )}

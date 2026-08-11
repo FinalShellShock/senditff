@@ -2016,7 +2016,16 @@ export function generatePackages(
   if (scoped && rawCandidates.length === 0) {
     const fb = genScopedFallback(ctx, mustGive, mustReceive);
     const built = shapeFilter(fb.candidates);
-    scopeNote = fb.reason;
+    // The fallback only reports a reason when it could not BUILD anything. It
+    // can also build packages that the shape rules then strip, which left a
+    // blank page with nothing to say. Caught by validate:scope on a TE priced
+    // at 10, whose only value matches were bundles that failed the no-passenger
+    // rule.
+    scopeNote =
+      fb.reason ??
+      (fb.candidates.length > 0 && built.length === 0
+        ? "The only deals that balance on value would need pieces so lopsided that they break the package rules. There is no clean trade to build around this asset."
+        : undefined);
     if (built.length > 0) {
       rawCandidates = built;
       scopeFallbackUsed = true;

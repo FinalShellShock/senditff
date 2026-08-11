@@ -12,6 +12,7 @@ import type {
   TeamProfile,
   TeamState,
 } from "../../algo/types.ts";
+import { posColor } from "../../ui/theme.ts";
 
 // States that deliberately don't buy veteran production. STUCK is included:
 // it is not contending and has no future banked, so paying for win-now
@@ -24,12 +25,6 @@ function isBuyer(p: TeamProfile): boolean {
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 
-const POS_COLOR: Record<Position, string> = {
-  QB: "#c2410c",
-  RB: "#ca8a04",
-  WR: "#3b82f6",
-  TE: "#a855f7",
-};
 
 // CRITICAL and SURPLUS are the two states worth acting on, so they own the
 // loud colors. HEALTHY is deliberately neutral: it is the absence of leverage,
@@ -38,10 +33,10 @@ const POS_COLOR: Record<Position, string> = {
 // Painting that middle green made 80% of the leverage board green and buried
 // the signal.
 const CLASS_COLOR: Record<string, string> = {
-  CRITICAL: "#ef4444",
-  NEED: "#eab308",
-  HEALTHY: "#64748b",
-  SURPLUS: "#22c55e",
+  CRITICAL: "#ee4266",
+  NEED: "#f6f740",
+  HEALTHY: "#6e756a",
+  SURPLUS: "#18f2b2",
 };
 
 function classOf(p: TeamProfile, pos: Position): SubClassification {
@@ -99,7 +94,7 @@ export default function LeverageBoard({
             >
               <span
                 className="lb-callout-pos"
-                style={{ background: POS_COLOR[pos] }}
+                style={{ background: posColor(pos) }}
               >
                 {pos}
               </span>
@@ -122,7 +117,7 @@ export default function LeverageBoard({
           );
           return (
             <div key={pos} className="lb-col">
-              <div className="lb-col-header" style={{ color: POS_COLOR[pos] }}>
+              <div className="lb-col-header" style={{ color: posColor(pos) }}>
                 {pos}
               </div>
               {ranked.map((p, i) => {
@@ -150,7 +145,7 @@ export default function LeverageBoard({
                         className="lb-bar-fill"
                         style={{
                           width: `${Math.max(3, ((ps?.starterValue ?? 0) / maxValue) * 100)}%`,
-                          background: CLASS_COLOR[cl] ?? "#475569",
+                          background: CLASS_COLOR[cl] ?? "#4e5650",
                         }}
                       />
                     </span>
@@ -158,8 +153,8 @@ export default function LeverageBoard({
                       className="lb-tag"
                       style={{
                         color: punting
-                          ? "#64748b"
-                          : (CLASS_COLOR[cl] ?? "#64748b"),
+                          ? "#6e756a"
+                          : (CLASS_COLOR[cl] ?? "#6e756a"),
                       }}
                     >
                       {desperate

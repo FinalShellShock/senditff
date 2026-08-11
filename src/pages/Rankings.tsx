@@ -25,11 +25,8 @@ import {
   type AssetFilters,
 } from "../data/assetPool.ts";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
+import { posColor } from "../ui/theme.ts";
 
-function posColor(pos?: string) {
-  const map: Record<string, string> = { QB: "#c2410c", RB: "#ca8a04", WR: "#3b82f6", TE: "#a855f7" };
-  return (pos && map[pos]) || "#475569";
-}
 
 export default function Rankings() {
   const { overview } = useOutletContext<LeagueOutletContext>();
@@ -137,7 +134,7 @@ export default function Rankings() {
         </div>
 
         {rows.length === 0 ? (
-          <p className="dim-text" style={{ textAlign: "center", fontSize: 11, padding: "20px 0" }}>
+          <p className="dim-text" style={{ textAlign: "center", fontSize: 12.6, padding: "20px 0" }}>
             Nothing matches those filters.
           </p>
         ) : (

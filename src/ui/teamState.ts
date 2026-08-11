@@ -1,4 +1,5 @@
 import type { TeamState } from "../algo/types.ts";
+import { BAD, BG, GOOD, INK, INK_4, WARN } from "./theme.ts";
 
 /**
  * One source for how the nine team states are drawn and named.
@@ -47,45 +48,41 @@ export const STATE_TEXT: Record<TeamState, string> = {
   STUCK: "YARD SALE",
 };
 /**
- * The ROW carries the verdict; the COLUMN carries the character.
+ * Five-level scoring, specified by Kelly 2026-08-07. Several states share a
+ * colour on purpose: this is a quality scale, not nine separate identities.
  *
- *              DEEP FUTURE   MIDDLE       THIN FUTURE
- *   CONTENDING platinum      emerald      lime
- *   MIDDLE     cyan          slate        amber
- *   WEAK       blue          purple       red
+ *   BEAUTY                              background  (drawn as an outline)
+ *   RISING, CONTENDER                   good
+ *   STOCKPILING, IN THE MIX, LAST RIDE  ink
+ *   REBUILD, ON FUMES                   warn
+ *   YARD SALE                           bad
  *
- * The previous palette had this backwards. It ran cool-to-warm ACROSS, so
- * "your future is spent" was drawn as a warning and WIN_NOW came out orange.
- * But a win-now team is winning: it is in the top row, it makes the playoffs,
- * and spending the future is the strategy succeeding, not a fault. Johnny:
- * "Win-now still has you in the playoffs expectations. It should be like green
- * for go and go fast."
- *
- * So the whole top row is now green-family, because every team in it is
- * winning. The bottom row runs blue to red: a deliberate rebuild, a drift, and
- * a roster with neither present nor future. The middle row is the muted
- * version of the same idea.
- *
- * JUGGERNAUT is platinum rather than a fourth green. Three greens in one row
- * is the collision this palette exists to avoid, and being the best roster on
- * both axes is worth its own mark rather than a slightly different shade.
- *
- * Measured, not eyeballed. Closest pair is 0.141 apart in Oklab against 0.122
- * for the palette it replaces and 0.071 for the one before that. Every by-eye
- * revision of these colours so far has moved a collision instead of removing
- * one, which is why each version now ships with that number.
+ * BEAUTY is the page background, so anything painted in it is invisible until
+ * it is given an edge. Every badge and every map dot therefore carries a ring;
+ * see STATE_RING below. That makes the best team read as a cut-out rather than
+ * a missing element, which is the intent, but it only works while the ring is
+ * drawn. Do not remove it.
  */
 export const STATE_COLOR: Record<TeamState, string> = {
-  JUGGERNAUT: "#e8edf5",
-  CONTENDER: "#10b981",
-  WIN_NOW: "#a3e635",
-  RISING: "#22d3ee",
-  MIDDLING: "#94a3b8",
-  FADING: "#eab308",
-  REBUILD: "#5b63f0",
-  EARLY_REBUILD: "#c026d3",
-  STUCK: "#dc2626",
+  JUGGERNAUT: BG,
+  RISING: GOOD,
+  CONTENDER: GOOD,
+  REBUILD: INK,
+  MIDDLING: INK,
+  WIN_NOW: INK,
+  EARLY_REBUILD: WARN,
+  FADING: WARN,
+  STUCK: BAD,
 };
+
+/**
+ * Outline for a swatch painted in a state's colour. Only BEAUTY needs one to
+ * exist at all; the rest get a faint edge so the set looks deliberate rather
+ * than one odd outlined chip among eight solid ones.
+ */
+export function stateRing(state: TeamState): string {
+  return STATE_COLOR[state] === BG ? INK_4 : "rgba(254,254,223,0.16)";
+}
 /**
  * Readable text colour for a badge painted in a state's colour.
  *
@@ -95,10 +92,10 @@ export const STATE_COLOR: Record<TeamState, string> = {
  * quietly make a label unreadable.
  */
 export function stateInk(state: TeamState): string {
-  const hex = STATE_COLOR[state] ?? "#94a3b8";
+  const hex = STATE_COLOR[state] ?? INK_4;
   const ch = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
   const lin = ch.map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
   const L = 0.2126 * lin[0]! + 0.7152 * lin[1]! + 0.0722 * lin[2]!;
   // Contrast against near-black vs against white, higher wins.
-  return (L + 0.05) / 0.05 >= 1.05 / (L + 0.05) ? "#0a0c0f" : "#ffffff";
+  return (L + 0.05) / 0.05 >= 1.05 / (L + 0.05) ? "#051014" : "#fefedf";
 }

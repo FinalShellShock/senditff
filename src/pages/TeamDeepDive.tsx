@@ -14,6 +14,7 @@ import { intentShortLabel } from "../data/intentLabels.ts";
 import { FeedbackBlock } from "../components/FeedbackBlock.tsx";
 import TeamState, { pickFlagText } from "./team/TeamState.tsx";
 import { STATE_COLOR, STATE_TEXT, stateInk } from "../ui/teamState.ts";
+import { posColor, INK_4 } from "../ui/theme.ts";
 
 // CRITICAL and SURPLUS are the two states worth acting on, so they own the
 // loud colors. HEALTHY is deliberately neutral: it is the absence of leverage,
@@ -40,15 +41,6 @@ type RosterItem =
   | { divider: (typeof POSITIONS)[number]; player?: undefined }
   | { divider?: undefined; player: Player };
 
-function posColor(pos: string) {
-  const map: Record<string, string> = {
-    QB: "#f97316",
-    RB: "#22c55e",
-    WR: "#3b82f6",
-    TE: "#a855f7",
-  };
-  return map[pos] ?? "#94a3b8";
-}
 
 function PickRow({ pick }: { pick: DraftPick }) {
   return (
@@ -218,7 +210,7 @@ export default function TeamDeepDive() {
     );
   }
 
-  const stateColor = STATE_COLOR[profile.teamState] ?? "#94a3b8";
+  const stateColor = STATE_COLOR[profile.teamState] ?? INK_4;
 
   const sortedPicks = [...profile.picks].sort((a, b) => {
     if (a.year !== b.year) return a.year - b.year;
@@ -228,10 +220,10 @@ export default function TeamDeepDive() {
 
   const pickFlagColor =
     profile.pickCapital.flag === "PICK_RICH"
-      ? "#22c55e"
+      ? "#18f2b2"
       : profile.pickCapital.flag === "PICK_POOR"
-        ? "#ef4444"
-        : "#94a3b8";
+        ? "#ee4266"
+        : "#9fa492";
 
   return (
     <>
@@ -268,7 +260,7 @@ export default function TeamDeepDive() {
               <strong style={{ color: pickFlagColor }}>
                 {pickFlagText(profile.pickCapital.flag)}
               </strong>
-              <span style={{ color: "#475569" }}>
+              <span style={{ color: "#4e5650" }}>
                 {" "}
                 · {profile.pickCapital.score.toFixed(0)}
               </span>
@@ -284,7 +276,7 @@ export default function TeamDeepDive() {
                 }
               >
                 trades <strong>{tradeRow.trades}</strong>
-                <span style={{ color: "#475569" }}>
+                <span style={{ color: "#4e5650" }}>
                   {" "}
                   · {tradeRow.wins}-{tradeRow.losses}-{tradeRow.ties} ·{" "}
                 </span>
@@ -292,10 +284,10 @@ export default function TeamDeepDive() {
                   style={{
                     color:
                       tradeRow.netValue > 0
-                        ? "#22c55e"
+                        ? "#18f2b2"
                         : tradeRow.netValue < 0
-                          ? "#ef4444"
-                          : "#94a3b8",
+                          ? "#ee4266"
+                          : "#9fa492",
                   }}
                 >
                   {tradeRow.netValue >= 0 ? "+" : "−"}
@@ -307,7 +299,7 @@ export default function TeamDeepDive() {
           <div className="team-switcher">
             <span
               className="dim-text"
-              style={{ fontSize: 10, letterSpacing: 1 }}
+              style={{ fontSize: 11.5, letterSpacing: 1 }}
             >
               TEAM
             </span>
@@ -465,10 +457,10 @@ export default function TeamDeepDive() {
                   className="pos-tag"
                   style={{
                     background: posColor(item.player.position),
-                    color: "#fff",
+                    color: "#fefedf",
                     padding: "1px 4px",
                     borderRadius: 2,
-                    fontSize: 8,
+                    fontSize: 9.2,
                     fontWeight: 700,
                     letterSpacing: 0.5,
                     flexShrink: 0,
@@ -497,26 +489,26 @@ export default function TeamDeepDive() {
           <div className="dive-pos-header">
             <span
               style={{
-                fontSize: 11,
+                fontSize: 12.6,
                 fontWeight: 700,
-                color: "#f59e0b",
+                color: "#42bfdd",
                 letterSpacing: 2,
               }}
             >
               PICKS
             </span>
-            <span className="meta-pill" style={{ fontSize: 10 }}>
+            <span className="meta-pill" style={{ fontSize: 11.5 }}>
               total{" "}
               <strong>
                 {sortedPicks.reduce((s, p) => s + p.value, 0).toLocaleString()}
               </strong>
             </span>
-            <span className="meta-pill" style={{ fontSize: 10 }}>
+            <span className="meta-pill" style={{ fontSize: 11.5 }}>
               capital{" "}
               <strong style={{ color: pickFlagColor }}>
                 {pickFlagText(profile.pickCapital.flag)}
               </strong>
-              <span style={{ color: "#475569" }}>
+              <span style={{ color: "#4e5650" }}>
                 {" "}
                 · {profile.pickCapital.score.toFixed(0)}
               </span>

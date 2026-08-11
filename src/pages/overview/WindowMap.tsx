@@ -22,9 +22,10 @@ import {
 } from "../../algo/constants.ts";
 import { projectTeam } from "../../algo/projection.ts";
 import type { LeagueFormat, TeamProfile } from "../../algo/types.ts";
-import { STATE_GRID, STATE_COLOR, STATE_TEXT } from "../../ui/teamState.ts";
+import { STATE_GRID, STATE_COLOR, STATE_TEXT, stateRing } from "../../ui/teamState.ts";
+import { BRAND, INK_4 } from "../../ui/theme.ts";
 
-const SURFACE = "#0a0c0f";
+const SURFACE = "#051014";
 
 // Pressure beyond this pins to the field edge.
 const PRESSURE_MAX = 45;
@@ -381,7 +382,7 @@ export default function WindowMap({
 
         {/* Trajectory trails under the dots (dashed = projection) */}
         {placed.map(({ profile, x, y, trail }) => {
-          const color = STATE_COLOR[profile.teamState] ?? "#94a3b8";
+          const color = STATE_COLOR[profile.teamState] ?? INK_4;
           const pts = [{ x, y }, ...trail];
           const last = pts[pts.length - 1]!;
           const prev = pts[pts.length - 2]!;
@@ -408,7 +409,7 @@ export default function WindowMap({
 
         {/* Team dots + ink name labels */}
         {placed.map(({ profile, x, y, labelSide, dynRankNum, contRankNum }) => {
-          const color = STATE_COLOR[profile.teamState] ?? "#94a3b8";
+          const color = STATE_COLOR[profile.teamState] ?? INK_4;
           const name = displayName(profile.ownerName, g.nameMax);
           return (
             <g
@@ -421,12 +422,15 @@ export default function WindowMap({
               </title>
               {/* hover/click target, larger than the mark */}
               <circle cx={x} cy={y} r={HIT_R} fill="transparent" />
+              {/* Ring is stateRing, not the old surface colour. BEAUTY is
+                  painted in the page background, so a background-coloured ring
+                  left that dot with no edge at all and it vanished. */}
               <circle
                 cx={x}
                 cy={y}
                 r={DOT_R}
                 fill={color}
-                stroke={profile.isMine ? "#f59e0b" : SURFACE}
+                stroke={profile.isMine ? BRAND : stateRing(profile.teamState)}
                 strokeWidth={2}
               />
               <text

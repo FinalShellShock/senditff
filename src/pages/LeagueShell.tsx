@@ -16,7 +16,7 @@ class ContentErrorBoundary extends Component<
         <div className="error-banner" style={{ marginTop: 32 }}>
           <div style={{ marginBottom: 8, fontWeight: 700 }}>Failed to render league data</div>
           <div style={{ marginBottom: 12, opacity: 0.8 }}>{this.state.caught.message}</div>
-          <div style={{ marginBottom: 12, opacity: 0.7, fontSize: 11 }}>
+          <div style={{ marginBottom: 12, opacity: 0.7, fontSize: 12.6 }}>
             Your league data is from an older version. Refresh to fix this.
           </div>
           <button className="btn-secondary" onClick={() => { this.setState({ caught: null }); this.props.onReset(); }}>
@@ -126,7 +126,7 @@ export default function LeagueShell() {
           )}
         </div>
         <div className="status-right">
-          {resyncing && <span className="dim-text" style={{ color: "#f59e0b" }}>syncing...</span>}
+          {resyncing && <span className="dim-text" style={{ color: "#42bfdd" }}>syncing...</span>}
           {formatStr && <span className="dim-text">{formatStr}</span>}
         </div>
       </div>

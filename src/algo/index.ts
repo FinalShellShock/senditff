@@ -52,7 +52,6 @@ export {
   FAIRNESS_FAIR_ABS,
   FAIRNESS_FAIR_PCT,
   FAIRNESS_SLIGHT_PCT,
-  fairnessColor,
   fairnessDelta,
   fairnessLabel,
   fairnessText,

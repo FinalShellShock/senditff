@@ -11,7 +11,7 @@ import {
   type TradeAsset,
 } from "../data/assetPool.ts";
 import { ARCHETYPE_FAMILIES, POSITIONAL_FAMILIES, type ArchetypeFamily } from "../algo/archetypes.ts";
-import { fairnessColor, fairnessLabel, fairnessText } from "../algo/fairness.ts";
+import { fairnessLabel, fairnessText } from "../algo/fairness.ts";
 import type { Position } from "../algo/types.ts";
 import {
   makeApiClient,
@@ -24,6 +24,7 @@ import {
 } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
+import { posColor, fairnessColor } from "../ui/theme.ts";
 
 type ApiClient = ReturnType<typeof makeApiClient>;
 
@@ -54,11 +55,11 @@ function fitGrade(fit: number): string {
 }
 
 function gradeColor(grade: string): string {
-  if (grade === "A+" || grade === "A") return "#22c55e";
-  if (grade === "B+" || grade === "B") return "#4ade80";
-  if (grade === "C" || grade === "C-") return "#94a3b8";
-  if (grade === "D") return "#eab308";
-  return "#ef4444";
+  if (grade === "A+" || grade === "A") return "#18f2b2";
+  if (grade === "B+" || grade === "B") return "#18f2b2";
+  if (grade === "C" || grade === "C-") return "#9fa492";
+  if (grade === "D") return "#f6f740";
+  return "#ee4266";
 }
 
 function FitGrade({ fit }: { fit: number }) {
@@ -73,10 +74,6 @@ function FitGrade({ fit }: { fit: number }) {
   );
 }
 
-function posColor(pos?: string) {
-  const map: Record<string, string> = { QB: "#c2410c", RB: "#ca8a04", WR: "#3b82f6", TE: "#a855f7" };
-  return pos ? map[pos] ?? "#94a3b8" : "#475569";
-}
 
 type ConfidenceTier = "recommended" | "measured" | "inspiration";
 
@@ -85,17 +82,17 @@ type ConfidenceTier = "recommended" | "measured" | "inspiration";
 const CONFIDENCE_META: Record<ConfidenceTier, { label: string; color: string; title: string }> = {
   recommended: {
     label: "RECOMMENDED",
-    color: "#22c55e",
+    color: "#18f2b2",
     title: "Strong archetype fit for this roster.",
   },
   measured: {
     label: "WORTH A LOOK",
-    color: "#94a3b8",
+    color: "#9fa492",
     title: "Reasonable fit. Neither a standout nor a stretch.",
   },
   inspiration: {
     label: "INSPIRATION",
-    color: "#f59e0b",
+    color: "#42bfdd",
     title:
       "This was the closest package available, not a strong fit. Treat it as an idea to consider rather than a recommendation.",
   },
@@ -179,7 +176,7 @@ function AssetList({ assets }: { assets: TradeAssetWire[] }) {
         <span key={a.id} className="trade-asset">
           <span
             className="trade-asset-tag"
-            style={{ background: a.kind === "pick" ? "#475569" : posColor(a.position) }}
+            style={{ background: a.kind === "pick" ? "#4e5650" : posColor(a.position) }}
           >
             {a.kind === "pick" ? "PICK" : a.position}
           </span>
@@ -803,7 +800,7 @@ export default function SendIt() {
             <AssetFilterBar filters={scopeFilters} onChange={setScopeFilters} />
             <div className="calc-results">
               {scopeResults.length === 0 ? (
-                <p className="dim-text" style={{ textAlign: "center", fontSize: 11, padding: "16px 0" }}>
+                <p className="dim-text" style={{ textAlign: "center", fontSize: 12.6, padding: "16px 0" }}>
                   Nothing matches those filters.
                 </p>
               ) : (

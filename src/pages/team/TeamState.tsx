@@ -43,30 +43,22 @@ import type {
   SubClassification,
   TeamProfile,
 } from "../../algo/types.ts";
+import { posColor } from "../../ui/theme.ts";
 
-const ACCENT = "#f59e0b";
+const ACCENT = "#42bfdd";
 const GRID = "rgba(255,255,255,0.07)";
-const AXIS_TEXT = "#475569";
+const AXIS_TEXT = "#4e5650";
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 
 const POS_CLASS_COLOR: Record<string, string> = {
-  CRITICAL_NEED: "#ef4444",
-  CRITICAL: "#ef4444",
-  NEED: "#eab308",
-  HEALTHY: "#64748b",
-  SURPLUS: "#22c55e",
+  CRITICAL_NEED: "#ee4266",
+  CRITICAL: "#ee4266",
+  NEED: "#f6f740",
+  HEALTHY: "#6e756a",
+  SURPLUS: "#18f2b2",
 };
 
-function posColor(pos: string) {
-  const map: Record<string, string> = {
-    QB: "#c2410c",
-    RB: "#ca8a04",
-    WR: "#3b82f6",
-    TE: "#a855f7",
-  };
-  return map[pos] ?? "#94a3b8";
-}
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 
@@ -185,7 +177,7 @@ function SeverityCell({
   player: Player | undefined;
 }) {
   const level = Math.max(0, SEVERITY_STEPS.indexOf(label));
-  const color = POS_CLASS_COLOR[label] ?? "#64748b";
+  const color = POS_CLASS_COLOR[label] ?? "#6e756a";
   return (
     <div className="state-sev">
       <div className="state-sev-top">

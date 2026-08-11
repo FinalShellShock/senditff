@@ -34,7 +34,7 @@ __export(feedback_exports, {
 module.exports = __toCommonJS(feedback_exports);
 
 // src/algoFingerprint.generated.ts
-var ALGO_FINGERPRINT_BUILD = "24e7f5dc5353";
+var ALGO_FINGERPRINT_BUILD = "887cb3116985";
 var SCOUT_FINGERPRINT_BUILD = "353f46cd6c00";
 
 // src/algo/version.ts
@@ -46,6 +46,22 @@ function currentRelease() {
   return latest ? `${latest.branch} ${latest.release}` : "unreleased";
 }
 var PATCH_NOTES = [
+  {
+    branch: "daniels",
+    release: "3.10",
+    algo: "Empty",
+    algoFingerprint: "24e7f5dc5353",
+    date: "2026-08-07",
+    title: "The nine team states have names of their own now",
+    changes: [
+      "Juggernaut, early rebuild and win now are gone. Every other dynasty site uses those, and two of them did not describe the thing anyway. The nine states are now BEAUTY, CONTENDER and LAST RIDE across the top, RISING, IN THE MIX and ON FUMES through the middle, then STOCKPILING, REBUILD and YARD SALE along the bottom.",
+      "Left to right is always more future to less. Top to bottom is always winning now to not. Nothing about a cell needs explaining beyond where it sits.",
+      "ON FUMES replaces fading, because it says the actual situation: still a little warm, no fuel left. LAST RIDE replaces win now: a good roster on its final run. YARD SALE is the bottom right corner and means exactly what it looks like.",
+      "Colours nudged along with it: on fumes a step yellower, stockpiling pulled off pure blue toward purple, rebuild pulled off pure purple toward red.",
+      "Nothing about your team changed. Same nine states, same maths, different words on them."
+    ],
+    knownIssues: []
+  },
   {
     branch: "daniels",
     release: "3.9",

@@ -17,11 +17,11 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { caught: Erro
   render() {
     if (this.state.caught) {
       return (
-        <div style={{ padding: 48, fontFamily: "monospace", color: "#ef4444" }}>
+        <div style={{ padding: 48, fontFamily: "monospace", color: "#ee4266" }}>
           <div style={{ marginBottom: 12, fontWeight: 700 }}>Something went wrong</div>
-          <div style={{ marginBottom: 16, opacity: 0.8, fontSize: 13 }}>{this.state.caught.message}</div>
+          <div style={{ marginBottom: 16, opacity: 0.8, fontSize: 14.9 }}>{this.state.caught.message}</div>
           <button onClick={() => { this.setState({ caught: null }); window.location.reload(); }}
-            style={{ background: "none", border: "1px solid #ef4444", color: "#ef4444", padding: "6px 14px", cursor: "pointer", fontFamily: "monospace" }}>
+            style={{ background: "none", border: "1px solid #ee4266", color: "#ee4266", padding: "6px 14px", cursor: "pointer", fontFamily: "monospace" }}>
             Reload
           </button>
         </div>

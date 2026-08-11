@@ -4,7 +4,6 @@ import {
   FAIRNESS_FAIR_ABS,
   FAIRNESS_FAIR_PCT,
   FAIRNESS_SLIGHT_PCT,
-  fairnessColor,
   fairnessLabel,
   fairnessText,
   tradeEffectiveValues,
@@ -21,16 +20,13 @@ import {
   type AssetFilters,
   type TradeAsset,
 } from "../data/assetPool.ts";
+import { posColor, fairnessColor } from "../ui/theme.ts";
 
 type TradeSide = {
   rosterId: number | null;
   assets: TradeAsset[];
 };
 
-function posColor(pos: string) {
-  const map: Record<string, string> = { QB: "#c2410c", RB: "#ca8a04", WR: "#3b82f6", TE: "#a855f7" };
-  return map[pos] ?? "#94a3b8";
-}
 
 function formatDelta(net: number): string {
   const abs = Math.abs(net);
@@ -45,9 +41,9 @@ function PosTag({ position }: { position?: Position }) {
     <span
       className="pos-tag"
       style={{
-        background: position ? posColor(position) : "#475569",
-        color: "#fff", padding: "1px 5px", borderRadius: 2,
-        fontSize: 8, fontWeight: 700, letterSpacing: 0.5, flexShrink: 0,
+        background: position ? posColor(position) : "#4e5650",
+        color: "#fefedf", padding: "1px 5px", borderRadius: 2,
+        fontSize: 9.2, fontWeight: 700, letterSpacing: 0.5, flexShrink: 0,
       }}
     >
       {position ?? "PICK"}
@@ -128,7 +124,7 @@ function TradePanel({
       </div>
       <div className="calc-panel-body">
         {side.assets.length === 0 ? (
-          <p className="dim-text" style={{ textAlign: "center", fontSize: 11, padding: "20px 0" }}>
+          <p className="dim-text" style={{ textAlign: "center", fontSize: 12.6, padding: "20px 0" }}>
             Search below to add
           </p>
         ) : (
@@ -279,7 +275,7 @@ function ImpactBar({ score, net }: { score: number; net: number }) {
   const basePct = Math.max(0, Math.min(100, score));
   // Scale: ~8000 value delta → 28% bar width. Capped so it doesn't overflow.
   const deltaW = Math.min(28, Math.abs(net) / 285);
-  const neutral = "#334155";
+  const neutral = "#3a423f";
 
   if (net > 0) {
     // Neutral base → green extension
@@ -287,7 +283,7 @@ function ImpactBar({ score, net }: { score: number; net: number }) {
     return (
       <div className="trade-bar-track">
         <div style={{ width: `${basePct}%`, height: "100%", background: neutral, flexShrink: 0 }} />
-        {gainW > 0.3 && <div style={{ width: `${gainW}%`, height: "100%", background: "#22c55e", flexShrink: 0 }} />}
+        {gainW > 0.3 && <div style={{ width: `${gainW}%`, height: "100%", background: "#18f2b2", flexShrink: 0 }} />}
       </div>
     );
   }
@@ -297,14 +293,14 @@ function ImpactBar({ score, net }: { score: number; net: number }) {
     return (
       <div className="trade-bar-track">
         <div style={{ width: `${basePct - lossW}%`, height: "100%", background: neutral, flexShrink: 0 }} />
-        {lossW > 0.3 && <div style={{ width: `${lossW}%`, height: "100%", background: "#ef4444", flexShrink: 0 }} />}
+        {lossW > 0.3 && <div style={{ width: `${lossW}%`, height: "100%", background: "#ee4266", flexShrink: 0 }} />}
       </div>
     );
   }
   // No change — neutral slate, no level-based color (avoids confusion with side accents)
   return (
     <div className="trade-bar-track">
-      <div style={{ width: `${basePct}%`, height: "100%", background: "#334155", flexShrink: 0 }} />
+      <div style={{ width: `${basePct}%`, height: "100%", background: "#3a423f", flexShrink: 0 }} />
     </div>
   );
 }
@@ -338,7 +334,7 @@ function TeamImpactPanel({
       {POSITIONS_ORDER.map((pos) => {
         const ps  = profile.positionScores[pos];
         const net = posNet[pos] ?? 0;
-        const deltaColor = net > 0 ? "#22c55e" : "#ef4444";
+        const deltaColor = net > 0 ? "#18f2b2" : "#ee4266";
         const deltaStr   = net !== 0 ? formatDelta(net) : null;
         return (
           <div key={pos} className="team-impact-row">
@@ -365,12 +361,12 @@ function TeamImpactPanel({
         <div className="team-impact-picks">
           <span className="team-impact-picks-lbl">PICKS</span>
           {picksOut.map((p) => (
-            <div key={p.id} className="team-impact-pick-item" style={{ color: "#ef4444" }}>
+            <div key={p.id} className="team-impact-pick-item" style={{ color: "#ee4266" }}>
               − {pickLabel(p)}
             </div>
           ))}
           {picksIn.map((p) => (
-            <div key={p.id} className="team-impact-pick-item" style={{ color: "#22c55e" }}>
+            <div key={p.id} className="team-impact-pick-item" style={{ color: "#18f2b2" }}>
               + {pickLabel(p)}
             </div>
           ))}
@@ -402,7 +398,7 @@ function TradeImpactReport({
           />
         ) : (
           <div className="team-impact-panel team-impact-placeholder">
-            <p className="dim-text" style={{ fontSize: 10, textAlign: "center", paddingTop: 24 }}>Select a team</p>
+            <p className="dim-text" style={{ fontSize: 11.5, textAlign: "center", paddingTop: 24 }}>Select a team</p>
           </div>
         )}
         {profileB ? (
@@ -413,7 +409,7 @@ function TradeImpactReport({
           />
         ) : (
           <div className="team-impact-panel team-impact-placeholder">
-            <p className="dim-text" style={{ fontSize: 10, textAlign: "center", paddingTop: 24 }}>Select a team</p>
+            <p className="dim-text" style={{ fontSize: 11.5, textAlign: "center", paddingTop: 24 }}>Select a team</p>
           </div>
         )}
       </div>
@@ -510,18 +506,18 @@ export default function Calc() {
   // Fair threshold: within 8% of the larger side's total.
   // Fair = both sides green. Unfair = winning side green, losing side red.
   const isFair = !hasItems || diffPct < 8;
-  const totalColorA = !hasItems ? "#475569" : isFair || diff > 0 ? "#22c55e" : "#ef4444";
-  const totalColorB = !hasItems ? "#475569" : isFair || diff < 0 ? "#22c55e" : "#ef4444";
+  const totalColorA = !hasItems ? "#4e5650" : isFair || diff > 0 ? "#18f2b2" : "#ee4266";
+  const totalColorB = !hasItems ? "#4e5650" : isFair || diff < 0 ? "#18f2b2" : "#ee4266";
 
   function getVerdict(): { text: string; color: string } {
-    if (!hasItems) return { text: "—", color: "#475569" };
-    if (diffPct < 8)  return { text: "FAIR", color: "#94a3b8" };
+    if (!hasItems) return { text: "—", color: "#4e5650" };
+    if (diffPct < 8)  return { text: "FAIR", color: "#9fa492" };
     // Winner = the side receiving more value than they put in
     const winnerName = diff > 0
       ? (profileA?.ownerName.split(" ")[0] ?? "SIDE A").toUpperCase()
       : (profileB?.ownerName.split(" ")[0] ?? "SIDE B").toUpperCase();
-    if (diffPct > 20) return { text: `${winnerName} BIG WIN`, color: "#22c55e" };
-    return { text: `${winnerName} WINS`, color: "#4ade80" };
+    if (diffPct > 20) return { text: `${winnerName} BIG WIN`, color: "#18f2b2" };
+    return { text: `${winnerName} WINS`, color: "#18f2b2" };
   }
   const verdict = getVerdict();
 
@@ -583,7 +579,7 @@ export default function Calc() {
       <div className="calc-panels">
         <TradePanel
           side={sideA}
-          accent="#06b6d4"
+          accent="#42bfdd"
           profiles={profiles}
           total={totalA}
           adjustedTotal={adjA}
@@ -597,11 +593,11 @@ export default function Calc() {
           {hasItems ? (
             <>
               <div className="calc-verdict-label" style={{ color: verdict.color }}>{verdict.text}</div>
-              <div className="calc-verdict-diff" style={{ color: isFair ? "#22c55e" : "#ef4444" }}>
+              <div className="calc-verdict-diff" style={{ color: isFair ? "#18f2b2" : "#ee4266" }}>
                 {diff >= 0 ? "+" : "−"}{Math.abs(diff).toLocaleString()}
               </div>
               {diffPct > 0 && (
-                <div className="calc-verdict-pct" style={{ color: isFair ? "#22c55e" : "#ef4444" }}>
+                <div className="calc-verdict-pct" style={{ color: isFair ? "#18f2b2" : "#ee4266" }}>
                   {diffPct}%
                 </div>
               )}
@@ -614,7 +610,7 @@ export default function Calc() {
                     <div
                       key={i}
                       className="calc-fit-line"
-                      style={{ color: fl.good === true ? "#22c55e" : fl.good === false ? "#ef4444" : "#64748b" }}
+                      style={{ color: fl.good === true ? "#18f2b2" : fl.good === false ? "#ee4266" : "#6e756a" }}
                     >
                       {fl.text}
                     </div>
@@ -624,7 +620,7 @@ export default function Calc() {
               <button className="calc-clear-btn" onClick={clearAll}>CLEAR</button>
             </>
           ) : (
-            <p className="dim-text" style={{ fontSize: 11, textAlign: "center", lineHeight: 1.6 }}>
+            <p className="dim-text" style={{ fontSize: 12.6, textAlign: "center", lineHeight: 1.6 }}>
               Add assets to<br />see analysis
             </p>
           )}
@@ -632,7 +628,7 @@ export default function Calc() {
 
         <TradePanel
           side={sideB}
-          accent="#f59e0b"
+          accent="#42bfdd"
           profiles={profiles}
           total={totalB}
           adjustedTotal={adjB}
@@ -694,7 +690,7 @@ export default function Calc() {
             <span className="calc-dock-verdict" style={{ color: verdict.color }}>
               {verdict.text}
             </span>
-            <span className="calc-dock-diff" style={{ color: isFair ? "#22c55e" : "#ef4444" }}>
+            <span className="calc-dock-diff" style={{ color: isFair ? "#18f2b2" : "#ee4266" }}>
               {diff >= 0 ? "+" : "−"}{Math.abs(diff).toLocaleString()}
             </span>
           </div>

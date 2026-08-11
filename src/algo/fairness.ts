@@ -84,9 +84,8 @@ export function fairnessText(label: FairnessLabel): string {
   return label.replace(/_/g, " ");
 }
 
-// Badge color shared across pages: green fair, yellow slight, red lopsided.
-export function fairnessColor(label: FairnessLabel): string {
-  if (label === "FAIR") return "#22c55e";
-  if (label === "SLIGHT_OVERPAY" || label === "SLIGHT_UNDERPAY") return "#eab308";
-  return "#ef4444";
-}
+// fairnessColor used to live here. It moved to src/ui/theme.ts because this
+// file is inside the fingerprinted algo layer: recolouring a badge bumped the
+// algo fingerprint, which would have made every subsequent piece of feedback
+// look like it came from a different engine and dropped the whole rationale
+// cache. Presentation does not belong behind that hash.

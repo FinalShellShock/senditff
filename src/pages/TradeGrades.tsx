@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext, useParams, useSearchParams } from "react-router-dom";
-import { fairnessColor } from "../algo/fairness.ts";
 import {
   makeApiClient,
   type GradedAsset,
@@ -10,11 +9,8 @@ import {
 } from "../api/client.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
+import { posColor, fairnessColor } from "../ui/theme.ts";
 
-function posColor(pos?: string) {
-  const map: Record<string, string> = { QB: "#c2410c", RB: "#ca8a04", WR: "#3b82f6", TE: "#a855f7" };
-  return pos ? map[pos] ?? "#94a3b8" : "#475569";
-}
 
 function fmtValue(n: number): string {
   const abs = Math.abs(n);
@@ -30,7 +26,7 @@ function AssetRow({ asset }: { asset: GradedAsset }) {
     <div className="tg-asset-row">
       <span
         className="trade-asset-tag"
-        style={{ background: asset.kind === "player" ? posColor(asset.position) : "#475569" }}
+        style={{ background: asset.kind === "player" ? posColor(asset.position) : "#4e5650" }}
       >
         {asset.kind === "player" ? asset.position : asset.kind === "pick" ? "PICK" : "FAAB"}
       </span>
@@ -52,7 +48,7 @@ function TradeRow({ trade, myRosterId }: { trade: GradedTrade; myRosterId: numbe
       <div className="tg-trade-header">
         <span className="dim-text">{trade.date.slice(0, 10)}</span>
         {winner ? (
-          <span className="tg-winner-tag" style={{ color: "#22c55e" }}>
+          <span className="tg-winner-tag" style={{ color: "#18f2b2" }}>
             {winner.managerName} +{Math.round(trade.delta).toLocaleString()}
           </span>
         ) : (
@@ -68,13 +64,13 @@ function TradeRow({ trade, myRosterId }: { trade: GradedTrade; myRosterId: numbe
           return (
             <div key={side.rosterId} className={`tg-side${won ? " tg-side-won" : ""}`}>
               <div className="tg-side-header">
-                <span className="tg-side-manager" style={{ color: won ? "#22c55e" : "#e2e8f0" }}>
+                <span className="tg-side-manager" style={{ color: won ? "#18f2b2" : "#e9e9ce" }}>
                   {side.managerName}{mine ? " ★" : ""} receives
                 </span>
                 <span className="tg-side-total">{Math.round(side.received).toLocaleString()}</span>
               </div>
               {side.assets.map((a, i) => <AssetRow key={i} asset={a} />)}
-              <div className="tg-side-net" style={{ color: side.net > 0 ? "#22c55e" : side.net < 0 ? "#ef4444" : "#64748b" }}>
+              <div className="tg-side-net" style={{ color: side.net > 0 ? "#18f2b2" : side.net < 0 ? "#ee4266" : "#6e756a" }}>
                 net {fmtValue(Math.round(side.net))}
               </div>
             </div>
@@ -250,7 +246,7 @@ export default function TradeGrades() {
               <span className="tg-ledger-manager">{row.managerName}{row.rosterId === myRosterId ? " ★" : ""}</span>
               <span>{row.trades}</span>
               <span className="dim-text">{row.wins}-{row.losses}-{row.ties}</span>
-              <span style={{ color: row.netValue > 0 ? "#22c55e" : row.netValue < 0 ? "#ef4444" : "#64748b" }}>
+              <span style={{ color: row.netValue > 0 ? "#18f2b2" : row.netValue < 0 ? "#ee4266" : "#6e756a" }}>
                 {fmtValue(Math.round(row.netValue))}
               </span>
             </div>
