@@ -824,12 +824,11 @@ body {
   color: #051014;
 }
 
-/* Must match POS_COLOR in src/ui/theme.ts. Deliberately avoids the reserved
-   good/bad pair: a position tag is not a positive or negative value. */
-.pos-QB { background: #42bfdd; }
-.pos-RB { background: #ca3cff; }
-.pos-WR { background: #f6f740; }
-.pos-TE { background: #f9a03f; }
+/* The .pos-QB/RB/WR/TE classes lived here and are gone. Every component sets
+   the background inline from posColor() in src/ui/theme.ts, so these were dead
+   rules holding a second copy of the palette — and they had already drifted:
+   .pos-RB still carried #ca3cff after the constant moved to #e398ff. One
+   source, no second place to forget. */
 
 .bar-group {
   display: grid;
