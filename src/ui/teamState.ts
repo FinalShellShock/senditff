@@ -1,5 +1,5 @@
 import type { TeamState } from "../algo/types.ts";
-import { BAD, BG, BRAND, GOOD, INK, INK_4, ORANGE, PURPLE, WARN } from "./theme.ts";
+import { BAD, BG, GOOD, INK, INK_4, ORANGE, PURPLE, WARN } from "./theme.ts";
 
 /**
  * One source for how the nine team states are drawn and named.
@@ -50,54 +50,49 @@ export const STATE_TEXT: Record<TeamState, string> = {
 /**
  * League Shape scoring. Kelly, 2026-08-07.
  *
- * TWO channels, not one. Hue says which band you are in; fill says how settled
- * it is. That is what lets nine cells use six colours without collisions.
+ * FIVE hues, each used twice, once filled and once outlined. Red is the only
+ * one that appears alone, which is what makes YARD SALE the single unmistakable
+ * cell on the board.
  *
- *   HOT      BEAUTY      brand, outlined   the best roster, drawn as a cut-out
- *            CONTENDER   good, solid
- *            RISING      brand, solid
+ *              DEEP FUTURE         MIDDLE              THIN FUTURE
+ *   CONTENDING BEAUTY  green fill  CONTENDER green out LAST RIDE  yellow fill
+ *   MIDDLE     RISING  purple out  IN THE MIX yellow out ON FUMES orange out
+ *   NOT CLOSE  STOCKPILING pur fill REBUILD  orange fill YARD SALE red fill
  *
- *   BUILDING STOCKPILING purple, outlined
- *            IN THE MIX  ink, outlined
- *            REBUILD     orange, outlined
+ * Pairing a hue with itself across fills is the point: RISING and STOCKPILING
+ * are the same colour because they are the same idea at different depths, and
+ * so are ON FUMES and REBUILD. The fill separates them without spending a
+ * sixth and seventh hue the palette does not have.
  *
- *   DANGER   LAST RIDE   warn, solid
- *            ON FUMES    orange, solid
- *            YARD SALE   bad, solid
- *
- * Solid is a verdict: you are winning, or you are in trouble. Outlined is the
- * middle of the board, where nothing has resolved yet. BEAUTY is the one
- * deliberate exception, outlined so the best roster in the league cannot be
- * mistaken for an ordinary good one.
- *
- * REBUILD and ON FUMES share orange on purpose, separated by fill: one is
- * building toward something, the other is running out of it.
+ * LAST RIDE and YARD SALE were not re-specified in this round and keep what
+ * they had.
  */
 export const STATE_COLOR: Record<TeamState, string> = {
-  JUGGERNAUT: BRAND,
+  JUGGERNAUT: GOOD,
   CONTENDER: GOOD,
-  RISING: BRAND,
-  REBUILD: PURPLE,
-  MIDDLING: INK,
-  EARLY_REBUILD: ORANGE,
   WIN_NOW: WARN,
+  RISING: PURPLE,
+  MIDDLING: WARN,
   FADING: ORANGE,
+  REBUILD: PURPLE,
+  EARLY_REBUILD: ORANGE,
   STUCK: BAD,
 };
 
 export type StateFill = "solid" | "outline";
 
 export const STATE_FILL: Record<TeamState, StateFill> = {
-  JUGGERNAUT: "outline",
-  CONTENDER: "solid",
-  RISING: "solid",
-  REBUILD: "outline",
-  MIDDLING: "outline",
-  EARLY_REBUILD: "outline",
+  JUGGERNAUT: "solid",
+  CONTENDER: "outline",
   WIN_NOW: "solid",
-  FADING: "solid",
+  RISING: "outline",
+  MIDDLING: "outline",
+  FADING: "outline",
+  REBUILD: "solid",
+  EARLY_REBUILD: "solid",
   STUCK: "solid",
 };
+
 
 /**
  * The three values a chip or dot needs, so no call site has to reimplement
