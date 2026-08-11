@@ -1,5 +1,5 @@
 import type { TeamState } from "../algo/types.ts";
-import { BAD, BG, GOOD, INK, INK_4, WARN } from "./theme.ts";
+import { BAD, BG, BRAND, GOOD, INK, INK_4, ORANGE, PURPLE, WARN } from "./theme.ts";
 
 /**
  * One source for how the nine team states are drawn and named.
@@ -48,40 +48,71 @@ export const STATE_TEXT: Record<TeamState, string> = {
   STUCK: "YARD SALE",
 };
 /**
- * Five-level scoring, specified by Kelly 2026-08-07. Several states share a
- * colour on purpose: this is a quality scale, not nine separate identities.
+ * League Shape scoring. Kelly, 2026-08-07.
  *
- *   BEAUTY                              background  (drawn as an outline)
- *   RISING, CONTENDER                   good
- *   STOCKPILING, IN THE MIX, LAST RIDE  ink
- *   REBUILD, ON FUMES                   warn
- *   YARD SALE                           bad
+ * TWO channels, not one. Hue says which band you are in; fill says how settled
+ * it is. That is what lets nine cells use six colours without collisions.
  *
- * BEAUTY is the page background, so anything painted in it is invisible until
- * it is given an edge. Every badge and every map dot therefore carries a ring;
- * see STATE_RING below. That makes the best team read as a cut-out rather than
- * a missing element, which is the intent, but it only works while the ring is
- * drawn. Do not remove it.
+ *   HOT      BEAUTY      brand, outlined   the best roster, drawn as a cut-out
+ *            CONTENDER   good, solid
+ *            RISING      brand, solid
+ *
+ *   BUILDING STOCKPILING purple, outlined
+ *            IN THE MIX  ink, outlined
+ *            REBUILD     orange, outlined
+ *
+ *   DANGER   LAST RIDE   warn, solid
+ *            ON FUMES    orange, solid
+ *            YARD SALE   bad, solid
+ *
+ * Solid is a verdict: you are winning, or you are in trouble. Outlined is the
+ * middle of the board, where nothing has resolved yet. BEAUTY is the one
+ * deliberate exception, outlined so the best roster in the league cannot be
+ * mistaken for an ordinary good one.
+ *
+ * REBUILD and ON FUMES share orange on purpose, separated by fill: one is
+ * building toward something, the other is running out of it.
  */
 export const STATE_COLOR: Record<TeamState, string> = {
-  JUGGERNAUT: BG,
-  RISING: GOOD,
+  JUGGERNAUT: BRAND,
   CONTENDER: GOOD,
-  REBUILD: INK,
+  RISING: BRAND,
+  REBUILD: PURPLE,
   MIDDLING: INK,
-  WIN_NOW: INK,
-  EARLY_REBUILD: WARN,
-  FADING: WARN,
+  EARLY_REBUILD: ORANGE,
+  WIN_NOW: WARN,
+  FADING: ORANGE,
   STUCK: BAD,
 };
 
+export type StateFill = "solid" | "outline";
+
+export const STATE_FILL: Record<TeamState, StateFill> = {
+  JUGGERNAUT: "outline",
+  CONTENDER: "solid",
+  RISING: "solid",
+  REBUILD: "outline",
+  MIDDLING: "outline",
+  EARLY_REBUILD: "outline",
+  WIN_NOW: "solid",
+  FADING: "solid",
+  STUCK: "solid",
+};
+
 /**
- * Outline for a swatch painted in a state's colour. Only BEAUTY needs one to
- * exist at all; the rest get a faint edge so the set looks deliberate rather
- * than one odd outlined chip among eight solid ones.
+ * The three values a chip or dot needs, so no call site has to reimplement
+ * what "outline" means and drift from the others.
  */
-export function stateRing(state: TeamState): string {
-  return STATE_COLOR[state] === BG ? INK_4 : "rgba(254,254,223,0.16)";
+export function stateStyle(state: TeamState): {
+  bg: string;
+  border: string;
+  ink: string;
+} {
+  const color = STATE_COLOR[state] ?? INK_4;
+  if (STATE_FILL[state] === "outline") {
+    return { bg: "transparent", border: color, ink: color };
+  }
+  return { bg: color, border: color, ink: stateInk(state) };
 }
 /**
  * Readable text colour for a badge painted in a state's colour.

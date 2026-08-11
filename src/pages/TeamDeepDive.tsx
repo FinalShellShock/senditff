@@ -13,7 +13,7 @@ import { scoutingPlays, type Play } from "../algo/plays.ts";
 import { intentShortLabel } from "../data/intentLabels.ts";
 import { FeedbackBlock } from "../components/FeedbackBlock.tsx";
 import TeamState, { pickFlagText } from "./team/TeamState.tsx";
-import { STATE_COLOR, STATE_TEXT, stateInk } from "../ui/teamState.ts";
+import { STATE_TEXT, stateStyle } from "../ui/teamState.ts";
 import { posColor, INK_4 } from "../ui/theme.ts";
 
 // CRITICAL and SURPLUS are the two states worth acting on, so they own the
@@ -210,7 +210,7 @@ export default function TeamDeepDive() {
     );
   }
 
-  const stateColor = STATE_COLOR[profile.teamState] ?? INK_4;
+  const st = stateStyle(profile.teamState);
 
   const sortedPicks = [...profile.picks].sort((a, b) => {
     if (a.year !== b.year) return a.year - b.year;
@@ -236,7 +236,7 @@ export default function TeamDeepDive() {
           </h1>
           <span
             className="window-label"
-            style={{ background: stateColor, color: stateInk(profile.teamState) }}
+            style={{ background: st.bg, borderColor: st.border, color: st.ink }}
           >
             {STATE_TEXT[profile.teamState]}
           </span>

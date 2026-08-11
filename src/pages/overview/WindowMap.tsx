@@ -22,7 +22,7 @@ import {
 } from "../../algo/constants.ts";
 import { projectTeam } from "../../algo/projection.ts";
 import type { LeagueFormat, TeamProfile } from "../../algo/types.ts";
-import { STATE_GRID, STATE_COLOR, STATE_TEXT, stateRing } from "../../ui/teamState.ts";
+import { STATE_GRID, STATE_COLOR, STATE_TEXT, stateStyle } from "../../ui/teamState.ts";
 import { BRAND, INK_4 } from "../../ui/theme.ts";
 
 const SURFACE = "#051014";
@@ -422,15 +422,15 @@ export default function WindowMap({
               </title>
               {/* hover/click target, larger than the mark */}
               <circle cx={x} cy={y} r={HIT_R} fill="transparent" />
-              {/* Ring is stateRing, not the old surface colour. BEAUTY is
-                  painted in the page background, so a background-coloured ring
-                  left that dot with no edge at all and it vanished. */}
+              {/* Outlined states draw as a ring on the page background; solid
+                  ones fill. stateStyle is the single definition of that, so a
+                  dot and its badge cannot disagree. */}
               <circle
                 cx={x}
                 cy={y}
                 r={DOT_R}
-                fill={color}
-                stroke={profile.isMine ? BRAND : stateRing(profile.teamState)}
+                fill={stateStyle(profile.teamState).bg === "transparent" ? SURFACE : color}
+                stroke={profile.isMine ? BRAND : stateStyle(profile.teamState).border}
                 strokeWidth={2}
               />
               <text

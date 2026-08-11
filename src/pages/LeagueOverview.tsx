@@ -10,11 +10,7 @@ import type {
   Pick as DraftPick,
   SubClassification,
 } from "../algo/types.ts";
-import {
-  STATE_COLOR,
-  STATE_TEXT,
-  stateInk,
-} from "../ui/teamState.ts";
+import { STATE_TEXT, stateStyle } from "../ui/teamState.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 import LeverageBoard from "./overview/LeverageBoard.tsx";
@@ -337,7 +333,7 @@ function LeagueTableRow({
   onToggle: () => void;
 }) {
   const navigate = useNavigate();
-  const stateColor = STATE_COLOR[profile.teamState] ?? INK_4;
+  const stateStyleFor = stateStyle(profile.teamState);
   const stateText = STATE_TEXT[profile.teamState] ?? "—";
 
   // Real lineup fill (same math the algorithm scores): base slots + flex.
@@ -371,8 +367,9 @@ function LeagueTableRow({
               <span
                 className="window-label"
                 style={{
-                  background: STATE_COLOR[profile.teamState] ?? INK_4,
-                  color: stateInk(profile.teamState),
+                  background: stateStyle(profile.teamState).bg,
+                  borderColor: stateStyle(profile.teamState).border,
+                  color: stateStyle(profile.teamState).ink,
                 }}
               >
                 {STATE_TEXT[profile.teamState] ?? "—"}

@@ -18,6 +18,9 @@ export const GOOD = "#18f2b2";
 export const BAD = "#ee4266";
 
 export const WARN = "#f6f740";
+/** Shared with the RB and TE position tags; also carries two League Shape cells. */
+export const PURPLE = "#e398ff";
+export const ORANGE = "#f9a03f";
 /** Primary text. */
 export const INK = "#fefedf";
 
@@ -43,10 +46,12 @@ export const SURFACE_DEEP = "#0f191c"; // sunken surface
  * for positive and negative value, and a position tag is neither.
  */
 export const POS_COLOR: Record<string, string> = {
-  QB: "#42bfdd",
-  RB: "#ca3cff",
-  WR: "#f6f740",
-  TE: "#f9a03f",
+  // RB was #ca3cff: 65% more chroma than the rest of the palette and darker
+  // than all of it, which is why it read as jarring. Same hue, family L and C.
+  QB: BRAND,
+  RB: PURPLE,
+  WR: WARN,
+  TE: ORANGE,
 };
 
 /** Undefined position (a pick) is dimmer than an unrecognised one. */

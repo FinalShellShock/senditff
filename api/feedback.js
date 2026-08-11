@@ -47,6 +47,23 @@ function currentRelease() {
 }
 var PATCH_NOTES = [
   {
+    branch: "jeanty",
+    release: "1.0",
+    algo: "Empty",
+    algoFingerprint: "887cb3116985",
+    date: "2026-08-07",
+    title: "New colours, and text you can read without leaning in",
+    changes: [
+      "The whole site is on a new palette, designed by Kelly. Deep teal background, and a cyan that replaces every orange accent and button.",
+      "Green now means one thing and red means one thing: value going up, and value going down. Neither appears anywhere else on the site, so a colour on a number is never decoration.",
+      "Positions have their own colours that stay out of that pair: quarterbacks cyan, running backs purple, receivers yellow, tight ends orange.",
+      "The League Shape chart reads as a five step scale instead of nine separate colours. Beauty is the background colour with an outline, so the best roster in your league is a cut-out rather than another dot.",
+      "Text is about 15% larger everywhere.",
+      "Trades are untouched. Every file that decides which trades get suggested is byte for byte identical to the previous release."
+    ],
+    knownIssues: []
+  },
+  {
     branch: "daniels",
     release: "3.10",
     algo: "Empty",
