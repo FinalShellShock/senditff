@@ -35,7 +35,7 @@ const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 const CLASS_COLOR: Record<string, string> = {
   CRITICAL: "#ee4266",
   NEED: "#f6f740",
-  HEALTHY: "#6e756a",
+  HEALTHY: "#999e8d",
   SURPLUS: "#18f2b2",
 };
 
@@ -145,7 +145,7 @@ export default function LeverageBoard({
                         className="lb-bar-fill"
                         style={{
                           width: `${Math.max(3, ((ps?.starterValue ?? 0) / maxValue) * 100)}%`,
-                          background: CLASS_COLOR[cl] ?? "#4e5650",
+                          background: CLASS_COLOR[cl] ?? "#7e8477",
                         }}
                       />
                     </span>
@@ -153,8 +153,8 @@ export default function LeverageBoard({
                       className="lb-tag"
                       style={{
                         color: punting
-                          ? "#6e756a"
-                          : (CLASS_COLOR[cl] ?? "#6e756a"),
+                          ? "#999e8d"
+                          : (CLASS_COLOR[cl] ?? "#999e8d"),
                       }}
                     >
                       {desperate

@@ -33,7 +33,10 @@
 //              pool, and never a league rank. Drawing the real floors makes
 //              the label self-evident instead of arbitrary.
 
+import { Link } from "react-router-dom";
 import { depthByPosition, fillStarters } from "../../algo/profile.ts";
+import type { LedgerRow } from "../../api/client.ts";
+import { BAD, GOOD } from "../../ui/theme.ts";
 import type {
   ClassifyEvidence,
   LeagueFormat,
@@ -47,7 +50,7 @@ import { posColor } from "../../ui/theme.ts";
 
 const ACCENT = "#42bfdd";
 const GRID = "rgba(255,255,255,0.07)";
-const AXIS_TEXT = "#4e5650";
+const AXIS_TEXT = "#7e8477";
 
 const POSITIONS: Position[] = ["QB", "RB", "WR", "TE"];
 
@@ -55,7 +58,7 @@ const POS_CLASS_COLOR: Record<string, string> = {
   CRITICAL_NEED: "#ee4266",
   CRITICAL: "#ee4266",
   NEED: "#f6f740",
-  HEALTHY: "#6e756a",
+  HEALTHY: "#999e8d",
   SURPLUS: "#18f2b2",
 };
 
@@ -177,7 +180,7 @@ function SeverityCell({
   player: Player | undefined;
 }) {
   const level = Math.max(0, SEVERITY_STEPS.indexOf(label));
-  const color = POS_CLASS_COLOR[label] ?? "#6e756a";
+  const color = POS_CLASS_COLOR[label] ?? "#999e8d";
   return (
     <div className="state-sev">
       <div className="state-sev-top">
@@ -271,11 +274,8 @@ function PositionTable({
         <span className="state-report-title">POSITIONS</span>
       </div>
       <p className="state-report-sub">
-        Judged on the weakest slot you would have to start, and on the one man
-        behind him. Each shows his value, the need floor he has to clear, and
-        how far he sits from a typical player at that spot. Below -1 sigma is a
-        need, below -2 is critical, and either that or the floor is enough to
-        flag it.
+        Your weakest starter and the man behind him, against the floor each has
+        to clear.
       </p>
       <div className="pos-dash-header-row">
         <div />
@@ -423,18 +423,22 @@ function UnbankedReport({
           {fmt(mine.roster.amount)} · #{rank}
         </span>
       </div>
-      <p className="state-report-sub">
-        How much of what you own has not been paid out yet, from the gap between
-        each player's dynasty and redraft price. Picks count in full, since they
-        cannot score this season, and they are{" "}
-        {Math.round(mine.pickShare * 100)}% of your assets. That is{" "}
-        {pct(mine.roster.share)} of your roster's total value, and your starting
-        lineup alone is {pct(mine.starters.share)}.{" "}
-        {mine.starters.share < 0 &&
-          "Negative there means your lineup out-produces its own dynasty price, so that value is already banked. "}
-        The ranking is on the amount, not the percentage: a high share of a
-        small roster is less deferred value than a lower share of a big one.
-      </p>
+      {/* A key, not a paragraph. The two segments are the whole idea; spelling
+          it out in prose asked the reader to hold four numbers in their head to
+          learn what a colour already says. */}
+      <div className="state-key">
+        <span className="state-key-item">
+          <span className="state-key-swatch" style={{ background: ACCENT }} />
+          players, beyond what they score now
+        </span>
+        <span className="state-key-item">
+          <span
+            className="state-key-swatch"
+            style={{ background: "rgba(255,255,255,0.55)" }}
+          />
+          picks, which score nothing yet
+        </span>
+      </div>
       <div className="state-bars">
         {rows.map((r) => {
           const isMe = r.rosterId === me.rosterId;
@@ -478,27 +482,120 @@ function UnbankedReport({
   );
 }
 
+/**
+ * Trade record. We are a trade app; how a manager has actually traded belongs
+ * beside how his roster looks.
+ *
+ * The ledger was already being fetched on this page and thrown away, so this
+ * costs no extra request. Reads as a record because that is what a manager
+ * already knows how to read, and links out rather than explaining itself.
+ */
+function TradeRecord({
+  row,
+  ledger,
+  leagueId,
+}: {
+  row: LedgerRow;
+  ledger: LedgerRow[];
+  leagueId: string;
+}) {
+  const ranked = [...ledger].sort(
+    (a, b) => b.netValue - a.netValue || a.rosterId - b.rosterId,
+  );
+  const rank = ranked.findIndex((r) => r.rosterId === row.rosterId) + 1;
+  const up = row.netValue >= 0;
+  const record = `${row.wins}-${row.losses}${row.ties ? `-${row.ties}` : ""}`;
+  return (
+    <div className="state-panel">
+      <div className="state-report-head">
+        <span className="state-report-title">TRADE RECORD</span>
+        <span className="state-report-value">
+          {row.trades === 0 ? "no trades" : `${record} · #${rank}`}
+        </span>
+      </div>
+      {row.trades === 0 ? (
+        <p className="state-report-sub">Nothing to grade yet.</p>
+      ) : (
+        <>
+          <p className="state-report-sub">
+            Across {row.trades} trade{row.trades === 1 ? "" : "s"}, value{" "}
+            {up ? "gained" : "lost"}{" "}
+            <span style={{ color: up ? GOOD : BAD, fontWeight: 700 }}>
+              {up ? "+" : ""}
+              {fmt(row.netValue)}
+            </span>
+            .
+          </p>
+          <div className="state-bars">
+            {ranked.map((r) => {
+              const mine = r.rosterId === row.rosterId;
+              const span = Math.max(...ranked.map((x) => Math.abs(x.netValue)), 1);
+              const w = (Math.abs(r.netValue) / span) * 50;
+              return (
+                <div
+                  key={r.rosterId}
+                  className={`state-bar-row${mine ? " state-bar-mine" : ""}`}
+                >
+                  <span className="state-bar-name">{r.managerName}</span>
+                  {/* Diverging from the centre: a trade record is signed, and a
+                      left-anchored bar cannot show which side of zero it is. */}
+                  <span className="state-bar-track">
+                    <span className="state-pull-axis-line" />
+                    <span
+                      className="state-bar-fill"
+                      style={{
+                        width: `${w}%`,
+                        [r.netValue >= 0 ? "left" : "right"]: "50%",
+                        background: r.netValue >= 0 ? GOOD : BAD,
+                        opacity: mine ? 1 : 0.45,
+                      }}
+                    />
+                  </span>
+                  <span className="state-bar-num">
+                    {r.netValue >= 0 ? "+" : ""}
+                    {fmt(r.netValue)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+      <Link className="state-more-link" to={`/league/${leagueId}/trades`}>
+        Every trade, graded →
+      </Link>
+    </div>
+  );
+}
+
 export default function TeamState({
   me,
   league,
   format,
+  tradeRow,
+  ledger,
+  leagueId,
 }: {
   me: TeamProfile;
   league: TeamProfile[];
   format: LeagueFormat;
+  tradeRow: LedgerRow | null;
+  ledger: LedgerRow[] | null;
+  leagueId: string;
 }) {
   if (league.length < 2) return null;
   return (
     <section className="dive-pos-section">
       <h2 className="section-title">TEAM STATE</h2>
       <p className="dim-text scout-intro">
-        The numbers under the badges: what you actually scored, how much of what
-        you own has not been paid out yet, and where each position sits against
-        the thresholds that label it.
+        The numbers under the badges.
       </p>
       <div className="state-grid">
         <Scoring me={me} league={league} />
         <UnbankedReport me={me} league={league} format={format} />
+        {tradeRow && ledger && (
+          <TradeRecord row={tradeRow} ledger={ledger} leagueId={leagueId} />
+        )}
       </div>
       <div className="state-panel">
         <PositionTable me={me} format={format} />

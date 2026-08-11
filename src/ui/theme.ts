@@ -27,16 +27,24 @@ export const INK = "#fefedf";
 /**
  * Text and surface ramp, brightest to darkest.
  *
- * These are INK blended toward BG at the fraction that reproduces the relative
- * luminance of the slate ramp they replace, so the text hierarchy that already
- * worked survives the recolour instead of being re-guessed by eye.
+ * The six INK_ steps are TEXT and each one is pinned to a contrast ratio
+ * against BG, not to a look: 18.4, 15.6, 13.0, 9.5, 7.0 and 5.0 to one. The
+ * floor is 5.0, comfortably over the 4.5 AA minimum for small text.
+ *
+ * They started as luminance matches for the slate ramp they replaced, which
+ * carried that ramp's problem across: INK_5 landed at 4.05:1 over 50 usages and
+ * INK_6 at 2.54:1 over 39, so roughly ninety places on the site were at or
+ * under the readable floor and Johnny was turning his screen brightness up.
+ *
+ * LINE and SURFACE are NOT text. Their low contrast is the point, and lifting
+ * them would turn every border into a line that competes with content.
  */
 export const INK_1 = "#fbfcdd"; // brightest, headings
 export const INK_2 = "#e9e9ce"; // primary body
-export const INK_3 = "#d4d6bd"; // secondary
-export const INK_4 = "#9fa492"; // dim
-export const INK_5 = "#6e756a"; // dimmer
-export const INK_6 = "#4e5650"; // labels
+export const INK_3 = "#d5d6bd"; // secondary
+export const INK_4 = "#b5b9a4"; // dim
+export const INK_5 = "#999e8d"; // dimmer
+export const INK_6 = "#7e8477"; // labels
 export const LINE = "#3a423f"; // borders
 export const SURFACE = "#212a2b"; // raised surface
 export const SURFACE_DEEP = "#0f191c"; // sunken surface

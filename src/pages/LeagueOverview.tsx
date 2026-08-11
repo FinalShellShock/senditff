@@ -27,7 +27,7 @@ const POS_CLASS_COLOR: Record<string, string> = {
   CRITICAL_NEED: "#ee4266",
   CRITICAL: "#ee4266",
   NEED: "#f6f740",
-  HEALTHY: "#6e756a",
+  HEALTHY: "#999e8d",
   SURPLUS: "#18f2b2",
 };
 
@@ -40,7 +40,7 @@ function PicksDots({ picks, flag }: { picks: DraftPick[]; flag: PickFlag }) {
       ? "#18f2b2"
       : flag === "PICK_POOR"
         ? "#ee4266"
-        : "#4e5650";
+        : "#7e8477";
   return (
     <div className="picks-visual">
       <span className="picks-flag" style={{ color: flagColor }}>
@@ -83,7 +83,7 @@ function ThickBar({
   score: number;
   kind?: SubClassification;
 }) {
-  const color = POS_CLASS_COLOR[kind ?? "HEALTHY"] ?? "#6e756a";
+  const color = POS_CLASS_COLOR[kind ?? "HEALTHY"] ?? "#999e8d";
   const width = Math.max(4, Math.min(100, score));
   return (
     <div className="lt-thick-bar-track">
@@ -107,7 +107,7 @@ function combinedColor(s?: SubClassification, d?: SubClassification): string {
   if (s === "CRITICAL" || d === "CRITICAL")
     return POS_CLASS_COLOR.CRITICAL ?? "#ee4266";
   if (s === "NEED" || d === "NEED") return POS_CLASS_COLOR.NEED ?? "#f6f740";
-  return POS_CLASS_COLOR.HEALTHY ?? "#6e756a";
+  return POS_CLASS_COLOR.HEALTHY ?? "#999e8d";
 }
 
 // 1st / 2nd / 3rd / Nth

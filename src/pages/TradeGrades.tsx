@@ -26,7 +26,7 @@ function AssetRow({ asset }: { asset: GradedAsset }) {
     <div className="tg-asset-row">
       <span
         className="trade-asset-tag"
-        style={{ background: asset.kind === "player" ? posColor(asset.position) : "#4e5650" }}
+        style={{ background: asset.kind === "player" ? posColor(asset.position) : "#7e8477" }}
       >
         {asset.kind === "player" ? asset.position : asset.kind === "pick" ? "PICK" : "FAAB"}
       </span>
@@ -70,7 +70,7 @@ function TradeRow({ trade, myRosterId }: { trade: GradedTrade; myRosterId: numbe
                 <span className="tg-side-total">{Math.round(side.received).toLocaleString()}</span>
               </div>
               {side.assets.map((a, i) => <AssetRow key={i} asset={a} />)}
-              <div className="tg-side-net" style={{ color: side.net > 0 ? "#18f2b2" : side.net < 0 ? "#ee4266" : "#6e756a" }}>
+              <div className="tg-side-net" style={{ color: side.net > 0 ? "#18f2b2" : side.net < 0 ? "#ee4266" : "#999e8d" }}>
                 net {fmtValue(Math.round(side.net))}
               </div>
             </div>
@@ -246,7 +246,7 @@ export default function TradeGrades() {
               <span className="tg-ledger-manager">{row.managerName}{row.rosterId === myRosterId ? " ★" : ""}</span>
               <span>{row.trades}</span>
               <span className="dim-text">{row.wins}-{row.losses}-{row.ties}</span>
-              <span style={{ color: row.netValue > 0 ? "#18f2b2" : row.netValue < 0 ? "#ee4266" : "#6e756a" }}>
+              <span style={{ color: row.netValue > 0 ? "#18f2b2" : row.netValue < 0 ? "#ee4266" : "#999e8d" }}>
                 {fmtValue(Math.round(row.netValue))}
               </span>
             </div>

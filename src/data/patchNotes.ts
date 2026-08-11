@@ -84,6 +84,22 @@ export function currentRelease(): string {
 export const PATCH_NOTES: PatchNote[] = [
   {
     branch: "jeanty",
+    release: "1.1",
+    algo: "Empty",
+    algoFingerprint: "887cb3116985",
+    date: "2026-08-07",
+    title: "Readable text, less of it, and your trade record on your own page",
+    changes: [
+      "The dim text was too dim. Two shades of it sat at or under the readable floor across about ninety places on the site, which is why you were reaching for the brightness. Every text colour is now pinned to a contrast ratio rather than to a look, with the faintest one still comfortably readable.",
+      "The team page said far too much. The unbanked chart explained its two bar segments in a paragraph; it has a two line key instead. The positions panel went from five sentences to one.",
+      "New on your team page: your trade record. How many trades, how many you came out ahead on, and where your net value ranks in the league, with a link to the full graded list. We are a trade app, so how you have actually traded belongs next to how your roster looks.",
+    ],
+    knownIssues: [
+      "The rank on a state chip is the sum of your two ranks, while the Teams table is ordered by lineup strength alone, so the two can disagree.",
+    ],
+  },
+  {
+    branch: "jeanty",
     release: "1.0",
     algo: "Empty",
     algoFingerprint: "887cb3116985",

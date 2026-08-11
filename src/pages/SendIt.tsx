@@ -57,7 +57,7 @@ function fitGrade(fit: number): string {
 function gradeColor(grade: string): string {
   if (grade === "A+" || grade === "A") return "#18f2b2";
   if (grade === "B+" || grade === "B") return "#18f2b2";
-  if (grade === "C" || grade === "C-") return "#9fa492";
+  if (grade === "C" || grade === "C-") return "#b5b9a4";
   if (grade === "D") return "#f6f740";
   return "#ee4266";
 }
@@ -87,7 +87,7 @@ const CONFIDENCE_META: Record<ConfidenceTier, { label: string; color: string; ti
   },
   measured: {
     label: "WORTH A LOOK",
-    color: "#9fa492",
+    color: "#b5b9a4",
     title: "Reasonable fit. Neither a standout nor a stretch.",
   },
   inspiration: {
@@ -176,7 +176,7 @@ function AssetList({ assets }: { assets: TradeAssetWire[] }) {
         <span key={a.id} className="trade-asset">
           <span
             className="trade-asset-tag"
-            style={{ background: a.kind === "pick" ? "#4e5650" : posColor(a.position) }}
+            style={{ background: a.kind === "pick" ? "#7e8477" : posColor(a.position) }}
           >
             {a.kind === "pick" ? "PICK" : a.position}
           </span>

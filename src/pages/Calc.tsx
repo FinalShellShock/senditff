@@ -41,7 +41,7 @@ function PosTag({ position }: { position?: Position }) {
     <span
       className="pos-tag"
       style={{
-        background: position ? posColor(position) : "#4e5650",
+        background: position ? posColor(position) : "#7e8477",
         color: "#fefedf", padding: "1px 5px", borderRadius: 2,
         fontSize: 9.2, fontWeight: 700, letterSpacing: 0.5, flexShrink: 0,
       }}
@@ -506,12 +506,12 @@ export default function Calc() {
   // Fair threshold: within 8% of the larger side's total.
   // Fair = both sides green. Unfair = winning side green, losing side red.
   const isFair = !hasItems || diffPct < 8;
-  const totalColorA = !hasItems ? "#4e5650" : isFair || diff > 0 ? "#18f2b2" : "#ee4266";
-  const totalColorB = !hasItems ? "#4e5650" : isFair || diff < 0 ? "#18f2b2" : "#ee4266";
+  const totalColorA = !hasItems ? "#7e8477" : isFair || diff > 0 ? "#18f2b2" : "#ee4266";
+  const totalColorB = !hasItems ? "#7e8477" : isFair || diff < 0 ? "#18f2b2" : "#ee4266";
 
   function getVerdict(): { text: string; color: string } {
-    if (!hasItems) return { text: "—", color: "#4e5650" };
-    if (diffPct < 8)  return { text: "FAIR", color: "#9fa492" };
+    if (!hasItems) return { text: "—", color: "#7e8477" };
+    if (diffPct < 8)  return { text: "FAIR", color: "#b5b9a4" };
     // Winner = the side receiving more value than they put in
     const winnerName = diff > 0
       ? (profileA?.ownerName.split(" ")[0] ?? "SIDE A").toUpperCase()
@@ -610,7 +610,7 @@ export default function Calc() {
                     <div
                       key={i}
                       className="calc-fit-line"
-                      style={{ color: fl.good === true ? "#18f2b2" : fl.good === false ? "#ee4266" : "#6e756a" }}
+                      style={{ color: fl.good === true ? "#18f2b2" : fl.good === false ? "#ee4266" : "#999e8d" }}
                     >
                       {fl.text}
                     </div>

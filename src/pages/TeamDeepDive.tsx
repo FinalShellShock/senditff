@@ -223,7 +223,7 @@ export default function TeamDeepDive() {
       ? "#18f2b2"
       : profile.pickCapital.flag === "PICK_POOR"
         ? "#ee4266"
-        : "#9fa492";
+        : "#b5b9a4";
 
   return (
     <>
@@ -263,7 +263,7 @@ export default function TeamDeepDive() {
               <strong style={{ color: pickFlagColor }}>
                 {pickFlagText(profile.pickCapital.flag)}
               </strong>
-              <span style={{ color: "#4e5650" }}>
+              <span style={{ color: "#7e8477" }}>
                 {" "}
                 · {profile.pickCapital.score.toFixed(0)}
               </span>
@@ -279,7 +279,7 @@ export default function TeamDeepDive() {
                 }
               >
                 trades <strong>{tradeRow.trades}</strong>
-                <span style={{ color: "#4e5650" }}>
+                <span style={{ color: "#7e8477" }}>
                   {" "}
                   · {tradeRow.wins}-{tradeRow.losses}-{tradeRow.ties} ·{" "}
                 </span>
@@ -290,7 +290,7 @@ export default function TeamDeepDive() {
                         ? "#18f2b2"
                         : tradeRow.netValue < 0
                           ? "#ee4266"
-                          : "#9fa492",
+                          : "#b5b9a4",
                   }}
                 >
                   {tradeRow.netValue >= 0 ? "+" : "−"}
@@ -329,6 +329,9 @@ export default function TeamDeepDive() {
         me={profile}
         league={overview.profiles as TeamProfile[]}
         format={overview.format}
+        tradeRow={tradeRow}
+        ledger={ledger}
+        leagueId={leagueId!}
       />
 
       <section className="dive-pos-section">
@@ -511,7 +514,7 @@ export default function TeamDeepDive() {
               <strong style={{ color: pickFlagColor }}>
                 {pickFlagText(profile.pickCapital.flag)}
               </strong>
-              <span style={{ color: "#4e5650" }}>
+              <span style={{ color: "#7e8477" }}>
                 {" "}
                 · {profile.pickCapital.score.toFixed(0)}
               </span>
