@@ -10,7 +10,7 @@ import type {
   Pick as DraftPick,
   SubClassification,
 } from "../algo/types.ts";
-import { STATE_TEXT, stateStyle } from "../ui/teamState.ts";
+import { STATE_TEXT, stateStyle, overallRanks } from "../ui/teamState.ts";
 import { useAuth } from "../hooks/useAuth.tsx";
 import type { LeagueOutletContext } from "./LeagueShell.tsx";
 import LeverageBoard from "./overview/LeverageBoard.tsx";
@@ -324,6 +324,7 @@ function LeagueTableRow({
   allProfiles,
   expanded,
   onToggle,
+  overallRank,
 }: {
   profile: TeamProfile;
   leagueId: string;
@@ -331,6 +332,7 @@ function LeagueTableRow({
   allProfiles: TeamProfile[];
   expanded: boolean;
   onToggle: () => void;
+  overallRank: number;
 }) {
   const navigate = useNavigate();
   const stateStyleFor = stateStyle(profile.teamState);
@@ -373,6 +375,10 @@ function LeagueTableRow({
                 }}
               >
                 {STATE_TEXT[profile.teamState] ?? "—"}
+                {/* Grades within a state: three teams can all read BEAUTY and
+                    the best is not the third best. Dimmed so the state still
+                    reads first. */}
+                <span className="window-label-rank">#{overallRank}</span>
               </span>
               {profile.currentPlace != null && (
                 <span className="lt-row-meta-dim">
@@ -538,6 +544,7 @@ export default function LeagueOverview() {
   const sorted = [...overview.profiles].sort(
     (a, b) => a.starterRank - b.starterRank,
   );
+  const leagueRanks = overallRanks(overview.profiles);
   const needsResync = overview.profiles.some(
     (p) => !p.positionScores || !p.pickCapital,
   );
@@ -601,6 +608,7 @@ export default function LeagueOverview() {
           <div className="league-table">
             {sorted.map((p) => (
               <LeagueTableRow
+                overallRank={leagueRanks.get(p.rosterId) ?? 0}
                 key={p.rosterId}
                 profile={p}
                 leagueId={id!}

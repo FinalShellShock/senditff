@@ -132,3 +132,36 @@ export function stateInk(state: TeamState): string {
   // Contrast against near-black vs against white, higher wins.
   return (L + 0.05) / 0.05 >= 1.05 / (L + 0.05) ? "#051014" : "#fefedf";
 }
+
+/**
+ * Overall league rank, 1 = best, from the sum of the two ranks the grid is
+ * built on.
+ *
+ * The state alone is lumpy: three teams in the test league all read BEAUTY, so
+ * the best roster looked identical to the third. This grades within a state
+ * without touching hue, which is the one channel that cannot carry it. Colour
+ * answers "how urgent", and two teams at the SAME overall rank can need
+ * opposite things: a #12 contender / #4 dynasty wants to buy, a #5 / #11 wants
+ * to sell. Collapsing that into one colour would erase the reason the chart has
+ * two axes at all.
+ *
+ * The map does not need this, since a dot's position already IS its two ranks.
+ * It is for the surfaces with no position: chips and table rows.
+ *
+ * Ties break on contender rank then rosterId, so ordering is stable rather than
+ * dependent on array order.
+ */
+export function overallRanks(
+  profiles: Array<{ rosterId: number; starterRank: number; dynastyRank: number }>,
+): Map<number, number> {
+  const out = new Map<number, number>();
+  [...profiles]
+    .sort(
+      (a, b) =>
+        a.starterRank + a.dynastyRank - (b.starterRank + b.dynastyRank) ||
+        a.starterRank - b.starterRank ||
+        a.rosterId - b.rosterId,
+    )
+    .forEach((t, i) => out.set(t.rosterId, i + 1));
+  return out;
+}

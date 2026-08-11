@@ -94,6 +94,7 @@ export const PATCH_NOTES: PatchNote[] = [
       "Green now means one thing and red means one thing: value going up, and value going down. Neither appears anywhere else on the site, so a colour on a number is never decoration.",
       "Positions have their own colours that stay out of that pair: quarterbacks cyan, running backs purple, receivers yellow, tight ends orange.",
       "Colour on the League Shape chart answers one question: how urgently should you do something. Green is nothing to fix, blue is healthy, purple is accumulating on purpose, yellow is a window closing, orange needs a decision, red is out of road. Cells share colours where they call for the same response, which is fine because every cell is labelled.",
+      "State chips carry your overall league rank now. Three teams in the test league all read BEAUTY, which meant the best roster looked identical to the third best; the rank grades within a state without spending a colour on it.",
       "Text is about 15% larger everywhere.",
       "Trades are untouched. Every file that decides which trades get suggested is byte for byte identical to the previous release.",
     ],

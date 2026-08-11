@@ -777,6 +777,14 @@ body {
 
 /* Border is always drawn; its colour is set inline from stateStyle(). An
    outlined state has a transparent background, so the border IS the chip. */
+/* Overall league rank, shown inside the state chip. Dimmed and slightly
+   smaller so the state still reads first and the rank is the qualifier. */
+.window-label-rank {
+  margin-left: 6px;
+  opacity: 0.62;
+  font-weight: 600;
+}
+
 .window-label {
   padding: 3px 8px;
   border-radius: 4px;

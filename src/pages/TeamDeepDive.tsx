@@ -13,7 +13,7 @@ import { scoutingPlays, type Play } from "../algo/plays.ts";
 import { intentShortLabel } from "../data/intentLabels.ts";
 import { FeedbackBlock } from "../components/FeedbackBlock.tsx";
 import TeamState, { pickFlagText } from "./team/TeamState.tsx";
-import { STATE_TEXT, stateStyle } from "../ui/teamState.ts";
+import { STATE_TEXT, stateStyle, overallRanks } from "../ui/teamState.ts";
 import { posColor, INK_4 } from "../ui/theme.ts";
 
 // CRITICAL and SURPLUS are the two states worth acting on, so they own the
@@ -239,6 +239,9 @@ export default function TeamDeepDive() {
             style={{ background: st.bg, borderColor: st.border, color: st.ink }}
           >
             {STATE_TEXT[profile.teamState]}
+            <span className="window-label-rank">
+              #{overallRanks(overview.profiles as TeamProfile[]).get(profile.rosterId) ?? 0}
+            </span>
           </span>
         </div>
         <div className="dive-header-row">
